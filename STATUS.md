@@ -12,7 +12,7 @@ completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cam
 límites, baseline, grandfather ni funcionalidad por esta corrección.
 Sin staging, commit ni push; no CLOSED.
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 y 2B-2 en `main`; Fase 2B-3 implementada, pendiente de revisión)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 a 2B-3 en `main`; Fase 2B-4 implementada, pendiente de revisión)
 
 **No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y
 ejemplos es parcial fuera de los módulos ya trabajados). Solo metadatos y pruebas: sin cambios de rutas, métodos,
@@ -52,6 +52,20 @@ permisos, DTO, validadores ni lógica.
   los tipos de medio declarados en el atributo; no se altera ese atributo (cambiaría la negociación de los errores
   JSON de la misma acción). El snapshot de Companies se actualiza por la documentación de `CompaniesController` y
   `CompanyProfileController` (solo metadatos).
+- **CI #1171 (Fase 2B-3, `494fc8953`) — FAILURE, pendiente de diagnóstico independiente:** falló una prueba de
+  conexión y reinicio de Redis en `infrastructure-06`. El paquete 2B-3 solo cambia metadatos Swagger, pruebas de
+  contrato OpenAPI y el snapshot de Companies; no toca Redis ni sus pruebas. No se clasifica todavía como defecto
+  funcional confirmado ni se modifica Redis dentro de API-DOC-V1.
+- **Fase 2B-4 — Gastos, Precios y Retenciones, 42 operaciones** (`ExpensesController` 9,
+  `ExpenseCategoriesController` 9, `PricingController` 17, `RetentionsController` 7; sin solapamiento con las 243
+  anteriores): mismo procedimiento, solo XML, `[ProducesResponseType]` y `using` (código idéntico a HEAD
+  comprobado; tres notas internas de `ExpensesController` pasan de XML a comentarios `//` para no publicarse en
+  Swagger). 5 POST pasan a documentar 201 (el código ya respondía 201): `expenses/categories`,
+  `expenses/documents`, `expenses/documents/confirmed`, `pricing/price-lists` y `pricing/pricing-rules`. Dos
+  operaciones responden un archivo sin envelope (XML y PDF del RIDE de retenciones), con su tipo de medio real
+  (`application/xml`, `application/pdf`): `RetentionsController` no tiene `[Produces]` de clase. Los dos `DELETE`
+  de Precios son baja lógica (desactivan la asignación o deshabilitan la regla). Los 403 con envelope de
+  `Register` y de las cuatro operaciones de anulación de retenciones están verificados en los handlers.
 - **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
@@ -95,6 +109,16 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-32 | `CommunicationsEmailSettings.SendTest` | Solo `SmtpException` y `TimeoutException` están mapeadas a 422; otros fallos de transporte no verificados podrían salir como 500. |
 | API-DOC-F-33 | `InitialLoad` (`INITIAL_LOAD_CLOSED`, `OPENING_*`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_SOURCE_CHANGED`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: responden 400 y no 422 (misma causa que F-10). |
 | API-DOC-F-34 | `InitialLoad.Confirm`/`Validate`/`Upload` | «Lote no encontrado» dentro del bloqueo responde 422 (solo la primera comprobación da 404); los fallos inesperados usan `Failure` sin código (400); `Upload` sin archivo responde 400 `BAD_REQUEST` en vez de 422. |
+| API-DOC-F-35 | `ExpenseCategories.Update` | `UpdateExpenseCategoryNodeRequest` no incluye `isDeductible` ni `requiresInvoice`; el controller los deja en el valor por defecto `true` y `UpdateSubcategoryTaxRules` los fija en `true` en cada actualización de una subcategoría: un `PUT` revierte esos dos indicadores. |
+| API-DOC-F-36 | `Expenses.CreateDraft`, `CreateConfirmed`, `UpdateDraft` | `CreateExpenseDraftRequest.Retention` se ignora en `CreateDraft` (solo se usa en `CreateConfirmed`); `receptionDocumentId` y `accessKey` se ignoran en `CreateConfirmed` aunque el cuerpo es el mismo tipo; `UpdateExpenseDraftRequest` no admite `accessKey`. |
+| API-DOC-F-37 | `Expenses.Cancel` | Con una retención ya autorizada por el SRI, el 200 puede significar «solicitud de anulación SRI registrada y el gasto sigue confirmado»; solo se distingue por el `code` del envelope (`AnnulmentRequested`). |
+| API-DOC-F-38 | `Expenses.Confirm`, `CreateConfirmed`, `Cancel` (retención) | Los fallos de emisión o anulación de la retención conservan su código (`ValidationFailure(error, code)`), así que el status real puede ser 400, 409 o 422 según esté catalogado el código. |
+| API-DOC-F-39 | `Pricing.SetPricingRule` | Responde siempre 201, también para `AlreadyActive` (actualiza una regla existente) y `ExistsInactive` (no escribe nada); el estado real va en `data.status`. |
+| API-DOC-F-40 | `Pricing.AssignCustomerToPriceList` | Crea la asignación pero responde 200 (`ToOkOrBadRequest`, mismo patrón que F-13 y F-22); el conflicto de lista (`Conflict`) también responde 200, sin error HTTP. |
+| API-DOC-F-41 | `Pricing.UpdatePriceList` | Cuando rechaza la marca de predeterminada de una lista deshabilitada, descarta toda la edición (no aplica los demás cambios). |
+| API-DOC-F-42 | `Retentions.SubmitAnnulment`, `VerifyAnnulmentWithSri` | El 200 puede llevar un `code` de error de catálogo (`RETENTION_ANNULMENT_SRI_*`) dentro de una respuesta exitosa; un cliente que solo mire el HTTP no distingue una verificación fallida de una exitosa. |
+| API-DOC-F-43 | `Retentions.VerifyAnnulmentWithSri` | Una solicitud ya cerrada responde 422, pero una ya aceptada responde 200 con `FINALIZED`: criterio de estado repetido no uniforme (relacionado con F-12 y F-29). |
+| API-DOC-F-44 | `Retentions.GetRidePdf` frente a `GetElectronicXml` | `RetentionRidePdfService` usa `Failure` sin código para fallos de branding y de render (400), mientras los errores de XML usan `ValidationFailure` (422). |
 
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 

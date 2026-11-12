@@ -424,7 +424,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
     /// <summary>
     /// Operaciones documentadas cuyo éxito NO es un envelope: lista cerrada y verificada contra el
-    /// controller (`Ok(arreglo)` crudo en Banks.List; `File(...)` en los logos y la plantilla de carga).
+    /// controller (`Ok(arreglo)` crudo en Banks.List; `File(...)` en los logos, la plantilla de carga y el XML/PDF de retenciones).
     /// Cualquier otra operación documentada debe responder con <c>ApiResponse&lt;T&gt;</c>.
     /// </summary>
     private static readonly string[] NonEnvelopeSuccess =
@@ -433,11 +433,29 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "CompanyProfile_GetLogoContent",
         "CompanyProfile_GetLogoAltContent",
         "InitialLoad_DownloadTemplate",
+        "Retentions_GetElectronicXml",
+        "Retentions_GetRidePdf",
     ];
 
-    /// <summary>Todas las operaciones con documentación funcional completa (2B-1, 2B-2 y 2B-3).</summary>
+    /// <summary>API-DOC-V1 / Fase 2B-4: Gastos (18), Precios (17) y Retenciones (7).</summary>
+    private static readonly string[] Phase2B4Controllers =
+    [
+        "Expenses",
+        "ExpenseCategories",
+        "Pricing",
+        "Retentions",
+    ];
+
+    /// <summary>Todas las operaciones con documentación funcional completa (2B-1 a 2B-4).</summary>
     private IEnumerable<(string Path, string Method, JsonObject Op)> DocumentedOperations() =>
-        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers, .. Phase2B3Controllers]);
+        OperationsOf(
+            [
+                .. Phase2B1Controllers,
+                .. Phase2B2Controllers,
+                .. Phase2B3Controllers,
+                .. Phase2B4Controllers,
+            ]
+        );
 
     [Fact]
     public void Las_71_operaciones_de_Integraciones_Caja_y_Finanzas_estan_inventariadas()
@@ -467,6 +485,36 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Las_42_operaciones_de_Gastos_Precios_y_Retenciones_estan_inventariadas()
+    {
+        OperationsOf(Phase2B4Controllers).Should().HaveCount(42);
+        OperationsOf(["Expenses", "ExpenseCategories"]).Should().HaveCount(18);
+        OperationsOf(["Pricing"]).Should().HaveCount(17);
+        OperationsOf(["Retentions"]).Should().HaveCount(7);
+        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers, .. Phase2B3Controllers])
+            .Select(o => o.Op["operationId"]!.GetValue<string>())
+            .Intersect(OperationsOf(Phase2B4Controllers).Select(o => o.Op["operationId"]!.GetValue<string>()))
+            .Should()
+            .BeEmpty("no hay solapamiento con 2B-1, 2B-2 ni 2B-3");
+    }
+
+    [Theory]
+    [InlineData("/api/v1/retentions/{id}/electronic/xml", "GET", "application/xml")]
+    [InlineData("/api/v1/retentions/{id}/ride/pdf", "GET", "application/pdf")]
+    public void Los_archivos_de_retenciones_publican_su_tipo_de_medio_real(
+        string path,
+        string method,
+        string mediaType
+    )
+    {
+        // RetentionsController no tiene [Produces] de clase: el tipo de medio declarado en el atributo se respeta.
+        var content = FindOperation(path, method)["responses"]!["200"]!["content"]!.AsObject();
+
+        content.Select(c => c.Key).Should().Equal(mediaType);
+        content[mediaType]!["schema"]!["$ref"].Should().BeNull("el cuerpo es el archivo, no un envelope");
+    }
+
+    [Fact]
     public void Solo_las_operaciones_de_la_lista_cerrada_responden_sin_envelope()
     {
         var withoutEnvelope = DocumentedOperations()
@@ -475,7 +523,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                     .AsObject()
                     .Where(r => r.Key.StartsWith('2'))
                     .All(r =>
-                        r.Value!["content"]!["application/json"]!["schema"]!["$ref"]
+                        r.Value!["content"]!.AsObject().First().Value!["schema"]!["$ref"]
                             ?.GetValue<string>()
                             .Contains("/ApiResponseOf") == true
                     )
@@ -515,7 +563,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .Where(r => r.Key.StartsWith('2'))
                 .ToList();
             success.Should().ContainSingle(label);
-            var schema = success[0].Value!["content"]!["application/json"]!["schema"]!;
+            var schema = success[0].Value!["content"]!.AsObject().First().Value!["schema"]!;
             if (NonEnvelopeSuccess.Contains(op["operationId"]!.GetValue<string>()))
                 schema["$ref"]?.GetValue<string>().Should().NotContain("/ApiResponseOf", label);
             else
@@ -561,6 +609,16 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("/api/v1/initial-load/batches/{id}/confirm", "POST", "200", new[] { "400", "404", "422" })]
     [InlineData("/api/v1/admin/iam/profiles", "POST", "201", new[] { "400", "409" })]
     [InlineData("/api/v1/admin/iam/users", "POST", "200", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/expenses/documents", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/expenses/documents/{id}/confirm", "POST", "200", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/expenses/documents/{id}/cancel", "POST", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/expenses/categories", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/pricing/price-lists", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/pricing/price-lists/{id}", "PUT", "200", new[] { "400", "404", "422" })]
+    [InlineData("/api/v1/pricing/pricing-rules", "POST", "201", new[] { "404", "422" })]
+    [InlineData("/api/v1/pricing/pricing-rules/{id}", "DELETE", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/retentions/{id}/electronic/register", "POST", "200", new[] { "400", "404", "409", "422" })]
+    [InlineData("/api/v1/retentions/annulments/{requestId}/submission", "POST", "200", new[] { "404", "422" })]
     [InlineData("/api/v1/cash-sessions/{id}/close", "POST", "200", new[] { "404", "422" })]
     [InlineData("/api/v1/cash-sessions/open", "POST", "201", new[] { "404", "409", "422" })]
     [InlineData("/api/v1/cash-funding-requests/{id}/cancel", "POST", "200", new[] { "403", "404", "422" })]
