@@ -22,6 +22,12 @@ vi.mock("../../../modules/items/api/itemService", () => ({
   itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn(), enableImage: vi.fn(), getProfitability: vi.fn().mockResolvedValue(null) },
 }));
 
+// El escenario de recuperación de imágenes exige `items.edit` (ImagesSection); la política fail-closed
+// de usePermissionsUi se conserva: solo se concede ese permiso, igual que en ImagesSection.test.tsx.
+vi.mock("../../../access/usePermissionsUi", () => ({
+  usePermissionsUi: () => ({ canShow: (permission: string) => permission === "items.edit" }),
+}));
+
 vi.mock("../../../modules/pricing/facades/priceListLookupFacade", () => ({
   priceListLookupFacade: { list: vi.fn().mockResolvedValue([]) },
 }));
