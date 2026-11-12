@@ -1,9 +1,10 @@
 # Project Status
 
-## COMPANY-ADMIN-CONSOLIDATION-01 — Administración empresarial en una sola fuente — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
+## COMPANY-ADMIN-CONSOLIDATION-01 — Administración empresarial en una sola fuente — CLOSED (2026-11-11)
 
-Autorizado expresamente por el propietario. Sin staging, commit ni push; sin migraciones ni datos reales
-modificados (las pruebas HTTP usan PostgreSQL desechable de Testcontainers, nunca `postgreszh`).
+El propietario confirma en GitHub Actions CI #1151 SUCCESS sobre `main`, commit
+`81ca23af0e03cfce56c1704a96b7423e4c4c4cd1`. Sin migraciones ni datos reales modificados (las pruebas HTTP usan
+PostgreSQL desechable de Testcontainers, nunca `postgreszh`).
 
 - **Pantalla única de empresa activa**: `/settings/company` es la única pantalla de configuración de la empresa
   activa. El administrador de la empresa edita razón social y nombre comercial junto con contacto,
@@ -20,8 +21,14 @@ modificados (las pruebas HTTP usan PostgreSQL desechable de Testcontainers, nunc
   `CrossCompanyAdminPrivilegeHttpTests`, `CompanyIdentityUpdateHttpTests`); las comprobaciones e2e de empresa
   ajena usan `GET /companies/current` con `X-Company-Id` ajeno. El módulo Companies del ProgressDashboard
   apunta a `/settings/company` y el dashboard se regeneró con el procedimiento oficial.
-- **Estado**: en curso. Sin commit y sin CI asignado; no está CLOSED hasta publicarse, validarse en CI y
-  recibir la aceptación del propietario.
+- **Commits (`main`):**
+  - `a351faa55c4493750c3cb691cff5f5da034bda7e` `refactor(companies): consolidate company management into company settings`.
+  - `81ca23af0e03cfce56c1704a96b7423e4c4c4cd1` `test(api): update company HTTP tests to current profile endpoints`.
+- **CI:** #1150 **FAILURE** (`a351faa55`): dos pruebas HTTP seguían usando los endpoints retirados
+  (`PUT /companies/{id}`, `GET /companies/{id}`), y RIDE Golden falló al descargar `dotnet-install.ps1`, antes de
+  ejecutar pruebas (fallo de infraestructura). #1151 **SUCCESS** (`81ca23af0`): las pruebas se actualizaron a
+  `PUT /companies/profile` y `GET /companies/current`; el fallo de descarga del SDK no se reprodujo. CI gate,
+  Backend API, RIDE Golden, Frontend, Seguridad, Arquitectura y publicación en éxito.
 
 ## ADMIN-SESSIONS-ACTIVITY-01 — Sesiones y Actividad: rediseño UI/UX y limpieza de administración — CLOSED (2026-11-11)
 

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-11 12:43:01",
+    "generated":  "2026-11-11 20:20:56",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -437,7 +437,7 @@
                                                   "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
-                                                  "Refactor large file (617 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
+                                                  "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                   "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
                                                   "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",

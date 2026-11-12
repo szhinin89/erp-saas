@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-11-11 12:42:02",
+    "Generated":  "2026-11-11 20:20:11",
     "FilesAnalyzed":  12233,
     "TODO":  734,
     "FIXME":  30,
@@ -16,7 +16,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
-                           "Lines":  617
+                           "Lines":  622
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\BranchDefaultWarehouseHttpTests.cs",

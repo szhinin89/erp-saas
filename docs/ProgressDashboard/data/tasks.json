@@ -1494,6 +1494,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1527,15 +1536,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Sales/GetSalesReceiptPrintPayloadHandlerTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (617 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs"
                      ]
     },
     {
