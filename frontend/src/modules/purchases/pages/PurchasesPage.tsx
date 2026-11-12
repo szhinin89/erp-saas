@@ -2540,7 +2540,7 @@ export function PaymentScheduleSection({
   const moneyDecimals = usePrecisionDecimals("money"); // texto compuesto (06)
   return (
     <div className="pf-card" id="purchase-schedule" tabIndex={-1}>
-      <div className="pf-card__header">
+      <div className="pf-card__header pf-schedule-header">
         <h4 className="pf-card__title">
           <span className="material-symbols-outlined pf-card__title-icon">
             calendar_month
@@ -2675,6 +2675,7 @@ export function PaymentScheduleSection({
         )}
 
         {ctx.hasPersistedSchedule && (
+          <div className="table-scroll">
           <table className="table table--compact table--neutral">
             <thead>
               <tr>
@@ -2701,10 +2702,12 @@ export function PaymentScheduleSection({
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {!ctx.hasPersistedSchedule && ctx.ptRows.length > 0 && (
           <>
+            <div className="table-scroll">
             <table className="table table--compact table--neutral">
               <thead>
                 <tr>
@@ -2785,6 +2788,7 @@ export function PaymentScheduleSection({
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="pf-schedule-footer">
               <span className="pf-schedule-footer__count">
                 {t("purchases.schedule.installmentCountValue", {
