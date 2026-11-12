@@ -213,7 +213,7 @@ public sealed partial class PublishOpeningJournalEntryCommandHandler
                 return await FailAsync(posting, ControlAccountBlockedCode,
                     "El asiento de apertura no puede mover cuentas de control de "
                         + string.Join(", ", blocked.Select(id => controls[id]).Distinct())
-                        + ": sus saldos de apertura se cargan desde Carga Inicial.", ct);
+                        + ": sus saldos de apertura se cargan desde Carga inicial.", ct);
 
             var fact = new PostingFact(
                 tenantId,

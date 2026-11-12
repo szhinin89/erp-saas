@@ -168,7 +168,7 @@ Distinción conceptual obligatoria, nunca debe mezclarse:
 
 **`AuthorizationMode`** (`None`/`SingleStep`/`MultiStep`) se guarda por tipo de documento y la pantalla permite elegir cualquiera. Solo la confirmación de Gastos lo evalúa (`EnsureConfirmationFlowAsync`): un valor distinto de `None` rechaza la confirmación con `document_flow_policy.authorization_required`. No existen estados, comandos ni pantallas de aprobación o rechazo. Riesgo vigente: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
-Pantalla de administración: Configuración → Documentos y flujos (`/settings/document-flows`, permisos `settings.documentFlows.view`/`.update`) — administra únicamente el acceso a esa pantalla de configuración, nunca los permisos de acción de cada módulo.
+Pantalla de administración: Configuración → Documentos → Políticas de documentos (`/settings/document-flows`, permisos `settings.documentFlows.view`/`.update`) — administra únicamente el acceso a esa pantalla de configuración, nunca los permisos de acción de cada módulo.
 
 ---
 

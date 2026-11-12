@@ -169,7 +169,7 @@ export function EmissionPointsListSection({
               point_of_sale
             </span>
             <span className="pg-section-label">
-              Puntos de Emisión Registrados
+              Puntos de emisión registrados
             </span>
           </div>
           <div className="br-actions-tight">

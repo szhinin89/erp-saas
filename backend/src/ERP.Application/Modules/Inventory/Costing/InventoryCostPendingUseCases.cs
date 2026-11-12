@@ -7,7 +7,7 @@ namespace ERP.Application.Modules.Inventory.Costing;
 
 /// <summary>
 /// Costo de ventas todavía no resuelto por el Kardex (incertidumbre operativa). ACCOUNTING-CONTINUITY-05:
-/// el estado contable del costo y su reproceso viven en Contabilizaciones (AccountingPosting).
+/// el estado contable del costo y su reproceso viven en Asientos automáticos (AccountingPosting).
 /// </summary>
 public sealed record PendingInventoryCostDto(Guid ObligationId, Guid InvoiceId, string? InvoiceNumber,
     DateOnly? IssueDate, Guid InvoiceLineId, Guid ProductId, string? ItemSku, string? ItemName,

@@ -1,6 +1,6 @@
 ﻿{
     "source":  "docs/ProgressDashboard/data/architecture-progress-source.json",
-    "generated":  "2026-11-11 20:20:38",
+    "generated":  "2026-11-12 08:09:38",
     "extractionMethod":  "Direct load of architecture-progress-source.json (structured data, no HTML parsing), replicating PROGRESS.html\u0027s own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated.",
     "global":  {
                    "totalTasks":  387,
@@ -1082,13 +1082,13 @@
                       {
                           "stage":  "Core ERP",
                           "phase":  "Empresas, Sucursales, Establecimientos",
-                          "name":  "Establecimientos SRI",
+                          "name":  "Establecimientos",
                           "status":  "f"
                       },
                       {
                           "stage":  "Core ERP",
                           "phase":  "Empresas, Sucursales, Establecimientos",
-                          "name":  "Puntos de Emisión",
+                          "name":  "Puntos de emisión",
                           "status":  "f"
                       },
                       {
@@ -3080,7 +3080,7 @@
                              {
                                  "stage":  "Core ERP",
                                  "phase":  "Empresas, Sucursales, Establecimientos",
-                                 "name":  "Establecimientos SRI",
+                                 "name":  "Establecimientos",
                                  "status":  "f",
                                  "excerpt":  "Código fiscal SRI (001-999) único por empresa. Disable bloqueado si tiene PEs activos."
                              },

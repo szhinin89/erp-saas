@@ -20,7 +20,7 @@ public static class ExpensesModule
     public const string ExpensesGroup = "/expenses/group";
 
     [NavItem(
-        "Documentos de Gastos",
+        "Documentos de gastos",
         Permission = ExpensePermissions.DocumentsView,
         LabelKey = "app.nav.item.expenses.documents",
         SortOrder = 10,
@@ -37,7 +37,7 @@ public static class ExpensesModule
     public const string ExpenseDocuments = "/expenses/documents";
 
     [NavItem(
-        "Catalogo de Gastos",
+        "Categorías de gastos",
         Permission = ExpensePermissions.CatalogView,
         LabelKey = "app.nav.item.expenses.catalog",
         SortOrder = 20,

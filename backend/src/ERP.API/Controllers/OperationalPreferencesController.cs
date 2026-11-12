@@ -17,7 +17,7 @@ namespace ERP.API.Controllers;
 /// scope=Company. Cada grupo del PUT es opcional: solo se escribe el grupo enviado.
 /// </summary>
 [AppFeature(
-    "Preferencias operativas",
+    "Parámetros generales",
     $"perm:{OperationalPreferencesPermissions.View}",
     "tune",
     "/settings/operations",

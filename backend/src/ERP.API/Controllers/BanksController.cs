@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 // BANK-CATALOG-01: catálogo maestro de bancos — Configuración > Catálogos > Bancos. CRUD básico,
-// sin cuenta contable ni relación con PaymentMethodAccount (eso pertenece a un módulo Tesorería/
-// Bancos futuro, fuera de este ticket).
+// sin cuenta contable ni relación con PaymentMethodAccount (eso pertenece a un módulo
+// bancario futuro, fuera de este ticket).
 [AppFeature(
-    "Bancos",
+    "Instituciones bancarias",
     $"perm:{SettingsPermissions.BanksView}",
     "🏦",
     "/settings/catalogs/banks",

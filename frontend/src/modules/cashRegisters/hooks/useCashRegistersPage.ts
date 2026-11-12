@@ -158,7 +158,7 @@ export function useCashRegistersPage() {
     void fetchList();
   }, [fetchList]);
 
-  // Recarga la cascada de Puntos de Emisión/Bodegas cada vez que cambia la Sucursal elegida en el form.
+  // Recarga la cascada de Puntos de emisión/Bodegas cada vez que cambia la Sucursal elegida en el form.
   useEffect(() => {
     if (panelOpen) {
       void loadEmissionPoints(watchedBranchId);

@@ -34,7 +34,7 @@ namespace ERP.API.Controllers;
 /// permiso nuevo): es el mismo permiso que ya protege la acción de registro/reintento manual
 /// equivalente para Factura/Nota de Crédito en <c>ElectronicDocumentsController.Register</c>/
 /// <c>Retry</c>, y ya es asignable desde el catálogo de permisos (ligado al <c>[NavItem]</c> del
-/// Monitor de Documentos Electrónicos) — crear un permiso nuevo sin ese vínculo quedaría
+/// Monitor de comprobantes) — crear un permiso nuevo sin ese vínculo quedaría
 /// inasignable.
 /// </summary>
 [ApiController]

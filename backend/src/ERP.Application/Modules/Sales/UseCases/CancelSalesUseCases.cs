@@ -188,7 +188,7 @@ public sealed class CancelSalesInvoiceHandler
         "La factura tiene su comprobante electrónico AUTORIZADO por el SRI y no puede anularse localmente. Para revertir la venta registre una devolución (Nota de Crédito).";
 
     public const string ElectronicDocumentInProcessMessage =
-        "La factura tiene su comprobante electrónico en proceso ante el SRI. Primero debe resolverse su estado en el Monitor de Documentos Electrónicos.";
+        "La factura tiene su comprobante electrónico en proceso ante el SRI. Primero debe resolverse su estado en el Monitor de comprobantes.";
 
     private static string InvoiceCancellationMessage(string? code) =>
         code == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment

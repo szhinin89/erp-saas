@@ -10,7 +10,7 @@ describe("buildNavigationAccess", () => {
   const groups: MainMenuGroup[] = [
     {
       id: "treasury",
-      label: "Tesorería",
+      label: "Caja y Bancos",
       isActive: false,
       items: [
         {

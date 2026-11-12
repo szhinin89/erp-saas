@@ -40,7 +40,7 @@ public sealed class SpaMenuCatalogController : ControllerBase
 
     [HttpGet("empresa")]
     [AppFeature(
-        "Datos de Empresa",
+        "Datos de la empresa",
         $"perm:{SettingsPermissions.CompanyView}",
         "🏢",
         "/settings/company",

@@ -116,7 +116,7 @@ export function DocumentSequencesListSection({
           <span className="material-symbols-outlined pg-section-icon">
             format_list_numbered
           </span>
-          <span className="pg-section-label">Secuencias documentales</span>
+          <span className="pg-section-label">Numeración de documentos</span>
         </div>
         <div className="br-actions-tight">
           <ZHBtn
@@ -176,7 +176,7 @@ export function DocumentSequencesListSection({
         </div>
       ) : emissionPoints.length === 0 ? (
         <div className="pg-pad-40">
-          <EmptyState message="No hay puntos de emisión activos. Configure uno en Settings → Puntos de Emisión." />
+          <EmptyState message="No hay puntos de emisión activos. Configure uno en Configuración → Empresa → Puntos de emisión." />
         </div>
       ) : !selectedEmissionPointId ? (
         <div className="pg-pad-40">

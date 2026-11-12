@@ -26,7 +26,7 @@ import "./BanksPage.css";
 type Mode = "list" | "create" | "edit";
 
 /**
- * BANK-CATALOG-01 — Configuración > Catálogos > Bancos. Auditoría de reutilización: mismo patrón
+ * BANK-CATALOG-01 — Configuración > Catálogos > Instituciones bancarias. Auditoría de reutilización: mismo patrón
  * de ChartOfAccountsPage.tsx (PageShell+ZHCard+ZHDataTable+RHF/Zod+ZHField/ZHGrid+
  * applyServerErrors), sin componentes nuevos. Catálogo global del tenant (sin CompanyId, sin
  * cuenta contable) — solo CRUD básico + activar/desactivar, nunca borrado físico.
@@ -194,7 +194,7 @@ export function BanksPage() {
   return (
     <PageShell
       kicker="Configuración"
-      title="Bancos"
+      title="Instituciones bancarias"
       subtitle="Catálogo maestro de bancos, seleccionable desde cuentas bancarias/destinos financieros"
       action={
         mode === "list" ? (

@@ -1,7 +1,7 @@
 namespace ERP.Domain.Kernel.Permissions;
 
 /// <summary>
-/// Permisos del Monitor de Documentos Electrónicos sobre <c>ElectronicDocument</c> (estado,
+/// Permisos del Monitor de comprobantes sobre <c>ElectronicDocument</c> (estado,
 /// timeline, XML, reintento manual). Distintos de <see cref="ElectronicInvoicingPermissions"/>,
 /// que gobiernan la configuración SRI.
 /// </summary>

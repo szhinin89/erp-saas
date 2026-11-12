@@ -5,8 +5,8 @@ namespace ERP.Domain.Kernel.Modules;
 
 // MAPA-MENU-ERP-SSOT-01: Facturación electrónica se movió a SriModule (tile "SRI/Documentos
 // electrónicos"), Condiciones comerciales se movió a SuppliersModule (tile "Proveedores") y
-// Destinos financieros se movió a TreasuryModule (tile "Tesorería") — el árbol objetivo agrupa
-// esas tres áreas fuera de Configuración general. Queda: Empresa, Documentos y flujos,
+// Destinos financieros se movió a TreasuryModule (tile "Caja y Bancos") — el árbol objetivo agrupa
+// esas tres áreas fuera de Configuración general. Queda: Empresa, Documentos,
 // Comunicaciones, Sistema — igual al árbol objetivo. SortOrder actualizado para su posición en el
 // árbol de 12 módulos de nivel superior.
 [Module("settings", Icon = "⚙", SortOrder = 110, GroupId = "f2d0ca10-0000-4000-8000-000000000008")]
@@ -18,8 +18,8 @@ public static class SettingsModule
     /// </summary>
     // NAV-HIERARCHY-UNIFY-01: contenedor "Empresa" — agrupa todos los catálogos de identidad/
     // ubicación de empresa (datos de empresa, Sucursales, Establecimientos, Puntos
-    // de emisión, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
-    // (MAPA-MENU-ERP-SSOT-01: Destinos financieros se movió a Tesorería, ver más abajo.)
+    // de emisión, Ubicaciones geográficas) para que ninguno quede suelto bajo el módulo Configuración.
+    // (MAPA-MENU-ERP-SSOT-01: Destinos financieros se movió a Caja y Bancos, ver más abajo.)
     [NavItem(
         "Empresa",
         LabelKey = "app.nav.item.settings.enterpriseGroup",
@@ -51,7 +51,7 @@ public static class SettingsModule
         Permission = SettingsPermissions.CompanyView,
         PermissionsAnyCsv = SettingsPermissions.CompanyView + "," + SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.settings.company",
-        SortOrder = 20,
+        SortOrder = 10,
         Id = "00000000-0000-4000-8000-000000000101",
         ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
         RelatedActionPermissionsCsv = SettingsPermissions.CompaniesView
@@ -61,7 +61,7 @@ public static class SettingsModule
     public const string Company = "/settings/company";
 
     [NavItem(
-        "Branches",
+        "Sucursales",
         Permission = SettingsPermissions.BranchesView,
         LabelKey = "app.nav.item.settings.branches",
         SortOrder = 20,
@@ -76,7 +76,7 @@ public static class SettingsModule
     public const string Branches = "/settings/branches";
 
     [NavItem(
-        "Establishments",
+        "Establecimientos",
         Permission = SettingsPermissions.EstablishmentsView,
         LabelKey = "app.nav.item.settings.establishments",
         SortOrder = 30,
@@ -91,7 +91,7 @@ public static class SettingsModule
     public const string Establishments = "/settings/establishments";
 
     [NavItem(
-        "Emission Points",
+        "Puntos de emisión",
         Permission = SettingsPermissions.EmissionPointsView,
         LabelKey = "app.nav.item.settings.emissionPoints",
         SortOrder = 40,
@@ -106,14 +106,14 @@ public static class SettingsModule
     public const string EmissionPoints = "/settings/emission-points";
 
     // MAPA-MENU-ERP-SSOT-01: "Destinos financieros" se movió a TreasuryModule.FinancialDestinations
-    // (Tesorería > Bancos) — mismo Id (a1000000-0000-4000-9000-000000000011), nueva ruta
+    // (Caja y Bancos > Bancos) — mismo Id (a1000000-0000-4000-9000-000000000011), nueva ruta
     // /treasury/banks/financial-destinations (antes /settings/financial-destinations, que queda
     // como redirect en el frontend).
 
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Documentos y flujos" — categoría propia, ninguna
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Documentos" — categoría propia, ninguna
     // pantalla real puede quedar suelta directamente bajo el módulo settings.
     [NavItem(
-        "Documentos y flujos",
+        "Documentos",
         LabelKey = "app.nav.item.settings.documentFlowsGroup",
         SortOrder = 60,
         Id = "8f0f7a10-0000-4000-8000-000000000001",
@@ -128,7 +128,7 @@ public static class SettingsModule
     /// con Roles y Permisos (QUIÉN puede ejecutar cada acción).
     /// </summary>
     [NavItem(
-        "Documentos y flujos",
+        "Políticas de documentos",
         Permission = SettingsPermissions.DocumentFlowsView,
         LabelKey = "app.nav.item.settings.documentFlows",
         SortOrder = 10,
@@ -142,7 +142,7 @@ public static class SettingsModule
     // [NavItem], así que nunca llegaba a ui_nav_items ni al menú (ver nota INITIAL-LOAD-ARCH-01).
     // Mismo permiso que protege el controller — sin permiso nuevo.
     [NavItem(
-        "Secuencias documentales",
+        "Numeración de documentos",
         Permission = SettingsPermissions.DocumentSequencesManage,
         LabelKey = "app.nav.item.settings.documentSequences",
         SortOrder = 20,
@@ -152,14 +152,14 @@ public static class SettingsModule
     public const string DocumentSequences = "/settings/document-sequences";
 
     // MAPA-MENU-ERP-SSOT-01: "Facturación electrónica" (grupo + pantalla) se movió a
-    // SriModule (tile "SRI/Documentos electrónicos" > Configuración) — mismos Ids
+    // SriModule (tile "SRI/Comprobantes electrónicos" > Configuración) — mismos Ids
     // (60530be0-ce1c-4a1c-b1e8-fa5b4256bde7 / a1000000-0000-4000-9000-000000000014), nueva ruta
     // /sri/configuration/electronic-invoicing (antes /settings/electronic-invoicing, que queda
     // como redirect en el frontend).
 
     // BANK-CATALOG-01: contenedor "Catálogos" — categoría propia para catálogos maestros
     // transversales de Configuración (hoy solo Bancos; preparado para futuros catálogos sin
-    // crear un módulo Tesorería/Bancos todavía, fuera del alcance de este ticket).
+    // crear un módulo Caja y Bancos todavía, fuera del alcance de este ticket).
     [NavItem(
         "Catálogos",
         LabelKey = "app.nav.item.settings.catalogsGroup",
@@ -170,7 +170,7 @@ public static class SettingsModule
     public const string CatalogsGroup = "/settings/catalogs/group";
 
     [NavItem(
-        "Bancos",
+        "Instituciones bancarias",
         Permission = SettingsPermissions.BanksView,
         LabelKey = "app.nav.item.settings.banks",
         SortOrder = 10,
@@ -195,7 +195,7 @@ public static class SettingsModule
     public const string CommunicationsGroup = "/settings/communications/group";
 
     [NavItem(
-        "Correo SMTP",
+        "Correo electrónico",
         Permission = CommunicationsPermissions.View,
         LabelKey = "app.nav.item.settings.communicationsEmail",
         SortOrder = 70,
@@ -205,7 +205,7 @@ public static class SettingsModule
     )]
     public const string CommunicationsEmail = "/settings/communications/email";
 
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Sistema" — Parámetros Generales + Carga Inicial.
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Sistema" — Parámetros generales + Carga inicial.
     [NavItem(
         "Sistema",
         LabelKey = "app.nav.item.settings.systemGroup",
@@ -217,10 +217,9 @@ public static class SettingsModule
     )]
     public const string SystemGroup = "/settings/system-group";
 
-    // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Parámetros Generales" (antes
-    // "Preferencias operativas") — mismo Id/ruta/permiso, misma pantalla.
+    // Nombre visible: "Parámetros generales" — mismo Id/ruta/permiso.
     [NavItem(
-        "Parámetros Generales",
+        "Parámetros generales",
         Permission = OperationalPreferencesPermissions.View,
         LabelKey = "app.nav.item.settings.operationalPreferences",
         SortOrder = 80,
@@ -231,7 +230,7 @@ public static class SettingsModule
     public const string OperationalPreferences = "/settings/operations";
 
     [NavItem(
-        "Geography",
+        "Ubicaciones geográficas",
         Permission = SettingsPermissions.GeographyView,
         LabelKey = "app.nav.item.settings.geography",
         SortOrder = 90,
@@ -258,7 +257,7 @@ public static class SettingsModule
     // barra lateral (GET /api/v1/me/menu) se arma desde este KernelRegistry ([Module]/[NavItem]),
     // un mecanismo distinto. Un item nuevo necesita ambos para aparecer en el menú real.
     [NavItem(
-        "Carga Inicial",
+        "Carga inicial",
         Permission = InitialLoadPermissions.View,
         LabelKey = "app.nav.item.settings.initialLoad",
         SortOrder = 100,

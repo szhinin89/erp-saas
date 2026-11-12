@@ -13,7 +13,7 @@ namespace ERP.API.Controllers;
 /// DOCUMENT-SEQUENCES-CONFIG-03 — administración mínima de <c>DocumentSequence</c> (secuencias
 /// documentales SRI centralizadas, ADR-019).
 ///
-/// DOCUMENT-SEQUENCES-CONFIG-UI-04 — agrega la pantalla de Settings ("Secuencias documentales")
+/// DOCUMENT-SEQUENCES-CONFIG-UI-04 — agrega la pantalla de Settings ("Numeración de documentos")
 /// para configurar el número inicial por establecimiento/punto de emisión/tipo de documento SRI;
 /// <c>IsVisibleInMenu</c> pasa a <c>true</c> para que el ítem aparezca en el menú server-driven de
 /// Settings (antes registraba el permiso en el catálogo sin ítem de navegación real, ver
@@ -23,7 +23,7 @@ namespace ERP.API.Controllers;
 /// ninguna regla de dominio.
 /// </summary>
 [AppFeature(
-    "Secuencias documentales",
+    "Numeración de documentos",
     $"perm:{SettingsPermissions.DocumentSequencesManage}",
     "format_list_numbered",
     "/settings/document-sequences",

@@ -108,7 +108,7 @@ beforeEach(() => {
 describe("DocumentSequencesPage — renderizado y carga", () => {
   it("renderiza la pantalla de secuencias documentales", async () => {
     renderPage();
-    expect(await screen.findAllByText("Secuencias documentales")).not.toHaveLength(0);
+    expect(await screen.findAllByText("Numeración de documentos")).not.toHaveLength(0);
   });
 
   it("carga los puntos de emisión activos y los muestra en el selector", async () => {

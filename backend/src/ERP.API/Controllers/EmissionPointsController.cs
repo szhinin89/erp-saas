@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 [AppFeature(
-    "Puntos de Emisión",
+    "Puntos de emisión",
     $"perm:{SettingsPermissions.EmissionPointsView}",
     "point_of_sale",
     "/settings/emission-points",

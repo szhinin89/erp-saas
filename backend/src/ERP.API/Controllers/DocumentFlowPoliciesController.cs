@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// DOCUMENT-FLOW-POLICY-01 — Configuración → Documentos y flujos. Administra CÓMO se comporta
+/// DOCUMENT-FLOW-POLICY-01 — Configuración → Documentos → Políticas de documentos. Administra CÓMO se comporta
 /// cada tipo de documento por empresa (<c>DocumentFlowPolicy</c>). Los permisos de esta pantalla
 /// solo controlan el acceso a la configuración — nunca reemplazan los permisos de acción de cada
 /// módulo (p. ej. <c>expenses.documents.cancel</c>), que se administran en Roles y Permisos.
 /// </summary>
 [AppFeature(
-    "Documentos y flujos",
+    "Políticas de documentos",
     $"perm:{SettingsPermissions.DocumentFlowsView}",
     "GitBranch",
     "/settings/document-flows",

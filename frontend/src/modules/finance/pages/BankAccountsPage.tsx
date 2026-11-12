@@ -36,7 +36,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 
 /**
  * TREASURY-BANK-ACCOUNTS-01: CRUD básico + activar/desactivar de cuentas bancarias de empresa
- * (Tesorería → Bancos → Cuentas bancarias). Banco siempre seleccionado desde el catálogo maestro
+ * (Caja y Bancos → Bancos → Cuentas bancarias). Banco siempre seleccionado desde el catálogo maestro
  * `Bank` (BANK-CATALOG-01) — nunca texto libre. Sigue el patrón `ConfigTabsLayout` obligatorio
  * (Master Configuration UI CLOSED), mismo criterio que `CashRegistersPage.tsx`.
  */
@@ -385,8 +385,8 @@ export function BankAccountsPage() {
 
   return (
     <ErpPageTemplate
-      kicker="Tesorería"
-      title="Cuentas Bancarias"
+      kicker="Caja y Bancos"
+      title="Cuentas bancarias"
       action={
         <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>
           <span className="material-symbols-outlined">add</span>

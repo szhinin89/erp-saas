@@ -66,7 +66,7 @@ const suppliersModuleGroup: MainMenuGroup = {
 const kardexItem: NavItem = {
   id: "item-inventory-kardex",
   to: "/inventory/kardex",
-  label: "Historial de Existencias",
+  label: "Kardex",
 };
 const inventoryAdjustmentsItem: NavItem = {
   id: "item-inventory-adjustments",
@@ -230,7 +230,7 @@ describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-
     renderModules();
 
     expect(screen.getByText("Operación")).toBeTruthy();
-    expect(screen.getByText("Historial de Existencias")).toBeTruthy();
+    expect(screen.getByText("Kardex")).toBeTruthy();
 
     const inventoryModule = screen
       .getByRole("button", { name: "Inventario" })
@@ -249,7 +249,7 @@ describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-
     renderModules();
 
     const kardexLink = screen
-      .getByText("Historial de Existencias")
+      .getByText("Kardex")
       .closest("a");
     const adjustmentsLink = screen
       .getByText("Ajustes de inventario")
@@ -276,7 +276,7 @@ describe("App Launcher — estados current/open/hover (ZH-MENU-ACTIVE-STATE-FIX-
     renderModules();
 
     const kardexLink = screen
-      .getByText("Historial de Existencias")
+      .getByText("Kardex")
       .closest("a");
     const suppliersToggle = screen.getByRole("button", { name: "Proveedores" });
     const inventoryToggle = screen.getByRole("button", { name: "Inventario" });

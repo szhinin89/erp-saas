@@ -12,9 +12,9 @@ beforeEach(() => {
 
 describe("useDocumentTitle", () => {
   it("usa el título tal cual, sin sufijo por defecto", () => {
-    renderHook(() => useDocumentTitle("Geografía"));
+    renderHook(() => useDocumentTitle("Ubicaciones geográficas"));
 
-    expect(document.title).toBe("Geografía");
+    expect(document.title).toBe("Ubicaciones geográficas");
   });
 
   it("usa el fallback exacto cuando el título es undefined", () => {

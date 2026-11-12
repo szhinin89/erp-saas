@@ -3,7 +3,7 @@ import { useI18n } from "../../../../i18n/i18n";
 import { CommunicationsEmailSettingsSection } from "../sections/CommunicationsEmailSettingsSection";
 
 /**
- * Configuración → Comunicaciones → Correo SMTP. Pantalla única (sin Hub, sin tabs), mismo
+ * Configuración → Comunicaciones → Correo electrónico. Pantalla única (sin Hub, sin tabs), mismo
  * patrón que /settings/electronic-invoicing: administra exclusivamente OrgSettings
  * communications.email.* de la empresa actual.
  */

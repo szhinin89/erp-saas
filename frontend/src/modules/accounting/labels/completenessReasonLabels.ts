@@ -4,7 +4,7 @@
  * completitud viene íntegra del backend, nunca se recalcula en el frontend.
  */
 export const COMPLETENESS_REASON_LABELS: Record<string, string> = {
-  POSTINGS_UNRESOLVED: "Contabilizaciones pendientes o fallidas",
+  POSTINGS_UNRESOLVED: "Asientos automáticos pendientes o fallidos",
   OPENING_BATCHES_UNPOSTED: "Lotes de apertura sin asiento",
   OPENING_ASI_MISSING: "Asiento inicial (ASI) sin publicar",
   OPENING_ASI_UNRESOLVED: "Asiento inicial (ASI) pendiente o fallido",

@@ -118,7 +118,7 @@ export function AccountsReceivablePage() {
 
   return (
     <ErpPageTemplate
-      title="Cuentas por Cobrar"
+      title="Cuentas por cobrar"
       subtitle="Consulta las facturas de venta a crédito pendientes y registra cobros."
     >
       <div className="prd-section">

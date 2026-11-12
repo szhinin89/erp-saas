@@ -43,7 +43,7 @@ export function useCashBankDepositFlow({ cashSessionId, isSessionOpen, onRecorde
   const { canShow } = usePermissionsUi();
   const canRecordBankDeposit = canShow("caja.record");
   // La lista de cuentas destino exige además `treasury.banks.accounts.view` (mismo endpoint que
-  // Tesorería): sin él se explica la causa en vez de mostrar un 403 genérico.
+  // Caja y Bancos): sin él se explica la causa en vez de mostrar un 403 genérico.
   const canViewBankAccounts = canShow("treasury.banks.accounts.view");
 
   const [open, setOpen] = useState(false);

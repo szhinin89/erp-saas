@@ -33,7 +33,7 @@ function emptyTabComponent(titleKey: string): ComponentType {
 }
 
 /**
- * Tabs del hub de Preferencias Operativas (CONFIG-DYNAMIC-OPERATIONS-01/02). Solo salesPos/cash/
+ * Tabs del hub de Parámetros generales (CONFIG-DYNAMIC-OPERATIONS-01/02). Solo salesPos/cash/
  * purchases/payables/printing/electronicDocuments tienen campos editables — los demás muestran un aviso
  * explícito (EmptyPreferencesSection) en vez de settings decorativos.
  */

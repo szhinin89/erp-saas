@@ -119,13 +119,13 @@ export function BranchDetailPage() {
                 receipt_long
               </span>
               <span className="pg-section-label">
-                Establecimientos SRI asociados
+                Establecimientos asociados
               </span>
             </div>
           </div>
           <div className="pg-section-body">
             <p className="zh-text-muted zh-mb-16">
-              Los establecimientos SRI se gestionan de forma independiente. Usa
+              Los establecimientos se gestionan de forma independiente. Usa
               el módulo de Establecimientos para crear, editar y asignar
               establecimientos a esta sucursal.
             </p>

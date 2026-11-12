@@ -11,7 +11,7 @@ using Moq;
 namespace ERP.Application.Tests.ElectronicDocuments;
 
 /// <summary>
-/// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — Monitor de Documentos Electrónicos: el listado paginado
+/// SRI-ELECTRONIC-DOCUMENTS-QA-FIX-01 — Monitor de comprobantes: el listado paginado
 /// debe acotarse siempre a la empresa activa del usuario (nunca cross-company ni companyId=null),
 /// delegando el filtro real a <see cref="IElectronicDocumentRepository.GetPagedAsync"/> vía el
 /// mismo <c>ICurrentCompany</c> que ya usan Detail/Xml/Timeline/Retry.

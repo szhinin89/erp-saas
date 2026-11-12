@@ -578,13 +578,13 @@
               },
               {
                 "s": "f",
-                "n": "Establecimientos SRI",
+                "n": "Establecimientos",
                 "d": "Código fiscal SRI (001-999) único por empresa. Disable bloqueado si tiene PEs activos.",
                 "tags": []
               },
               {
                 "s": "f",
-                "n": "Puntos de Emisión",
+                "n": "Puntos de emisión",
                 "d": "Código 001-999 único por Establecimiento. EmissionType: Electronic / Physical. DocumentSequence automático.",
                 "tags": []
               },
@@ -2528,7 +2528,7 @@
               {
                 "s": "d",
                 "n": "Visualización de XML en el Monitor (Draft/Signed/Authorized)",
-                "d": "El panel de detalle del Monitor de Documentos Electrónicos incluye vista de XML de solo lectura. Extendido para servir también el XML autorizado sin cambios de UI ni de contrato (mismo endpoint genérico, nueva variante de enum).",
+                "d": "El panel de detalle del Monitor de comprobantes incluye vista de XML de solo lectura. Extendido para servir también el XML autorizado sin cambios de UI ni de contrato (mismo endpoint genérico, nueva variante de enum).",
                 "tags": [
                   [
                     "d",

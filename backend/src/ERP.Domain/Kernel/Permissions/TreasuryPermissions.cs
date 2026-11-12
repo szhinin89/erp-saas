@@ -1,6 +1,6 @@
 namespace ERP.Domain.Kernel.Permissions;
 
-/// <summary>TREASURY-BANK-ACCOUNTS-01: permisos de <c>CompanyBankAccount</c> (Tesorería → Bancos → Cuentas bancarias).</summary>
+/// <summary>TREASURY-BANK-ACCOUNTS-01: permisos de <c>CompanyBankAccount</c> (Caja y Bancos → Bancos → Cuentas bancarias).</summary>
 public static class TreasuryPermissions
 {
     public const string BankAccountsView = "treasury.banks.accounts.view";

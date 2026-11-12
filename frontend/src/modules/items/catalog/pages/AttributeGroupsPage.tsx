@@ -49,7 +49,7 @@ export function AttributeGroupsPage() {
       <NoAccessPage
         title={t(
           "catalog.attributeGroups.title",
-          "Atributos de productos",
+          "Grupos de atributos",
         )}
       />
     );
@@ -57,7 +57,7 @@ export function AttributeGroupsPage() {
   return (
     <ErpPageTemplate
       kicker={t("catalog.kicker", "Productos y servicios")}
-      title={t("catalog.attributeGroups.title", "Atributos de productos")}
+      title={t("catalog.attributeGroups.title", "Grupos de atributos")}
     >
       {ctx.error && (
         <ZHPageNotice

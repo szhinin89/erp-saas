@@ -8,14 +8,14 @@ perm:auth.api | Auth API | 🧩 |  | parent= | sort=988 | menu=False
 perm:caja.view | Caja | 💵 | /treasury/cash | parent= | sort=70 | menu=True
 perm:caja.view | Motivos de caja | list_alt | /treasury/cash/reasons | parent= | sort=71 | menu=True
 perm:catalog.manage | Catálogo de Ítems | 🏷️ | /catalog | parent= | sort=40 | menu=True
-perm:communications.view | Correo SMTP | ✉️ | /settings/communications/email | parent=perm:settings.group | sort=27 | menu=True
-perm:electronic-documents.view | Monitor de Documentos Electrónicos | 📡 | /sri/electronic-documents/monitor | parent=perm:settings.group | sort=26 | menu=True
+perm:communications.view | Correo electrónico | ✉️ | /settings/communications/email | parent=perm:settings.group | sort=27 | menu=True
+perm:electronic-documents.view | Monitor de comprobantes | 📡 | /sri/electronic-documents/monitor | parent=perm:settings.group | sort=26 | menu=True
 perm:electronic-invoicing.view | Facturación electrónica | 🧾 | /sri/configuration/electronic-invoicing | parent=perm:settings.group | sort=25 | menu=True
 perm:erp.companies.view | Empresa activa | 🏢 | /settings/company | parent= | sort=28 | menu=False
-perm:expenses.catalog.view | Catalogo de Gastos | ReceiptText | /expenses/categories | parent= | sort=47 | menu=False
-perm:expenses.documents.view | Documentos de Gastos | ReceiptText | /expenses/documents | parent=perm:expenses.catalog.view | sort=50 | menu=False
+perm:expenses.catalog.view | Categorías de gastos | ReceiptText | /expenses/categories | parent= | sort=47 | menu=False
+perm:expenses.documents.view | Documentos de gastos | ReceiptText | /expenses/documents | parent=perm:expenses.catalog.view | sort=50 | menu=False
 perm:finance.view | Condiciones de Crédito | 📋 | /finance/credit-terms | parent= | sort=55 | menu=True
-perm:initialload.batches.view | Carga Inicial | upload_file | /initial-load | parent= | sort=95 | menu=True
+perm:initialload.batches.view | Carga inicial | upload_file | /initial-load | parent= | sort=95 | menu=True
 perm:inventory.adjustment-reasons.view | Motivos de ajuste | list_alt | /inventory/adjustment-reasons | parent= | sort=24 | menu=True
 perm:inventory.adjustments.view | Ajustes de inventario | tune | /inventory/adjustments | parent= | sort=23 | menu=True
 perm:inventory.stock.manage | Transferencias entre bodegas | swap_horiz | /inventory/transfers | parent= | sort=22 | menu=True
@@ -31,13 +31,13 @@ perm:sales.view | Métodos de Pago | 💳 | /sales/payment-methods | parent= | s
 perm:sales.view | Ventas | 💰 | /sales | parent= | sort=65 | menu=True
 perm:session.me.api | Me API | 🧩 |  | parent= | sort=987 | menu=False
 perm:settings.branches.view | Sucursales | 🏢 | /settings/branches | parent=perm:settings.group | sort=30 | menu=True
-perm:settings.catalogs.banks.view | Bancos | 🏦 | /settings/catalogs/banks | parent= | sort=66 | menu=True
-perm:settings.company.view | Datos de Empresa | 🏢 | /settings/company | parent= | sort=29 | menu=True
-perm:settings.document-sequences.manage | Secuencias documentales | format_list_numbered | /settings/document-sequences | parent=perm:settings.group | sort=41 | menu=True
-perm:settings.documentFlows.view | Documentos y flujos | GitBranch | /settings/document-flows | parent= | sort=60 | menu=True
-perm:settings.emission-points.view | Puntos de Emisión | point_of_sale | /settings/emission-points | parent=perm:settings.group | sort=27 | menu=True
-perm:settings.establishments.view | Establecimientos SRI | receipt_long | /settings/establishments | parent=perm:settings.group | sort=28 | menu=True
-perm:settings.geography.view | Geografía | 🌎 | /settings/geography | parent=perm:settings.group | sort=210 | menu=True
-perm:settings.operations.view | Preferencias operativas | tune | /settings/operations | parent=perm:settings.group | sort=28 | menu=True
+perm:settings.catalogs.banks.view | Instituciones bancarias | 🏦 | /settings/catalogs/banks | parent= | sort=66 | menu=True
+perm:settings.company.view | Datos de la empresa | 🏢 | /settings/company | parent= | sort=29 | menu=True
+perm:settings.document-sequences.manage | Numeración de documentos | format_list_numbered | /settings/document-sequences | parent=perm:settings.group | sort=41 | menu=True
+perm:settings.documentFlows.view | Políticas de documentos | GitBranch | /settings/document-flows | parent= | sort=60 | menu=True
+perm:settings.emission-points.view | Puntos de emisión | point_of_sale | /settings/emission-points | parent=perm:settings.group | sort=27 | menu=True
+perm:settings.establishments.view | Establecimientos | receipt_long | /settings/establishments | parent=perm:settings.group | sort=28 | menu=True
+perm:settings.geography.view | Ubicaciones geográficas | 🌎 | /settings/geography | parent=perm:settings.group | sort=210 | menu=True
+perm:settings.operations.view | Parámetros generales | tune | /settings/operations | parent=perm:settings.group | sort=28 | menu=True
 perm:system.provider_settings | Proveedor de sistema | 🏷️ |  | parent= | sort=990 | menu=False
-perm:treasury.banks.accounts.view | Cuentas Bancarias | 🏦 | /treasury/banks/accounts | parent= | sort=46 | menu=False
+perm:treasury.banks.accounts.view | Cuentas bancarias | 🏦 | /treasury/banks/accounts | parent= | sort=46 | menu=False

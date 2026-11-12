@@ -85,7 +85,7 @@ public sealed class UpdateCompanyFiscalHandler
         )
             return Result<CompanyProfileDto>.ValidationFailure(
                 "Para marcar la empresa como obligada a llevar contabilidad, primero habilite "
-                    + "Contabilidad en Contabilidad > Configuración > Modo operativo."
+                    + "Contabilidad en Contabilidad > Configuración > Modo contable."
             );
 
         entity.UpdateFiscalSettings(

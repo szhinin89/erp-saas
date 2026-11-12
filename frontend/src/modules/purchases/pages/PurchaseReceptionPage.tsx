@@ -219,7 +219,7 @@ export function PurchaseReceptionPage() {
 
   return (
     <ErpPageTemplate
-      title={t("purchases.reception.title", "Documentos electrónicos de proveedores")}
+      title={t("purchases.reception.title", "Documentos de proveedores")}
       subtitle={t(
         "purchases.reception.subtitle",
         "Importe y gestione los comprobantes recibidos del SRI.",

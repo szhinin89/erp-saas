@@ -45,10 +45,9 @@ public static class InventoryModule
     )]
     public const string Warehouses = "/inventory/warehouses";
 
-    // MENU-FINAL-STRUCTURE-01: renombrado de negocio "Historial de Existencias" (antes
-    // "Kardex / Movimientos de Inventario") — mismo Id/ruta/permiso, misma pantalla.
+    // Nombre visible: "Kardex" — existencias y movimientos de inventario (mismo Id/ruta/permiso).
     [NavItem(
-        "Historial de Existencias",
+        "Kardex",
         Permission = InventoryPermissions.StockView,
         LabelKey = "app.nav.item.inventory.kardex",
         SortOrder = 20,

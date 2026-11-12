@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Modules.Sales.Services;
 
-/// <summary>Resuelve número de factura y nombre del cliente para el Monitor de Documentos Electrónicos — nunca datos comerciales completos.</summary>
+/// <summary>Resuelve número de factura y nombre del cliente para el Monitor de comprobantes — nunca datos comerciales completos.</summary>
 public sealed class SalesSourceDocumentSummaryProvider : ISourceDocumentSummaryProvider
 {
     private readonly ISalesInvoiceRepository _invoiceRepository;

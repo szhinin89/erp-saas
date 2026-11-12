@@ -1803,11 +1803,11 @@ export function useSalesPage() {
         );
       } else if (result.currentState === "Failed") {
         message.warning(
-          "No se pudo generar el documento electrónico. Revise el Monitor de Documentos Electrónicos para ver el motivo.",
+          "No se pudo generar el documento electrónico. Revise el Monitor de comprobantes para ver el motivo.",
         );
       } else {
         message.warning(
-          `Documento electrónico registrado en estado "${result.currentState}". Revise el Monitor de Documentos Electrónicos.`,
+          `Documento electrónico registrado en estado "${result.currentState}". Revise el Monitor de comprobantes.`,
         );
       }
       const refreshed = await salesService.getById(editing.id);

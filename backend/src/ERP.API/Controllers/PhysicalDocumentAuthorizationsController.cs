@@ -9,7 +9,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// PHYSICAL-FISCAL-F1 — autorizaciones de impresión del SRI por punto de emisión físico y tipo de
-/// comprobante. Se administran en la pantalla de Secuencias documentales (misma numeración por
+/// comprobante. Se administran en la pantalla de Numeración de documentos (misma numeración por
 /// punto y tipo), con su mismo permiso; no tienen ítem de menú propio.
 /// </summary>
 [ApiController]

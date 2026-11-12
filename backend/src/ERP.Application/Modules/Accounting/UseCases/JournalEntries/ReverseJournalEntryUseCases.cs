@@ -113,7 +113,7 @@ public sealed class ReverseJournalEntryCommandHandler
         // contable. Requiere un flujo específico de corrección de apertura (fuera de IL-7B).
         if (original.SourceModule == OpeningBalancePostingFacts.SourceModule)
             return Result<JournalEntryDto>.ValidationFailure(
-                "El asiento de apertura de la Carga Inicial no puede reversarse: el saldo operativo que lo "
+                "El asiento de apertura de la Carga inicial no puede reversarse: el saldo operativo que lo "
                     + "respalda no tiene flujo de corrección y quedaría sin contrapartida contable.",
                 OpeningReversalNotAllowedCode
             );

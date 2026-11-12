@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getOperationalReadinessActionRoute } from "./operationalReadinessActionRoutes";
 
 describe("getOperationalReadinessActionRoute", () => {
-  it("los requisitos de emisión física se corrigen en Secuencias documentales", () => {
+  it("los requisitos de emisión física se corrigen en Numeración de documentos", () => {
     expect(getOperationalReadinessActionRoute("PhysicalDocumentAuthorizations")).toBe(
       "/settings/document-sequences",
     );

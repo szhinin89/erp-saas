@@ -10,9 +10,9 @@ namespace ERP.Domain.Kernel.Modules;
 //
 // MAPA-MENU-ERP-SSOT-01: Caja se separa de vuelta a su propio módulo de nivel superior
 // (TreasuryModule.cs, junto con Destinos financieros — el árbol objetivo agrupa todo lo
-// financiero/de tesorería en un solo tile, no dentro de Ventas). El Monitor de Documentos
-// Electrónicos se mueve a SriModule.cs (el árbol objetivo lo agrupa con Facturación electrónica
-// bajo un tile "SRI/Documentos electrónicos" propio, ya que ambos son sobre el ciclo de vida del
+// financiero/de tesorería en un solo tile, no dentro de Ventas). El Monitor de comprobantes
+// se mueve a SriModule.cs (el árbol objetivo lo agrupa con Facturación electrónica
+// bajo un tile "SRI/Comprobantes electrónicos" propio, ya que ambos son sobre el ciclo de vida del
 // comprobante electrónico ante el SRI, no una operación de venta en sí). Ventas queda con:
 // Facturas de venta/POS, Devoluciones, Reporte de Ventas — igual al
 // árbol objetivo. Mismos Ids/rutas/permisos en los módulos nuevos, solo cambia a qué [Module]
@@ -39,7 +39,7 @@ public static class SalesModule
     // asignable; se agregan aquí (pantalla donde realmente se usan) en vez de crear un NavItem
     // propio para un permiso transversal de borde HTTP sin pantalla propia.
     [NavItem(
-        "Facturas de venta / Punto de venta",
+        "Facturas y punto de venta",
         Permission = SalesPermissions.View,
         LabelKey = "app.nav.item.sales.invoices",
         SortOrder = 10,
@@ -80,7 +80,7 @@ public static class SalesModule
     // reutilizado allí, sin generar un ui_nav_items huérfano).
 
     // MAPA-MENU-ERP-SSOT-01: "Cajas registradoras" y "Preferencias de Caja" se movieron a
-    // TreasuryModule (Tesorería > Caja > Configuración) — mismos Ids, ver comentario allí.
+    // TreasuryModule (Caja y Bancos > Caja > Configuración) — mismos Ids, ver comentario allí.
 
     // ── Reportes ─────────────────────────────────────────────────────
     [NavItem(

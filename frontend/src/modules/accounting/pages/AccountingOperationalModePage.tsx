@@ -28,7 +28,7 @@ import "../../../styles/shared/items-catalog.css";
 const SETTINGS_UPDATE_PERMISSION = "accounting.settings.update";
 
 /**
- * Contabilidad → Configuración → Modo operativo (ACCOUNTING-CONTINUITY-01). Auditoría de
+ * Contabilidad → Configuración → Modo contable (ACCOUNTING-CONTINUITY-01). Auditoría de
  * reutilización: revisadas `PostingRulesPage.tsx` (lista de solo lectura con PageShell/ZHCard/
  * ZHDataTable/Badge/ZHPageNotice) y `ChartOfAccountsPage.tsx` (formulario RHF+Zod+ZHField/ZHGrid+
  * applyServerErrors). Sin componentes nuevos. Muestra la obligación fiscal (solo lectura, se edita

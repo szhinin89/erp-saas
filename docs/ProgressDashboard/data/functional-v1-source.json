@@ -51,11 +51,11 @@
     {
       "id": "Branches-02",
       "module": "Branches",
-      "name": "Establecimientos SRI",
+      "name": "Establecimientos",
       "scope": "v1",
       "implementation": {
         "path": "FEATURES.md",
-        "contains": "| Establecimientos SRI |"
+        "contains": "| Establecimientos |"
       },
       "approval": {
         "path": "FEATURES.md",
@@ -70,7 +70,7 @@
       "scope": "v1",
       "implementation": {
         "path": "FEATURES.md",
-        "contains": "| Puntos de Emisión |"
+        "contains": "| Puntos de emisión |"
       },
       "approval": {
         "path": "FEATURES.md",
@@ -631,7 +631,7 @@
     {
       "id": "Accounting-06",
       "module": "Accounting",
-      "name": "Modo operativo por empresa",
+      "name": "Modo contable por empresa",
       "scope": "v1",
       "implementation": {
         "path": "STATUS.md",
@@ -1048,7 +1048,7 @@
       "scope": "v1",
       "implementation": {
         "path": "FEATURES.md",
-        "contains": "| Carga Inicial — Apertura contable |"
+        "contains": "| Carga inicial — Apertura contable |"
       },
       "approval": {
         "path": "STATUS.md",
@@ -1174,31 +1174,31 @@
       "module": "MasterData"
     },
     {
-      "label": "Carga Inicial — Productos (IL-1)",
+      "label": "Carga inicial — Productos (IL-1)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Clientes (IL-2)",
+      "label": "Carga inicial — Clientes (IL-2)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Proveedores (IL-3)",
+      "label": "Carga inicial — Proveedores (IL-3)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Inventario (IL-4)",
+      "label": "Carga inicial — Inventario (IL-4)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Cuentas por Pagar (IL-6)",
+      "label": "Carga inicial — Cuentas por pagar (IL-6)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Cuentas por Cobrar (IL-5)",
+      "label": "Carga inicial — Cuentas por cobrar (IL-5)",
       "module": "InitialLoad"
     },
     {
-      "label": "Carga Inicial — Apertura contable",
+      "label": "Carga inicial — Apertura contable",
       "module": "InitialLoad"
     },
     {
@@ -1254,11 +1254,11 @@
       "module": "Branches"
     },
     {
-      "label": "Establecimientos SRI",
+      "label": "Establecimientos",
       "module": "Branches"
     },
     {
-      "label": "Puntos de Emisión",
+      "label": "Puntos de emisión",
       "module": "Branches"
     },
     {

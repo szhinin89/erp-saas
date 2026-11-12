@@ -84,7 +84,7 @@ export function AttributeDefinitionsPage() {
       <NoAccessPage
         title={t(
           "catalog.attributeDefinitions.title",
-          "Definiciones de atributos",
+          "Atributos",
         )}
       />
     );
@@ -94,7 +94,7 @@ export function AttributeDefinitionsPage() {
       kicker={t("catalog.kicker", "Productos y servicios")}
       title={t(
         "catalog.attributeDefinitions.title",
-        "Definiciones de atributos",
+        "Atributos",
       )}
     >
       {ctx.error && (

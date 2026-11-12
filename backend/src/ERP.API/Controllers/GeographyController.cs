@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
 [AppFeature(
-    "Geografía",
+    "Ubicaciones geográficas",
     $"perm:{SettingsPermissions.GeographyView}",
     "🌎",
     "/settings/geography",

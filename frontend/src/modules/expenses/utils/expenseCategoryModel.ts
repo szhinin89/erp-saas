@@ -73,7 +73,7 @@ export const EDIT_TITLE: Record<ExpenseCategoryNodeLevel, string> = {
   Subcategory: "Editar subcategoría",
 };
 
-export const ROOT_SUBTITLE = "Nivel raíz del catálogo de gastos";
+export const ROOT_SUBTITLE = "Nivel raíz de las categorías de gastos";
 
 const FIELD_MAP: Record<string, keyof ExpenseCategoryFormState> = {
   code: "code",

@@ -19,7 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Monitor de Documentos Electrónicos — consola de consulta del ciclo electrónico. No emite,
+/// Monitor de comprobantes — consola de consulta del ciclo electrónico. No emite,
 /// no firma ni cancela documentos. Acciones de escritura: reintentar manualmente un documento
 /// varado (Signed/Received/DeadLetter/Failed), conciliar un resultado incierto, corregir y
 /// retransmitir un comprobante rechazado (R12 Fase B), o registrar el documento faltante de un origen ya
@@ -28,7 +28,7 @@ namespace ERP.API.Controllers;
 /// de reintentos.
 /// </summary>
 [AppFeature(
-    "Monitor de Documentos Electrónicos",
+    "Monitor de comprobantes",
     $"perm:{ElectronicDocumentsPermissions.View}",
     "📡",
     "/sri/electronic-documents/monitor",

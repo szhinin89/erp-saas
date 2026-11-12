@@ -37,7 +37,7 @@ public static class SettingsPermissions
 
     /// <summary>
     /// DOCUMENT-FLOW-POLICY-01 — administración de <c>DocumentFlowPolicy</c> (Configuración →
-    /// Documentos y flujos). Solo controla el acceso a esta pantalla de configuración — no
+    /// Documentos → Políticas de documentos). Solo controla el acceso a esta pantalla de configuración — no
     /// reemplaza los permisos de acción de cada módulo (p. ej. <c>expenses.documents.cancel</c>).
     /// </summary>
     public const string DocumentFlowsView = "settings.documentFlows.view";

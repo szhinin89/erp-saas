@@ -11,11 +11,11 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// TREASURY-BANK-ACCOUNTS-01: CRUD básico + activar/desactivar de cuentas bancarias de empresa
-/// (Tesorería → Bancos → Cuentas bancarias). Alcance estricto: no posting, no caja, no
+/// (Caja y Bancos → Bancos → Cuentas bancarias). Alcance estricto: no posting, no caja, no
 /// conciliación, no movimientos bancarios.
 /// </summary>
 [AppFeature(
-    "Cuentas Bancarias",
+    "Cuentas bancarias",
     $"perm:{TreasuryPermissions.BankAccountsView}",
     "🏦",
     "/treasury/banks/accounts",

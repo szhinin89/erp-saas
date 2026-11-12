@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 [AppFeature(
-    "Establecimientos SRI",
+    "Establecimientos",
     $"perm:{SettingsPermissions.EstablishmentsView}",
     "receipt_long",
     "/settings/establishments",

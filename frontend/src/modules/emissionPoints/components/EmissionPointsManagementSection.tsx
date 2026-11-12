@@ -27,7 +27,7 @@ export function EmissionPointsManagementSection() {
     setActiveTab("list");
   };
 
-  if (!ctx.canView) return <NoAccessPage title="Puntos de Emisión" />;
+  if (!ctx.canView) return <NoAccessPage title="Puntos de emisión" />;
 
   const editorLabel = ctx.editingId ? "Editar" : "Nuevo Punto";
   const editorIcon = ctx.editingId ? "edit" : "add_box";

@@ -92,6 +92,15 @@ public sealed class KernelRegistryTests
         var company = navigation.Single(n => n.RoutePath == "/settings/company");
         company.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
         company.ParentItemId.Should().Be(enterpriseGroupId);
+        // "Datos de la empresa" es el primero del grupo con el mismo criterio del menú
+        // (SortOrder y, en empate, RoutePath): sin empate de SortOrder con ningún hermano.
+        var enterpriseChildren = navigation
+            .Where(n => n.ParentItemId == enterpriseGroupId)
+            .OrderBy(n => n.SortOrder)
+            .ThenBy(n => n.RoutePath, StringComparer.Ordinal)
+            .ToList();
+        enterpriseChildren.First().RoutePath.Should().Be("/settings/company");
+        enterpriseChildren.Count(n => n.SortOrder == company.SortOrder).Should().Be(1);
         company
             .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
@@ -388,7 +397,7 @@ public sealed class KernelRegistryTests
     [Fact]
     public void Navigation_treasury_group_contains_exactly_the_treasury_screens()
     {
-        // MAPA-MENU-ERP-SSOT-01: nuevo módulo "Tesorería" — Caja (movida desde "sales") + Bancos
+        // MAPA-MENU-ERP-SSOT-01: nuevo módulo "Caja y Bancos" — Caja (movida desde "sales") + Bancos
         // (Destinos financieros, movido desde "settings").
         var navigation = KernelRegistry.Navigation;
 
@@ -455,7 +464,7 @@ public sealed class KernelRegistryTests
     [Fact]
     public void Navigation_sri_group_contains_exactly_the_electronic_document_screens()
     {
-        // MAPA-MENU-ERP-SSOT-01: nuevo módulo "SRI/Documentos electrónicos" — Monitor (movido
+        // MAPA-MENU-ERP-SSOT-01: nuevo módulo "SRI/Comprobantes electrónicos" — Monitor (movido
         // desde "sales") + Facturación electrónica (movida desde "settings").
         var navigation = KernelRegistry.Navigation;
 
@@ -568,7 +577,7 @@ public sealed class KernelRegistryTests
             "/products/attribute-definitions",
         };
 
-        // NAV-HIERARCHY-UNIFY-01: ahora se anidan bajo la categoría "Gestión de ítems" — ya no
+        // NAV-HIERARCHY-UNIFY-01: ahora se anidan bajo la categoría "Catálogo de productos" — ya no
         // son ítems de primer nivel sueltos bajo el módulo.
         var managementGroupId = Guid.Parse("911bc892-ff7a-43d0-b0ff-ff75a747adbe");
         foreach (var route in productsRoutes)
@@ -576,7 +585,7 @@ public sealed class KernelRegistryTests
             var item = navigation.Single(n => n.RoutePath == route);
             item.GroupCode.Should().Be("products", $"'{route}' debe pertenecer al módulo products");
             item.ParentItemId.Should()
-                .Be(managementGroupId, $"'{route}' debe estar bajo la categoría Gestión de ítems");
+                .Be(managementGroupId, $"'{route}' debe estar bajo la categoría Catálogo de productos");
         }
 
         var productsModule = KernelRegistry.Modules.Single(m => m.Code == "products");
@@ -768,7 +777,7 @@ public sealed class KernelRegistryTests
     public void Navigation_contains_document_sequences_under_settings_document_flows_group()
     {
         // DOCUMENT-SEQUENCES-NAV-01: la pantalla /settings/document-sequences debe ser alcanzable
-        // desde Configuración > Documentos y flujos con el permiso existente del controller.
+        // desde Configuración > Documentos > Numeración de documentos con el permiso existente del controller.
         var navigation = KernelRegistry.Navigation;
         var manage = ERP.Domain.Kernel.Permissions.SettingsPermissions.DocumentSequencesManage;
 
@@ -781,7 +790,7 @@ public sealed class KernelRegistryTests
         );
         sequences
             .Should()
-            .NotBeNull("Secuencias documentales debe estar en el menú de Configuración");
+            .NotBeNull("Numeración de documentos debe estar en el menú de Configuración");
         sequences!.GroupCode.Should().Be("settings");
         sequences.ParentItemId.Should().Be(group.Id);
         sequences.PermissionKey.Should().Be(manage);
@@ -835,7 +844,7 @@ public sealed class KernelRegistryTests
         operationalPreferences
             .Should()
             .NotBeNull(
-                "preferencias operativas debe estar en el menú de Configuración (NAV-CONFIG-FIX-01)"
+                "Parámetros generales debe estar en el menú de Configuración (NAV-CONFIG-FIX-01)"
             );
         operationalPreferences!.GroupCode.Should().Be("settings");
         operationalPreferences

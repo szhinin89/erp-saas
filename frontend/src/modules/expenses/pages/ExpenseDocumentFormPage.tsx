@@ -537,7 +537,7 @@ export function ExpenseDocumentFormPage() {
       {!canReadCatalog && (
         <ZHFormAlert
           type="warning"
-          message="Sin permiso para leer el catalogo de gastos."
+          message="Sin permiso para leer las categorías de gastos."
           detail="La seleccion de subcategorias requiere expenses.catalog.view."
         />
       )}
@@ -630,7 +630,7 @@ export function ExpenseDocumentFormPage() {
             />
             {!catalogReady && canReadCatalog && (
               <Link className="exp-doc-catalog-link" to="/expenses/categories">
-                Abrir catalogo de gastos
+                Abrir categorías de gastos
               </Link>
             )}
           </ZHCard>

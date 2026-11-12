@@ -52,7 +52,7 @@ import "../../../../styles/shared/items-catalog.css";
 import "./document-flow-policies-page.css";
 
 /**
- * Configuración → Documentos y flujos (DOCUMENT-FLOW-POLICY-01, UX mejorada en
+ * Configuración → Documentos → Políticas de documentos (DOCUMENT-FLOW-POLICY-01, UX mejorada en
  * DOCUMENT-FLOW-POLICY-UX-01).
  *
  * Auditoría de reutilización previa a escribir esta UI:
@@ -193,7 +193,7 @@ export function DocumentFlowPoliciesPage() {
   if (!canView)
     return (
       <NoAccessPage
-        title={t("documentFlows.title", "Documentos y flujos")}
+        title={t("documentFlows.title", "Políticas de documentos")}
       />
     );
 
@@ -574,7 +574,7 @@ export function DocumentFlowPoliciesPage() {
   return (
     <ErpPageTemplate
       kicker={t("app.nav.group.settings", "Configuración")}
-      title={t("documentFlows.title", "Documentos y flujos")}
+      title={t("documentFlows.title", "Políticas de documentos")}
       subtitle={t(
         "documentFlows.subtitle",
         "Define cómo se comporta cada documento en la empresa.",

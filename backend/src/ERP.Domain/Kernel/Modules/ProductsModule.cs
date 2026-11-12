@@ -18,9 +18,9 @@ namespace ERP.Domain.Kernel.Modules;
 [Module("products", Icon = "📦", SortOrder = 50)]
 public static class ProductsModule
 {
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Gestión de ítems" — ningún ítem plano bajo el módulo.
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Catálogo de productos" — ningún ítem plano bajo el módulo.
     [NavItem(
-        "Gestión de ítems",
+        "Catálogo de productos",
         LabelKey = "app.nav.item.products.managementGroup",
         SortOrder = 10,
         Id = "911bc892-ff7a-43d0-b0ff-ff75a747adbe",
@@ -72,7 +72,7 @@ public static class ProductsModule
     public const string Brands = "/products/brands";
 
     [NavItem(
-        "Atributos de Productos",
+        "Grupos de atributos",
         Permission = CatalogPermissions.Manage,
         LabelKey = "app.nav.item.catalog.attributeGroups",
         SortOrder = 50,
@@ -85,7 +85,7 @@ public static class ProductsModule
     // de productos" agrupa conceptualmente ambas pantallas) — se mantiene visible para no
     // perder acceso a la pantalla real de definiciones (distinta de los grupos de atributos).
     [NavItem(
-        "Definiciones de Atributos",
+        "Atributos",
         Permission = CatalogPermissions.Manage,
         LabelKey = "app.nav.item.catalog.attributeDefinitions",
         SortOrder = 60,

@@ -431,8 +431,8 @@ export function SalesIssueModal({
               variant="warning"
               message={
                 result.electronicIssueError
-                  ? `El documento electrónico quedó pendiente de autorización: ${result.electronicIssueError} Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
-                  : `El documento electrónico quedó en estado "${salesElectronicStatusPresentation(result.emissionType, result.electronicStatus, t).label}", pendiente de autorización. Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
+                  ? `El documento electrónico quedó pendiente de autorización: ${result.electronicIssueError} Puede reintentarlo desde el Monitor de comprobantes.`
+                  : `El documento electrónico quedó en estado "${salesElectronicStatusPresentation(result.emissionType, result.electronicStatus, t).label}", pendiente de autorización. Puede reintentarlo desde el Monitor de comprobantes.`
               }
             />
           )}

@@ -4,7 +4,7 @@ import { PhysicalDocumentAuthorizationsSection } from "../components/PhysicalDoc
 
 export function DocumentSequencesPage() {
   return (
-    <ErpPageTemplate kicker="Configuración" title="Secuencias documentales">
+    <ErpPageTemplate kicker="Configuración" title="Numeración de documentos">
       <DocumentSequencesManagementSection />
       <PhysicalDocumentAuthorizationsSection />
     </ErpPageTemplate>

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 [AppFeature(
-    "Catalogo de Gastos",
+    "Categorías de gastos",
     $"perm:{ExpensePermissions.CatalogView}",
     "ReceiptText",
     "/expenses/categories",

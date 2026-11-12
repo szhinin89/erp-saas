@@ -3937,7 +3937,7 @@ No usar resultados anteriores como evidencia de que el árbol actual pasó una s
 
 Registrados sin autorización de implementación; no constituyen trabajo abierto.
 
-- **Aprobación documental:** elegir `SingleStep`/`MultiStep` en Documentos y flujos bloquea
+- **Aprobación documental:** elegir `SingleStep`/`MultiStep` en Políticas de documentos bloquea
   la confirmación de Gastos, porque no existe flujo de aprobación. Contrato:
   [security.md](docs/architecture/security.md#permisos-vs-política-de-flujo-documental-document-flow-policy-01).
   La aprobación es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core).

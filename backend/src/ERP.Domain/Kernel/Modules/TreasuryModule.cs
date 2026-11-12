@@ -3,7 +3,7 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-// MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "Tesorería" — concentra Caja (movida
+// MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "Caja y Bancos" — concentra Caja (movida
 // desde SalesModule, donde vivía fusionada desde CajaModule por NAVIGATION-OPERATING-CYCLES-03) y
 // Bancos. El árbol objetivo agrupa todo lo financiero/de tesorería bajo un tile propio, separado
 // de Ventas y de Configuración. Mismos Ids que ya tenían en sus módulos de origen — solo cambia a
@@ -29,7 +29,7 @@ public static class TreasuryModule
     // movimiento — CajaPage.tsx/useCajaPage.ts → CashSessionController) son acciones reales
     // distintas de View y no estaban en el catálogo asignable.
     [NavItem(
-        "Turno de Caja",
+        "Turno de caja",
         Permission = CajaPermissions.View,
         LabelKey = "app.nav.item.caja.sessions",
         SortOrder = 10,
@@ -44,7 +44,7 @@ public static class TreasuryModule
     public const string CajaSessions = "/treasury/cash";
 
     // TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03: catálogo administrable de motivos de movimiento
-    // manual de caja (CashMovementReason, SSOT dinámico) — hermano de "Turno de Caja", no bajo
+    // manual de caja (CashMovementReason, SSOT dinámico) — hermano de "Turno de caja", no bajo
     // "Configuración" porque no es una preferencia sino un catálogo con su propio CRUD.
     [NavItem(
         "Motivos de movimientos",
@@ -58,7 +58,7 @@ public static class TreasuryModule
     public const string CashMovementReasons = "/treasury/cash/movement-reasons";
 
     // ZH-CASH-FUNDING-REQUEST-API-02E-D: bandeja independiente de solicitudes de efectivo (no se
-    // sobrecarga "Turno de Caja"). El solicitante sin este permiso llega a SU solicitud desde el
+    // sobrecarga "Turno de caja"). El solicitante sin este permiso llega a SU solicitud desde el
     // flujo de pago a proveedor, sin ver el menú. Entregar/rechazar exige además controlar la sesión.
     [NavItem(
         "Solicitudes de efectivo",

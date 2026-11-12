@@ -18,7 +18,7 @@ namespace ERP.API.Controllers;
 /// funcionando como fallback de infraestructura cuando la empresa no configuró nada aquí.
 /// </summary>
 [AppFeature(
-    "Correo SMTP",
+    "Correo electrónico",
     $"perm:{CommunicationsPermissions.View}",
     "✉️",
     "/settings/communications/email",

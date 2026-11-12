@@ -91,7 +91,7 @@ public interface IElectronicDocumentRepository
     Task SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Lectura paginada para el Monitor de Documentos Electrónicos (Fase 8) — nunca trackeada
+    /// Lectura paginada para el Monitor de comprobantes (Fase 8) — nunca trackeada
     /// (AsNoTracking), siempre acotada a <paramref name="tenantId"/> y, si se especifica,
     /// a <paramref name="companyId"/>. El texto libre busca sobre clave de acceso, número
     /// de autorización y (si el módulo de origen lo permite resolverlo) número de documento

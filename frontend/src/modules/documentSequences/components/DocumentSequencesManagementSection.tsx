@@ -36,7 +36,7 @@ export function DocumentSequencesManagementSection() {
   };
 
   if (!ctx.canManage)
-    return <NoAccessPage title="Secuencias documentales" />;
+    return <NoAccessPage title="Numeración de documentos" />;
 
   return (
     <ConfigTabsLayout

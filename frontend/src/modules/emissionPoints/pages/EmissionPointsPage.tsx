@@ -4,7 +4,7 @@ import "./emission-points-page.css";
 
 export function EmissionPointsPage() {
   return (
-    <ErpPageTemplate kicker="Configuración" title="Puntos de Emisión">
+    <ErpPageTemplate kicker="Configuración" title="Puntos de emisión">
       <EmissionPointsManagementSection />
     </ErpPageTemplate>
   );

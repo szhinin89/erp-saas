@@ -170,7 +170,7 @@ public sealed class RecordCashMovementHandler
         var preferences = await _preferences.ResolveAsync(ct);
         if (!preferences.Cash.AllowManualInOutMovements)
             return Result<CashMovementDto>.ValidationFailure(
-                "Esta empresa no permite registrar movimientos manuales de caja. Contacte al administrador para habilitarlo en Preferencias operativas."
+                "Esta empresa no permite registrar movimientos manuales de caja. Contacte al administrador para habilitarlo en Configuración → Sistema → Parámetros generales."
             );
 
         var referenceType = CashReferenceType.None;

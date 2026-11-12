@@ -340,7 +340,7 @@ public sealed class OpeningBalanceRowRules
         (string Code, string Message)? rejection = match switch
         {
             null => ($"{prefix}_NOT_FOUND", $"No existe un {party.Singular} con identificación {type}-{number}. "
-                + $"Cárguelo primero en la Carga Inicial de {plural}; esta plantilla nunca crea {party.Plural}."),
+                + $"Cárguelo primero en la Carga inicial de {plural}; esta plantilla nunca crea {party.Plural}."),
             { IsAmbiguous: true } => ("AMBIGUOUS_IDENTIFICATION", "Existe más de un tercero con esta "
                 + "identificación (solo difieren en mayúsculas). Corrija el maestro."),
             { IsActive: false } => ($"{prefix}_INACTIVE",

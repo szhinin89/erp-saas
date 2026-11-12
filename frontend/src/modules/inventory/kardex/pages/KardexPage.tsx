@@ -130,7 +130,7 @@ export function KardexPage() {
   if (!canView)
     return (
       <NoAccessPage
-        title={t("kardex.title", "Historial de existencias")}
+        title={t("kardex.title", "Kardex")}
       />
     );
 
@@ -213,7 +213,7 @@ export function KardexPage() {
 
   return (
     <ErpPageTemplate
-      title={t("kardex.title", "Historial de existencias")}
+      title={t("kardex.title", "Kardex")}
       subtitle={t(
         "kardex.subtitle",
         "Trazabilidad completa de movimientos de inventario — Compras, Ventas y ajustes en un solo lugar.",

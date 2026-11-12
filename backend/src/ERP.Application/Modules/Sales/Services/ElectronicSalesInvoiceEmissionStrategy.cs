@@ -90,7 +90,7 @@ public sealed class ElectronicSalesInvoiceEmissionStrategy : ISalesInvoiceEmissi
                 inv.InvoiceNumber,
                 inv.Id
             );
-            return "Error inesperado al generar el documento electrónico. Revise el Monitor de Documentos Electrónicos.";
+            return "Error inesperado al generar el documento electrónico. Revise el Monitor de comprobantes.";
         }
     }
 }

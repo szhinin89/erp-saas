@@ -33,7 +33,7 @@ const NORTE = { id: "branch-norte", name: "Norte", isMainBranch: false };
 const MENU: MainMenuGroup[] = [
   {
     id: "treasury",
-    label: "Tesorería",
+    label: "Caja y Bancos",
     isActive: false,
     items: [{ id: "regs", to: "/treasury/cash/registers", label: "Cajas registradoras" }],
   },

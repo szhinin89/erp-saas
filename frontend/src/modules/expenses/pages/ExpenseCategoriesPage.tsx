@@ -128,7 +128,7 @@ export function ExpenseCategoriesPage() {
       } catch (error) {
         setPageError(
           formatApiRequestError(error, {
-            generic: "No se pudo cargar el catálogo de gastos.",
+            generic: "No se pudieron cargar las categorías de gastos.",
           }),
         );
       } finally {
@@ -154,7 +154,7 @@ export function ExpenseCategoriesPage() {
   }, [editorMounted]);
 
   if (!canView) {
-    return <NoAccessPage title="Catálogo de gastos" />;
+    return <NoAccessPage title="Categorías de gastos" />;
   }
 
   const editorOpen = mode !== "idle" && draftLevel !== null;
@@ -436,7 +436,7 @@ export function ExpenseCategoriesPage() {
   return (
     <PageShell
       kicker="Gastos"
-      title="Catálogo de gastos"
+      title="Categorías de gastos"
       subtitle="Administra la jerarquía Tipo de gasto, Categoría y Subcategoría con cuenta contable destino."
     >
       {pageError && (

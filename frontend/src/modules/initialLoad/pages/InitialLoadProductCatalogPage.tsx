@@ -7,7 +7,7 @@ export function InitialLoadProductCatalogPage() {
     <ImportWizardPage
       importType="Items"
       templateFileName="plantilla-catalogo-productos.xlsx"
-      title="Carga Inicial — Catálogo de Productos"
+      title="Carga inicial — Catálogo de productos"
       helpText="Descarga la plantilla, complétala con tus productos (una fila = un producto) y súbela aquí."
       requiredFieldsHint="Los campos obligatorios son SKU, Nombre comercial (columna Nombre), Tipo (Tipo de Ítem), Unidad base de inventario (Unidad Base), Tarifa IVA venta (IVA Venta), Tarifa IVA compra (IVA Compra), Categoría, Marca, Disponible POS y al menos un Código de barras. Los encabezados de la plantilla se conservan. Nombre también origina la Descripción completa; esta carga crea naturaleza operativa Producto."
       resultRoute="/products/items"

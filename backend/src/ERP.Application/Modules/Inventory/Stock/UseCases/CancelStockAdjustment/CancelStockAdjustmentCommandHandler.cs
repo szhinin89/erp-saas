@@ -107,7 +107,7 @@ public sealed class CancelStockAdjustmentCommandHandler
             tid, "StockAdjustment", [adj.Id], StockMovementType.InitialBalance, ct);
         if (openingDocuments.Contains(adj.Id))
             return Result<StockAdjustmentDto>.ValidationFailure(
-                "Este documento es un saldo inicial de inventario (Carga Inicial) y no se puede anular "
+                "Este documento es un saldo inicial de inventario (Carga inicial) y no se puede anular "
                     + "desde Ajustes de Inventario."
             );
 

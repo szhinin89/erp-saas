@@ -260,7 +260,7 @@ describe("ExpenseCategoriesPage — editor en ZHModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Crear tipo/ }));
 
     expect(dialog()?.getAttribute("aria-label")).toBe("Crear tipo de gasto");
-    expect(screen.getByText("Nivel raíz del catálogo de gastos")).toBeTruthy();
+    expect(screen.getByText("Nivel raíz de las categorías de gastos")).toBeTruthy();
     expect(screen.queryByLabelText(/Cuenta contable destino/)).toBeNull();
 
     typeInto(/Código/, "T02");

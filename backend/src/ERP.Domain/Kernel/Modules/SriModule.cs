@@ -3,8 +3,8 @@ using ERP.Domain.Kernel.Permissions;
 
 namespace ERP.Domain.Kernel.Modules;
 
-// MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "SRI/Documentos electrónicos" —
-// concentra el Monitor de Documentos Electrónicos (movido desde SalesModule) y la configuración
+// MAPA-MENU-ERP-SSOT-01: nuevo módulo de nivel superior "SRI/Comprobantes electrónicos" —
+// concentra el Monitor de comprobantes (movido desde SalesModule) y la configuración
 // de Facturación electrónica (movida desde SettingsModule > Facturación electrónica). Ambos son
 // sobre el ciclo de vida del comprobante electrónico ante el SRI, no una operación de venta en sí
 // ni una configuración general de empresa — el árbol objetivo los agrupa en un tile propio.
@@ -17,7 +17,7 @@ namespace ERP.Domain.Kernel.Modules;
 public static class SriModule
 {
     [NavItem(
-        "Documentos electrónicos",
+        "Comprobantes electrónicos",
         LabelKey = "app.nav.item.sri.electronicDocumentsGroup",
         SortOrder = 10,
         Id = "51000000-0000-4000-9000-000000000010",
@@ -33,7 +33,7 @@ public static class SriModule
     // varado — useElectronicDocumentsMonitor.ts) son acciones reales de esta pantalla, no
     // estaban en el catálogo asignable.
     [NavItem(
-        "Monitor electrónico",
+        "Monitor de comprobantes",
         Permission = ElectronicDocumentsPermissions.View,
         LabelKey = "app.nav.item.electronicDocuments.monitor",
         SortOrder = 10,

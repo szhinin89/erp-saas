@@ -161,7 +161,7 @@ export function EstablishmentsListSection({
             <span className="material-symbols-outlined pg-section-icon">
               receipt_long
             </span>
-            <span className="pg-section-label">Establecimientos SRI</span>
+            <span className="pg-section-label">Establecimientos</span>
           </div>
           <div className="br-actions-tight">
             <ZHBtn

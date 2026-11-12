@@ -78,7 +78,7 @@ public static class AccountingModule
     // su historial de intentos y el reproceso manual individual. Permiso dedicado: consultar el
     // libro (accounting.view) no concede ver ni reprocesar obligaciones.
     [NavItem(
-        "Contabilizaciones",
+        "Asientos automáticos",
         Permission = AccountingPermissions.PostingsView,
         LabelKey = "app.nav.item.accounting.postings",
         SortOrder = 20,
@@ -178,7 +178,7 @@ public static class AccountingModule
     // ACCOUNTING-CONTINUITY-01: modo operativo de Accounting por empresa (política versionada con
     // vigencia). Lectura con accounting.view; el cambio exige accounting.settings.update.
     [NavItem(
-        "Modo operativo",
+        "Modo contable",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.operationalMode",
         SortOrder = 1,

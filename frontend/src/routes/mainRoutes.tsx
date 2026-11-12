@@ -295,7 +295,7 @@ export const mainRoutes = [
     path="/initial-load/initial-payables"
     element={<InitialLoadInitialPayablesPage />}
   />,
-  // MAPA-MENU-ERP-SSOT-01: reubicado bajo SRI > Documentos electrónicos (antes bajo Ventas) —
+  // MAPA-MENU-ERP-SSOT-01: reubicado bajo SRI > Comprobantes electrónicos (antes bajo Ventas) —
   // misma pantalla/endpoints; /electronic-documents/monitor queda como redirect legacy.
   <Route
     key="sri-electronic-documents-monitor"

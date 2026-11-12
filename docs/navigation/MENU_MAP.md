@@ -1,6 +1,6 @@
 # Mapa de menú ERP — SSOT de navegación
 
-**Tickets:** MAPA-MENU-ERP-SSOT-01, URLS-MENU-ALIGNMENT-01, NAV-CONSOLIDATION-A01, NAV-COVERAGE-H1..H4 · **Actualizado:** 2026-11-04
+**Tickets:** MAPA-MENU-ERP-SSOT-01, URLS-MENU-ALIGNMENT-01, NAV-CONSOLIDATION-A01, NAV-COVERAGE-H1..H4 · **Actualizado:** 2026-11-12
 
 Fuente de verdad **ejecutable** del menú: `backend/src/ERP.Domain/Kernel/Modules/*.cs`
 (atributos `[Module]`/`[NavItem]`, leídos por reflexión en `KernelRegistry`). Este documento es
@@ -28,7 +28,7 @@ Clientes                                    [Module("customers")]
 ├─ Gestión de clientes
 │  └─ Clientes                              /customers
 └─ Cuentas por cobrar
-   └─ Cuentas por Cobrar                    /finance/receivables
+   └─ Cuentas por cobrar                    /finance/receivables
 
 Proveedores                                 [Module("suppliers")]
 ├─ Gestión de proveedores
@@ -51,24 +51,24 @@ Compras                                     [Module("purchases")]
 
 Gastos                                      [Module("expenses")]
 └─ Gastos
-   ├─ Documentos de Gastos                  /expenses/documents
-   └─ Catálogo de Gastos                    /expenses/categories
+   ├─ Documentos de gastos                  /expenses/documents
+   └─ Categorías de gastos                  /expenses/categories
 
 Productos y servicios                       [Module("products")]
-├─ Gestión de ítems
+├─ Catálogo de productos
 │  ├─ Productos                             /products/items
 │  ├─ Tipos de Producto                     /products/item-types
 │  ├─ Categorías de Productos               /products/categories
 │  ├─ Marcas                                /products/brands
-│  ├─ Atributos de Productos                /products/attribute-groups
-│  └─ Definiciones de Atributos             /products/attribute-definitions
+│  ├─ Grupos de atributos                   /products/attribute-groups
+│  └─ Atributos                             /products/attribute-definitions
 └─ Precios
    └─ Listas de Precios                     /products/pricing
 
 Inventario                                  [Module("inventory")]
 ├─ Inventario
 │  ├─ Bodegas                               /inventory/warehouses
-│  ├─ Historial de Existencias              /inventory/kardex
+│  ├─ Kardex                                /inventory/kardex
 │  ├─ Ajustes de inventario                 /inventory/adjustments
 │  ├─ Transferencias entre bodegas          /inventory/transfers
 │  └─ Costos pendientes                     /inventory/pending-costs
@@ -79,14 +79,14 @@ Inventario                                  [Module("inventory")]
 
 Ventas                                      [Module("sales")]
 ├─ Ventas
-│  ├─ Facturas de venta / Punto de venta    /sales
+│  ├─ Facturas y punto de venta             /sales
 │  └─ Devoluciones de venta                 /sales/returns
 └─ Reportes
    └─ Reporte de Ventas                     /reportes/ventas
 
-Tesorería                                   [Module("treasury")]
+Caja y Bancos                               [Module("treasury")]
 ├─ Caja
-│  ├─ Turno de Caja                         /treasury/cash
+│  ├─ Turno de caja                         /treasury/cash
 │  ├─ Solicitudes de efectivo               /treasury/cash/funding-requests
 │  ├─ Motivos de movimientos                /treasury/cash/movement-reasons
 │  └─ Configuración
@@ -97,41 +97,41 @@ Tesorería                                   [Module("treasury")]
 Contabilidad                                [Module("accounting")]
 ├─ Asientos
 │  ├─ Asientos contables                    /accounting/journal-entries
-│  └─ Contabilizaciones                     /accounting/postings
+│  └─ Asientos automáticos                  /accounting/postings
 ├─ Plan contable
 │  └─ Plan de cuentas                       /accounting/chart-of-accounts
 ├─ Reportes
 │  └─ Reportes contables                    /accounting/reports
 └─ Configuración
-   ├─ Modo operativo                        /accounting/configuration/operational-mode
+   ├─ Modo contable                         /accounting/configuration/operational-mode
    ├─ Períodos contables                    /accounting/configuration/periods
    ├─ Reglas contables                      /accounting/configuration/posting-rules
    └─ Destinos contables
       └─ Cobros de ventas                   /accounting/configuration/sales-collection-destinations
 
 SRI                                         [Module("sri")]
-├─ Documentos electrónicos
-│  └─ Monitor de Documentos Electrónicos    /sri/electronic-documents/monitor
+├─ Comprobantes electrónicos
+│  └─ Monitor de comprobantes               /sri/electronic-documents/monitor
 └─ Configuración
    └─ Facturación electrónica               /sri/configuration/electronic-invoicing
 
 Configuración                               [Module("settings")]
 ├─ Empresa
-│  ├─ Datos de la Empresa                   /settings/company
+│  ├─ Datos de la empresa                   /settings/company
 │  ├─ Sucursales                            /settings/branches
-│  ├─ Establecimientos SRI                  /settings/establishments
-│  ├─ Puntos de Emisión                     /settings/emission-points
-│  └─ Geografía                             /settings/geography
-├─ Documentos y flujos
-│  ├─ Documentos y flujos                   /settings/document-flows
-│  └─ Secuencias documentales               /settings/document-sequences
+│  ├─ Establecimientos                      /settings/establishments
+│  ├─ Puntos de emisión                     /settings/emission-points
+│  └─ Ubicaciones geográficas               /settings/geography
+├─ Documentos
+│  ├─ Políticas de documentos               /settings/document-flows
+│  └─ Numeración de documentos              /settings/document-sequences
 ├─ Catálogos
-│  └─ Bancos                                /settings/catalogs/banks
+│  └─ Instituciones bancarias               /settings/catalogs/banks
 ├─ Comunicaciones
-│  └─ Correo SMTP                           /settings/communications/email
+│  └─ Correo electrónico                    /settings/communications/email
 └─ Sistema
-   ├─ Parámetros Generales                  /settings/operations
-   └─ Carga Inicial                         /initial-load
+   ├─ Parámetros generales                  /settings/operations
+   └─ Carga inicial                         /initial-load
 
 Administración                              [Module("admin")]
 ├─ Usuarios y roles
@@ -164,7 +164,7 @@ Compras/Inventario/Contabilidad.
 2. **Ningún ítem plano bajo un módulo (NAV-HIERARCHY-UNIFY-01).** Todo módulo agrupa sus
    pantallas en al menos una categoría de nivel 2 (`PermissionsAnyCsv`, sin `Permission` propio).
    Una categoría puede anidar sub-categorías (nivel 3+) cuando el dominio lo justifica —p. ej.
-   Contabilidad → Configuración → Destinos contables, o Tesorería → Caja → Configuración— sin
+   Contabilidad → Configuración → Destinos contables, o Caja y Bancos → Caja → Configuración— sin
    límite de profundidad; el launcher ya soporta recursión arbitraria
    (`LauncherCategoryGroup`/`collectActiveTrailGroupKeys`).
 3. **Una pantalla real (con endpoint/componente propio) es responsabilidad de un solo módulo.**
@@ -188,15 +188,15 @@ Compras/Inventario/Contabilidad.
 ## Política de URLs
 
 - La URL de una pantalla real debe empezar con el prefijo del módulo al que pertenece
-  conceptualmente (`/treasury/*` para Tesorería, `/sri/*` para SRI, `/accounting/*` para
+  conceptualmente (`/treasury/*` para Caja y Bancos, `/sri/*` para SRI, `/accounting/*` para
   Contabilidad, etc.) — la URL visible debe ser coherente con dónde vive la pantalla en el menú,
   no con dónde vivió históricamente.
 - NAV-CONSOLIDATION-A01: entrada principal única en Configuración → Sistema →
-  Parámetros Generales (`/settings/operations`). Se retiran los cuatro accesos por módulo
+  Parámetros generales (`/settings/operations`). Se retiran los cuatro accesos por módulo
   y los grupos Configuración de Ventas y Compras sin hijos. Inventario conserva Motivos de
   ajuste y Caja conserva Cajas registradoras, con sus permisos.
 - Excepción explícita y permanente: los **deep-links contextuales fuera del menú a pestañas** de la pantalla única de
-  Preferencias Operativas (`/settings/operations?tab=X`) no se mueven — no son una pantalla
+  Parámetros generales (`/settings/operations?tab=X`) no se mueven — no son una pantalla
   propia, son un ancla a una pestaña dentro de `OperationalPreferencesPage`, y moverlas
   fragmentaría esa pantalla en URLs que no existen.
 - Rutas movidas en MAPA-MENU-ERP-SSOT-01:
@@ -286,7 +286,7 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
 - **2026-09-16 — MAPA-MENU-ERP-SSOT-01**: primera versión de este documento. Reordenó el árbol a
   los 12 módulos de nivel superior descritos arriba; separó Compras y Gastos de Proveedores
   (revierte la consolidación de NAVIGATION-OPERATING-CYCLES-03, decisión explícita de este
-  ticket); creó Tesorería (Caja + Bancos) y SRI/Documentos electrónicos como módulos nuevos;
+  ticket); creó Caja y Bancos (Caja + Bancos) y SRI/Comprobantes electrónicos como módulos nuevos;
   reubicó Reglas contables bajo Contabilidad → Configuración; aplicó la política de URLs anterior
   con redirects legacy; agregó `NavMenuGroupDto.SortOrder` para que el orden de los tiles del
   launcher deje de depender de una lista hardcodeada en frontend.
@@ -297,17 +297,17 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   `/suppliers/payment-terms`, `/finance/credit-terms` → `/suppliers/credit-terms`) con el árbol de
   MAPA-MENU-ERP-SSOT-01 — esos módulos habían quedado con URLs heredadas de sus módulos de origen
   (`masterdata`/`catalog`/`master`/`finance`/`pricing`, ya disueltos). Confirmó sin cambios
-  Inventario/Tesorería/Contabilidad/SRI/Configuración (ya coherentes). Se agregó
+  Inventario/Caja y Bancos/Contabilidad/SRI/Configuración (ya coherentes). Se agregó
   `RouteAccessGuard.LEGACY_REDIRECT_PREFIXES` para `/masterdata`, `/catalog`, `/master` y
   `/pricing` — sin ningún NavItem activo produciendo ya esos prefijos, el guard de acceso los
   habría bloqueado antes de que el `<Navigate>` legacy llegara a montar.
-- **2026-09-16 — BANK-CATALOG-01**: agregó Configuración → Catálogos → Bancos
-  (`/settings/catalogs/banks`) — catálogo maestro de bancos (CRUD + activar/desactivar, sin
+- **2026-09-16 — BANK-CATALOG-01**: agregó Configuración → Catálogos → Instituciones bancarias
+  (`/settings/catalogs/banks`) — catálogo maestro de instituciones bancarias (CRUD + activar/desactivar, sin
   cuenta contable ni relación con `PaymentMethodAccount`/Destinos financieros), tenant-wide sin
   CompanyId, seed mínimo Ecuador (9 bancos). Primera categoría "Catálogos" bajo Configuración;
-  preparada para futuros catálogos maestros sin necesitar un módulo Tesorería/Bancos propio
+  preparada para futuros catálogos maestros sin necesitar un módulo Caja y Bancos propio
   todavía.
-- **2026-09-16 — TREASURY-BANK-ACCOUNTS-01**: agregó Tesorería → Bancos → Cuentas bancarias
+- **2026-09-16 — TREASURY-BANK-ACCOUNTS-01**: agregó Caja y Bancos → Bancos → Cuentas bancarias
   (`/treasury/banks/accounts`) — `CompanyBankAccount` (CRUD básico + activar/desactivar),
   company-scoped, banco seleccionado siempre desde el catálogo maestro `Bank` (BANK-CATALOG-01,
   nunca texto libre), cuenta contable validada activa/postable/misma empresa (mismo criterio que
@@ -315,14 +315,18 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   estricto: sin posting, sin caja, sin conciliación, sin movimientos bancarios — eso pertenece a un
   módulo bancario completo futuro. El grupo "Bancos" ahora agrupa dos pantallas (Destinos
   financieros + Cuentas bancarias).
-- **2026-11-04 — NAV-CONSOLIDATION-A01 / NAV-COVERAGE-H1..H4**: Parámetros Generales
-  (`/settings/operations`) como entrada única de Preferencias Operativas (retirados los cuatro
+- **2026-11-04 — NAV-CONSOLIDATION-A01 / NAV-COVERAGE-H1..H4**: Parámetros generales
+  (`/settings/operations`) como entrada única de los parámetros generales (retirados los cuatro
   accesos por módulo y los grupos Configuración vacíos de Ventas y Compras). Árbol sincronizado
   con el código: se documentan siete pantallas ya implementadas (Inventario → Costos pendientes;
-  Tesorería → Caja → Solicitudes de efectivo y Motivos de movimientos; Contabilidad → Asientos →
-  Contabilizaciones; Contabilidad → Configuración → Modo operativo y Períodos contables;
-  Configuración → Documentos y flujos → Secuencias documentales) y se retira Destinos financieros
-  (Tesorería → Bancos queda con Cuentas bancarias). H3: el agrupador operativo de Compras ya no
+  Caja y Bancos → Caja → Solicitudes de efectivo y Motivos de movimientos; Contabilidad → Asientos →
+  Asientos automáticos; Contabilidad → Configuración → Modo contable y Períodos contables;
+  Configuración → Documentos → Numeración de documentos) y se retira Destinos financieros
+  (Caja y Bancos → Bancos queda con Cuentas bancarias). H3: el agrupador operativo de Compras ya no
   admite `finance.view` (sin hijos con ese permiso); H2: Datos de la empresa visible con `settings.company.view` o `erp.companies.view`,
   pestañas por permiso de lectura; H1: `CONTEXTUAL_ROUTES`; H4: `LEGACY_REDIRECT_ALIASES`.
   Transportistas (H5) fuera de alcance.
+- **2026-11-12 — Normalización de nombres visibles**: el árbol y las reglas de este documento
+  usan los nombres aprobados por el propietario (`LabelKey` → `es.json`). Solo cambian etiquetas;
+  rutas, `LabelKey`, `Id`, `ParentId` y permisos permanecen. «Datos de la empresa» pasa a
+  `SortOrder` 10 (primero en Empresa). El historial usa los nombres vigentes.

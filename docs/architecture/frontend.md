@@ -639,7 +639,7 @@ explícita: se usa cuando una pantalla demuestra una regresión real con el comp
 comentado en el consumidor y listado aquí. **Excepciones vigentes: ninguna.**
 
 Fuera de este contrato y sin cambios: la cabecera propia de `ReportPage` y las pantallas que no
-usan `PageShell`/`ErpPageTemplate` (autenticación/setup, Carga Inicial por entidad, POS y hub de
+usan `PageShell`/`ErpPageTemplate` (autenticación/setup, Carga inicial por entidad, POS y hub de
 empresas).
 
 ### KPI compactos predeterminados (UIUX-GLOBAL-KPI-DEFAULT-01)

@@ -15,12 +15,12 @@ beforeEach(() => {
 describe("PageShell — título de pestaña", () => {
   it("fija document.title a partir del prop title", () => {
     render(
-      <PageShell title="Geografía">
+      <PageShell title="Ubicaciones geográficas">
         <div>contenido</div>
       </PageShell>,
     );
 
-    expect(document.title).toBe("Geografía");
+    expect(document.title).toBe("Ubicaciones geográficas");
   });
 
   it("ErpPageTemplate propaga el título a la pestaña vía PageShell", () => {
@@ -61,7 +61,7 @@ describe("PageShell — título de pestaña", () => {
 
   it("ConfigTabsLayout no duplica cabecera/título al usarse dentro de ErpPageTemplate", () => {
     render(
-      <ErpPageTemplate title="Documentos y flujos">
+      <ErpPageTemplate title="Políticas de documentos">
         <ConfigTabsLayout
           activeTab="list"
           onTabChange={() => {}}
@@ -73,9 +73,9 @@ describe("PageShell — título de pestaña", () => {
     );
 
     // El título de pestaña sigue siendo responsabilidad única de PageShell.
-    expect(document.title).toBe("Documentos y flujos");
+    expect(document.title).toBe("Políticas de documentos");
     // ConfigTabsLayout solo aporta el tab-switcher + contenido, no un h1/kicker propio.
-    expect(screen.getAllByText("Documentos y flujos")).toHaveLength(1);
+    expect(screen.getAllByText("Políticas de documentos")).toHaveLength(1);
     expect(screen.getByRole("tablist")).toBeTruthy();
     expect(screen.getByText("lista de flujos")).toBeTruthy();
   });

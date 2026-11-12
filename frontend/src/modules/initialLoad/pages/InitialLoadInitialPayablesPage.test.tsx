@@ -50,7 +50,7 @@ describe("InitialLoadInitialPayablesPage (IL-6A/IL-6B)", () => {
     render(<MemoryRouter><InitialLoadInitialPayablesPage /></MemoryRouter>);
 
     expect(vi.mocked(useImportWizard)).toHaveBeenCalledWith("InitialPayables", "plantilla-cxp-inicial.xlsx");
-    expect(screen.getByText("Carga Inicial — Cuentas por Pagar")).toBeTruthy();
+    expect(screen.getByText("Carga inicial — Cuentas por pagar")).toBeTruthy();
   });
 
   it("IL-6B: un lote todo válido se puede confirmar", () => {

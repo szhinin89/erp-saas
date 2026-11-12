@@ -26,7 +26,7 @@ const REQUESTER_MENU: MainMenuGroup[] = [
 const CASHIER_MENU: MainMenuGroup[] = [
   {
     id: "treasury",
-    label: "Tesorería",
+    label: "Caja y Bancos",
     isActive: false,
     items: [{ id: "fr", to: "/treasury/cash/funding-requests", label: "Solicitudes de efectivo" }],
   },
@@ -83,7 +83,7 @@ describe("isContextualRouteAllowed — NAV-COVERAGE-H1", () => {
     expect(isContextualRouteAllowed(DETAIL, ["supplier-payments.view"])).toBe(false);
   });
 
-  it.each(UNRELATED_TREASURY)("no abre la ruta de Tesorería no relacionada '%s'", (path) => {
+  it.each(UNRELATED_TREASURY)("no abre la ruta de Caja y Bancos no relacionada '%s'", (path) => {
     expect(isContextualRouteAllowed(path, ["supplier-payments.create"])).toBe(false);
   });
 });
@@ -99,7 +99,7 @@ describe("RouteAccessGuard — acceso contextual a solicitudes de efectivo", () 
     expect(screen.getByText("PAGINA MONTADA")).toBeTruthy();
   });
 
-  it("el solicitante NO accede a otras pantallas de Tesorería", () => {
+  it("el solicitante NO accede a otras pantallas de Caja y Bancos", () => {
     setSession("User", ["supplier-payments.create"]);
     for (const path of UNRELATED_TREASURY) {
       renderAt(path, REQUESTER_MENU);

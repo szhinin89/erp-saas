@@ -22,9 +22,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers.InitialLoad;
 
-/// <summary>Carga Inicial (INITIAL-LOAD-ARCH-01) — solo Clientes disponible en esta entrega.</summary>
+/// <summary>Carga inicial (INITIAL-LOAD-ARCH-01) — solo Clientes disponible en esta entrega.</summary>
 [AppFeature(
-    "Carga Inicial",
+    "Carga inicial",
     $"perm:{InitialLoadPermissions.View}",
     "upload_file",
     "/initial-load",

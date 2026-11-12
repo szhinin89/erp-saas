@@ -352,7 +352,7 @@ export const catalogRoutes = [
   />,
 
   // -- Treasury (Caja / Bancos) ---------------------------------------------
-  // MAPA-MENU-ERP-SSOT-01: Caja se reubicó bajo Tesorería (antes vivía bajo Ventas) — mismas
+  // MAPA-MENU-ERP-SSOT-01: Caja se reubicó bajo Caja y Bancos (antes vivía bajo Ventas) — mismas
   // pantallas/endpoints, solo cambia la URL visible; /cash y /cash/registers quedan como redirect
   // para enlaces/tests legacy, no como segunda ruta funcional.
   <Route key="treasury-cash" path="/treasury/cash" element={<CajaPage />} />,

@@ -128,7 +128,7 @@ Las empresas existentes al adoptar la política quedaron Enabled desde 1900-01-0
 nueva elige su modo explícitamente: sin ninguna versión la decisión no puede tomarse y la
 operación que generaría el hecho se rechaza (fail-closed); Accounting nunca se activa de forma
 automática. Si existe `Company.OpeningBalanceDate`, la primera versión Enabled debe regir desde esa
-fecha o antes (Carga Inicial abierta o cerrada); una vigencia posterior se rechaza, porque dejaría la
+fecha o antes (Carga inicial abierta o cerrada); una vigencia posterior se rechaza, porque dejaría la
 apertura no sujeta mientras las operaciones posteriores sí se contabilizan. La pantalla propone la
 fecha de apertura cuando existe. Marcar `IsAccountingReq = true` exige Enabled vigente hoy y ninguna versión
 posterior Disabled; en otro caso el cambio fiscal se rechaza.
@@ -642,7 +642,7 @@ costo ni sus coberturas/devoluciones generan obligación; venta sujeta → sus a
 de costo anterior de la misma factura que no esté Posted/Canceled queda Failed
 `COST_DEPENDENCY_PENDING`; la anterior nunca se ejecuta implícitamente. Anular la factura aplica la
 anulación común a cada obligación de costo: Posted → reverso espejo con la fecha del acto;
-Pending/Failed → Canceled. El costo se consulta y reprocesa en Contabilizaciones (§17);
+Pending/Failed → Canceled. El costo se consulta y reprocesa en Asientos automáticos (§17);
 `stock/costs/pending` solo informa incertidumbre operativa (ACCOUNTING-12B: cada fila trae
 `ObligationId`, factura —Id, número, fecha de emisión, línea—, ítem —Id, SKU, nombre—, bodega —Id, nombre—,
 cantidad pendiente, costo provisional y estado `Provisional|CostPending`; permiso propio
@@ -696,7 +696,7 @@ Cada motivo es `{ Code, Count }`, sin listar documentos:
 | `PREVIOUS_PERIOD_OPEN` | Solo cierre | Período anterior de la misma Company todavía Open |
 | `YEAR_END_CLOSING_MISSING` | Solo cierre del último período del ejercicio | Cuentas de resultados del ejercicio con saldo (cierre anual no Posted o desactualizado, §26) |
 
-La apertura solo aplica si la fecha de apertura está sujeta y la Carga Inicial no está cerrada
+La apertura solo aplica si la fecha de apertura está sujeta y la Carga inicial no está cerrada
 (`OpeningAccountingCompleteness`, compartido con las precondiciones de Disabled; allí el ASI ausente no
 bloquea). La adopción de una versión Enabled es la fecha Company de su alta: los documentos previos a la
 adopción contable y los de ventanas Disabled no se concilian. Orígenes conciliados (estado que genera
@@ -840,7 +840,7 @@ Kardex del ajuste (nunca la fecha de creación del borrador); el gate Closed/Loc
 así que un borrador creado en un período luego cerrado y ejecutado hoy contabiliza hoy. Identidad = ajuste;
 `SourceDocumentId` = ajuste.
 `ExecuteStockAdjustment` publica el hecho y `AccountingPostingRecorder` registra la obligación en la misma
-transacción; el saldo inicial de Carga Inicial (`PostInitialBalance`) no lo publica (tiene su propio hecho).
+transacción; el saldo inicial de Carga inicial (`PostInitialBalance`) no lo publica (tiene su propio hecho).
 
 **Cuenta del motivo.** Configuración Company-scoped `InventoryAdjustmentReasonAccount` (TenantId, CompanyId,
 motivo, cuenta; único CompanyId + motivo); el motivo es de la misma Company y no guarda cuenta. Se administra desde la pantalla de motivos para la Company activa

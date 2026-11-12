@@ -8,7 +8,7 @@ namespace ERP.Domain.MasterData.Entities;
 /// entre todas las Companies del tenant — mismo criterio que <see cref="PaymentTerm"/>), no
 /// company-scoped. Unicidad por <see cref="CountryCode"/> + <see cref="Code"/> dentro del tenant,
 /// no solo por Code, porque el catálogo está preparado para más de un país. Sin cuenta contable
-/// ni relación con PaymentMethodAccount — eso pertenece a un módulo Tesorería/Bancos futuro, fuera
+/// ni relación con PaymentMethodAccount — eso pertenece a un módulo bancario futuro, fuera
 /// de este ticket.
 /// </summary>
 public sealed class Bank : MasterEntity, ITenantScopedEntity

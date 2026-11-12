@@ -116,7 +116,7 @@ export function ExpenseDocumentsPage() {
   return (
     <PageShell
       kicker="Gastos"
-      title="Documentos de gasto"
+      title="Documentos de gastos"
       subtitle="Registro de gastos por proveedor, sin productos ni movimientos de inventario."
       action={
         canCreate ? (

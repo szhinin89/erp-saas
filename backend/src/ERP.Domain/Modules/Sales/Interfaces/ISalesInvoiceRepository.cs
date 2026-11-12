@@ -43,7 +43,7 @@ public interface ISalesInvoiceRepository
 
     /// <summary>
     /// Proyección liviana (sin Include de líneas/pagos) para consumidores de solo lectura
-    /// externos al módulo de Ventas — p.ej. el Monitor de Documentos Electrónicos, que solo
+    /// externos al módulo de Ventas — p.ej. el Monitor de comprobantes, que solo
     /// necesita mostrar número de factura y nombre de cliente, nunca el agregado completo.
     /// </summary>
     Task<

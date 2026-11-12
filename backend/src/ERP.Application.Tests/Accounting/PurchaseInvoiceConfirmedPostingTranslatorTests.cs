@@ -97,7 +97,7 @@ public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
 
         await act.Should()
             .ThrowAsync<DomainRuleViolationException>()
-            .WithMessage("*modo operativo de Contabilidad*");
+            .WithMessage("*modo contable*");
         h.Added.Should().BeEmpty();
     }
 

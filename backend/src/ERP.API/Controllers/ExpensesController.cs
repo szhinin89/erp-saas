@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 [AppFeature(
-    "Documentos de Gastos",
+    "Documentos de gastos",
     $"perm:{ExpensePermissions.DocumentsView}",
     "ReceiptText",
     "/expenses/documents",

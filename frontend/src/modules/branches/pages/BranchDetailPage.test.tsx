@@ -76,7 +76,7 @@ describe("BranchDetailPage — pestañas (ZHTabBar, UIUX-GLOBAL-TABS-DEFAULT-01)
     expect(screen.getByRole("tab", { name: "Configuraciones" }).getAttribute("aria-selected")).toBe("true");
 
     fireEvent.click(screen.getByRole("tab", { name: "Establecimientos" }));
-    expect(screen.getByText("Establecimientos SRI asociados")).toBeTruthy();
+    expect(screen.getByText("Establecimientos asociados")).toBeTruthy();
     expect(screen.queryByText("sección general")).toBeNull();
   });
 

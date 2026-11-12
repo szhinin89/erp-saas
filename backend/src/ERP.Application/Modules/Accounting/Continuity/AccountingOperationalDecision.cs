@@ -26,8 +26,8 @@ public sealed class AccountingOperationalDecision
     public const string NotConfiguredCode = "ACCOUNTING_MODE_NOT_CONFIGURED";
 
     public const string NotConfiguredMessage =
-        "La empresa no tiene definido el modo operativo de Contabilidad. "
-        + "Defínalo en Contabilidad > Configuración > Modo operativo antes de registrar esta operación.";
+        "La empresa no tiene definido el modo contable. "
+        + "Defínalo en Contabilidad > Configuración > Modo contable antes de registrar esta operación.";
 
     private readonly IAccountingOperationalPolicyRepository _policies;
 

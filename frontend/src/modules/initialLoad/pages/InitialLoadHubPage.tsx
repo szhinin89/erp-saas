@@ -51,7 +51,7 @@ const BLOCKS: ImportBlock[] = [
   },
   {
     importType: "InitialReceivables",
-    title: "Cuentas por Cobrar Iniciales",
+    title: "Cuentas por cobrar iniciales",
     description:
       "Carga saldos pendientes de clientes al corte — nunca crea ventas ni clientes.",
     route: "/initial-load/initial-receivables",
@@ -78,7 +78,7 @@ export function InitialLoadHubPage() {
   return (
     <ErpPageTemplate
       kicker="Configuración / Implementación"
-      title="Carga Inicial"
+      title="Carga inicial"
       subtitle="Importa datos maestros y saldos iniciales para una empresa nueva."
     >
       <OpeningBalanceDateCard />

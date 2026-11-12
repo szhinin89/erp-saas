@@ -55,7 +55,7 @@ const STATUS_VARIANT: Record<AccountingPostingStatus, BadgeVariant> = {
 };
 
 /**
- * Contabilidad → Asientos → Contabilizaciones (ACCOUNTING-CONTINUITY-01). Auditoría de
+ * Contabilidad → Asientos → Asientos automáticos (ACCOUNTING-CONTINUITY-01). Auditoría de
  * reutilización: revisadas `PostingRulesPage.tsx` (filtros ZHFilterBar+ZHField compact+ZhSelect) y
  * `JournalEntriesPage.tsx` (listado ZHDataTable con Badge de estado); historial en `ZHModal` y
  * confirmation via message.confirm; RHF/Zod + ZhTextarea for the reason and checkbox selection.
