@@ -182,3 +182,97 @@ describe("ReturnableLinesEditor — precision='quantity' (04D)", () => {
     expect(spy).toHaveBeenLastCalledWith("od-1", "2.5");
   });
 });
+
+/** Lote 2B — migración a ZHDataTable: estructura, foco, decimales intermedios, exceso y accesibilidad. */
+describe("ReturnableLinesEditor — ZHDataTable (Lote 2B)", () => {
+  function Stateful({ initial = {}, disabled }: { initial?: Record<string, string>; disabled?: boolean }) {
+    const [quantities, setQuantities] = useState<Record<string, string>>(initial);
+    return (
+      <>
+        <ReturnableLinesEditor
+          lines={[buildLine()]}
+          quantities={quantities}
+          disabled={disabled}
+          onChangeQuantity={(id, v) => setQuantities((q) => ({ ...q, [id]: v }))}
+        />
+        <output data-testid="raw">{quantities["od-1"] ?? ""}</output>
+      </>
+    );
+  }
+
+  it("renderiza ZHDataTable con las seis columnas y las clases de tabla esperadas", () => {
+    const { container } = render(<Stateful />);
+    const table = container.querySelector("table");
+    expect(table?.className).toBe("table table--compact table--neutral sr-lines-table");
+    expect(container.querySelector(".table-scroll")).toBeTruthy();
+    expect(Array.from(container.querySelectorAll("th")).map((th) => th.textContent)).toEqual([
+      "Producto",
+      "Cant. original",
+      "Ya devuelto",
+      "Remanente",
+      "P. unitario",
+      "Cant. a devolver",
+    ]);
+  });
+
+  it("conserva el foco del input mientras se escribe", () => {
+    const { container } = render(<Stateful />);
+    const input = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    input.focus();
+    fireEvent.change(input, { target: { value: "2" } });
+    expect(container.querySelector("input.zh-numeric-input")).toBe(input);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("no pierde el texto intermedio \"3.\" ni \"3.50\"", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, quantityDecimals: 3 });
+    const { container, getByTestId } = render(<Stateful initial={{ "od-1": "" }} />);
+    const input = container.querySelector<HTMLInputElement>("input.zh-numeric-input")!;
+    fireEvent.change(input, { target: { value: "3." } });
+    expect(getByTestId("raw").textContent).toBe("3.");
+    expect(input.value).toBe("3.");
+    fireEvent.change(input, { target: { value: "3.50" } });
+    expect(getByTestId("raw").textContent).toBe("3.50");
+    expect(input.value).toBe("3.50");
+  });
+
+  it("expone aria-label descriptivo y aria-invalid=false dentro del remanente", () => {
+    const { getByLabelText } = render(<Stateful initial={{ "od-1": "2" }} />);
+    const input = getByLabelText("Cantidad a devolver: Producto X");
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    expect(input.className).not.toContain("sr-qty-input--error");
+  });
+
+  it("marca exceso con aria-invalid, clase visual y mensaje", () => {
+    const { getByLabelText, container } = render(<Stateful initial={{ "od-1": "6" }} />);
+    const input = getByLabelText("Cantidad a devolver: Producto X");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(input.className).toContain("sr-qty-input--error");
+    expect(container.textContent).toContain("Excede el remanente (5).");
+    expect(container.querySelector("[role='alert']")).toBeNull();
+  });
+
+  it("deshabilita el input con disabled o sin remanente", () => {
+    const a = render(<Stateful disabled />);
+    expect(a.container.querySelector<HTMLInputElement>("input")!.disabled).toBe(true);
+    a.unmount();
+    const b = render(
+      <ReturnableLinesEditor
+        lines={[buildLine({ remainingQuantity: 0 })]}
+        quantities={{}}
+        onChangeQuantity={vi.fn()}
+      />,
+    );
+    expect(b.container.querySelector<HTMLInputElement>("input")!.disabled).toBe(true);
+  });
+
+  it("sin líneas conserva el estado vacío previo a la tabla", () => {
+    const { container } = render(
+      <ReturnableLinesEditor lines={[]} quantities={{}} onChangeQuantity={vi.fn()} />,
+    );
+    expect(container.querySelector(".zh-inline-empty")?.textContent).toBe(
+      "Esta factura no tiene líneas devolvibles.",
+    );
+    expect(container.querySelector("table")).toBeNull();
+  });
+});
