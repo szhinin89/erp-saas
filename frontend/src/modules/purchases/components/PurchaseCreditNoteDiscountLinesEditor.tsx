@@ -47,7 +47,7 @@ export function PurchaseCreditNoteDiscountLinesEditor({
 
   return (
     <div className="table-scroll">
-      <table className="pf-table">
+      <table className="table table--compact table--neutral">
         <thead>
           <tr>
             <th>{t("purchases.creditNote.lines.description", "Concepto")}</th>

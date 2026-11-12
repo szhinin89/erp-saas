@@ -90,7 +90,7 @@ export function PurchaseCreditNoteTaxSummaryLinesEditor({
 
   return (
     <div className="table-scroll">
-      <table className="pf-table pcn-lines-table">
+      <table className="table table--compact table--neutral pcn-lines-table">
         <thead>
           <tr>
             <th>{t("purchases.creditNote.taxSummaryLines.tax", "Impuesto")}</th>

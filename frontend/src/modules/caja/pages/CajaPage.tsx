@@ -797,7 +797,7 @@ export function CajaPage() {
             </div>
 
             <form onSubmit={ctx.handleClose}>
-              <table className="pf-table zh-mb-16">
+              <table className="table table--compact table--neutral zh-mb-16">
                 <thead>
                   <tr>
                     <th>{t("caja.session.denomination")}</th>

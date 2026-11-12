@@ -2705,7 +2705,7 @@ export function PaymentScheduleSection({
 
         {!ctx.hasPersistedSchedule && ctx.ptRows.length > 0 && (
           <>
-            <table className="pf-table">
+            <table className="table table--compact table--neutral">
               <thead>
                 <tr>
                   <th className="pf-schedule-col--number">#</th>

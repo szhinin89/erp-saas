@@ -94,7 +94,7 @@ export function CreditSimulatorModal({
         />
       )}
 
-      <table className="pf-table">
+      <table className="table table--compact table--neutral">
         <thead>
           <tr>
             <th>#</th>
