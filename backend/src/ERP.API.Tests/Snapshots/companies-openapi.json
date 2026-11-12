@@ -2,7 +2,7 @@
   "paths": {
     "/api/v1/companies": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; pol\u00EDtica: \u0060CompanyProvisioning\u0060.",
+        "description": "Solo para tokens de aprovisionamiento global (pol\u00EDtica \u0060CompanyProvisioning\u0060). El tenant destino\r\ndebe existir y estar activo. Si se env\u00EDa \u0060initialAdministrator\u0060, se crea el administrador\r\ninicial con una contrase\u00F1a temporal que se devuelve **una sola vez** en \u0060credentials\u0060 (la\r\nrespuesta lleva \u0060Cache-Control: no-store\u0060); si el usuario o el correo ya existen se responde 409\r\ncon un mensaje gen\u00E9rico, sin indicar cu\u00E1l. El RUC debe tener 13 caracteres.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; pol\u00EDtica: \u0060CompanyProvisioning\u0060.",
         "operationId": "Companies_Create",
         "requestBody": {
           "content": {
@@ -21,7 +21,8 @@
                 "$ref": "#/components/schemas/CreateCompanyCommand"
               }
             }
-          }
+          },
+          "description": "Tenant destino, RUC, raz\u00F3n social, nombre comercial y, opcionalmente, administrador inicial."
         },
         "responses": {
           "201": {
@@ -32,13 +33,33 @@
                 }
               }
             },
-            "description": "Created"
+            "description": "Empresa creada; incluye las credenciales temporales del administrador inicial si se solicit\u00F3."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El tenant destino no existe o est\u00E1 inactivo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El usuario o el correo del administrador inicial no est\u00E1n disponibles."
           },
           "422": {
             "content": {
@@ -48,7 +69,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Validaci\u00F3n de campos (tenant, RUC, raz\u00F3n social, datos del administrador)."
           },
           "500": {
             "content": {
@@ -66,6 +87,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Crea una empresa en el tenant indicado (aprovisionamiento).",
         "tags": [
           "Companies"
         ]
@@ -73,7 +95,7 @@
     },
     "/api/v1/companies/current": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "description": "Si el contexto de empresa no es v\u00E1lido para el usuario, el guard de acceso responde con su\r\npropio c\u00F3digo (alcance de empresa).\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
         "operationId": "Companies_GetCurrent",
         "responses": {
           "200": {
@@ -84,7 +106,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Detalle de la empresa activa."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -108,6 +140,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Obtiene el detalle de la empresa activa (la del contexto del usuario).",
         "tags": [
           "Companies"
         ],
@@ -118,7 +151,7 @@
     },
     "/api/v1/companies/operational-readiness": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "description": "Solo lectura: orquesta las fuentes y resolvers existentes\r\n(\u0060ICompanyOperationalReadinessResolver\u0060) y no persiste nada. Siempre responde 200; los\r\npendientes viajan dentro del cuerpo.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
         "operationId": "CompanyProfile_GetOperationalReadiness",
         "responses": {
           "200": {
@@ -129,7 +162,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Checklist de preparaci\u00F3n operativa."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -153,7 +186,7 @@
             "Bearer": []
           }
         ],
-        "summary": "COMPANY-OPERATING-SETUP-01: checklist de preparaci\u00F3n operativa \u2014 orquesta fuentes/resolvers\r\nexistentes, no persiste nada. Ver ICompanyOperationalReadinessResolver.",
+        "summary": "Obtiene el checklist de preparaci\u00F3n operativa de la empresa activa y de la sucursal del\r\ncontexto.",
         "tags": [
           "Companies"
         ],
@@ -164,7 +197,7 @@
     },
     "/api/v1/companies/profile": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "description": "La identidad (RUC, raz\u00F3n social, estado) es de solo lectura aqu\u00ED: solo la edita Administraci\u00F3n\r\nGlobal.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
         "operationId": "CompanyProfile_GetProfile",
         "responses": {
           "200": {
@@ -175,7 +208,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Perfil de la empresa activa."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -199,6 +242,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Obtiene el perfil completo de la empresa activa (datos generales, fiscales, de operaci\u00F3n y de\r\ndocumentos).",
         "tags": [
           "Companies"
         ],
@@ -207,7 +251,7 @@
         ]
       },
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "No modifica la identidad fiscal (RUC) ni el estado de la empresa. Moneda: c\u00F3digo de 3\r\ncaracteres; zona horaria: obligatoria (m\u00E1x. 64); tel\u00E9fonos hasta 20 caracteres; el sitio web\r\ndebe ser una URL v\u00E1lida.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateProfile",
         "requestBody": {
           "content": {
@@ -226,7 +270,8 @@
                 "$ref": "#/components/schemas/UpdateCompanyProfileCommand"
               }
             }
-          }
+          },
+          "description": "Datos generales de la empresa."
         },
         "responses": {
           "200": {
@@ -237,7 +282,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Perfil actualizado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -253,7 +308,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Validaci\u00F3n de campos (correos, URL, moneda, zona horaria, longitudes)."
           },
           "500": {
             "content": {
@@ -271,6 +326,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza los datos generales de la empresa activa (contacto, moneda, zona horaria y\r\nrepresentante legal).",
         "tags": [
           "Companies"
         ],
@@ -292,7 +348,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Identidad visual de la empresa activa."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -316,6 +372,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Obtiene la identidad visual de la empresa activa (colores, eslogan y pie de documentos).",
         "tags": [
           "Companies"
         ],
@@ -324,7 +381,7 @@
         ]
       },
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "Los colores deben ser hexadecimales v\u00E1lidos (\u0060#RGB\u0060 o \u0060#RRGGBB\u0060). Los valores se guardan como\r\nconfiguraci\u00F3n de la empresa; los logos se suben con \u0060profile/logo\u0060 y \u0060profile/logo-alt\u0060.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateBranding",
         "requestBody": {
           "content": {
@@ -343,7 +400,8 @@
                 "$ref": "#/components/schemas/UpdateCompanyBrandingCommand"
               }
             }
-          }
+          },
+          "description": "Colores, eslogan y pie de documentos."
         },
         "responses": {
           "200": {
@@ -354,7 +412,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Identidad visual actualizada."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -370,7 +428,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Validaci\u00F3n de campos (colores hexadecimales, longitudes)."
           },
           "500": {
             "content": {
@@ -388,6 +446,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza la identidad visual de la empresa activa (colores, eslogan y pie de documentos).",
         "tags": [
           "Companies"
         ],
@@ -398,7 +457,7 @@
     },
     "/api/v1/companies/profile/documents": {
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "La leyenda adicional admite hasta 500 caracteres.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateDocuments",
         "requestBody": {
           "content": {
@@ -417,7 +476,8 @@
                 "$ref": "#/components/schemas/UpdateCompanyDocumentsCommand"
               }
             }
-          }
+          },
+          "description": "Configuraci\u00F3n de documentos."
         },
         "responses": {
           "200": {
@@ -428,7 +488,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Configuraci\u00F3n de documentos actualizada."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -444,7 +514,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Validaci\u00F3n de campos (longitud de la leyenda)."
           },
           "500": {
             "content": {
@@ -462,6 +532,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza la configuraci\u00F3n de documentos de la empresa activa (leyenda adicional).",
         "tags": [
           "Companies"
         ],
@@ -472,7 +543,7 @@
     },
     "/api/v1/companies/profile/fiscal": {
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "Se ejecuta en una transacci\u00F3n bajo el mismo bloqueo exclusivo de la pol\u00EDtica contable que el\r\ncambio de modo contable, para que dos cambios concurrentes no rompan la regla \u00ABobligada a llevar\r\ncontabilidad requiere contabilidad habilitada\u00BB. Marcar la empresa como obligada a llevar\r\ncontabilidad exige que Contabilidad ya est\u00E9 habilitada (no se activa sola) y se rechaza con 422.\r\nLas designaciones de agente de retenci\u00F3n y de gran contribuyente validan el formato del n\u00FAmero\r\nde resoluci\u00F3n y exigen su fecha de vigencia (y viceversa); el contribuyente especial valida el\r\nformato de su n\u00FAmero.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateFiscal",
         "requestBody": {
           "content": {
@@ -491,7 +562,8 @@
                 "$ref": "#/components/schemas/UpdateCompanyFiscalCommand"
               }
             }
-          }
+          },
+          "description": "Datos fiscales de la empresa."
         },
         "responses": {
           "200": {
@@ -502,7 +574,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Configuraci\u00F3n fiscal actualizada."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -518,7 +600,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Validaci\u00F3n de formato de las designaciones o contabilidad a\u00FAn no habilitada."
           },
           "500": {
             "content": {
@@ -536,6 +618,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza la configuraci\u00F3n fiscal de la empresa activa (r\u00E9gimen, retenciones y designaciones del\r\nSRI).",
         "tags": [
           "Companies"
         ],
@@ -557,7 +640,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Pol\u00EDtica fiscal de ventas efectiva."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -581,6 +664,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Obtiene la pol\u00EDtica fiscal de ventas vigente de la empresa activa (monto m\u00E1ximo para Consumidor\r\nFinal).",
         "tags": [
           "Companies"
         ],
@@ -589,7 +673,7 @@
         ]
       },
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "Se guarda como configuraci\u00F3n de la empresa con dos decimales y el cambio queda en el registro de\r\ncambios de configuraci\u00F3n. No puede ser negativo. Devuelve la pol\u00EDtica efectiva resultante.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateFiscalPolicy",
         "requestBody": {
           "content": {
@@ -608,7 +692,8 @@
                 "$ref": "#/components/schemas/UpdateConsumerFinalMaxAmountCommand"
               }
             }
-          }
+          },
+          "description": "Nuevo monto m\u00E1ximo para Consumidor Final."
         },
         "responses": {
           "200": {
@@ -619,7 +704,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Pol\u00EDtica fiscal de ventas actualizada."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -635,7 +720,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "El monto es negativo."
           },
           "500": {
             "content": {
@@ -653,6 +738,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza el monto m\u00E1ximo de venta a Consumidor Final de la empresa activa.",
         "tags": [
           "Companies"
         ],
@@ -663,7 +749,7 @@
     },
     "/api/v1/companies/profile/logo": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "Solicitud \u0060multipart/form-data\u0060 con el campo \u0060file\u0060. Se aceptan im\u00E1genes PNG, JPG o WEBP de\r\nhasta 5 MB y 4000 x 4000 px (el formato se comprueba por el contenido, no por la extensi\u00F3n). El\r\narchivo queda con visibilidad restringida al tenant y se descarga con \u0060GET\r\nprofile/logo/content\u0060.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UploadLogo",
         "requestBody": {
           "content": {
@@ -694,7 +780,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Logo guardado; devuelve el perfil actualizado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "No se adjunt\u00F3 archivo o la empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -710,7 +806,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Archivo vac\u00EDo, sin nombre, demasiado grande, de formato no soportado o con dimensiones excesivas."
           },
           "500": {
             "content": {
@@ -728,6 +824,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Sube el logo principal de la empresa activa, reemplazando el anterior.",
         "tags": [
           "Companies"
         ],
@@ -738,7 +835,7 @@
     },
     "/api/v1/companies/profile/logo-alt": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "Mismas reglas que el logo principal: \u0060multipart/form-data\u0060 con el campo \u0060file\u0060, imagen PNG, JPG\r\no WEBP de hasta 5 MB y 4000 x 4000 px. Se descarga con \u0060GET profile/logo-alt/content\u0060.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UploadLogoAlt",
         "requestBody": {
           "content": {
@@ -769,7 +866,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Logo alternativo guardado; devuelve el perfil actualizado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "No se adjunt\u00F3 archivo o la empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -785,7 +892,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Archivo vac\u00EDo, sin nombre, demasiado grande, de formato no soportado o con dimensiones excesivas."
           },
           "500": {
             "content": {
@@ -803,6 +910,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Sube el logo alternativo de la empresa activa, reemplazando el anterior.",
         "tags": [
           "Companies"
         ],
@@ -813,17 +921,35 @@
     },
     "/api/v1/companies/profile/logo-alt/content": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "description": "La respuesta es la imagen (PNG, JPG o WEBP) con el \u0060Content-Type\u0060 guardado, no un envelope.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
         "operationId": "CompanyProfile_GetLogoAltContent",
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Imagen del logo alternativo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa no tiene logo alternativo configurado o el archivo no est\u00E1 disponible."
           },
           "500": {
             "content": {
@@ -841,6 +967,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Descarga el contenido binario del logo alternativo de la empresa activa.",
         "tags": [
           "Companies"
         ],
@@ -851,17 +978,35 @@
     },
     "/api/v1/companies/profile/logo/content": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "description": "La respuesta es la imagen (PNG, JPG o WEBP) con el \u0060Content-Type\u0060 guardado, no un envelope.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
         "operationId": "CompanyProfile_GetLogoContent",
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Imagen del logo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa no tiene logo configurado o el archivo no est\u00E1 disponible."
           },
           "500": {
             "content": {
@@ -879,6 +1024,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Descarga el contenido binario del logo principal de la empresa activa.",
         "tags": [
           "Companies"
         ],
@@ -889,7 +1035,7 @@
     },
     "/api/v1/companies/profile/operation": {
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "description": "El idioma es obligatorio y debe pertenecer a los idiomas soportados.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
         "operationId": "CompanyProfile_UpdateOperation",
         "requestBody": {
           "content": {
@@ -908,7 +1054,8 @@
                 "$ref": "#/components/schemas/UpdateCompanyOperationCommand"
               }
             }
-          }
+          },
+          "description": "Idioma principal de la empresa."
         },
         "responses": {
           "200": {
@@ -919,7 +1066,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Configuraci\u00F3n de operaci\u00F3n actualizada."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La empresa del contexto no existe."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -935,7 +1092,7 @@
                 }
               }
             },
-            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+            "description": "Idioma ausente o no soportado."
           },
           "500": {
             "content": {
@@ -953,6 +1110,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Actualiza la configuraci\u00F3n de operaci\u00F3n de la empresa activa (idioma principal).",
         "tags": [
           "Companies"
         ],
@@ -1144,7 +1302,7 @@
       "name": "Integration"
     },
     {
-      "description": "Carga inicial (INITIAL-LOAD-ARCH-01) \u2014 solo Clientes disponible en esta entrega.",
+      "description": "Carga inicial: importaci\u00F3n por lotes de Clientes, Proveedores, \u00CDtems, Inventario inicial, CxC inicial y\r\nCxP inicial desde Excel (.xlsx), fecha de apertura de saldos y asiento contable de apertura.",
       "name": "InitialLoad"
     },
     {

@@ -29,6 +29,18 @@ public sealed class CompanyUserBranchesController : ControllerBase
 
     public CompanyUserBranchesController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Sucursales activas de la empresa y cuáles tiene autorizadas un usuario de empresa.
+    /// </summary>
+    /// <remarks>
+    /// Devuelve cada sucursal activa de la empresa con el indicador authorized para la membresía.
+    /// Una membresía inexistente, de otra empresa o de una cuenta global responde 404.
+    /// </remarks>
+    /// <param name="membershipId">Id de la membresía (usuario de empresa).</param>
+    /// <response code="200">Sucursales con su indicador de autorización.</response>
+    /// <response code="404">
+    /// La membresía no existe, es de otra empresa o de una cuenta global.
+    /// </response>
     [HttpGet]
     [ProducesResponseType(
         typeof(ApiResponse<CompanyUserBranchesAdminDto?>),
@@ -47,11 +59,33 @@ public sealed class CompanyUserBranchesController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Reemplaza las sucursales autorizadas de un usuario de empresa.
+    /// </summary>
+    /// <remarks>
+    /// Todo o nada: si alguna sucursal no existe, es de otra empresa o está inactiva no se guarda
+    /// ningún cambio. Las sucursales incluidas se activan y las no incluidas se desactivan (no se
+    /// eliminan); una lista vacía revoca todas sin desactivar la membresía. Repetir la misma lista
+    /// no cambia el resultado. Una membresía revocada no admite cambios.
+    /// </remarks>
+    /// <param name="membershipId">Id de la membresía (usuario de empresa).</param>
+    /// <param name="request">
+    /// Lista completa de ids de sucursales autorizadas (puede estar vacía).
+    /// </param>
+    /// <response code="200">Sucursales autorizadas actualizadas.</response>
+    /// <response code="403">La membresía está revocada.</response>
+    /// <response code="404">
+    /// La membresía no existe, es de otra empresa o de una cuenta global.
+    /// </response>
+    /// <response code="422">
+    /// Lista ausente, id de sucursal vacío, o sucursal inexistente, de otra empresa o inactiva.
+    /// </response>
     [HttpPut]
     [ProducesResponseType(
         typeof(ApiResponse<CompanyUserBranchesAdminDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(

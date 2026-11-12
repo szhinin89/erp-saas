@@ -386,9 +386,58 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private IEnumerable<(string Path, string Method, JsonObject Op)> Phase2B1Operations() =>
         OperationsOf(Phase2B1Controllers);
 
-    /// <summary>Todas las operaciones con documentación funcional completa (2B-1 + 2B-2).</summary>
+    /// <summary>
+    /// API-DOC-V1 / Fase 2B-3: Configuración, Administración e Importación inicial (107 operaciones).
+    /// <c>OrgConfig</c> (4 operaciones) queda fuera: figura en «API pública congelada» y ya traía
+    /// summary y 2xx tipado.
+    /// </summary>
+    private static readonly string[] Phase2B3Controllers =
+    [
+        "AccessProfiles",
+        "AccessSession",
+        "Activity",
+        "AdminCore",
+        "AdminPermissions",
+        "AdminUserSession",
+        "CompanyUserBranches",
+        "CompanyUserMemberships",
+        "CompanyUserPreferences",
+        "IdentityUsers",
+        "SystemProviderSettings",
+        "Banks",
+        "Branches",
+        "CommunicationsEmailSettings",
+        "Companies",
+        "CompanyPrecisionPolicy",
+        "CompanyProfile",
+        "ConfigurationChangeLog",
+        "Dashboard",
+        "DocumentFlowPolicies",
+        "DocumentSequences",
+        "EmissionPoints",
+        "Establishments",
+        "Geography",
+        "OperationalPreferences",
+        "PhysicalDocumentAuthorizations",
+        "InitialLoad",
+    ];
+
+    /// <summary>
+    /// Operaciones documentadas cuyo éxito NO es un envelope: lista cerrada y verificada contra el
+    /// controller (`Ok(arreglo)` crudo en Banks.List; `File(...)` en los logos y la plantilla de carga).
+    /// Cualquier otra operación documentada debe responder con <c>ApiResponse&lt;T&gt;</c>.
+    /// </summary>
+    private static readonly string[] NonEnvelopeSuccess =
+    [
+        "Banks_List",
+        "CompanyProfile_GetLogoContent",
+        "CompanyProfile_GetLogoAltContent",
+        "InitialLoad_DownloadTemplate",
+    ];
+
+    /// <summary>Todas las operaciones con documentación funcional completa (2B-1, 2B-2 y 2B-3).</summary>
     private IEnumerable<(string Path, string Method, JsonObject Op)> DocumentedOperations() =>
-        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers]);
+        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers, .. Phase2B3Controllers]);
 
     [Fact]
     public void Las_71_operaciones_de_Integraciones_Caja_y_Finanzas_estan_inventariadas()
@@ -402,6 +451,40 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         OperationsOf(Phase2B2Controllers).Should().HaveCount(65);
         OperationsOf(["Accounting", "AccountingReports", "ManualJournal"]).Should().HaveCount(42);
         OperationsOf(["Sales", "SalesReceivables", "SalesReturn"]).Should().HaveCount(23);
+    }
+
+    [Fact]
+    public void Las_107_operaciones_de_Configuracion_Administracion_e_Importacion_estan_inventariadas()
+    {
+        OperationsOf(Phase2B3Controllers).Should().HaveCount(107);
+        // OrgConfig (API pública congelada) no forma parte del lote documentado.
+        OperationsOf(["OrgConfig"]).Should().HaveCount(4);
+        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers])
+            .Select(o => o.Op["operationId"]!.GetValue<string>())
+            .Intersect(OperationsOf(Phase2B3Controllers).Select(o => o.Op["operationId"]!.GetValue<string>()))
+            .Should()
+            .BeEmpty("no hay solapamiento con 2B-1 ni 2B-2");
+    }
+
+    [Fact]
+    public void Solo_las_operaciones_de_la_lista_cerrada_responden_sin_envelope()
+    {
+        var withoutEnvelope = DocumentedOperations()
+            .Where(o =>
+                !o.Op["responses"]!
+                    .AsObject()
+                    .Where(r => r.Key.StartsWith('2'))
+                    .All(r =>
+                        r.Value!["content"]!["application/json"]!["schema"]!["$ref"]
+                            ?.GetValue<string>()
+                            .Contains("/ApiResponseOf") == true
+                    )
+            )
+            .Select(o => o.Op["operationId"]!.GetValue<string>())
+            .Order()
+            .ToList();
+
+        withoutEnvelope.Should().Equal(NonEnvelopeSuccess.Order());
     }
 
     [Fact]
@@ -432,10 +515,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .Where(r => r.Key.StartsWith('2'))
                 .ToList();
             success.Should().ContainSingle(label);
-            success[0]
-                .Value!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>()
-                .Should()
-                .Contain("/ApiResponseOf", label);
+            var schema = success[0].Value!["content"]!["application/json"]!["schema"]!;
+            if (NonEnvelopeSuccess.Contains(op["operationId"]!.GetValue<string>()))
+                schema["$ref"]?.GetValue<string>().Should().NotContain("/ApiResponseOf", label);
+            else
+                schema["$ref"]!.GetValue<string>().Should().Contain("/ApiResponseOf", label);
 
             foreach (var (code, response) in op["responses"]!.AsObject())
                 response!["description"]!.GetValue<string>()
@@ -467,6 +551,16 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("/api/v1/accounting/accounts/{id}/disable", "PATCH", "200", new[] { "404", "409" })]
     [InlineData("/api/v1/accounting/accounting-periods/{id}/close", "PATCH", "200", new[] { "404", "422" })]
     [InlineData("/api/v1/accounting/reports/trial-balance", "GET", "200", new[] { "422" })]
+    [InlineData("/api/v1/settings/catalogs/banks", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/settings/catalogs/banks/{id}", "PUT", "200", new[] { "400", "404", "422" })]
+    [InlineData("/api/v1/config/precision-policy", "PUT", "200", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/settings/document-sequences/configure", "PUT", "200", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/settings/physical-document-authorizations", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/settings/branches", "POST", "201", new[] { "400", "422" })]
+    [InlineData("/api/v1/initial-load/batches", "POST", "201", new[] { "400", "422" })]
+    [InlineData("/api/v1/initial-load/batches/{id}/confirm", "POST", "200", new[] { "400", "404", "422" })]
+    [InlineData("/api/v1/admin/iam/profiles", "POST", "201", new[] { "400", "409" })]
+    [InlineData("/api/v1/admin/iam/users", "POST", "200", new[] { "404", "409", "422" })]
     [InlineData("/api/v1/cash-sessions/{id}/close", "POST", "200", new[] { "404", "422" })]
     [InlineData("/api/v1/cash-sessions/open", "POST", "201", new[] { "404", "409", "422" })]
     [InlineData("/api/v1/cash-funding-requests/{id}/cancel", "POST", "200", new[] { "403", "404", "422" })]

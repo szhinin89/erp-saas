@@ -33,10 +33,39 @@ public sealed class IdentityUsersController : ControllerBase
 
     public IdentityUsersController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Crea un usuario de identidad y su membresía en la empresa activa.
+    /// </summary>
+    /// <remarks>
+    /// Alta en una sola transacción: crea el usuario y su membresía (rol y perfil opcional) con la
+    /// misma lógica que el POST de membresías; si la membresía falla se revierte todo. El nombre de
+    /// usuario se normaliza a minúsculas y, junto con el correo, es único en todo el sistema: un
+    /// conflicto responde con un mensaje genérico que no indica cuál de los dos existe. El usuario
+    /// queda obligado a cambiar la contraseña en su primer inicio de sesión. Para vincular una
+    /// cuenta existente del tenant se usa el lookup y el POST de membresías, no este endpoint.
+    /// Responde 200 (no 201) con el id y el username.
+    /// </remarks>
+    /// <param name="request">
+    /// Username, nombres, correo opcional, contraseña inicial que cumpla la política de
+    /// complejidad, rol y perfil opcional.
+    /// </param>
+    /// <response code="200">Usuario creado (identityUserId y username).</response>
+    /// <response code="403">
+    /// Sin autoridad para asignar el rol o el perfil (reglas de la membresía).
+    /// </response>
+    /// <response code="404">
+    /// No existen el tenant o la empresa activa, o el perfil o alguna sucursal indicada.
+    /// </response>
+    /// <response code="409">El nombre de usuario o el correo no están disponibles.</response>
+    /// <response code="422">
+    /// Datos inválidos (username, nombres, correo o contraseña fuera de política), perfil requerido
+    /// o inactivo.
+    /// </response>
     [HttpPost]
     [Authorize(Policy = $"perm:{AccessPermissions.IdentityUsersCreate}")]
     [ProducesResponseType(typeof(ApiResponse<CreateSystemUserResultDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
@@ -59,11 +88,24 @@ public sealed class IdentityUsersController : ControllerBase
     }
 
     /// <summary>
-    /// Asigna una contraseña temporal a un usuario existente de la empresa activa. Fuerza
-    /// RequirePasswordReset y revoca todo su acceso vivo (refresh tokens + sesiones activas).
-    /// Nunca devuelve la contraseña. Permiso propio e independiente de IdentityUsersCreate
-    /// (IAM-V1-F2).
+    /// Asigna una contraseña temporal a un usuario de la empresa activa.
     /// </summary>
+    /// <remarks>
+    /// Fuerza el cambio de contraseña en el próximo inicio de sesión y revoca todo su acceso vivo
+    /// (tokens de refresco y sesiones activas). Nunca devuelve la contraseña. Solo aplica a
+    /// usuarios con membresía en la empresa activa: una cuenta global, de otra empresa o
+    /// inexistente responde 404. La contraseña debe cumplir la política de complejidad.
+    /// </remarks>
+    /// <param name="username">Nombre de usuario del destinatario.</param>
+    /// <param name="request">Contraseña temporal.</param>
+    /// <response code="200">Contraseña temporal asignada.</response>
+    /// <response code="403">No hay una empresa activa en la sesión (alcance de empresa).</response>
+    /// <response code="404">
+    /// El usuario no existe, es global o no tiene acceso a la empresa activa.
+    /// </response>
+    /// <response code="422">
+    /// Username vacío, o la contraseña vacía o fuera de la política de complejidad.
+    /// </response>
     [HttpPost("{username}/assign-temporary-password")]
     [Authorize(Policy = $"perm:{AccessPermissions.IdentityUsersAssignTemporaryPassword}")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]

@@ -37,6 +37,15 @@ public sealed class SystemProviderSettingsController : ControllerBase
 
     public SystemProviderSettingsController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Devuelve los datos del proveedor del sistema de facturación electrónica.
+    /// </summary>
+    /// <remarks>
+    /// Es un dato único por instancia del ERP, no por empresa (distinto del emisor de cada
+    /// comprobante). Si aún no se configuró devuelve el registro vacío: sin RUC, razón social ni
+    /// CIIU, deshabilitado y no configurado por completo.
+    /// </remarks>
+    /// <response code="200">Configuración vigente del proveedor del sistema.</response>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<SystemProviderSettingsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken = default)
@@ -45,9 +54,26 @@ public sealed class SystemProviderSettingsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Crea o actualiza los datos del proveedor del sistema de facturación electrónica.
+    /// </summary>
+    /// <remarks>
+    /// Reemplaza el único registro de la instancia. Habilitar el proveedor exige RUC, razón social
+    /// y CIIU completos y una fecha de vigencia; el RUC debe tener 13 dígitos numéricos, la razón
+    /// social hasta 300 caracteres y el CIIU hasta 20.
+    /// </remarks>
+    /// <param name="command">
+    /// RUC, razón social, código CIIU, fecha de vigencia (DateOnly, YYYY-MM-DD) y si está
+    /// habilitado.
+    /// </param>
+    /// <response code="200">Configuración guardada.</response>
+    /// <response code="422">
+    /// RUC, razón social o CIIU inválidos, o habilitado sin los datos completos o sin fecha de
+    /// vigencia.
+    /// </response>
     [HttpPut]
     [ProducesResponseType(typeof(ApiResponse<SystemProviderSettingsDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Upsert(
         [FromBody] UpsertSystemProviderSettingsCommand command,
         CancellationToken cancellationToken = default

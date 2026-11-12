@@ -12,7 +12,7 @@ completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cam
 límites, baseline, grandfather ni funcionalidad por esta corrección.
 Sin staging, commit ni push; no CLOSED.
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fase 2B-1 en `main`; Fase 2B-2 implementada, pendiente de revisión)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 y 2B-2 en `main`; Fase 2B-3 implementada, pendiente de revisión)
 
 **No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y
 ejemplos es parcial fuera de los módulos ya trabajados). Solo metadatos y pruebas: sin cambios de rutas, métodos,
@@ -40,6 +40,18 @@ permisos, DTO, validadores ni lógica.
   (código idéntico a HEAD comprobado). 5 POST pasan a documentar 201 (el código ya respondía 201): `accounts`,
   `accounting-periods`, `posting-rules`, `manual-journal-entries` y `sales`. Contabilidad y Ventas figuran como
   CLOSED en entregas previas; se documentaron solo con metadatos por autorización del propietario.
+- **Fase 2B-3 — Configuración, Administración e Importación inicial, 107 operaciones** en 27 controladores
+  (Administración/IAM 30, Configuración 61, `InitialLoadController` 16): mismo procedimiento que 2B-1/2B-2,
+  solo XML, `[ProducesResponseType]` y `using` (código idéntico a HEAD comprobado; dos controladores añaden o
+  convierten comentarios `//` no funcionales). `OrgConfigController` (4 operaciones) **no se tocó**: figura en
+  «API pública congelada» y ya traía `summary` y 2xx tipado. 2 POST pasan a documentar 201 (el código ya
+  respondía 201): `settings/catalogs/banks` y `settings/physical-document-authorizations`. Cuatro operaciones
+  responden sin envelope por diseño del controller (lista cerrada en `OpenApiContractTests`): `Banks.List`
+  (`Ok(arreglo)`), los dos logos y la plantilla de importación (`File(...)`). El tipo de medio de esos tres
+  archivos se publica como `application/json` porque el `[Produces("application/json")]` de clase prevalece sobre
+  los tipos de medio declarados en el atributo; no se altera ese atributo (cambiaría la negociación de los errores
+  JSON de la misma acción). El snapshot de Companies se actualiza por la documentación de `CompaniesController` y
+  `CompanyProfileController` (solo metadatos).
 - **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
@@ -69,6 +81,20 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. |
 | API-DOC-F-19 | `SalesController.ApplyGlobalDiscount` / `CancelInvoice` | Sus 400 salen de `ArgumentException` mapeada por `ExceptionMiddleware`, no de una validación explícita. |
 | API-DOC-F-20 | `SalesController.AuthorizeInvoice` | Tiene lector de reintentos ante conflictos de concurrencia; el código HTTP final de un conflicto no resuelto no está verificado (no se declaró 409). |
+| API-DOC-F-21 | `AccessProfiles` (`UpdateProfile`, `UpsertProfilePermissions`, `GetProfilePermissions`, `CreateProfile`) | «Perfil no encontrado» responde 400 (`Failure` sin código) en tres endpoints, mientras `GetProfilePermissionAudit` responde 404; «nombre vacío» en `CreateProfile` responde 400 sin validador, el resto de entradas inválidas responde 422. |
+| API-DOC-F-22 | `IdentityUsers.Create` y `CompanyUserMemberships.Upsert` | Crean recursos pero responden 200 (`ToOkOrBadRequest`), no 201 (mismo patrón que F-13). |
+| API-DOC-F-23 | `AdminUserSession.GetPaged` / `GetStatistics` | Reciben `companyId` pero el alcance es siempre la empresa activa; el parámetro se ignora. |
+| API-DOC-F-24 | `AccessProfiles.CreateProfile` / `UpdateProfile` | El 409 por nombre duplicado se infiere del índice único `ux_access_profiles_tenant_company_name` y del mapeo de `ExceptionMiddleware`; no hay comprobación explícita en el handler ni prueba que lo confirme. |
+| API-DOC-F-25 | `Branches`, `Establishments`, `EmissionPoints` (`Update`/`Disable`/`Enable`), `Companies.GetCurrent`, `CompanyProfile` | «No encontrado» responde 400 (`Failure` sin código), mientras `Branches.GetById` responde 404 con el mismo mensaje. |
+| API-DOC-F-26 | `Establishments.Create`, `EmissionPoints.Create`, `Establishments.Disable` | Código duplicado y «tiene puntos de emisión activos» responden 400 (fallo sin código); `Companies.Create` usa 409 para el usuario duplicado. |
+| API-DOC-F-27 | `Banks.List` | Responde `Ok(arreglo)` sin envelope, a diferencia de las demás operaciones (regla E-B4). |
+| API-DOC-F-28 | `Banks.Create`, `Enable`, `Disable` | Pasan códigos de éxito no catalogados (`"bank"`, `"Activado."`, `"Desactivado."`) a los helpers; el `code` de la respuesta no sale de `ApiResponseCodes`. |
+| API-DOC-F-29 | `Banks.Enable`/`Disable` frente a `PhysicalDocumentAuthorizations.Disable` | Estado repetido responde 422 en bancos y 409 en autorizaciones físicas (relacionado con F-12). |
+| API-DOC-F-30 | `ConfigurationChangeLog.GetChangeLog` | El repositorio limita `pageSize` a 1–200 pero la respuesta devuelve `page` y `pageSize` tal como se enviaron. |
+| API-DOC-F-31 | `CompanyPrecisionPolicy.Update` | Si la empresa ya tiene operaciones reales, el intento rechazado con 409 persiste el bloqueo de la política (efecto lateral en un rechazo). |
+| API-DOC-F-32 | `CommunicationsEmailSettings.SendTest` | Solo `SmtpException` y `TimeoutException` están mapeadas a 422; otros fallos de transporte no verificados podrían salir como 500. |
+| API-DOC-F-33 | `InitialLoad` (`INITIAL_LOAD_CLOSED`, `OPENING_*`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_SOURCE_CHANGED`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: responden 400 y no 422 (misma causa que F-10). |
+| API-DOC-F-34 | `InitialLoad.Confirm`/`Validate`/`Upload` | «Lote no encontrado» dentro del bloqueo responde 422 (solo la primera comprobación da 404); los fallos inesperados usan `Failure` sin código (400); `Upload` sin archivo responde 400 `BAD_REQUEST` en vez de 422. |
 
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 

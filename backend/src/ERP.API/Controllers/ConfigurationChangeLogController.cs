@@ -27,6 +27,21 @@ public sealed class ConfigurationChangeLogController : ControllerBase
 
     public ConfigurationChangeLogController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>Consulta paginada del historial de cambios críticos de configuración de la empresa activa.</summary>
+    /// <remarks>
+    /// Solo lectura. Los resultados se ordenan del más reciente al más antiguo
+    /// (<c>changedAtUtc</c>) y todos los filtros son opcionales y se combinan. <c>pageSize</c> se
+    /// ajusta al rango 1–200 y <c>page</c> a un mínimo de 1.
+    /// </remarks>
+    /// <param name="entityType">Tipo de entidad configurada; coincidencia exacta.</param>
+    /// <param name="entityId">Id de la entidad configurada.</param>
+    /// <param name="key">Clave de la configuración; coincidencia exacta.</param>
+    /// <param name="scope">Alcance de la configuración (<c>OrgScope</c>).</param>
+    /// <param name="fromUtc">Instante inicial inclusivo, con zona explícita.</param>
+    /// <param name="toUtc">Instante final inclusivo, con zona explícita.</param>
+    /// <param name="page">Número de página (por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 50, máximo 200).</param>
+    /// <response code="200">Página de cambios con el total de registros.</response>
     [HttpGet("change-log")]
     [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     [ProducesResponseType(

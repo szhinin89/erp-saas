@@ -28,9 +28,14 @@ public sealed class AdminPermissionsController : ControllerBase
     }
 
     /// <summary>
-    /// Reutiliza el mismo permiso que ya exigen <c>GET/PUT .../profiles/{id}/permissions</c> —
-    /// no se inventa un permiso nuevo para esta pantalla.
+    /// Devuelve el catálogo de permisos asignables.
     /// </summary>
+    /// <remarks>
+    /// Se construye en memoria desde el registro del Kernel (grupo, categoría, pantalla y
+    /// acciones); no consulta la base de datos, así que un permiso nuevo registrado en el Kernel
+    /// aparece sin cambios aquí.
+    /// </remarks>
+    /// <response code="200">Catálogo jerárquico de permisos asignables.</response>
     [HttpGet("catalog")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = $"perm:{AccessPermissions.ProfilesView}")]

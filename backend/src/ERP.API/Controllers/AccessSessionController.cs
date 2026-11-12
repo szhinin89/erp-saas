@@ -18,6 +18,15 @@ public sealed class AccessSessionController : ControllerBase
 
     public AccessSessionController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Devuelve las claves de permiso efectivas del usuario autenticado.
+    /// </summary>
+    /// <remarks>
+    /// Se calculan en su empresa operativa. El administrador de la empresa u operador global recibe
+    /// el comodín "*". Sin empresa operativa, con membresía inactiva o sin perfil asignado devuelve
+    /// una lista vacía.
+    /// </remarks>
+    /// <response code="200">Permisos efectivos del usuario (posiblemente vacíos).</response>
     [HttpGet("me/permissions")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<MyPermissionsDto?>), StatusCodes.Status200OK)]
@@ -28,10 +37,19 @@ public sealed class AccessSessionController : ControllerBase
     }
 
     /// <summary>
-    /// Fase E — único endpoint de cambio de contraseña para un usuario ya autenticado (sobre sí
-    /// mismo). Solo exige autenticación (policy "Session"), sin permiso adicional, mismo criterio
-    /// que GetMyPermissions.
+    /// Cambia la contraseña del usuario autenticado.
     /// </summary>
+    /// <remarks>
+    /// Único endpoint de cambio de contraseña sobre sí mismo: el usuario sale de la sesión, nunca
+    /// del cuerpo. Exige la contraseña actual y una nueva que cumpla la política de complejidad. Al
+    /// cambiarla se quita la marca de cambio obligatorio y se revocan todos sus tokens de refresco.
+    /// </remarks>
+    /// <param name="request">Contraseña actual y contraseña nueva.</param>
+    /// <response code="200">Contraseña cambiada (data = true).</response>
+    /// <response code="400">El usuario no existe o la contraseña actual no es correcta.</response>
+    /// <response code="422">
+    /// Falta algún dato o la contraseña nueva no cumple la política de complejidad.
+    /// </response>
     [HttpPost("me/change-password")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]

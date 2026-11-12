@@ -1,6 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Company.DTOs;
 using ERP.Application.Modules.Company.UseCases.CompanyAdministratorsForAdminCore;
 using ERP.Application.Modules.Company.UseCases.ListCompaniesForAdminCore;
@@ -35,6 +36,10 @@ public sealed class AdminCoreController : ControllerBase
 
     public AdminCoreController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Lista las empresas de todos los tenants para la consola global.
+    /// </summary>
+    /// <response code="200">Empresas registradas (posiblemente vacías).</response>
     [HttpGet("companies")]
     [ProducesResponseType(
         typeof(ApiResponse<IReadOnlyList<AdminCoreCompanyDto>>),
@@ -47,10 +52,23 @@ public sealed class AdminCoreController : ControllerBase
     }
 
     /// <summary>
-    /// Administradores empresariales (no globales) de la empresa, para la acción «Generar nueva
-    /// contraseña temporal». Nunca incluye credenciales.
+    /// Lista los administradores empresariales de una empresa.
     /// </summary>
+    /// <remarks>
+    /// Solo incluye cuentas con membresía Admin activa en la empresa que no sean globales; nunca
+    /// devuelve credenciales. Alimenta la acción «Generar nueva contraseña temporal».
+    /// </remarks>
+    /// <param name="companyId">Id de la empresa.</param>
+    /// <response code="200">Administradores de la empresa.</response>
+    /// <response code="403">El llamante no es administrador global.</response>
+    /// <response code="404">La empresa no existe.</response>
     [HttpGet("companies/{companyId:guid}/administrators")]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<CompanyAdministratorDto>>),
+        StatusCodes.Status200OK
+    )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ListCompanyAdministrators(
         Guid companyId,
         CancellationToken cancellationToken
@@ -64,10 +82,32 @@ public sealed class AdminCoreController : ControllerBase
     }
 
     /// <summary>
-    /// Regenera la contraseña temporal del administrador: invalida la anterior, exige cambio en el
-    /// próximo ingreso y revoca sus sesiones. La respuesta es la única vez que se muestra.
+    /// Genera una nueva contraseña temporal para un administrador de empresa.
     /// </summary>
+    /// <remarks>
+    /// Invalida la contraseña anterior, exige cambiarla en el próximo ingreso y revoca todo su
+    /// acceso vivo (tokens de refresco y sesiones). La respuesta es la única vez que se muestra la
+    /// contraseña temporal y se envía con Cache-Control no-store. No es idempotente: cada llamada
+    /// genera una contraseña distinta. Solo aplica a administradores no globales con membresía
+    /// Admin activa en la empresa.
+    /// </remarks>
+    /// <param name="companyId">Id de la empresa.</param>
+    /// <param name="identityUserId">Id del usuario administrador.</param>
+    /// <response code="200">
+    /// Contraseña temporal generada (visible solo en esta respuesta).
+    /// </response>
+    /// <response code="403">El llamante no es administrador global.</response>
+    /// <response code="404">
+    /// La empresa no existe, o el administrador no existe, es global, no tiene rol Admin activo o
+    /// es de otra empresa.
+    /// </response>
     [HttpPost("companies/{companyId:guid}/administrators/{identityUserId:guid}/temporary-password")]
+    [ProducesResponseType(
+        typeof(ApiResponse<RegeneratedAdministratorPasswordDto>),
+        StatusCodes.Status200OK
+    )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RegenerateAdministratorPassword(
         Guid companyId,
         Guid identityUserId,
@@ -83,7 +123,32 @@ public sealed class AdminCoreController : ControllerBase
         return this.ToOkOrNotFound(result);
     }
 
+    /// <summary>
+    /// Edita la identidad de una empresa desde la consola global.
+    /// </summary>
+    /// <remarks>
+    /// Actualiza RUC, razón social, nombre comercial y estado (isActive) de una empresa de
+    /// cualquier tenant; el RUC y el estado solo se editan por esta vía. Razón social y nombre
+    /// comercial siguen las mismas reglas que el perfil de la empresa activa.
+    /// </remarks>
+    /// <param name="id">Id de la empresa; debe coincidir con el del cuerpo.</param>
+    /// <param name="command">Id, razón social, nombre comercial, estado y RUC.</param>
+    /// <response code="200">Empresa actualizada.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo.</response>
+    /// <response code="403">El llamante no es administrador global.</response>
+    /// <response code="404">La empresa no existe.</response>
+    /// <response code="409">Otra empresa ya usa ese RUC.</response>
+    /// <response code="422">
+    /// RUC ecuatoriano inválido, razón social obligatoria o nombres que exceden el máximo de 200
+    /// caracteres.
+    /// </response>
     [HttpPut("companies/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<CompanyDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateCompany(
         Guid id,
         [FromBody] UpdateCompanyForAdminCoreCommand command,
