@@ -36,9 +36,9 @@ import { CashBankDepositModal } from "../components/CashBankDepositModal";
 import { CashFundingRequestsPendingNotice } from "../components/CashFundingRequestsPendingNotice";
 import { CashRegisterOpeningReadinessNotice } from "../components/CashRegisterOpeningReadinessNotice";
 import { fiscalBadgeVariant } from "../../configuracion/facades/operationalReadinessGuidanceFacade";
-import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
+import "../styles/cash-form-shared.css";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 

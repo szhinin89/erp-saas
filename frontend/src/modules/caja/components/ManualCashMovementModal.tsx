@@ -8,6 +8,7 @@ import { ZhDecimalInput } from "../../../components/zh/inputs";
 import type { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
 import type { CashMovementReasonDto } from "../api/cajaService";
 import type { RecordMovementFormValues } from "../schemas/cajaSchema";
+import "../styles/cash-form-shared.css";
 
 type Props = {
   open: boolean;

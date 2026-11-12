@@ -2,7 +2,6 @@ import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import type { ReturnableLineDto } from "../api/salesReturnService";
-import "../../../styles/shared/erp-form-core.css";
 
 interface Props {
   lines: ReturnableLineDto[];

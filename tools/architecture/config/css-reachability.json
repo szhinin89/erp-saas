@@ -1,0 +1,16 @@
+{
+  "$note": "F-04-css-reach (Paquete A4): dependencias CSS entre rutas. 'baseline' lista pares 'consumidor|hoja(s) propietaria(s)' conocidos y aún no resueltos; solo puede bajar (un par nuevo falla; un par resuelto que sigue aquí también). Ver check-css-reachability.mjs.",
+  "entry": "frontend/src/main.tsx",
+  "routeDirs": [
+    "frontend/src/routes/"
+  ],
+  "baseline": [
+    "frontend/src/components/zh/ZHCodeConflicts.tsx|frontend/src/components/zh/notices/zh-notice.css",
+    "frontend/src/modules/branches/components/BranchGeneralSection.tsx|frontend/src/modules/branches/pages/branches-page.css",
+    "frontend/src/modules/configuracion/comunicaciones/sections/CommunicationsEmailSettingsSection.tsx|frontend/src/modules/configuracion/facturacionElectronica/sections/sri-config-page.css",
+    "frontend/src/modules/configuracion/empresa/sections/BrandingSettingsSection.tsx|frontend/src/modules/configuracion/empresa/sections/BrandingSettingsSection.css",
+    "frontend/src/modules/establishments/components/EstablishmentsFormPanel.tsx|frontend/src/modules/emissionPoints/pages/emission-points-page.css",
+    "frontend/src/modules/items/catalog/components/CatalogListSection.tsx|frontend/src/styles/shared/items-catalog.css",
+    "frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx|frontend/src/modules/emissionPoints/pages/emission-points-page.css"
+  ]
+}

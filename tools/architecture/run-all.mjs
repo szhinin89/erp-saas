@@ -7,6 +7,7 @@ import { runCheckImportBoundaries } from './check-import-boundaries.mjs';
 import { runCheckModuleBoundaries } from './check-module-boundaries.mjs';
 import { runCheckCssPrefixes } from './check-css-prefixes.mjs';
 import { runCheckDesignSystem } from './check-design-system.mjs';
+import { runCheckCssReachability } from './check-css-reachability.mjs';
 import { runCheckFrontendPrecision } from './check-frontend-precision.mjs';
 import { runCheckBackendPrecision } from './check-backend-precision.mjs';
 import { runCheckFrontendDateTime } from './check-frontend-datetime.mjs';
@@ -171,6 +172,7 @@ export const CHECKS = [
   { name: 'module-boundaries', run: runCheckModuleBoundaries },
   { name: 'css-prefixes', run: runCheckCssPrefixes },
   { name: 'design-system', run: runCheckDesignSystem },
+  { name: 'css-reachability', run: runCheckCssReachability },
   { name: 'frontend-precision', run: runCheckFrontendPrecision },
   { name: 'frontend-datetime', run: runCheckFrontendDateTime },
   { name: 'no-cross-layer', run: runCheckNoCrossLayer },

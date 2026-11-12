@@ -4,7 +4,6 @@ import { formatDecimalDisplay } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import type { SalesReturnDto } from "../api/salesReturnService";
-import "../../../styles/shared/erp-form-core.css";
 
 interface Props {
   salesReturn: SalesReturnDto;

@@ -10,7 +10,6 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseCreditNoteDraftFormValues } from "../schemas/purchaseCreditNoteSchema";
-import "../../../styles/shared/erp-form-core.css";
 
 interface Props {
   register: UseFormRegister<PurchaseCreditNoteDraftFormValues>;

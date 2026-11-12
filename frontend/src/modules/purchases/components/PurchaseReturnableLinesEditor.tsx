@@ -7,7 +7,6 @@ import type {
   PurchaseReturnLineFormValues,
 } from "../schemas/purchaseReturnSchema";
 import type { ReturnableLineDto } from "../api/purchaseReturnService";
-import "../../../styles/shared/erp-form-core.css";
 
 interface Props {
   /** Líneas devolvibles de la factura origen, con el remanente ya calculado por el servidor. */

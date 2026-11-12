@@ -374,6 +374,7 @@ Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
 |---------|-----|
 | `tools/architecture/config/architecture-rules.json` | Reglas FE/BE import/module/cross-layer/backend + `exemptions` + `adr.index` |
 | `tools/architecture/config/css-prefixes.json` | Mapa path → prefijo CSS |
+| `tools/architecture/config/css-reachability.json` | Línea base (solo baja) de dependencias CSS entre rutas — `check-css-reachability.mjs` |
 | `tools/architecture/config/scoring-rules.json` | Pesos del architecture score |
 | `tools/architecture/architecture-grandfather.json` | Legacy permitido (`tsxPageWrapperMaxLines15`, …) |
 

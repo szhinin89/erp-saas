@@ -1,0 +1,17 @@
+/* Reglas compartidas por los formularios/modales de efectivo de Caja (ManualCashMovementModal,
+   CashBankDepositModal) y CajaPage. Movidas sin cambios desde modules/caja/pages/CajaPage.css
+   (Paquete A3): el modal de movimiento manual tambien se abre desde Ventas y no debe depender de
+   que CajaPage.css se haya cargado antes. */
+
+/* ── Movement modal form (TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02) ── */
+.cj-movement-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Actions row ── */
+.cj-actions {
+  display: flex;
+  gap: var(--space-2);
+}

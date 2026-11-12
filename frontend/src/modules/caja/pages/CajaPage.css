@@ -57,13 +57,6 @@
   font-weight: 700;
 }
 
-/* ── Movement modal form (TREASURY-CASH-MANUAL-MOVEMENT-MODAL-02) ── */
-.cj-movement-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 /* ── Section headings ── */
 .cj-section-title {
   margin: 0 0 var(--space-2);
@@ -145,12 +138,6 @@
 }
 .cj-close-narrow {
   max-width: 600px;
-}
-
-/* ── Actions row ── */
-.cj-actions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 /* Contextos de apertura: dos columnas, una en viewport estrecho. */

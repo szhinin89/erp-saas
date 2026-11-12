@@ -38,6 +38,8 @@ import { MasterDataBpFormFields } from "./MasterDataBpFormFields";
 import { MasterDataPartnerSearchResults } from "./MasterDataPartnerSearchResults";
 import { ZHBtn, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import "../../../styles/shared/items-catalog.css";
+import "./partner-wizard.css";
 
 export {
   getPartnerSearchResultState,

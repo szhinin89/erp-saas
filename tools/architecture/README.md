@@ -88,6 +88,7 @@ invocación `--only` corresponde a ese subconjunto; no acredita salud global.
 | `check-frontend-subscriber-naming.mjs` | F-subscriber | Owner → subscriber: imports cross-módulo (incl. `import type`/`import()`) solo hacia archivos directos de `modules/<owner>/**/facades/`; facades nombradas `<concepto><Propósito>Facade.ts`; ningún import de CSS privado de otro módulo (`F-subscriber-css-import`; permitido CSS propio, `src/styles/` y `src/components/zh/`). Excluye módulos shared, assets no-estilo y `vi.mock()`. Sin grandfather. Tests: `node --test tools/architecture/check-frontend-subscriber-naming.test.mjs` |
 | `check-css-prefixes.mjs` | F-css | Prefijos por área; clases ambiguas |
 | `check-design-system.mjs` | F-04 | Design System único (grid/toggle/icon/modal/tabs/table/activity) |
+| `check-css-reachability.mjs` | F-04-css-reach | Dependencia CSS entre rutas: una pantalla (raíz lazy de `routes/`) debe cargar por sí sola las hojas de las clases que usan sus componentes (acceso directo/recarga). Línea base que solo baja en `config/css-reachability.json`. Tests: `node --test tools/architecture/check-css-reachability.test.mjs`; `npm run architecture:css-deps` |
 | `check-frontend-precision.mjs` | F-PREC | Ruta única de precisión (06): componente sin `precision`, cualquier `decimals` en JSX, formatter sin escala, `toFixed`/`Intl.NumberFormat`/lectura directa de policy locales y segundas tablas kind → `…Decimals`. Sin grandfather: solo excepciones justificadas que no deciden presentación (`config/frontend-precision.json`, archivo+regla+conteo+reason). Tests: `node --test tools/architecture/check-frontend-precision.test.mjs` |
 | `check-backend-precision.mjs` | B-PREC | Trinquete de precisión decimal en backend (SSOT: `docs/architecture/data-standards.md` § Estándar de Precisión Numérica): `Math.Round`/`decimal.Round` con escala literal, helpers de redondeo propios (`Round2`, `RoundAmount`, …) y parámetros con default `FiscalPrecision.Quantity`/`UnitCost`. Deuda existente auditada en `config/backend-precision.json` (archivo+regla+conteo exacto+reason); superarla falla, bajarla avisa. No detecta "faltó usar el provider". Tests: `node --test tools/architecture/check-backend-precision.test.mjs` |
 | `check-no-cross-layer.mjs` | F-cross-layer | Pages sin fetch/axios/api directo |
@@ -127,6 +128,7 @@ Estados: `healthy` (≥90), `warning` (≥70), `critical` (<70). Warnings no fal
 | `config/architecture-rules.json` | Reglas FE/BE, exemptions, `backend.*`, `adr.index` |
 | `config/css-prefixes.json` | Mapa path → prefijos CSS + globales |
 | `config/design-system.json` | Clases deprecadas y patrones F-04 (Design System) |
+| `config/css-reachability.json` | Entrada, directorios de rutas y línea base de dependencias CSS entre rutas |
 | `config/scoring-rules.json` | Penalizaciones y umbrales de score |
 | `architecture-grandfather.json` | Legacy permitido (`backendControllerMaxLines`, `designSystemGrandfathered`, …). Integridad validada por `check-grandfather-integrity.mjs` (entradas muertas/fuera de alcance → FAIL; tests: `check-grandfather-integrity.test.mjs`) |
 

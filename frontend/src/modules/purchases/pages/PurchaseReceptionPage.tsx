@@ -29,6 +29,7 @@ import { PurchaseReceptionProcessCell } from "../components/PurchaseReceptionPro
 import { PurchaseReceptionActionsCell } from "../components/PurchaseReceptionActionsCell";
 import { PurchaseReceptionDocumentCell } from "../components/PurchaseReceptionDocumentCell";
 import { PurchaseReceptionXmlViewModal } from "../components/PurchaseReceptionXmlViewModal";
+import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchase-reception.css";
 import { receptionErpRecordView } from "../utils/receptionErpRecord";
 import { PurchaseReceptionBatchActions } from "../components/PurchaseReceptionBatchActions";

@@ -998,9 +998,17 @@ select.zh-input--compact {
    modules/purchases/components/PurchaseReceptionXmlViewModal.tsx via
    className="kdx-field-value kdx-mono") -- se promueve aca para que ningun
    modulo vuelva a definir font-family-mono local, sin tener que tocar esos
-   consumidores existentes. Nuevos usos deberian preferir .zh-code-value. */
+   consumidores existentes. Nuevos usos deberian preferir .zh-code-value.
+   2C.1-b3: .kdx-field-value (tamano del valor de un par etiqueta/valor de
+   detalle) tiene los mismos dos consumidores (KardexMovementDetailModal y
+   PurchaseReceptionXmlViewModal) y tambien se promueve aca: antes vivia solo
+   en KardexPage.css, asi que el modal XML de Recepcion perdia el estilo si no
+   se habia visitado Kardex. */
 .kdx-mono {
   font-family: var(--font-family-mono);
+}
+.kdx-field-value {
+  font-size: var(--text-body-sm-size);
 }
 
 /* <ZHInfoRow>: par label/valor compacto para paneles de detalle (líneas de

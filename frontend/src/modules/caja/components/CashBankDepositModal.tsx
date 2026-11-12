@@ -7,6 +7,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhDecimalInput } from "../../../components/zh/inputs";
 import type { CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
 import type { BankDepositFormValues } from "../schemas/cajaSchema";
+import "../styles/cash-form-shared.css";
 
 type Props = {
   open: boolean;
