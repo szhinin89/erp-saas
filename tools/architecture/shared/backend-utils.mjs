@@ -272,7 +272,8 @@ function maskComment(source, output, start) {
 
 /** Remove C# line/block/XML comments while preserving line numbers and string contents. */
 export function stripCSharpComments(content) {
-  const output = [...content];
+  // El scanner indexa unidades UTF-16; el buffer debe usar los mismos índices, incluso con emojis.
+  const output = content.split('');
   for (let index = 0; index < content.length;) {
     if (content[index] === '"' || content[index] === "'") {
       index = skipQuotedLiteral(content, index);

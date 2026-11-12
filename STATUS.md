@@ -1,5 +1,17 @@
 # Project Status
 
+## CI-1169 — Conteo de controllers Windows/Linux — pendiente de revisión y gate del propietario
+
+BUG REAL reproducido sobre `AccountingController.cs` versionado en `c198fd3dc`: LF reconocía 118 líneas XML
+y 483 efectivas; CRLF, 307 XML y 294 efectivas (917 totales y 316 de `ProducesResponseType` en ambos).
+El buffer de `stripCSharpComments` iteraba puntos Unicode, pero el scanner indexaba unidades UTF-16;
+el carácter `📒` desplazaba el enmascarado y eliminaba saltos de línea. Corrección mínima: `split('')`.
+Las tres regresiones nuevas fallaron antes del fix; después pasan las 30 pruebas focales, con
+917 totales, 307 XML, 316 de atributos y 294 efectivas tanto en LF como en CRLF. Guardrail PowerShell
+completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cambios de controllers,
+límites, baseline, grandfather ni funcionalidad por esta corrección.
+Sin staging, commit ni push; no CLOSED.
+
 ## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fase 2B-1 en `main`; Fase 2B-2 implementada, pendiente de revisión)
 
 **No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y

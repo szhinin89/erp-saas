@@ -1,7 +1,48 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { findIgnoreQueryFilterHits, isTestProjectPath, measureController } from './backend-utils.mjs';
+import { execFileSync } from 'node:child_process';
+import { findIgnoreQueryFilterHits, isTestProjectPath, measureController, stripCSharpComments, REPO_ROOT } from './backend-utils.mjs';
 import { evaluateController } from '../check-backend-controller-thin.mjs';
+
+for (const eol of ['\n', '\r\n']) {
+  test(`Unicode conserva índices UTF-16, comentarios y saltos ${JSON.stringify(eol)}`, () => {
+    const lines = [
+      'var title = "📒 á 中";',
+      '/// <summary>📒 documentación</summary>',
+      '/* 📒 comentario */ var value = "😀";',
+      '/// <remarks>otra línea</remarks>',
+      '[ProducesResponseType(typeof(int), 200)]',
+      'var query = db.Items.IgnoreQueryFilters();',
+    ];
+    const source = lines.join(eol);
+    const masked = stripCSharpComments(source);
+    assert.equal(masked.length, source.length);
+    assert.deepEqual(masked.match(/\r|\n/g), source.match(/\r|\n/g));
+    assert.equal(masked.split(eol)[0], lines[0]);
+    assert.equal(masked.split(eol)[2], ' '.repeat('/* 📒 comentario */'.length) + ' var value = "😀";');
+    assert.deepEqual(measureController(source), {
+      lines: 6, xmlDocLines: 2, attributeLines: 1, effectiveLines: 3,
+    });
+    assert.deepEqual(findIgnoreQueryFilterHits('backend/src/Example.cs', source), [
+      { file: 'backend/src/Example.cs', line: 6 },
+    ]);
+  });
+}
+
+test('AccountingController versionado reconoce todo el XML con LF y CRLF', () => {
+  const source = execFileSync('git', [
+    'show', 'HEAD:backend/src/ERP.API/Controllers/Accounting/AccountingController.cs',
+  ], { cwd: REPO_ROOT, encoding: 'utf8' }).replace(/\r\n/g, '\n');
+  const expected = {
+    lines: source.split('\n').length,
+    xmlDocLines: source.split('\n').filter((line) => line.trimStart().startsWith('///')).length,
+    attributeLines: measureController(source).attributeLines,
+  };
+  expected.effectiveLines = expected.lines - expected.xmlDocLines - expected.attributeLines;
+  assert.ok(source.includes('📒'));
+  assert.deepEqual(measureController(source), expected);
+  assert.deepEqual(measureController(source.replaceAll('\n', '\r\n')), expected);
+});
 
 test('IgnoreQueryFilters scanner ignores C# and XML documentation comments and preserves line numbers', () => {
   const source = [
