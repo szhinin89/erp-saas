@@ -99,7 +99,7 @@ invocación `--only` corresponde a ese subconjunto; no acredita salud global.
 |--------|-------|------------|
 | `check-backend-layering.mjs` | B-layering | `.csproj` — refs de proyecto/paquete por capa |
 | `check-backend-clean-architecture.mjs` | B-domain/app | `using` prohibidos en Domain/Application |
-| `check-backend-controller-thin.mjs` | B-controller | Líneas máx.; EF/SQL inline = error; líneas altas = warning |
+| `check-backend-controller-thin.mjs` | B-controller | Líneas efectivas máx. (sin documentación XML `///` ni atributos `[ProducesResponseType(...)]`); EF/SQL inline = error; líneas altas = warning |
 | `check-backend-subscriber-rules.mjs` | B-subscriber | `IgnoreQueryFilters()` allowlist; entidades tenant |
 
 `backend-subscriber-rules` es el único check que omite proyectos `*.Tests`: sus fixtures verifican estado persistido sin filtros runtime. El resto del gate continúa escaneando tests. El detector omite comentarios C#/XML y solo reconoce como wrapper la expresión canónica de `PlatformQueryAccessor.AsPlatformQuery`; no infiere que sus callers sean seguros.

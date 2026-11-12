@@ -306,7 +306,7 @@ Fuente: [`tools/architecture/README.md`](../../tools/architecture/README.md)
 |-------|-------|------------|
 | `backend-layering` | B-layering | Referencias de proyecto/paquetes por capa (.csproj) |
 | `backend-clean-architecture` | B-domain / B-application | `using` prohibidos en Domain/Application |
-| `backend-controller-thin` | B-controller | Líneas máx., patrones EF/SQL inline (error); líneas > umbral warning |
+| `backend-controller-thin` | B-controller | Líneas efectivas máx. (total menos documentación XML `///` y atributos `[ProducesResponseType(...)]` completos; el resto de atributos, `//`, blancos y líneas que mezclan atributo y código cuentan), patrones EF/SQL inline (error); líneas efectivas > umbral warning |
 | `backend-subscriber-rules` | B-subscriber | `IgnoreQueryFilters()` en producción fuera de allowlist; entidades sin `TenantId`/marker. Excluye proyectos `*.Tests` solo en este check de aislamiento runtime. |
 
 El scanner ignora comentarios C#/XML conservando números de línea y no cuenta la expresión canónica de `PlatformQueryAccessor.AsPlatformQuery`; sus callers productivos siguen auditándose individualmente y no se consideran automáticamente seguros.

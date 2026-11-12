@@ -4,6 +4,45 @@ import { scanControllers, findBackendPatternLines } from './shared/backend-utils
 
 export const CHECK_NAME = 'backend-controller-thin';
 
+/**
+ * Evalúa un controller medido (`measureController`). El umbral cuenta líneas EFECTIVAS: se excluyen
+ * solo los metadatos de documentación de la API (`///` y `[ProducesResponseType(...)]`), de modo que
+ * documentar Swagger no penaliza al controller.
+ * @param {{ rel: string, lines: number, xmlDocLines: number, attributeLines: number, effectiveLines: number, text: string }} ctrl
+ * @param {{ maxLinesError: number, maxLinesWarning: number, forbiddenPatterns: (string|RegExp)[] }} cfg
+ */
+export function evaluateController(ctrl, cfg) {
+  /** @type {{ rule: string, file: string, line?: number, message: string }[]} */
+  const violations = [];
+  /** @type {{ rule: string, file: string, message: string }[]} */
+  const warnings = [];
+  const detail = `${ctrl.effectiveLines} effective lines (${ctrl.lines} total, ${ctrl.xmlDocLines} XML doc, ${ctrl.attributeLines} ProducesResponseType)`;
+
+  if (ctrl.effectiveLines > cfg.maxLinesError) {
+    violations.push({
+      rule: 'B-controller',
+      file: ctrl.rel,
+      message: `controller has ${detail} (max ${cfg.maxLinesError}); delegate to MediatR handlers`,
+    });
+  } else if (ctrl.effectiveLines > cfg.maxLinesWarning) {
+    warnings.push({
+      rule: 'B-controller-warn',
+      file: ctrl.rel,
+      message: `controller has ${detail} (warning threshold ${cfg.maxLinesWarning})`,
+    });
+  }
+
+  for (const hit of findBackendPatternLines(ctrl.text, cfg.forbiddenPatterns)) {
+    violations.push({
+      rule: 'B-controller',
+      file: ctrl.rel,
+      line: hit.line,
+      message: `forbidden pattern in controller: ${hit.snippet}`,
+    });
+  }
+  return { violations, warnings };
+}
+
 export function runCheckBackendControllerThin() {
   const rules = loadConfig('architecture-rules.json');
   const grandfather = loadGrandfather();
@@ -12,29 +51,9 @@ export function runCheckBackendControllerThin() {
 
   for (const ctrl of scanControllers(cfg.path)) {
     if (isGrandfathered(grandfather, 'backendControllerMaxLines', ctrl.rel)) continue;
-
-    if (ctrl.lines > cfg.maxLinesError) {
-      addViolation(result, {
-        rule: 'B-controller',
-        file: ctrl.rel,
-        message: `controller has ${ctrl.lines} lines (max ${cfg.maxLinesError}); delegate to MediatR handlers`,
-      });
-    } else if (ctrl.lines > cfg.maxLinesWarning) {
-      addWarning(result, {
-        rule: 'B-controller-warn',
-        file: ctrl.rel,
-        message: `controller has ${ctrl.lines} lines (warning threshold ${cfg.maxLinesWarning})`,
-      });
-    }
-
-    for (const hit of findBackendPatternLines(ctrl.text, cfg.forbiddenPatterns)) {
-      addViolation(result, {
-        rule: 'B-controller',
-        file: ctrl.rel,
-        line: hit.line,
-        message: `forbidden pattern in controller: ${hit.snippet}`,
-      });
-    }
+    const { violations, warnings } = evaluateController(ctrl, cfg);
+    for (const v of violations) addViolation(result, v);
+    for (const w of warnings) addWarning(result, w);
   }
 
   return result;

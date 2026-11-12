@@ -40,14 +40,152 @@ export function scanCsUsings(dirRel, { forbiddenPatterns = [] } = {}) {
   return hits;
 }
 
+function skipComment(source, start) {
+  if (source[start + 1] === '/') {
+    let end = start + 2;
+    while (end < source.length && source[end] !== '\n' && source[end] !== '\r') end++;
+    return end;
+  }
+  let end = start + 2;
+  while (end < source.length - 1 && !(source[end] === '*' && source[end + 1] === '/')) end++;
+  return end < source.length - 1 ? end + 2 : source.length;
+}
+
+/**
+ * Fin (exclusivo) del grupo de atributos `[...]` que empieza en `start`, o `null` si no cierra.
+ * `pure` es false si el grupo lleva otro atributo separado por coma (`[ProducesResponseType(..), X]`).
+ * Salta cadenas, literales de carácter y comentarios; cuenta corchetes y paréntesis anidados y los
+ * `<...>` del nombre (atributo genérico `ProducesResponseType<T>`).
+ */
+function scanAttributeGroup(source, start) {
+  let depthBracket = 0;
+  let depthParen = 0;
+  let angle = 0;
+  let sawParen = false;
+  let multiple = false;
+  for (let index = start; index < source.length;) {
+    const ch = source[index];
+    if (ch === '"' || ch === "'") {
+      index = skipQuotedLiteral(source, index);
+      continue;
+    }
+    if (ch === '/' && (source[index + 1] === '/' || source[index + 1] === '*')) {
+      index = skipComment(source, index);
+      continue;
+    }
+    if (ch === '[') depthBracket++;
+    else if (ch === ']') {
+      depthBracket--;
+      if (depthBracket === 0) return { end: index + 1, pure: !multiple };
+    } else if (ch === '(') {
+      depthParen++;
+      sawParen = true;
+    } else if (ch === ')') depthParen--;
+    else if (depthBracket === 1 && depthParen === 0) {
+      if (!sawParen) {
+        if (ch === '<') angle++;
+        else if (ch === '>') angle--;
+      }
+      if (ch === ',' && angle === 0) multiple = true;
+    }
+    index++;
+  }
+  return null;
+}
+
+/**
+ * Rangos `[inicio, fin)` de los atributos `[ProducesResponseType(...)]` (una o varias líneas) que son
+ * código real (fuera de cadenas y comentarios) y están solos en su grupo `[...]`. Un grupo con otro
+ * atributo (`[ProducesResponseType(..), Authorize]`) no se excluye.
+ * @param {string} source
+ */
+export function findProducesResponseTypeRanges(source) {
+  /** @type {[number, number][]} */
+  const ranges = [];
+  for (let index = 0; index < source.length;) {
+    const ch = source[index];
+    if (ch === '"' || ch === "'") {
+      index = skipQuotedLiteral(source, index);
+      continue;
+    }
+    if (ch === '/' && (source[index + 1] === '/' || source[index + 1] === '*')) {
+      index = skipComment(source, index);
+      continue;
+    }
+    if (ch === '[' && /^\[\s*ProducesResponseType\b/.test(source.slice(index, index + 48))) {
+      const group = scanAttributeGroup(source, index);
+      if (group === null) {
+        index++;
+        continue;
+      }
+      if (group.pure) ranges.push([index, group.end]);
+      index = group.end;
+      continue;
+    }
+    index++;
+  }
+  return ranges;
+}
+
+/**
+ * Mide un controller. `lines` es el total de líneas del archivo. Se excluyen del conteo EFECTIVO
+ * (que es lo que limita B-controller) únicamente metadatos de documentación de la API:
+ * - `xmlDocLines`: líneas de documentación XML (`///`, comentario real: no cuenta una `///` dentro
+ *   de un literal de cadena);
+ * - `attributeLines`: líneas formadas SOLO por un atributo `[ProducesResponseType(...)]` completo
+ *   (una o varias líneas). Una línea que mezcla el atributo con código, otros atributos o un
+ *   comentario sigue contando.
+ * El código, los demás atributos, los `//` ordinarios y las líneas en blanco siempre cuentan.
+ * `effectiveLines = lines - xmlDocLines - attributeLines`.
+ * @param {string} text
+ */
+export function measureController(text) {
+  const original = text.split(/\r?\n/);
+  const masked = stripCSharpComments(text).split(/\r?\n/);
+
+  const inAttribute = new Uint8Array(text.length);
+  for (const [start, end] of findProducesResponseTypeRanges(text)) inAttribute.fill(1, start, end);
+
+  let xmlDocLines = 0;
+  let attributeLines = 0;
+  let offset = 0;
+  for (let i = 0; i < original.length; i++) {
+    const line = original[i];
+    // `stripCSharpComments` deja la barra inicial de un `///` real; un `///` dentro de un literal de
+    // cadena conserva su texto, así que solo cuenta si lo enmascarado queda reducido a barras.
+    const isXmlDoc = line.trimStart().startsWith('///') && /^\/*$/.test((masked[i] ?? '').trim());
+    if (isXmlDoc) {
+      xmlDocLines++;
+    } else {
+      let hasContent = false;
+      let allInAttribute = true;
+      for (let c = 0; c < line.length; c++) {
+        if (/\s/.test(line[c])) continue;
+        hasContent = true;
+        if (!inAttribute[offset + c]) {
+          allInAttribute = false;
+          break;
+        }
+      }
+      if (hasContent && allInAttribute) attributeLines++;
+    }
+    offset += line.length + (text[offset + line.length] === '\r' ? 2 : 1);
+  }
+  return {
+    lines: original.length,
+    xmlDocLines,
+    attributeLines,
+    effectiveLines: original.length - xmlDocLines - attributeLines,
+  };
+}
+
 /** @param {string} controllersDirRel */
 export function scanControllers(controllersDirRel) {
   const abs = path.join(REPO_ROOT, controllersDirRel);
-  return walkFiles(abs, { extensions: ['.cs'] }).map((f) => ({
-    rel: toRepoRel(f),
-    lines: readBackendText(toRepoRel(f)).split(/\r?\n/).length,
-    text: readBackendText(toRepoRel(f)),
-  }));
+  return walkFiles(abs, { extensions: ['.cs'] }).map((f) => {
+    const text = readBackendText(toRepoRel(f));
+    return { rel: toRepoRel(f), ...measureController(text), text };
+  });
 }
 
 /** @param {string} content */
