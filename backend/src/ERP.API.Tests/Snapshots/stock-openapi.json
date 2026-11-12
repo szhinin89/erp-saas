@@ -2,6 +2,8 @@
   "paths": {
     "/api/v1/inventory/stock": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "operationId": "Stock_GetStock",
         "parameters": [
           {
             "in": "query",
@@ -25,21 +27,57 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.CurrentStockDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                  "$ref": "#/components/schemas/ApiResponseOfIReadOnlyListOfCurrentStockDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Consulta stock actual por item y/o bodega.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.view"
         ]
       }
     },
     "/api/v1/inventory/stock/adjustments": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.view\u0060.",
+        "operationId": "StockAdjustments_ListAdjustments",
         "parameters": [
           {
             "in": "query",
@@ -111,34 +149,70 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Common.PagedResult\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfPagedResultOfStockAdjustmentDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Lista ajustes de inventario paginados, con filtros.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.view"
         ]
       },
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.create\u0060.",
+        "operationId": "StockAdjustments_CreateAdjustment",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment.CreateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             }
           }
@@ -148,21 +222,57 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfStockAdjustmentDto"
                 }
               }
             },
             "description": "Created"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Crea un ajuste de inventario en estado Draft.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.create"
         ]
       }
     },
     "/api/v1/inventory/stock/adjustments/{id}": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.view\u0060.",
+        "operationId": "StockAdjustments_GetAdjustment",
         "parameters": [
           {
             "in": "path",
@@ -179,19 +289,45 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfStockAdjustmentDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Obtiene un ajuste de inventario por Id (cabecera \u002B l\u00EDneas).",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.view"
         ]
       },
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.update\u0060.",
+        "operationId": "StockAdjustments_UpdateAdjustment",
         "parameters": [
           {
             "in": "path",
@@ -207,17 +343,17 @@
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/UpdateStockAdjustmentCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/UpdateStockAdjustmentCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.UpdateStockAdjustment.UpdateStockAdjustmentCommand"
+                "$ref": "#/components/schemas/UpdateStockAdjustmentCommand"
               }
             }
           }
@@ -227,21 +363,57 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockAdjustmentDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfStockAdjustmentDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Actualiza un ajuste en Draft (cabecera \u002B reemplazo total de l\u00EDneas).",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.update"
         ]
       }
     },
     "/api/v1/inventory/stock/adjustments/{id}/cancel": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.cancel\u0060.",
+        "operationId": "StockAdjustments_CancelAdjustment",
         "parameters": [
           {
             "in": "path",
@@ -257,17 +429,17 @@
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+                "$ref": "#/components/schemas/CancelStockAdjustmentRequest"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+                "$ref": "#/components/schemas/CancelStockAdjustmentRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.API.Controllers.CancelStockAdjustmentRequest"
+                "$ref": "#/components/schemas/CancelStockAdjustmentRequest"
               }
             }
           }
@@ -275,16 +447,52 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Anula un ajuste Ejecutado posteando movimientos inversos de Kardex.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.cancel"
         ]
       }
     },
     "/api/v1/inventory/stock/adjustments/{id}/execute": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.confirm\u0060.",
+        "operationId": "StockAdjustments_ExecuteAdjustment",
         "parameters": [
           {
             "in": "path",
@@ -299,16 +507,42 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Ejecuta un ajuste Draft: aplica el/los movimiento(s) de stock.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.adjustments.confirm"
         ]
       }
     },
     "/api/v1/inventory/stock/aggregated/{itemId}": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "operationId": "Stock_GetAggregated",
         "parameters": [
           {
             "in": "path",
@@ -325,33 +559,85 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.AggregatedStockDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfAggregatedStockDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Stock agregado de un item a trav\u00E9s de todas las bodegas.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.view"
         ]
       }
     },
     "/api/v1/inventory/stock/costs/pending": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.pending-costs.view\u0060.",
+        "operationId": "Stock_GetPendingCosts",
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.pending-costs.view"
         ]
       }
     },
     "/api/v1/inventory/stock/items/{itemId}/warehouse-availability": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "operationId": "Stock_GetWarehouseAvailability",
         "parameters": [
           {
             "in": "path",
@@ -368,21 +654,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.ItemWarehouseAvailabilityDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                  "$ref": "#/components/schemas/ApiResponseOfIReadOnlyListOfItemWarehouseAvailabilityDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Disponibilidad de un item por bodega (para selectores de bodega en documentos de venta).",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.view"
         ]
       }
     },
     "/api/v1/inventory/stock/movements": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "operationId": "Stock_GetMovements",
         "parameters": [
           {
             "in": "query",
@@ -422,21 +734,57 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockMovementDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                  "$ref": "#/components/schemas/ApiResponseOfIReadOnlyListOfStockMovementDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Consulta movimientos de stock por item y bodega.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.view"
         ]
       }
     },
     "/api/v1/inventory/stock/report": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "operationId": "Stock_GetReport",
         "parameters": [
           {
             "in": "query",
@@ -459,36 +807,72 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Inventory.Stock.UseCases.GetCurrentStockReport.StockReportRowDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
+                  "$ref": "#/components/schemas/ApiResponseOfIReadOnlyListOfStockReportRowDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Reporte b\u00E1sico de stock actual por bodega (piloto Sumak). Sin warehouseId, incluye\r\ntodas las bodegas de la empresa activa.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.view"
         ]
       }
     },
     "/api/v1/inventory/stock/transfers": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
+        "operationId": "StockTransfers_CreateTransfer",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+                "$ref": "#/components/schemas/CreateStockTransferCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+                "$ref": "#/components/schemas/CreateStockTransferCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockTransfer.CreateStockTransferCommand"
+                "$ref": "#/components/schemas/CreateStockTransferCommand"
               }
             }
           }
@@ -498,21 +882,57 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Inventory.Stock.DTOs.StockTransferDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfStockTransferDto"
                 }
               }
             },
             "description": "Created"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Crea una transferencia entre bodegas en estado Draft. \u00DAnico punto de entrada de men\u00FA de\r\n\u0022Stock\u0022 (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver\r\ncomentario de cabecera \u2014 Stock en general no es men\u00FA-visible), pero Transferencias s\u00ED es\r\nuna pantalla propia \u2014 [AppFeature] a nivel de m\u00E9todo (soportado por el atributo) le da\r\nentrada de men\u00FA dedicada sin exponer Ajustes/consultas de Stock como \u00EDtems de men\u00FA.\r\nReutiliza el mismo permiso que ya protege este endpoint \u2014 no crea uno nuevo.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.manage"
         ]
       }
     },
     "/api/v1/inventory/stock/transfers/{id}/confirm": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
+        "operationId": "StockTransfers_ConfirmTransfer",
         "parameters": [
           {
             "in": "path",
@@ -527,11 +947,35 @@
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "Confirma una transferencia Draft: mueve stock entre bodegas.",
         "tags": [
           "Stock"
+        ],
+        "x-required-permissions": [
+          "inventory.stock.manage"
         ]
       }
     }

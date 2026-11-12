@@ -1,4 +1,5 @@
 using System.Reflection;
+using ERP.API.Swagger;
 using Microsoft.OpenApi.Models;
 
 namespace ERP.API.Extensions;
@@ -9,8 +10,24 @@ public static class SwaggerExtensions
     {
         services.AddSwaggerGen(options =>
         {
-            // Evita colisiones cuando existen tipos con el mismo nombre en distintos namespaces.
-            options.CustomSchemaIds(t => t.FullName);
+            // API-DOC-V1 / Fase 2A: ids de esquema portables (sin backticks ni PublicKeyToken); solo los
+            // tipos ERP con nombre repetido se califican con su namespace.
+            var schemaIds = new OpenApiSchemaIds(
+                [
+                    Assembly.GetExecutingAssembly(), // ERP.API
+                    typeof(ERP.Application.DependencyInjection).Assembly, // ERP.Application
+                    typeof(ERP.Domain.Common.BaseEntity).Assembly, // ERP.Domain
+                ]
+            );
+            var schemaTypes = new OpenApiSchemaTypeRegistry();
+            options.CustomSchemaIds(schemaIds.For);
+            options.CustomOperationIds(OpenApiOperationIds.Base);
+            options.SupportNonNullableReferenceTypes();
+            options.SchemaFilter<OpenApiSchemaTypeRegistryFilter>(schemaTypes);
+            options.OperationFilter<OpenApiAuthorizationOperationFilter>();
+            options.OperationFilter<OpenApiErrorResponsesOperationFilter>(schemaIds);
+            options.DocumentFilter<OpenApiOperationIdsDocumentFilter>();
+            options.DocumentFilter<OpenApiSchemaContractDocumentFilter>(schemaTypes);
 
             options.MapType<IFormFile>(() =>
                 new OpenApiSchema { Type = "string", Format = "binary" }
@@ -23,18 +40,19 @@ public static class SwaggerExtensions
                     Title = "ERP SaaS API",
                     Version = "v1",
                     Description = """
-                    API multi-tenant para el sistema ERP SaaS de ZH Technologies.
+                    API multi-tenant del ERP SaaS de ZH Technologies.
 
-                    **Autenticación:** todos los endpoints marcados con 🔒 requieren un JWT Bearer.
-                    Obtén el token con `POST /api/auth/login` y pégalo en el botón **Authorize**.
+                    **Autenticación:** los endpoints con candado exigen un JWT Bearer; los marcados como
+                    públicos (`AllowAnonymous`) no. Obtén el token con `POST /api/v1/auth/login` y pégalo
+                    en **Authorize**. Cada operación indica en su descripción los permisos `perm:*`
+                    que exige.
 
-                    **Multi-tenant:** el tenant se identifica mediante el claim `tenant_id` dentro del JWT.
-                    Cada request filtra automáticamente los datos del tenant autenticado.
+                    **Multi-tenant:** el tenant se identifica por el claim `tenant_id` del JWT; cada
+                    solicitud opera solo sobre los datos del tenant autenticado.
 
-                    **Base de datos (producción):** aplicar migraciones de EF Core solo en ventana controlada,
-                    con backup previo: `dotnet ef database update --project src/ERP.Infrastructure/ERP.Infrastructure.csproj
-                    --startup-project src/ERP.API/ERP.API.csproj --connection "<cadena de producción>"`.
-                    No ejecutar contra producción desde entornos no auditados.
+                    **Respuestas:** el éxito y los errores de negocio viajan en un envelope común
+                    (`code`, `severity`, `message`, `data`, `meta`). Los rechazos del middleware de
+                    autenticación/autorización (401/403) no llevan cuerpo.
                     """,
                 }
             );
@@ -50,24 +68,10 @@ public static class SwaggerExtensions
                 Description = "Ingresa el token JWT (sin el prefijo 'Bearer').",
             };
 
-            options.AddSecurityDefinition("Bearer", securityScheme);
+            options.AddSecurityDefinition(OpenApiAuthorizationOperationFilter.BearerSchemeId, securityScheme);
 
-            options.AddSecurityRequirement(
-                new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer",
-                            },
-                        },
-                        Array.Empty<string>()
-                    },
-                }
-            );
+            // La exigencia de Bearer se declara por operación (OpenApiAuthorizationOperationFilter):
+            // un requisito global haría que los endpoints AllowAnonymous parecieran protegidos.
 
             // Incluir comentarios XML (controllers + modelos/DTOs)
             // note: requiere <GenerateDocumentationFile>true</GenerateDocumentationFile> en los .csproj.

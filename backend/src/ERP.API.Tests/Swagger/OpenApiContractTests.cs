@@ -1,0 +1,349 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using ERP.API.Tests.Support;
+using ERP.Application.Access.Authorization;
+using FluentAssertions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ERP.API.Tests.Swagger;
+
+/// <summary>
+/// API-DOC-V1 / Fase 2A — invariantes del documento OpenAPI global y su correspondencia con el
+/// comportamiento HTTP real (host real + PostgreSQL). No fija el documento completo: fija las reglas
+/// que los filtros centrales deben garantizar para toda operación, presente o futura.
+/// </summary>
+[Trait("Category", "PostgreSql")]
+public sealed partial class OpenApiContractTests : IAsyncLifetime
+{
+    private static readonly string[] Methods = ["get", "post", "put", "patch", "delete"];
+
+    private readonly PostgreSqlTestWebAppFactory _factory = new();
+    private JsonNode _doc = null!;
+
+    public async Task InitializeAsync()
+    {
+        // JwtExtensions lee la clave al registrar servicios (antes de la configuración en memoria del
+        // factory): mismo patrón que AdminCoreAuthorizationHttpFixture.
+        Environment.SetEnvironmentVariable("JWT__SECRETKEY", IntegrationTestConstants.JwtSecretKey);
+        Environment.SetEnvironmentVariable("JWT__ISSUER", "ZHTechnologies");
+        Environment.SetEnvironmentVariable("JWT__AUDIENCE", "ERPUsers");
+
+        await _factory.InitializeAsync();
+        await _factory.MigrateAsync();
+        _doc = JsonNode.Parse(
+            await _factory.CreateClient().GetStringAsync("/swagger/v1/swagger.json")
+        )!;
+    }
+
+    public async Task DisposeAsync() => await _factory.DisposeAsync();
+
+    [GeneratedRegex("^[A-Za-z0-9._-]+$")]
+    private static partial Regex ComponentName();
+
+    [GeneratedRegex("^[A-Za-z0-9_]+$")]
+    private static partial Regex OperationName();
+
+    private IEnumerable<(string Path, string Method, JsonObject Op)> Operations() =>
+        _doc["paths"]!
+            .AsObject()
+            .SelectMany(p =>
+                p.Value!.AsObject()
+                    .Where(m => Methods.Contains(m.Key))
+                    .Select(m => (p.Key, m.Key, m.Value!.AsObject()))
+            );
+
+    private IReadOnlyList<ApiDescription> ApiExplorerOperations() =>
+        _factory
+            .Services.GetRequiredService<IApiDescriptionGroupCollectionProvider>()
+            .ApiDescriptionGroups.Items.SelectMany(g => g.Items)
+            .Where(d => d.HttpMethod is not null)
+            .ToList();
+
+    [Fact]
+    public void El_documento_expone_exactamente_las_operaciones_del_ApiExplorer_sin_las_ocultas()
+    {
+        var expected = ApiExplorerOperations();
+
+        Operations().Count().Should().Be(expected.Count);
+        Operations().Select(o => o.Path).Should().NotContain(p => p.Contains("/api/dev/"));
+    }
+
+    [Fact]
+    public void operationId_existe_es_unico_y_portable()
+    {
+        var ids = Operations().Select(o => o.Op["operationId"]?.GetValue<string>()).ToList();
+
+        ids.Should().OnlyContain(i => !string.IsNullOrEmpty(i));
+        ids.Should().OnlyContain(i => OperationName().IsMatch(i!));
+        ids.Select(i => i!.ToLowerInvariant()).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void Ids_de_esquema_son_portables_sin_backticks_ni_assembly()
+    {
+        var names = _doc["components"]!["schemas"]!.AsObject().Select(s => s.Key).ToList();
+
+        names.Should().OnlyContain(n => ComponentName().IsMatch(n));
+        names.Should().NotContain(n => n.Contains("PublicKeyToken") || n.Contains('`'));
+    }
+
+    [Fact]
+    public void Todas_las_referencias_a_esquemas_se_resuelven_y_no_hay_esquemas_huerfanos()
+    {
+        var text = _doc.ToJsonString();
+        var referenced = Regex
+            .Matches(text, "\"#/components/schemas/([^\"]+)\"")
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet();
+        var defined = _doc["components"]!["schemas"]!.AsObject().Select(s => s.Key).ToHashSet();
+
+        referenced.Except(defined).Should().BeEmpty("no puede haber $ref colgantes");
+        defined.Except(referenced).Should().BeEmpty("no debe quedar ningún esquema sin referenciar");
+    }
+
+    [Fact]
+    public void La_exigencia_de_Bearer_es_por_operacion_y_los_endpoints_publicos_no_la_exigen()
+    {
+        _doc["security"].Should().BeNull("el requisito global haría parecer protegidos a los anónimos");
+
+        foreach (var description in ApiExplorerOperations())
+        {
+            var metadata = description.ActionDescriptor.EndpointMetadata;
+            var isPublic =
+                metadata.OfType<IAllowAnonymous>().Any()
+                || !metadata.OfType<IAuthorizeData>().Any();
+            var path = "/" + description.RelativePath!.Split('?')[0];
+            var op = FindOperation(path, description.HttpMethod!);
+            var security = op["security"]!.AsArray();
+
+            if (isPublic)
+                security
+                    .Should()
+                    .ContainSingle($"{description.HttpMethod} {path} es público")
+                    .Which!.AsObject()
+                    .Should()
+                    .BeEmpty();
+            else
+                security[0]!.AsObject().ContainsKey("Bearer").Should().BeTrue($"{description.HttpMethod} {path}");
+        }
+    }
+
+    private JsonObject FindOperation(string apiExplorerPath, string method)
+    {
+        // El ApiExplorer conserva las restricciones de ruta ({id:guid}); el documento las elimina.
+        var normalized = Regex.Replace(apiExplorerPath, @"\{([^}:?]+)(:[^}]*)?\??\}", "{$1}");
+        var item = _doc["paths"]![normalized];
+        item.Should().NotBeNull($"falta la ruta {normalized}");
+        return item![method.ToLowerInvariant()]!.AsObject();
+    }
+
+    [Fact]
+    public void Ninguna_respuesta_de_error_inferida_expone_ProblemDetails()
+    {
+        // La API no emite ProblemDetails: todo error usa el envelope (ver error-handling.md).
+        var offenders = Operations()
+            .SelectMany(o =>
+                o.Op["responses"]!.AsObject()
+                    .Where(r => r.Value!.ToJsonString().Contains("ProblemDetails"))
+                    .Select(r => $"{o.Method.ToUpperInvariant()} {o.Path} {r.Key}")
+            )
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Respuestas_comunes_se_documentan_solo_cuando_el_pipeline_las_garantiza()
+    {
+        foreach (var (path, method, op) in Operations())
+        {
+            var responses = op["responses"]!.AsObject();
+            var secured = op["security"]!.AsArray().Any(r => r!.AsObject().Count > 0);
+            var label = $"{method.ToUpperInvariant()} {path}";
+
+            responses.ContainsKey("500").Should().BeTrue($"{label}: ExceptionMiddleware envuelve el pipeline");
+            responses.ContainsKey("401").Should().Be(secured, $"{label}: 401 solo si exige token");
+            responses.ContainsKey("403").Should().Be(secured, $"{label}: 403 solo si exige política");
+        }
+    }
+
+    [Fact]
+    public void Los_permisos_del_contrato_provienen_de_las_politicas_reales()
+    {
+        foreach (var description in ApiExplorerOperations())
+        {
+            var expected = description
+                .ActionDescriptor.EndpointMetadata.OfType<IAuthorizeData>()
+                .Select(a => a.Policy)
+                .Where(p => p is not null && p.StartsWith("perm:", StringComparison.OrdinalIgnoreCase))
+                .Select(p => p![5..].Trim())
+                .Distinct()
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .ToList();
+            var path = "/" + description.RelativePath!.Split('?')[0];
+            var extension = FindOperation(path, description.HttpMethod!)["x-required-permissions"];
+
+            if (expected.Count == 0)
+                extension.Should().BeNull($"{description.HttpMethod} {path}");
+            else
+                extension!
+                    .AsArray()
+                    .Select(n => n!.GetValue<string>())
+                    .Should()
+                    .Equal(expected, $"{description.HttpMethod} {path}");
+        }
+    }
+
+    [Fact]
+    public void Secretos_de_entrada_son_writeOnly_y_los_de_salida_no_se_ocultan()
+    {
+        var schemas = _doc["components"]!["schemas"]!;
+
+        schemas["LoginCommand"]!["properties"]!["password"]!["writeOnly"]!.GetValue<bool>().Should().BeTrue();
+        schemas["LoginCommand"]!["properties"]!["password"]!["format"]!.GetValue<string>().Should().Be("password");
+        // El token de sesión es parte legítima de la respuesta de login.
+        schemas["AuthResponseDto"]!["properties"]!["token"]!["writeOnly"].Should().BeNull();
+    }
+
+    [Fact]
+    public void Esquemas_solo_de_respuesta_marcan_required_las_propiedades_no_nulas()
+    {
+        var envelope = _doc["components"]!["schemas"]!["ApiResponseOfObject"]!;
+
+        envelope["required"]!
+            .AsArray()
+            .Select(n => n!.GetValue<string>())
+            .Should()
+            .Contain(["code", "severity", "message", "meta"])
+            .And.NotContain("data", "Data es T? y puede ser null");
+    }
+
+    // ── Comportamiento real que respalda lo documentado ─────────────────────────────────────────
+
+    [Fact]
+    public async Task Endpoints_protegidos_sin_token_responden_401_sin_cuerpo()
+    {
+        var client = _factory.CreateClient();
+        var targets = Operations()
+            .Where(o =>
+                o.Method == "get"
+                && !o.Path.Contains('{')
+                && o.Op["security"]!.AsArray().Any(r => r!.AsObject().Count > 0)
+            )
+            .OrderBy(o => o.Path, StringComparer.Ordinal)
+            .Take(5)
+            .ToList();
+        targets.Should().NotBeEmpty();
+
+        foreach (var (path, _, _) in targets)
+        {
+            var response = await client.GetAsync(path);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized, path);
+            (await response.Content.ReadAsStringAsync()).Should().BeEmpty(path);
+        }
+    }
+
+    [Fact]
+    public async Task Endpoint_con_politica_y_token_sin_permiso_responde_403_sin_cuerpo()
+    {
+        var target = Operations()
+            .Where(o =>
+                o.Method == "get"
+                && !o.Path.Contains('{')
+                && o.Op.ContainsKey("x-required-permissions")
+            )
+            .OrderBy(o => o.Path, StringComparer.Ordinal)
+            .First();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(Guid.NewGuid(), Guid.NewGuid())
+        );
+
+        var response = await client.GetAsync(target.Path);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden, target.Path);
+        (await response.Content.ReadAsStringAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Endpoints_publicos_no_exigen_token()
+    {
+        var client = _factory.CreateClient();
+
+        foreach (var path in new[] { "/api/v1/public/deployment", "/api/v1/setup/status" })
+        {
+            var response = await client.GetAsync(path);
+            response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized, path);
+            response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden, path);
+        }
+    }
+
+    [Fact]
+    public async Task Entrada_no_enlazable_responde_422_con_envelope_VALIDATION_ERROR()
+    {
+        // /auth/login es público (sin token) y enlaza cuerpo: llega hasta ModelState.
+        var response = await _factory
+            .CreateClient()
+            .PostAsync(
+                "/api/v1/auth/login",
+                new StringContent("{", System.Text.Encoding.UTF8, "application/json")
+            );
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = (await response.Content.ReadFromJsonAsync<JsonObject>())!;
+        body["code"]!.GetValue<string>().Should().Be("VALIDATION_ERROR");
+        body.ContainsKey("meta").Should().BeTrue();
+
+        var declared = FindOperation("/api/v1/auth/login", "POST")["responses"]!["422"]!;
+        declared["content"]!["application/json"]!["schema"]!["$ref"]!
+            .GetValue<string>()
+            .Should()
+            .EndWith("/ApiResponseOfObject");
+    }
+
+    [Fact]
+    public void Auth_login_es_publico_por_su_configuracion_actual_y_asi_se_documenta()
+    {
+        // POST /auth/login no declara [Authorize] ni [AllowAnonymous]; sin política de respaldo es
+        // accesible sin token. El contrato lo refleja sin modificar la autorización real.
+        var login = FindOperation("/api/v1/auth/login", "POST");
+
+        login["security"]!.AsArray().Should().ContainSingle().Which!.AsObject().Should().BeEmpty();
+        login["description"]!.GetValue<string>().Should().Contain("no declara `[Authorize]`");
+    }
+
+    [Fact]
+    public async Task Query_no_enlazable_en_endpoint_autenticado_responde_422_con_envelope()
+    {
+        // Respalda la regla de 422 para operaciones con solo parámetros query: ModelState rechaza
+        // el valor antes de ejecutar la acción. Permisos abiertos para llegar al enlace de modelo.
+        var tenantId = Guid.NewGuid();
+        await using var app = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+                services.AddScoped<IRuntimePermissionAuthorizer, AllowAllPermissionAuthorizer>()
+            )
+        );
+        var client = app.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(tenantId, Guid.NewGuid(), Guid.NewGuid(), "Admin")
+        );
+
+        var response = await client.GetAsync("/api/v1/accounting/journal-entries?pageNumber=abc");
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        var body = (await response.Content.ReadFromJsonAsync<JsonObject>())!;
+        body["code"]!.GetValue<string>().Should().Be("VALIDATION_ERROR");
+
+        var op = FindOperation("/api/v1/accounting/journal-entries", "GET");
+        op["requestBody"].Should().BeNull("la operación solo enlaza query");
+        op["responses"]!.AsObject().ContainsKey("422").Should().BeTrue();
+    }
+}

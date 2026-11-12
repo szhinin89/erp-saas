@@ -2,21 +2,23 @@
   "paths": {
     "/api/v1/companies": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; pol\u00EDtica: \u0060CompanyProvisioning\u0060.",
+        "operationId": "Companies_Create",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+                "$ref": "#/components/schemas/CreateCompanyCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+                "$ref": "#/components/schemas/CreateCompanyCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.CreateCompany.CreateCompanyCommand"
+                "$ref": "#/components/schemas/CreateCompanyCommand"
               }
             }
           }
@@ -26,13 +28,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyCreatedDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyCreatedDto"
                 }
               }
             },
             "description": "Created"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
         ]
@@ -40,77 +73,157 @@
     },
     "/api/v1/companies/current": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "Companies_GetCurrent",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyDetailDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       }
     },
     "/api/v1/companies/operational-readiness": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetOperationalReadiness",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyOperationalReadinessDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyOperationalReadinessDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "summary": "COMPANY-OPERATING-SETUP-01: checklist de preparaci\u00F3n operativa \u2014 orquesta fuentes/resolvers\r\nexistentes, no persiste nada. Ver ICompanyOperationalReadinessResolver.",
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       }
     },
     "/api/v1/companies/profile": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetProfile",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       },
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateProfile",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+                "$ref": "#/components/schemas/UpdateCompanyProfileCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+                "$ref": "#/components/schemas/UpdateCompanyProfileCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile.UpdateCompanyProfileCommand"
+                "$ref": "#/components/schemas/UpdateCompanyProfileCommand"
               }
             }
           }
@@ -120,52 +233,114 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/branding": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetBranding",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyBrandingDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyBrandingDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       },
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateBranding",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+                "$ref": "#/components/schemas/UpdateCompanyBrandingCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+                "$ref": "#/components/schemas/UpdateCompanyBrandingCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyBranding.UpdateCompanyBrandingCommand"
+                "$ref": "#/components/schemas/UpdateCompanyBrandingCommand"
               }
             }
           }
@@ -175,35 +350,71 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyBrandingDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyBrandingDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/documents": {
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateDocuments",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+                "$ref": "#/components/schemas/UpdateCompanyDocumentsCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+                "$ref": "#/components/schemas/UpdateCompanyDocumentsCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyDocuments.UpdateCompanyDocumentsCommand"
+                "$ref": "#/components/schemas/UpdateCompanyDocumentsCommand"
               }
             }
           }
@@ -213,35 +424,71 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/fiscal": {
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateFiscal",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+                "$ref": "#/components/schemas/UpdateCompanyFiscalCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+                "$ref": "#/components/schemas/UpdateCompanyFiscalCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyFiscal.UpdateCompanyFiscalCommand"
+                "$ref": "#/components/schemas/UpdateCompanyFiscalCommand"
               }
             }
           }
@@ -251,52 +498,114 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/fiscal-policy": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetFiscalPolicy",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfSalesFiscalPolicyDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       },
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateFiscalPolicy",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+                "$ref": "#/components/schemas/UpdateConsumerFinalMaxAmountCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+                "$ref": "#/components/schemas/UpdateConsumerFinalMaxAmountCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount.UpdateConsumerFinalMaxAmountCommand"
+                "$ref": "#/components/schemas/UpdateConsumerFinalMaxAmountCommand"
               }
             }
           }
@@ -306,20 +615,56 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Sales.DTOs.SalesFiscalPolicyDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfSalesFiscalPolicyDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/logo": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UploadLogo",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -345,20 +690,56 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/logo-alt": {
       "post": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UploadLogoAlt",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -384,59 +765,147 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     },
     "/api/v1/companies/profile/logo-alt/content": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetLogoAltContent",
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       }
     },
     "/api/v1/companies/profile/logo/content": {
       "get": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.view\u0060.",
+        "operationId": "CompanyProfile_GetLogoContent",
         "responses": {
           "200": {
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.view"
         ]
       }
     },
     "/api/v1/companies/profile/operation": {
       "put": {
+        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060erp.companies.update\u0060.",
+        "operationId": "CompanyProfile_UpdateOperation",
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+                "$ref": "#/components/schemas/UpdateCompanyOperationCommand"
               }
             },
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+                "$ref": "#/components/schemas/UpdateCompanyOperationCommand"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompanyOperation.UpdateCompanyOperationCommand"
+                "$ref": "#/components/schemas/UpdateCompanyOperationCommand"
               }
             }
           }
@@ -446,15 +915,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ApiResponseOfCompanyProfileDto"
                 }
               }
             },
             "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
+          },
+          "403": {
+            "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Entrada inv\u00E1lida o no enlazable (ModelState). Envelope con \u0060code\u0060 \u0060VALIDATION_ERROR\u0060."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "Error interno no controlado (ExceptionMiddleware). Envelope con \u0060code\u0060 \u0060INTERNAL_ERROR\u0060."
           }
         },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
         "tags": [
           "Companies"
+        ],
+        "x-required-permissions": [
+          "erp.companies.update"
         ]
       }
     }
