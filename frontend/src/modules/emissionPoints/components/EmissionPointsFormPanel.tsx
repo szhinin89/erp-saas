@@ -131,7 +131,7 @@ export function EmissionPointsFormPanel({
                 <ZHField label="Código" required error={errors.code?.message}>
                   {isEdit ? (
                     <ZhTextInput
-                      className="zh-input mono ep-code-readonly"
+                      className="zh-input mono zh-input--readonly-code"
                       readOnly
                       value={editingCode ?? "—"}
                     />

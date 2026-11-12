@@ -245,7 +245,7 @@ export function BranchGeneralSection({
             </ZHField>
             <ZHField label="Código">
               <ZhTextInput
-                className="mono br-code-readonly"
+                className="mono zh-input--readonly-code"
                 readOnly
                 value={initialData.code ?? "—"}
               />

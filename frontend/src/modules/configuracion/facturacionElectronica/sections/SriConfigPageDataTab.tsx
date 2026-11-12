@@ -18,6 +18,7 @@ import type {
   SriConfigurationDto,
 } from "../api/electronicInvoicingService";
 import "./sri-config-page.css";
+import "../../styles/password-field.css";
 
 type SriEnvOption = { value: 1 | 2; label: string; description: string };
 

@@ -107,7 +107,7 @@ export function EstablishmentsFormPanel({
                 >
                   {isEdit ? (
                     <ZhTextInput
-                      className="zh-input mono ep-code-readonly"
+                      className="zh-input mono zh-input--readonly-code"
                       readOnly
                       value={editingCode ?? "—"}
                     />

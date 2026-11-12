@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { CompanyProfileSettingsSection } from "./sections/CompanyProfileSettingsSection";
 import { BrandingSettingsSection } from "./sections/BrandingSettingsSection";
+import "./sections/BrandingSettingsSection.css";
 import { FiscalSettingsSection } from "./sections/FiscalSettingsSection";
 import { OperationSettingsSection } from "./sections/OperationSettingsSection";
 import { DocumentsSettingsSection } from "./sections/DocumentsSettingsSection";

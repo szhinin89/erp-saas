@@ -5,7 +5,6 @@ import { ConfigTabsLayout } from "../../../components/shared/ConfigTabsLayout";
 import { BranchFormPanel } from "./BranchFormPanel";
 import { BranchesListSection } from "./BranchesListSection";
 import { useBranchesPage } from "../hooks/useBranchesPage";
-import "../pages/branches-page.css";
 import "../../../styles/shared/items-catalog.css";
 
 export function BranchesManagementSection() {

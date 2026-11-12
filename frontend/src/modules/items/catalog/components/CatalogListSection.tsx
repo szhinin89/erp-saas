@@ -6,6 +6,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/Z
 import { useI18n } from "../../../../i18n/i18n";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import type { CatalogCrudContext } from "../hooks/useCatalogCrud";
+import "../../../../styles/shared/items-catalog.css";
 
 interface Props<
   TDto extends { isActive: boolean; name: string },

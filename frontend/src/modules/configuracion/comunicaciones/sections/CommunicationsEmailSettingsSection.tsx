@@ -5,6 +5,7 @@ import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhNumberInput } from "../../../../components/zh/inputs/ZhNumberInput";
 import { useI18n } from "../../../../i18n/i18n";
 import { useCommunicationsEmailSettingsPage } from "./useCommunicationsEmailSettingsPage";
+import "../../styles/password-field.css";
 
 export function CommunicationsEmailSettingsSection() {
   const { t } = useI18n();

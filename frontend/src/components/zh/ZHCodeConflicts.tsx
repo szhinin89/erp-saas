@@ -1,4 +1,5 @@
 import { ZHFormAlert, ZHLinkButton } from "./ZHForm";
+import "./notices/zh-notice.css";
 
 export interface ZHCodeConflict {
   code: string;

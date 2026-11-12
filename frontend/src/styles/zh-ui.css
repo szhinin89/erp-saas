@@ -626,6 +626,14 @@ input[type="date"] {
   text-transform: uppercase;
 }
 
+/* Campo de codigo en solo lectura, destacado (Paquete B2/B5) -- consolida
+   .br-code-readonly (Sucursales) y .ep-code-readonly (Puntos de emision /
+   Establecimientos), que eran la misma regla repetida en dos modulos. */
+.zh-input--readonly-code {
+  color: var(--color-primary);
+  background: var(--color-surface-container);
+}
+
 /* Densidad compacta reutilizable (Bloque 8A.1) — misma especificación que
    .zh-field--compact .zh-field-control input, pero aplicable directamente
    sobre un input suelto (p.ej. dentro de una celda de tabla), sin requerir
@@ -643,6 +651,34 @@ input[type="date"] {
    de campos de .zh-input--compact (input/textarea) no llevan icono de fondo. */
 select.zh-input--compact {
   padding-right: 28px;
+}
+
+/* Grupo de opciones de radio (Paquete B7) -- reglas movidas sin cambios desde
+   modules/emissionPoints/pages/emission-points-page.css: ya se nombraban zh-* y las
+   usan Puntos de emision y la Nota de credito de compra. */
+.zh-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zh-radio-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.zh-radio-option input[type="radio"] {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.zh-radio-desc {
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
 }
 
 /* <ZHInputGroup>: agrupa un prefijo/sufijo (p.ej. "$") con un input Zh*Input en
