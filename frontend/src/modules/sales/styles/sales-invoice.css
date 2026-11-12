@@ -808,9 +808,6 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
-.sf-result__stock-qty--muted {
-  font-style: italic;
-}
 /* SALES-ITEM-SEARCH-RESULT-PRICE-HIERARCHY-01: orden de lectura Normal → Promo → Final — el
    precio normal (tachado cuando hay descuento) es solo comparación visual, nunca el dato
    destacado; "Precio final" (.sf-result__price-final) es siempre el más grande/marcado de los

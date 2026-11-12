@@ -95,12 +95,12 @@ function AccountNameCell({ row, treeMode, expanded, orphan, onToggle }: Readonly
         <span className="zh-account-ref__code">{account.code}</span>
         <span className="zh-account-ref__name">{name}</span>
         {isContext && (
-          <ZHDataValue variant="muted" italic>
+          <ZHDataValue variant="muted">
             (contexto)
           </ZHDataValue>
         )}
         {orphan && (
-          <ZHDataValue variant="muted" italic>
+          <ZHDataValue variant="muted">
             (padre no disponible)
           </ZHDataValue>
         )}

@@ -19,6 +19,7 @@ import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { PRECISION_SECTIONS, precisionExample } from "../precisionPolicyFields";
+import "./operational-readiness.css";
 import {
   assertPrecisionMetadata,
   buildPrecisionPolicySchema,
@@ -230,17 +231,10 @@ function PrecisionPolicyForm({
                       onClick={() => selectProfile(id)}
                       aria-checked={active}
                       role="radio"
-                      style={{
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        height: "auto",
-                        whiteSpace: "normal",
-                        textAlign: "left",
-                        gap: 4,
-                      }}
+                      className="cfg-precision-profile"
                     >
                       <strong>{t(PROFILE_TITLES[id])}</strong>
-                      <span className="zh-text-muted" style={{ fontSize: "0.85em", fontWeight: 400 }}>
+                      <span className="zh-text-muted cfg-precision-profile__summary">
                         {profileSummary(id, profiles, t)}
                       </span>
                     </ZHBtn>

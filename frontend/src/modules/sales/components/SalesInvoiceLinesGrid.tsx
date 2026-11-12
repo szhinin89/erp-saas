@@ -70,7 +70,7 @@ export function SalesInvoiceLinesGrid({
           <p className="sf-products-empty__title">Agrega un producto para comenzar</p>
           <p className="sf-products-empty__hint">
             Busca por nombre, SKU o escanea el código de barras ·{" "}
-            <kbd className="sf-products-empty__kbd">F2</kbd> enfoca el buscador
+            <kbd className="sf-products-empty__kbd zh-code-value">F2</kbd> enfoca el buscador
           </p>
         </div>
       </div>

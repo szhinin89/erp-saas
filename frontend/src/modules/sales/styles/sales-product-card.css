@@ -658,7 +658,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xs);
   background: var(--color-surface-container-low);
-  font-family: var(--font-family-mono);
   font-size: var(--text-help-size);
   color: var(--color-text-primary);
 }

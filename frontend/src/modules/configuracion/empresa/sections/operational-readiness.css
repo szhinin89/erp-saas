@@ -87,3 +87,18 @@
   flex-direction: column;
   gap: 2px;
 }
+
+/* Perfiles de precisión: botón ZHBtn apilado (layout). Doble clase para prevalecer sobre .zh-btn--md. */
+.zh-btn.cfg-precision-profile {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+  white-space: normal;
+  text-align: left;
+  gap: 4px;
+}
+
+.cfg-precision-profile__summary {
+  font-size: 0.85em;
+  font-weight: 400;
+}
