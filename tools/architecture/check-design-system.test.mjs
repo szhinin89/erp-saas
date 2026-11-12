@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import {
   collectDynamicCustomProperties,
   findCssLiteralViolations,
+  findInvalidNativeAllowances,
+  findNativeControlViolations,
+  isNativeControlScope,
+  nativeControlHits,
   findRetiredCssSelectorViolations,
   findViolations,
   stripComments,
@@ -208,4 +212,121 @@ test('pf-table: declaración CSS activa → FAIL; comentarios, .pf-table-empty y
 test('repo real: sin consumidores TSX ni declaraciones CSS activas de .pf-table', () => {
   const v = runCheckDesignSystem().violations.filter((x) => x.rule === 'F-04-pf-table');
   assert.deepEqual(v, []);
+});
+
+/**
+ * Paquete C5 — F-04-native-* y F-04-tabs-manual: controles nativos y pestañas manuales con
+ * equivalente oficial; excepciones por archivo con conteo y motivo.
+ */
+const MOD = 'frontend/src/modules/demo/Demo.tsx';
+const rulesOf = (content) => nativeControlHits(content).map((h) => `${h.rule}@${h.line}`);
+
+test('native: <select>, <textarea> y <input> de texto/email/password/fecha → FAIL con su línea', () => {
+  const tsx = [
+    'export const A = () => (',
+    '  <form>',
+    '    <select {...register("a")}><option /></select>',
+    '    <textarea rows={3} />',
+    '    <input type="email" onChange={(e) => set(e.target.value)} />',
+    '    <input',
+    '      {...register("n")}',
+    '    />',
+    '    <input type="date" />',
+    '    <input type={show ? "text" : "password"} />',
+    '  </form>',
+    ');',
+  ].join('\n');
+  assert.deepEqual(rulesOf(tsx), [
+    'F-04-native-select@3',
+    'F-04-native-textarea@4',
+    'F-04-native-input@5',
+    'F-04-native-input@6',
+    'F-04-native-input@9',
+    'F-04-native-input@10',
+  ]);
+});
+
+test('native: checkbox se marca aparte; radio, file, color, range y hidden no se marcan', () => {
+  const tsx = [
+    '<input type="checkbox" checked={x} />',
+    '<input type="radio" name="r" />',
+    '<input type="file" ref={r} />',
+    '<input type="color" {...register("c")} />',
+    '<input type="range" />',
+    '<input type="hidden" value="1" />',
+  ].join('\n');
+  assert.deepEqual(rulesOf(tsx), ['F-04-native-checkbox@1']);
+});
+
+test('native falsos positivos: componentes oficiales, comentarios, atributos con ">" y data-type no cuentan', () => {
+  const tsx = [
+    '// <input type="text" />',
+    '/* <select> */',
+    '<ZhSelect /> <ZhTextInput type="email" /> <ZhCheckbox /> <ZhTextarea />',
+    '<ZhInputGroup /> <inputs />',
+    '<div data-type="checkbox" className="seleccion" />',
+    '<ZhTextInput onChange={(e) => a > b} />',
+  ].join('\n');
+  assert.deepEqual(rulesOf(tsx), []);
+});
+
+test('tabs-manual: .prd-tab-btn base se marca; el modificador --active solo no', () => {
+  assert.deepEqual(rulesOf('<button className={`prd-tab-btn ${a ? "prd-tab-btn--active" : ""}`} />'), ['F-04-tabs-manual@1']);
+  assert.deepEqual(rulesOf('const x = "prd-tab-btn--active"; const y = "my-prd-tab-btn-x";'), []);
+});
+
+test('native alcance: components/zh/** (internos del DS) y pruebas quedan fuera', () => {
+  const raw = '<input type="text" /><select />';
+  assert.equal(isNativeControlScope('frontend/src/components/zh/inputs/ZhTextInput.tsx'), false);
+  assert.equal(isNativeControlScope('frontend/src/modules/demo/Demo.test.tsx'), false);
+  assert.equal(isNativeControlScope('frontend/src/modules/demo/Demo.visual.test.tsx'), false);
+  assert.equal(isNativeControlScope('frontend/src/modules/demo/helpers.ts'), false);
+  assert.equal(isNativeControlScope(MOD), true);
+  assert.deepEqual(findNativeControlViolations({}, 'frontend/src/components/zh/ZHTabBar.tsx', raw), []);
+  assert.equal(findNativeControlViolations({}, MOD, raw).length, 2);
+});
+
+test('native allowance: igual → PASS; más → FAIL (deuda nueva); menos → FAIL (bajar); sin entrada → cada hit', () => {
+  const two = '<input type="text" /><input type="text" />';
+  const allow = (count) => ({ 'F-04-native-input': { [MOD]: { count, reason: 'Selector especializado con teclado propio' } } });
+  assert.deepEqual(findNativeControlViolations(allow(2), MOD, two), []);
+  const more = findNativeControlViolations(allow(1), MOD, two);
+  assert.equal(more.length, 1);
+  assert.match(more[0].message, /deuda nueva/);
+  const less = findNativeControlViolations(allow(3), MOD, two);
+  assert.equal(less.length, 1);
+  assert.match(less[0].message, /desactualizada.*bajar nativeControlAllowances a 2/);
+  assert.equal(findNativeControlViolations({}, MOD, two).length, 2);
+});
+
+test('native allowance: una excepción de otra regla no exime (el checkbox sigue fallando)', () => {
+  const allow = { 'F-04-native-input': { [MOD]: { count: 1, reason: 'Selector especializado con teclado propio' } } };
+  const v = findNativeControlViolations(allow, MOD, '<input type="text" /><input type="checkbox" />');
+  assert.deepEqual(v.map((x) => x.rule), ['F-04-native-checkbox']);
+});
+
+test('native allowance: sin motivo, conteo inválido, regla desconocida o archivo inexistente → FAIL; claves $ se ignoran', () => {
+  const exists = (rel) => rel === MOD;
+  const bad = findInvalidNativeAllowances(
+    {
+      $note: 'doc',
+      'F-04-native-select': {
+        [MOD]: { count: 1, reason: 'corto' },
+        'frontend/src/gone.tsx': { count: 1, reason: 'Motivo suficientemente largo' },
+      },
+      'F-04-native-input': { [MOD]: { count: 0, reason: 'Motivo suficientemente largo' } },
+      'F-04-otra': {},
+    },
+    exists,
+  );
+  assert.equal(bad.length, 4);
+  assert.deepEqual(
+    findInvalidNativeAllowances({ 'F-04-native-select': { [MOD]: { count: 2, reason: 'Selector del encabezado de la aplicación' } } }, exists),
+    [],
+  );
+});
+
+test('repo real: sin controles nativos ni pestañas manuales fuera de las excepciones documentadas', () => {
+  const v = runCheckDesignSystem().violations.filter((x) => /^F-04-(native-|tabs-manual)/.test(x.rule));
+  assert.deepEqual(v.map((x) => `${x.rule} ${x.file}`), []);
 });

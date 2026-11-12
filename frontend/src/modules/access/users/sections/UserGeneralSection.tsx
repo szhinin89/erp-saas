@@ -20,6 +20,7 @@ import {
 import { type Profile } from "../../api/profileService";
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 import { UserRoleProfileFields } from "./UserRoleProfileFields";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 
 type Notice = { variant: ZHPageNoticeVariant; message: string } | null;
 
@@ -173,7 +174,7 @@ export function UserGeneralSection({
     return (
       <div>
         <ZHField label={t("users.membership.username", "Username")} readOnly>
-          <input
+          <ZhTextInput
             className="zh-input"
             type="text"
             disabled
@@ -209,7 +210,7 @@ export function UserGeneralSection({
         label={t("users.addUser.username", "Username")}
         error={errors.username?.message}
       >
-        <input
+        <ZhTextInput
           className="zh-input"
           type="text"
           disabled={lookupLoading || disabled}
@@ -251,7 +252,7 @@ export function UserGeneralSection({
             label={t("users.createUser.firstName", "Nombre")}
             error={errors.firstName?.message}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               type="text"
               disabled={disabled}
@@ -262,7 +263,7 @@ export function UserGeneralSection({
             label={t("users.createUser.lastName", "Apellido")}
             error={errors.lastName?.message}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               type="text"
               disabled={disabled}
@@ -273,7 +274,7 @@ export function UserGeneralSection({
             label={t("users.createUser.email", "Correo electrónico (opcional)")}
             error={errors.email?.message}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               type="email"
               disabled={disabled}
@@ -288,7 +289,7 @@ export function UserGeneralSection({
               "El usuario deberá cambiarla en su primer inicio de sesión.",
             )}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               type="password"
               disabled={disabled}

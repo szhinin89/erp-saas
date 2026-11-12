@@ -166,7 +166,7 @@ describe("MasterDataBusinessPartnerDetailPage — revocar rol", () => {
   async function goToRolesTab() {
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: /^Roles/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Roles/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Revocar" })).toBeTruthy());
   }
 
@@ -209,7 +209,7 @@ describe("MasterDataBusinessPartnerDetailPage — activar/desactivar ubicación"
   async function goToLocationsTab() {
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: /^Ubicaciones/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Ubicaciones/ }));
     await waitFor(() => expect(screen.getByText("Matriz Quito")).toBeTruthy());
   }
 
@@ -268,7 +268,7 @@ describe("MasterDataBusinessPartnerDetailPage — activar/desactivar contacto", 
   async function goToContactsTab() {
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: /^Contactos/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Contactos/ }));
     await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
   }
 
@@ -316,7 +316,7 @@ describe("MasterDataBusinessPartnerDetailPage — sin diálogos nativos", () => 
 
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: /^Roles/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Roles/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Revocar" })).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
     await waitFor(() => expect(businessPartnerFacade.revokeRole).toHaveBeenCalled());
@@ -335,7 +335,7 @@ describe("MasterDataBusinessPartnerDetailPage — geografía INEC de ubicaciones
   async function goToLocationsTab() {
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: /^Ubicaciones/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /^Ubicaciones/ }));
     await waitFor(() => expect(screen.getByText("Matriz Quito")).toBeTruthy());
   }
 

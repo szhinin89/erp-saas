@@ -21,6 +21,7 @@ import {
   type ApplySupplierCreditFormValues,
 } from "../schemas/supplierCreditSchema";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { ZhSelect } from "../../../components/zh/inputs";
 
 interface Props {
   open: boolean;
@@ -136,7 +137,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied, def
           required
           fieldError={errors.targetPurchasePayableId?.message}
         >
-          <select
+          <ZhSelect
             className="zh-input"
             disabled={saving || loadingPayables}
             {...register("targetPurchasePayableId")}
@@ -150,7 +151,7 @@ export function ApplySupplierCreditModal({ open, credit, onClose, onApplied, def
                 {formatMoney(p.outstandingAmount, moneyDecimals)}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField label="Monto a aplicar" required fieldError={errors.amount?.message}>

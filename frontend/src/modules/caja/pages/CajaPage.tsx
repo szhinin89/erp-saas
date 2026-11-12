@@ -281,7 +281,7 @@ export function CajaPage() {
                 </ZHBtn>
               )}
               <div className="cj-toolbar-spacer" />
-              <select
+              <ZhSelect
                 value={ctx.statusFilter}
                 onChange={(e) => ctx.setStatusFilter(e.target.value)}
                 className="cj-filter-select"
@@ -289,7 +289,7 @@ export function CajaPage() {
                 <option value="">{t("common.all")}</option>
                 <option value="Open">{t("caja.session.status.openPlural")}</option>
                 <option value="Closed">{t("caja.session.status.closedPlural")}</option>
-              </select>
+              </ZhSelect>
               <ZHBtn
                 variant="secondary"
                 onClick={ctx.fetchList}

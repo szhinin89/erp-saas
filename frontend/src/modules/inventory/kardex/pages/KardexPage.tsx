@@ -23,6 +23,7 @@ import { KardexMovementDetailModal } from "../components/KardexMovementDetailMod
 import "../../../../styles/shared/items-catalog.css";
 import "../../../../styles/shared/erp-form-core.css";
 import "./KardexPage.css";
+import { ZhDateInput, ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
 
 const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   PurchaseEntry: "Entrada por Compra",
@@ -258,7 +259,7 @@ export function KardexPage() {
                 label="Producto"
                 className="kdx-field-product"
               >
-                <input
+                <ZhTextInput
                   type="text"
                   placeholder="Buscar por SKU o nombre..."
                   value={
@@ -289,7 +290,7 @@ export function KardexPage() {
                 label="Bodega (opcional)"
                 className="kdx-field-warehouse"
               >
-                <select
+                <ZhSelect
                   value={ctx.selectedWarehouseId}
                   onChange={(e) => ctx.setSelectedWarehouseId(e.target.value)}
                 >
@@ -299,18 +300,16 @@ export function KardexPage() {
                       {w.code ? `${w.code} — ${w.name}` : w.name}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
               <ZHField density="compact" label="Desde" className="kdx-field-date">
-                <input
-                  type="date"
+                <ZhDateInput
                   value={ctx.dateFrom}
                   onChange={(e) => ctx.setDateFrom(e.target.value)}
                 />
               </ZHField>
               <ZHField density="compact" label="Hasta" className="kdx-field-date">
-                <input
-                  type="date"
+                <ZhDateInput
                   value={ctx.dateTo}
                   onChange={(e) => ctx.setDateTo(e.target.value)}
                 />
@@ -336,7 +335,7 @@ export function KardexPage() {
                 label="Tipo de documento"
                 className="kdx-field-type"
               >
-                <select
+                <ZhSelect
                   value={ctx.docSubType}
                   onChange={(e) =>
                     ctx.setDocSubType(e.target.value as typeof ctx.docSubType)
@@ -344,14 +343,14 @@ export function KardexPage() {
                 >
                   <option value="PurchaseInvoice">Factura de Compra</option>
                   <option value="SalesInvoice">Factura de Venta</option>
-                </select>
+                </ZhSelect>
               </ZHField>
               <ZHField
                 density="compact"
                 label="Número de documento"
                 className="kdx-field-document"
               >
-                <input
+                <ZhTextInput
                   type="text"
                   placeholder="Ej. 001-001-000000123"
                   value={
@@ -455,7 +454,7 @@ export function KardexPage() {
         {/* ── Filtro de tipo de movimiento (client-side, sobre lo ya cargado) ── */}
         {ctx.movements.length > 0 && (
           <div className="kdx-toolbar">
-            <select
+            <ZhSelect
               value={ctx.movementTypeFilter}
               onChange={(e) => ctx.setMovementTypeFilter(e.target.value)}
             >
@@ -465,7 +464,7 @@ export function KardexPage() {
                   {label}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </div>
         )}
 

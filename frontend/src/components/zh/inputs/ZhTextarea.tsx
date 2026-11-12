@@ -1,5 +1,6 @@
 import React from "react";
 import type { ZhInputDensity } from "./ZhTextInput";
+import { useZHFieldA11y } from "../zhFieldContext";
 
 type Props = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   /** `compact` = misma densidad que `<ZHField density="compact">`, para uso suelto
@@ -16,11 +17,12 @@ type Props = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
  */
 export const ZhTextarea = React.forwardRef<HTMLTextAreaElement, Props>(
   ({ density = "default", className, ...props }, ref) => {
+    const a11y = useZHFieldA11y(props);
     const cls = [className, density === "compact" ? "zh-input--compact" : ""]
       .filter(Boolean)
       .join(" ");
 
-    return <textarea {...props} ref={ref} className={cls || undefined} />;
+    return <textarea {...props} {...a11y} ref={ref} className={cls || undefined} />;
   },
 );
 

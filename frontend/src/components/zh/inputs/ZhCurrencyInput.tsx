@@ -4,6 +4,7 @@ import { sanitizeDecimal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
 import { SemanticDecimals } from "../SemanticDecimals";
+import { useZHFieldA11y } from "../zhFieldContext";
 import "./ZhInputs.css";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
@@ -35,6 +36,7 @@ const ZhCurrencyInputCore = React.forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
+    const a11y = useZHFieldA11y(props);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       handleDecimalKeyDown(e, decimals, true);
       onKeyDown?.(e);
@@ -57,6 +59,7 @@ const ZhCurrencyInputCore = React.forwardRef<HTMLInputElement, Props>(
         </span>
         <input
           {...props}
+          {...a11y}
           ref={ref}
           type="text"
           inputMode="decimal"

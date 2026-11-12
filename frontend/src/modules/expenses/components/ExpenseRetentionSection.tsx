@@ -25,6 +25,7 @@ import {
   type RetentionDocumentDto,
 } from "../../retentions/facades/retentionDocumentFacade";
 import { newRetentionIntentLine, type RetentionIntentFormState } from "../utils/expenseRetentionModel";
+import { ZhCheckbox } from "../../../components/zh/inputs";
 
 const RETENTION_STATUS_LABEL: Record<string, string> = {
   Draft: "Borrador",
@@ -258,8 +259,7 @@ export function ExpenseRetentionSection({
         }
       >
         <label className="exp-doc-retention-toggle">
-          <input
-            type="checkbox"
+          <ZhCheckbox
             checked={value.appliesRetention}
             disabled={disabled || !canApply}
             aria-label="Aplicar retención a este gasto"

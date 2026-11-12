@@ -7,7 +7,7 @@ import {
   NoAccessPage,
 } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
-import { ZhTextInput, ZhPhoneInput } from "../../../../components/zh/inputs";
+import { ZhTextInput, ZhPhoneInput, ZhSelect } from "../../../../components/zh/inputs";
 import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
 import { useI18n } from "../../../../i18n/i18n";
@@ -242,7 +242,7 @@ export function CompanyProfileSettingsSection() {
                 label={t("settings.company.profile.email")}
                 error={errors.corporateEmail?.message ? t(errors.corporateEmail?.message) : undefined}
               >
-                <input
+                <ZhTextInput
                   className="zh-input"
                   type="email"
                   placeholder={t("settings.company.profile.emailPlaceholder")}
@@ -315,7 +315,7 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
 
               <ZHField label={t("settings.company.profile.repEmail")} error={errors.legalRepEmail?.message ? t(errors.legalRepEmail?.message) : undefined}>
-                <input
+                <ZhTextInput
                   className="zh-input"
                   type="email"
                   placeholder={t("settings.company.profile.repEmailPlaceholder")}
@@ -349,7 +349,7 @@ export function CompanyProfileSettingsSection() {
           <div className="pg-section-body">
             <ZHGrid cols={2}>
               <ZHField label={t("settings.company.profile.currency")}>
-                <select
+                <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("currencyCode")}
                 >
@@ -358,17 +358,17 @@ export function CompanyProfileSettingsSection() {
                       {t(c.labelKey)}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
               <ZHField label={t("settings.company.profile.timezone")}>
-                <select disabled={saving || !canEdit} {...register("timezone")}>
+                <ZhSelect disabled={saving || !canEdit} {...register("timezone")}>
                   {TIMEZONES.map((z) => (
                     <option key={z.value} value={z.value}>
                       {z.labelKey ? t(z.labelKey) : z.label}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
             </ZHGrid>
           </div>

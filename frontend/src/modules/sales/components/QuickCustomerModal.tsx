@@ -121,7 +121,7 @@ export function QuickCustomerModal({
 
       <ZHGrid cols={2}>
         <ZHField label="Correo">
-          <input
+          <ZhTextInput
             value={custEmail}
             onChange={(e) => onCustEmailChange(e.target.value)}
             placeholder="cliente@email.com"

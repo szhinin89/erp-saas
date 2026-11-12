@@ -11,6 +11,7 @@ import {
   matchGlob,
 } from './shared/fs-utils.mjs';
 import { createCheckResult, addViolation } from './shared/report-utils.mjs';
+import { blankComments } from './check-css-reachability.mjs';
 
 export const CHECK_NAME = 'design-system';
 
@@ -139,6 +140,147 @@ export function findStaleLiteralAllowances(allowances, fileExists) {
           message: `cssLiteralAllowances.${rule} apunta a '${rel}', que no existe — eliminar la entrada.`,
           line: 1,
         });
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Paquete C5 — pestañas manuales y controles nativos con equivalente oficial.
+ *
+ *   F-04-tabs-manual     clase `prd-tab-btn` en TSX fuera de <ZHTabBar> (components/zh) — usar <ZHTabBar>.
+ *   F-04-native-select   <select> nativo — usar <ZhSelect>.
+ *   F-04-native-textarea <textarea> nativo — usar <ZhTextarea>.
+ *   F-04-native-input    <input> de texto/email/password/search/tel/url/number/fecha — usar
+ *                        <ZhTextInput type=…>, <ZhDateInput>, <ZhNumberInput>/<ZhDecimalInput>.
+ *   F-04-native-checkbox <input type="checkbox"> — usar <ZhCheckbox>.
+ *
+ * Sin equivalente oficial (no se marcan): radio (patrón `.zh-radio-*`), file, color, range, hidden.
+ * Fuera de alcance: components/zh/** (internos del DS) y archivos de prueba.
+ *
+ * Excepciones: `nativeControlAllowances[rule][archivo] = { count, reason }` (línea base por
+ * archivo, conteo exacto y motivo obligatorio). Más que `count` → falla (deuda nueva); menos →
+ * falla pidiendo bajar el conteo (la deuda solo decrece); sin `reason` o con archivo inexistente → falla.
+ */
+export const NATIVE_CONTROL_RULES = [
+  'F-04-tabs-manual',
+  'F-04-native-select',
+  'F-04-native-textarea',
+  'F-04-native-input',
+  'F-04-native-checkbox',
+];
+
+const NATIVE_INPUT_TEXT_LIKE = new Set([
+  'text', 'email', 'password', 'search', 'tel', 'url', 'number', 'date', 'datetime-local', 'time', 'month', 'week',
+]);
+
+const NATIVE_MESSAGES = {
+  'F-04-tabs-manual': "Pestañas manuales ('.prd-tab-btn') — usar <ZHTabBar>.",
+  'F-04-native-select': '<select> nativo — usar <ZhSelect>.',
+  'F-04-native-textarea': '<textarea> nativo — usar <ZhTextarea>.',
+  'F-04-native-input': '<input> nativo de texto/fecha — usar <ZhTextInput type="…">, <ZhDateInput> o <ZhNumberInput>/<ZhDecimalInput>.',
+  'F-04-native-checkbox': '<input type="checkbox"> nativo — usar <ZhCheckbox>.',
+};
+
+/** Alcance de las reglas nativas: TSX de producción fuera de los internos del DS. */
+export function isNativeControlScope(rel) {
+  return (
+    rel.endsWith('.tsx') &&
+    !/\.(test|spec)\.tsx$/.test(rel) &&
+    !rel.startsWith('frontend/src/components/zh/')
+  );
+}
+
+/** Índice del `>` que cierra la etiqueta JSX que empieza en `start` (respeta llaves y comillas). */
+function jsxTagEnd(code, start) {
+  let depth = 0;
+  let quote = null;
+  for (let i = start; i < code.length; i++) {
+    const ch = code[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if ((ch === '"' || ch === "'") && depth === 0) {
+      quote = ch;
+    } else if (ch === '{') depth++;
+    else if (ch === '}') depth--;
+    else if (ch === '>' && depth === 0) return i;
+  }
+  return code.length - 1;
+}
+
+/** Ocurrencias de las reglas nativas en un TSX (sin comentarios). */
+export function nativeControlHits(content) {
+  const code = blankComments(content);
+  /** @type {{ rule: string, line: number }[]} */
+  const hits = [];
+  for (const m of code.matchAll(/<(select|textarea|input)\b/g)) {
+    const tag = code.slice(m.index, jsxTagEnd(code, m.index) + 1);
+    const line = lineOf(code, m.index);
+    if (m[1] === 'select') hits.push({ rule: 'F-04-native-select', line });
+    else if (m[1] === 'textarea') hits.push({ rule: 'F-04-native-textarea', line });
+    else {
+      const typeAttr = /\stype=(?:"([^"]*)"|\{)/.exec(tag);
+      const type = typeAttr ? (typeAttr[1] ?? '{dinámico}') : 'text';
+      if (type === 'checkbox') hits.push({ rule: 'F-04-native-checkbox', line });
+      else if (type === '{dinámico}' || NATIVE_INPUT_TEXT_LIKE.has(type)) hits.push({ rule: 'F-04-native-input', line });
+    }
+  }
+  for (const m of code.matchAll(/(?<![\w-])prd-tab-btn(?![\w-])/g)) {
+    hits.push({ rule: 'F-04-tabs-manual', line: lineOf(code, m.index) });
+  }
+  return hits;
+}
+
+/**
+ * @param {Record<string, Record<string, { count: number, reason: string }>>} allowances cfg.nativeControlAllowances
+ * @param {string} rel
+ * @param {string} content
+ */
+export function findNativeControlViolations(allowances, rel, content) {
+  /** @type {{ rule: string, file: string, message: string, line: number }[]} */
+  const found = [];
+  if (!isNativeControlScope(rel)) return found;
+  const all = nativeControlHits(content);
+  for (const rule of NATIVE_CONTROL_RULES) {
+    const hits = all.filter((h) => h.rule === rule);
+    const allowed = allowances?.[rule]?.[rel]?.count;
+    if (allowed === undefined) {
+      for (const h of hits) found.push({ rule, file: rel, message: NATIVE_MESSAGES[rule], line: h.line });
+    } else if (hits.length > allowed) {
+      found.push({
+        rule,
+        file: rel,
+        message: `${hits.length} ocurrencia(s) ${rule} con excepción de ${allowed} — deuda nueva: ${NATIVE_MESSAGES[rule]}`,
+        line: hits[allowed]?.line ?? 1,
+      });
+    } else if (hits.length < allowed) {
+      found.push({
+        rule,
+        file: rel,
+        message: `Excepción ${rule} desactualizada: ${hits.length} ocurrencia(s) < ${allowed} — bajar nativeControlAllowances a ${hits.length} (o eliminarla si es 0).`,
+        line: 1,
+      });
+    }
+  }
+  return found;
+}
+
+/** Entradas de excepción sin motivo/conteo válido o que apuntan a archivos inexistentes. */
+export function findInvalidNativeAllowances(allowances, fileExists) {
+  const found = [];
+  const cfgFile = 'tools/architecture/config/design-system.json';
+  for (const [rule, files] of Object.entries(allowances ?? {})) {
+    if (rule.startsWith('$')) continue;
+    if (!NATIVE_CONTROL_RULES.includes(rule)) {
+      found.push({ rule, file: cfgFile, message: `nativeControlAllowances.${rule}: regla desconocida.`, line: 1 });
+      continue;
+    }
+    for (const [rel, entry] of Object.entries(files)) {
+      if (!fileExists(rel)) {
+        found.push({ rule, file: cfgFile, message: `nativeControlAllowances.${rule} apunta a '${rel}', que no existe — eliminar la entrada.`, line: 1 });
+      } else if (!Number.isInteger(entry?.count) || entry.count < 1 || typeof entry?.reason !== 'string' || entry.reason.trim().length < 8) {
+        found.push({ rule, file: cfgFile, message: `nativeControlAllowances.${rule}['${rel}'] requiere { count >= 1, reason } con motivo explícito.`, line: 1 });
       }
     }
   }
@@ -363,6 +505,13 @@ export function runCheckDesignSystem() {
       if (allowed?.has(v.rule)) continue;
       addViolation(result, v);
     }
+    for (const v of findNativeControlViolations(cfg.nativeControlAllowances, rel, content)) addViolation(result, v);
+  }
+
+  for (const v of findInvalidNativeAllowances(cfg.nativeControlAllowances, (rel) =>
+    fs.existsSync(path.join(REPO_ROOT, rel)),
+  )) {
+    addViolation(result, v);
   }
 
   const definedTokens = buildDefinedTokenSet(TOKENS_DEF_PATH);

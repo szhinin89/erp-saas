@@ -12,6 +12,7 @@ import { importSuccessMessage } from "./importResultMessage";
 import { useImportWizard } from "./useImportWizard";
 import type { ImportBatchRowPreviewDto, ImportType } from "../types/importBatch.types";
 import "./initial-load.css";
+import { ZhCheckbox } from "../../../components/zh/inputs";
 
 const SEVERITY_FILTERS: { key: "all" | "errors" | "warnings"; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -223,8 +224,7 @@ export function ImportWizardPage({
             </div>
             {showAutoCreateCatalogOption && (
               <label className="il-autocreate-option">
-                <input
-                  type="checkbox"
+                <ZhCheckbox
                   checked={autoCreateCatalogValues}
                   disabled={step !== "idle"}
                   onChange={(e) => setAutoCreateCatalogValues(e.target.checked)}

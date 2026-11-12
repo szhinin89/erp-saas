@@ -448,7 +448,7 @@ export function CarriersPage() {
             label={t("carriers.modal.email")}
             error={errors.email?.message ? t(errors.email.message) : undefined}
           >
-            <input
+            <ZhTextInput
               className="zh-input"
               type="email"
               placeholder={t("carriers.modal.emailPlaceholder")}

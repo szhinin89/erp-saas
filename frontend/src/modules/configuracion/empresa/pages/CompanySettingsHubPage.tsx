@@ -8,6 +8,7 @@ import {
 } from "../companySettingsTabs";
 import { useCompanySettingsTabAccess } from "../companySettingsTabAccess";
 import "../../../../styles/shared/items-catalog.css";
+import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 
 const VALID_TAB_IDS = companySettingsTabs.map((tab) => tab.id);
 
@@ -49,22 +50,16 @@ export function CompanySettingsHubPage() {
         "Perfil, marca y parámetros de la empresa.",
       )}
     >
-      <div className="prd-tabs" role="tablist">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab?.id === tab.id}
-            className={`prd-tab-btn ${activeTab?.id === tab.id ? "prd-tab-btn--active" : ""}`}
-            disabled={!tab.enabled}
-            title={tab.enabled ? undefined : t("settings.comingSoon.title")}
-            onClick={() => tab.enabled && setTab(tab.id)}
-          >
-            {t(tab.labelKey)}
-          </button>
-        ))}
-      </div>
+      <ZHTabBar
+        tabs={visibleTabs.map((tab) => ({
+          id: tab.id,
+          label: t(tab.labelKey),
+          disabled: !tab.enabled,
+          title: tab.enabled ? undefined : t("settings.comingSoon.title"),
+        }))}
+        activeTab={(activeTab?.id ?? "") as CompanySettingsTabId}
+        onChange={setTab}
+      />
 
       {ActiveComponent ? <ActiveComponent /> : <NoAccessPage title={title} />}
     </ErpPageTemplate>

@@ -124,7 +124,7 @@ y debe migrarse al tocar el archivo.
 | Campo de formulario | `ZHField` (`label?`, `required?`, `fieldError`/`error`, `hint`/`hintType`, `density?: 'default'\|'compact'`) | `.pf-field`/`.pf-field__*`/`.pf-label` (eliminado, ADR Fase 3B) — usar `density="compact"` para grillas densas de líneas, nunca un segundo sistema |
 | Badge / etiqueta de estado corta | `Badge` (`components/PageShell.tsx`; `label`, `variant: 'green'\|'gray'\|'red'\|'blue'\|'orange'`, `size?: 'md'`, `upper?`, resto de atributos de `<span>`) | `<span className="badge badge--...">` crudo |
 | Grid de campos en formularios | `<ZHGrid cols={1\|2\|3}>` | `.pg-form-grid`, `.pg-form-grid--N` |
-| Checkbox / switch (incluye tablas y matrices) | `ZHToggle` (`label`, `description`, `value`, `onChange`, `disabled?`) | `.zh-inline-check`, `.companies-checkbox-label`, `.toggle`/`.toggle-ui`, `.md-page-check` |
+| Checkbox / switch (incluye tablas y matrices) | `ZHToggle` (`label`, `description`, `value`, `onChange`, `disabled?`) para configuración booleana con descripción; `ZhCheckbox` (`components/zh/inputs/`; `forwardRef`, compatible con RHF `register`, `label?`/`labelClassName?`; sin `label` renderiza solo el input) para selección de filas, filtros y opciones en línea | `.zh-inline-check`, `.companies-checkbox-label`, `.toggle`/`.toggle-ui`, `.md-page-check`, `<input type="checkbox">` crudo |
 | Tamaño de íconos `material-symbols-outlined` | `.zh-icon-sm` (14px) / `.zh-icon-md` (16px) / `.zh-icon-lg` (18px) / `.zh-icon-xl` (32px) | `style={{ fontSize: N }}`, `.prd-icon-sm` |
 | Header/footer de modal (`.zh-modal-overlay > .zh-modal`) | `ZHModal` (props `title`/`subtitle` para header, `footer` para acciones — ver [modal-standard.md](./modal-standard.md)) | headers/footers ad-hoc por archivo, `.md-modal*`, `ZHModalHeader` (**eliminado** — prohibido importarlo, ver modal-standard.md) |
 | Tabs de formulario/catálogo | `ZHTabBar` (`components/zh/`; clases `.prd-tabs` en `zh-ui.css`; patrón responsive automático con tres pestañas, ver contrato abajo) | `.zh-form-tabs` |
@@ -137,7 +137,7 @@ y debe migrarse al tocar el archivo.
 | Error inline bajo un control de línea | `.zh-field-hint .zh-field-hint--error` | `.sr-lines-table__error` |
 | Marca horizontal y error de pantallas de acceso (login, setup, AdminGlobalCore) | `.zh-auth-logo*` / `.zh-auth-error` (`zh-ui.css` §20; variante apilada: `.zh-auth-brand*`) | `.lp-brand*`, `.lp-error` |
 | Estilos de componentes de documento electrónico (`components/zh/electronicDocuments/*`) | `.zh-edoc-*` en `components/zh/electronicDocuments/electronic-documents.css`, importado por cada componente | `.edm-*` del Monitor usados fuera de él |
-| Input de texto simple | `ZhTextInput` (`components/zh/inputs/`) | `<input type="text">` crudo |
+| Input de texto simple | `ZhTextInput` (`components/zh/inputs/`; `type?: "text" \| "email" \| "password" \| "search" \| "tel" \| "url"`, default `"text"`) | `<input type="text">`, `type="email"` y `type="password"` crudos |
 | Input numérico entero | `ZhNumberInput` (`components/zh/inputs/`) | `<input type="number">` crudo (además prohibido por el Estándar de Precisión Numérica) |
 | Input decimal (montos/cantidades/precios) | `ZhDecimalInput` (`components/zh/inputs/`) | `<input type="number">`/`type="text"` con parseo manual |
 | Input de fecha | `ZhDateInput` (`components/zh/inputs/`) | `<input type="date">` crudo |
@@ -308,12 +308,16 @@ Toda acción que muestra/oculta un panel («Ver/Ocultar detalle», «Ver diferen
 - **Prohibido:** componentes o CSS locales de toggle/disclosure; pasar `aria-expanded` a mano junto con `expanded`.
 - **Adopción:** aplicado al control de conciliación del modal de desglose de Compras (`PurchaseLineBreakdownModal`); los demás disclosures se migran al tocar el archivo.
 
+### Contrato de error accesible de `ZHField` e inputs oficiales
+
+Dentro de un `<ZHField>` con `fieldError`/`error`, los inputs oficiales (`ZhTextInput`, `ZhSelect`, `ZhTextarea`, `ZhNumberInput`, `ZhDecimalInput`, `ZhCurrencyInput`, `ZhDateInput`, `ZhDateTimeInput`, `ZhPhoneInput`, `ZhCheckbox`) reciben automáticamente `aria-invalid="true"` y `aria-describedby` hacia el mensaje visible (id generado con `useId`, contexto en `components/zh/zhFieldContext.ts`). No cambia el estilo (`.zh-field--error`), el texto ni la estructura. Un `aria-invalid`/`aria-describedby` explícito del consumidor tiene prioridad y su `aria-describedby` se conserva (se concatena). Fuera de un `ZHField`, o sin error, no se añade nada.
+
 ### Excepciones permitidas al uso de componentes ZH de input
 
 Los siguientes casos **no** requieren envolver el control en un componente ZH — son
 HTML nativo o infraestructura especializada ya cubierta por otras reglas:
 
-- `type="email"`, `type="password"`, `type="checkbox"` (fuera de `ZHToggle`), `type="radio"`, `type="file"`, `type="color"`
+- `type="radio"` (patrón `.zh-radio-*`, sin componente), `type="file"`, `type="color"`. `email`, `password`, `search` y `checkbox` **ya tienen componente** (`ZhTextInput type=…`, `ZhCheckbox`) y solo quedan crudos como excepción documentada con motivo en `design-system.json` (`nativeControlAllowances`: Ítems FROZEN, Compras CLOSED, formularios de Auth/AdminCore y buscadores/selectores especializados) — el guardrail `F-04-native-*`/`F-04-tabs-manual` impide añadir nuevos.
 - Scanner / autocomplete / picker especializado (ej. `ZhWarehouseSelector`, `CustomerPicker`, `SupplierSearchSelect`)
 - Tablas editables (celdas con edición inline tienen su propio patrón, no el de formulario)
 - Módulos SRI crítico, IAM/permisos, stock/logística crítica — cuando el control tiene semántica de negocio que un input ZH genérico no captura (documentar el motivo puntual en el propio código, no asumir la excepción por el nombre del módulo)

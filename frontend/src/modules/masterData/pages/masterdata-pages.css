@@ -109,45 +109,7 @@
 }
 
 /* ── Detail tabs ─────────────────────────────────────────── */
-.md-detail-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--color-border);
-  margin-bottom: var(--space-5);
-}
-.md-detail-tab {
-  padding: var(--space-2) var(--space-5);
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-  color: var(--color-text-secondary);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.md-detail-tab:hover {
-  color: var(--color-text-primary);
-}
-.md-detail-tab--active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-  font-weight: var(--text-label-md-weight);
-}
-.md-detail-tab__count {
-  background: var(--color-primary-fixed);
-  color: var(--color-primary);
-  font-size: var(--text-badge-size);
-  font-weight: var(--text-badge-weight);
-  padding: 1px 7px;
-  border-radius: 10px;
-}
+/* .md-detail-tabs / .md-detail-tab* retirados (Paquete C1): la pantalla usa <ZHTabBar> con `count`. */
 
 .md-detail-status-row {
   display: flex;

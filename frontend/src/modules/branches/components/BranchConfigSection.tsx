@@ -14,6 +14,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import { branchInvoiceDefaultsFacade } from "../../configuracion/empresa/facades/branchInvoiceDefaultsFacade";
 import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFacade";
+import { ZhSelect } from "../../../components/zh/inputs";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Sucursal: DefaultWarehouseId.
@@ -277,7 +278,7 @@ export function BranchConfigSection({ branchId }: Props) {
               }
               error={errors.defaultWarehouseId?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving || !canEdit}
                 {...register("defaultWarehouseId", { setValueAs: emptyToNull })}
               >
@@ -293,7 +294,7 @@ export function BranchConfigSection({ branchId }: Props) {
                     {w.code ? ` (${w.code})` : ""}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
           </form>
         )}

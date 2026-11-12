@@ -24,6 +24,7 @@ import {
   SALES_RETURN_STATUS_BADGE as STATUS_BADGE,
 } from "../utils/salesReturnStatus";
 import "../styles/sales-return.css";
+import { ZhTextarea } from "../../../components/zh/inputs";
 
 /**
  * Crear / editar (mientras Draft) / consultar una devolución de venta.
@@ -284,7 +285,7 @@ export function SalesReturnFormPage() {
           {readOnly ? (
             <p className="zh-readonly-text">{editing?.reason}</p>
           ) : (
-            <textarea
+            <ZhTextarea
               className="zh-input"
               rows={3}
               maxLength={500}

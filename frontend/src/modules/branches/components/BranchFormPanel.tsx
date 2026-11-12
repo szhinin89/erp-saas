@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
@@ -15,6 +14,7 @@ import {
   ZhTextarea,
 } from "../../../components/zh/inputs";
 import { type BranchesPageContext } from "../hooks/useBranchesPage";
+import { ConfigFormPanelHeader } from "../../../components/shared/ConfigFormPanelHeader";
 
 type Props = Pick<
   BranchesPageContext,
@@ -66,34 +66,15 @@ export function BranchFormPanel({
   closePanel,
   save,
 }: Props) {
-  const [activeTab] = useState<"general">("general");
 
   return (
     <div>
-      {/* Panel header */}
-      <div className="cfg-panel-hd">
-        <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {editingId ? "edit" : "add_circle"}
-        </span>
-        <div>
-          <p className="cfg-panel-hd__title">
-            {editingId ? (editName ?? "Editar Sucursal") : "Nueva Sucursal"}
-          </p>
-          {editingId && editCode && (
-            <p className="cfg-panel-hd__sub">Código: {editCode}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="prd-tabs cfg-panel-tabs">
-        <button
-          type="button"
-          className={`prd-tab-btn ${activeTab === "general" ? "prd-tab-btn--active" : ""}`}
-        >
-          General
-        </button>
-      </div>
+      <ConfigFormPanelHeader
+        icon={editingId ? "edit" : "add_circle"}
+        title={editingId ? (editName ?? "Editar Sucursal") : "Nueva Sucursal"}
+        subtitle={editingId && editCode ? `Código: ${editCode}` : undefined}
+        tabLabel="General"
+      />
 
       {/* Error */}
       {saveError && (
@@ -355,7 +336,7 @@ export function BranchFormPanel({
                   label="Correo Electrónico"
                   error={errors.email?.message}
                 >
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     type="email"
                     placeholder="sucursal@empresa.com"
@@ -404,7 +385,7 @@ export function BranchFormPanel({
                   />
                 </ZHField>
                 <ZHField label="Correo" error={errors.managerEmail?.message}>
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     type="email"
                     placeholder="responsable@empresa.com"

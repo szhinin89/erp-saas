@@ -413,6 +413,16 @@ a:hover {
 .prd-tab-icon {
   font-size: var(--font-size-lg);
 }
+/* Contador opcional de <ZHTabBar> (tab.count) -- mismos tokens que el contador de las
+   pestanas de detalle de socios que reemplaza (Paquete C1). */
+.prd-tab-count {
+  background: var(--color-primary-fixed);
+  color: var(--color-primary);
+  font-size: var(--text-badge-size);
+  font-weight: var(--text-badge-weight);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
 
 /* ZHTabBar con exactamente 3 pestañas (default "auto", UIUX-GLOBAL-TABS-DEFAULT-01):
    tres columnas hasta 480 px; desde 481 px conserva el diseño estándar. */

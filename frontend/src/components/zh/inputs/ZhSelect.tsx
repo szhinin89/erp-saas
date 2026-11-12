@@ -1,5 +1,6 @@
 import React from "react";
 import type { ZhInputDensity } from "./ZhTextInput";
+import { useZHFieldA11y } from "../zhFieldContext";
 
 type Props = React.SelectHTMLAttributes<HTMLSelectElement> & {
   /** `compact` = misma densidad que `<ZHField density="compact">`, para uso suelto
@@ -20,12 +21,13 @@ type Props = React.SelectHTMLAttributes<HTMLSelectElement> & {
  */
 export const ZhSelect = React.forwardRef<HTMLSelectElement, Props>(
   ({ density = "default", className, children, ...props }, ref) => {
+    const a11y = useZHFieldA11y(props);
     const cls = [className, density === "compact" ? "zh-input--compact" : ""]
       .filter(Boolean)
       .join(" ");
 
     return (
-      <select {...props} ref={ref} className={cls || undefined}>
+      <select {...props} {...a11y} ref={ref} className={cls || undefined}>
         {children}
       </select>
     );

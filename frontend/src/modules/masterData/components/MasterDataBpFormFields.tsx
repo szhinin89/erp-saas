@@ -119,7 +119,7 @@ export function MasterDataBpFormFields({
             required
             fieldError={errors.identificationNumber?.message}
           >
-            <input
+            <ZhTextInput
               className="zh-input mono"
               {...register("identificationNumber")}
               disabled={saving}

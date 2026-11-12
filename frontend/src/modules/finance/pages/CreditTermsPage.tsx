@@ -28,6 +28,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 
 import "../../../styles/shared/items-catalog.css";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 
 type Tab = "resumen" | "listado" | "nuevo";
 
@@ -242,23 +243,14 @@ export function CreditTermsPage() {
       title="Condiciones de Crédito"
       subtitle="Administra los plazos y cuotas de pago."
     >
-      <div className="prd-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            className={`prd-tab-btn ${tab === t.id ? "prd-tab-btn--active" : ""}`}
-            onClick={() => {
-              if (t.id !== "nuevo") resetForm();
-              setTab(t.id);
-            }}
-          >
-            <span className="material-symbols-outlined zh-icon-lg">
-              {t.icon}
-            </span>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <ZHTabBar
+        tabs={tabs}
+        activeTab={tab}
+        onChange={(id) => {
+          if (id !== "nuevo") resetForm();
+          setTab(id);
+        }}
+      />
 
       {/* RESUMEN */}
       {tab === "resumen" && (

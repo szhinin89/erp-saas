@@ -24,7 +24,7 @@ type Props = {
 
 /**
  * TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 — editor del motivo de movimiento de caja, solo
- * componentes del DS (`ZHField`, `ZhTextInput`, `ZhNumberInput`, `ZHBtn`). El <select> de Tipo usa
+ * componentes del DS (`ZHField`, `ZhTextInput`, `ZhNumberInput`, `ZHBtn`). El <ZhSelect> de Tipo usa
  * `manualCashMovementTypeOptions(t)` — la misma fuente SSOT del formulario "Registrar movimiento
  * manual de efectivo" (constants/cashMovementTypes.ts) — nunca se hardcodea una segunda lista aquí.
  *
@@ -110,7 +110,7 @@ export function CashMovementReasonFormTab({
               : undefined
           }
         >
-          <select
+          <ZhSelect
             className="zh-input"
             disabled={saving || !!editingId}
             aria-required="true"
@@ -123,7 +123,7 @@ export function CashMovementReasonFormTab({
                 {mt.label}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
 
         <ZHField label={t("caja.movementReasons.form.sortOrder", "Orden")} error={errors.sortOrder?.message}>

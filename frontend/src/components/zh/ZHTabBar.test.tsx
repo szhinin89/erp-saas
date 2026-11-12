@@ -228,4 +228,57 @@ describe("ZHTabBar — distribución responsive automática (UIUX-GLOBAL-TABS-DE
       expect(list.scrollLeft).toBe(0);
     });
   });
+  it("idPrefix y panelIdPrefix enlazan cada pestaña con su tabpanel (id y aria-controls)", () => {
+    render(
+      <ZHTabBar
+        tabs={baseTabs}
+        activeTab="a"
+        onChange={() => {}}
+        idPrefix="user-config-tab"
+        panelIdPrefix="user-config-panel"
+      />,
+    );
+    const tabB = screen.getByText("Tab B");
+    expect(tabB.id).toBe("user-config-tab-b");
+    expect(tabB.getAttribute("aria-controls")).toBe("user-config-panel-b");
+  });
+
+  it("sin prefijos no añade id ni aria-controls (consumidores existentes sin cambio)", () => {
+    render(<ZHTabBar tabs={baseTabs} activeTab="a" onChange={() => {}} />);
+    const tabA = screen.getByText("Tab A");
+    expect(tabA.hasAttribute("id")).toBe(false);
+    expect(tabA.hasAttribute("aria-controls")).toBe(false);
+    expect(tabA.hasAttribute("title")).toBe(false);
+  });
+
+  it("title por pestaña (tooltip del motivo de deshabilitado)", () => {
+    const tabs: ZHTab<"a" | "b">[] = [
+      { id: "a", label: "Tab A" },
+      { id: "b", label: "Tab B", disabled: true, title: "Próximamente" },
+    ];
+    const onChange = vi.fn();
+    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={onChange} />);
+    const tabB = screen.getByText("Tab B");
+    expect(tabB.getAttribute("title")).toBe("Próximamente");
+    fireEvent.click(tabB);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("count se muestra junto a la etiqueta y no altera el nombre del texto principal", () => {
+    const tabs: ZHTab<"a" | "b">[] = [
+      { id: "a", label: "Roles", count: 3 },
+      { id: "b", label: "Contactos", count: 0 },
+    ];
+    const { container } = render(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} />);
+    const counts = [...container.querySelectorAll(".prd-tab-count")].map((n) => n.textContent);
+    expect(counts).toEqual(["3", "0"]);
+    expect(screen.getByText("Roles")).toBeTruthy();
+  });
+
+  it("className se añade al contenedor .prd-tabs", () => {
+    const { container } = render(
+      <ZHTabBar tabs={baseTabs} activeTab="a" onChange={() => {}} className="cfg-panel-tabs" />,
+    );
+    expect(container.querySelector(".prd-tabs")!.className).toContain("cfg-panel-tabs");
+  });
 });

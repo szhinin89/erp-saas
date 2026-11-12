@@ -19,6 +19,7 @@ import type {
 } from "../api/electronicInvoicingService";
 import "./sri-config-page.css";
 import "../../styles/password-field.css";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 
 type SriEnvOption = { value: 1 | 2; label: string; description: string };
 
@@ -120,7 +121,7 @@ export function SriConfigPageDataTab({
           </div>
           <div className="sri-block-mt">
             <ZHField label={t("settings.electronicInvoicing.sri.emissionType")}>
-              <input
+              <ZhTextInput
                 className="zh-input sri-input-readonly-muted"
                 value={t("settings.electronicInvoicing.sri.emissionTypeValue")}
                 readOnly
@@ -202,7 +203,7 @@ export function SriConfigPageDataTab({
               error={errors.certPassword?.message}
             >
               <div className="sri-pass-wrap">
-                <input
+                <ZhTextInput
                   className="zh-input sri-pass-input"
                   type={showPass ? "text" : "password"}
                   placeholder={
@@ -317,7 +318,7 @@ export function SriConfigPageDataTab({
               required
               error={errors.wsdlUrl?.message}
             >
-              <input
+              <ZhTextInput
                 className="zh-input mono"
                 disabled={saving || !canEdit}
                 {...register("wsdlUrl")}

@@ -4,7 +4,7 @@ import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { Badge, NoAccessPage } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField, ZHGrid, ZHToggle } from "../../../../components/zh/ZHForm";
-import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
+import { ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout";
@@ -336,7 +336,7 @@ export function DocumentFlowPoliciesPage() {
       {separationNotice}
 
       <ZHField label={t("documentFlows.form.document", "Documento")}>
-        <input
+        <ZhTextInput
           value={documentTypeDisplayName(editing.documentTypeCode, editing.documentTypeName)}
           disabled
         />

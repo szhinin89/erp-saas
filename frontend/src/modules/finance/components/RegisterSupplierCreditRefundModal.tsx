@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhDecimalInput, ZhSelect } from "../../../components/zh/inputs";
+import { ZhDecimalInput, ZhSelect, ZhDateInput, ZhTextInput } from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -194,7 +194,7 @@ export function RegisterSupplierCreditRefundModal({
         </ZHField>
 
         <ZHField label="Fecha efectiva" required fieldError={errors.effectiveDate?.message}>
-          <input type="date" className="zh-input" disabled={saving} {...register("effectiveDate")} />
+          <ZhDateInput className="zh-input" disabled={saving} {...register("effectiveDate")} />
         </ZHField>
 
         <ZHField
@@ -205,7 +205,7 @@ export function RegisterSupplierCreditRefundModal({
           }
           fieldError={errors.externalReference?.message}
         >
-          <input
+          <ZhTextInput
             className="zh-input"
             maxLength={200}
             disabled={saving}

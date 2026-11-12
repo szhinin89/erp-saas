@@ -115,7 +115,7 @@ export function CommunicationsEmailSettingsSection() {
                 hintType={page.passwordConfigured ? "success" : "muted"}
               >
                 <div className="sri-pass-wrap">
-                  <input
+                  <ZhTextInput
                     className="zh-input sri-pass-input"
                     type={page.showPass ? "text" : "password"}
                     placeholder={

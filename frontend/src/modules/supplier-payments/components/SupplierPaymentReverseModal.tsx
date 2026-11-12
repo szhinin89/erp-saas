@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions, ZHFormAlert } from "../../../components/zh/ZHForm";
-import { ZhSelect, ZhTextarea } from "../../../components/zh/inputs";
+import { ZhSelect, ZhTextarea, ZhCheckbox } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatMoney } from "../../../lib/sanitizers";
 import type { PaymentMethodDto } from "../../sales/facades/paymentMethodLookupFacade";
@@ -146,8 +146,7 @@ export function SupplierPaymentReverseModal({
         {hasCashLines && (
           <ZHField label="Efectivo" required error={cashError}>
             <label className="sp-reverse-confirm">
-              <input
-                type="checkbox"
+              <ZhCheckbox
                 checked={cashNotDeliveredConfirmed}
                 disabled={saving}
                 onChange={(e) => setCashNotDeliveredConfirmed(e.target.checked)}

@@ -44,6 +44,7 @@ import {
 import "../../../../styles/shared/items-catalog.css";
 import "../pages/UsersPage.css";
 import { membershipRoleLabel } from "../../roleLabels";
+import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 
 const PERMISSION = "access.company_user_memberships.view";
 const CREATE_USER_PERMISSION = "access.identity_users.create";
@@ -471,22 +472,13 @@ export function UserConfigPage() {
         }}
         noValidate
       >
-        <div className="prd-tabs" role="tablist">
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab.id}
-              id={`user-config-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={activeTab.id === tab.id}
-              aria-controls={`user-config-panel-${tab.id}`}
-              className={`prd-tab-btn ${activeTab.id === tab.id ? "prd-tab-btn--active" : ""}`}
-              onClick={() => setTab(tab.id)}
-            >
-              {t(tab.labelKey)}
-            </button>
-          ))}
-        </div>
+        <ZHTabBar
+          tabs={visibleTabs.map((tab) => ({ id: tab.id, label: t(tab.labelKey) }))}
+          activeTab={activeTab.id}
+          onChange={setTab}
+          idPrefix="user-config-tab"
+          panelIdPrefix="user-config-panel"
+        />
 
         <div
           className="pg-section"

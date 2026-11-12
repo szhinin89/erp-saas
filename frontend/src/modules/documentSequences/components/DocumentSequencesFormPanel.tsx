@@ -2,6 +2,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhNumberInput, ZhTextInput } from "../../../components/zh/inputs";
 import type { DocumentSequencesPageContext } from "../hooks/useDocumentSequencesPage";
+import { ConfigFormPanelHeader } from "../../../components/shared/ConfigFormPanelHeader";
 
 type Props = Pick<
   DocumentSequencesPageContext,
@@ -29,20 +30,11 @@ export function DocumentSequencesFormPanel({
 
   return (
     <div>
-      <div className="cfg-panel-hd">
-        <span className="material-symbols-outlined cfg-panel-hd__icon">
-          format_list_numbered
-        </span>
-        <div>
-          <p className="cfg-panel-hd__title">
-            Configurar secuencia — {editingRow.docTypeName}
-          </p>
-          <p className="cfg-panel-hd__sub">
-            {selectedEmissionPoint.establishmentCode}-{selectedEmissionPoint.code} ·{" "}
-            {selectedEmissionPoint.establishmentName}
-          </p>
-        </div>
-      </div>
+      <ConfigFormPanelHeader
+        icon="format_list_numbered"
+        title={`Configurar secuencia — ${editingRow.docTypeName}`}
+        subtitle={`${selectedEmissionPoint.establishmentCode}-${selectedEmissionPoint.code} · ${selectedEmissionPoint.establishmentName}`}
+      />
 
       {saveError && (
         <div className="cfg-panel-error">

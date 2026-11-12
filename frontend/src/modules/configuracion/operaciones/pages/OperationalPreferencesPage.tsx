@@ -6,6 +6,7 @@ import {
   type OperationalPreferencesTabId,
 } from "../operationalPreferencesTabs";
 import "../../../../styles/shared/items-catalog.css";
+import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
 
 const VALID_TAB_IDS = operationalPreferencesTabs.map((tab) => tab.id);
 const DEFAULT_TAB: OperationalPreferencesTabId = "salesPos";
@@ -36,20 +37,11 @@ export function OperationalPreferencesPage() {
       title={t("settings.operations.pageTitle")}
       subtitle={t("settings.operations.pageSubtitle")}
     >
-      <div className="prd-tabs" role="tablist">
-        {operationalPreferencesTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTabId === tab.id}
-            className={`prd-tab-btn ${activeTabId === tab.id ? "prd-tab-btn--active" : ""}`}
-            onClick={() => setTab(tab.id)}
-          >
-            {t(tab.labelKey)}
-          </button>
-        ))}
-      </div>
+      <ZHTabBar
+        tabs={operationalPreferencesTabs.map((tab) => ({ id: tab.id, label: t(tab.labelKey) }))}
+        activeTab={activeTabId}
+        onChange={setTab}
+      />
 
       <ActiveComponent />
     </ErpPageTemplate>

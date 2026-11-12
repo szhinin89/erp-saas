@@ -16,6 +16,7 @@ import {
   assignTemporaryPasswordSchema,
   type AssignTemporaryPasswordFormValues,
 } from "../../../../schemas/access/assignTemporaryPasswordSchema";
+import { ZhTextInput } from "../../../../components/zh/inputs";
 
 interface Props {
   open: boolean;
@@ -136,7 +137,7 @@ export function AssignTemporaryPasswordModal({
           )}
           error={errors.temporaryPassword?.message}
         >
-          <input
+          <ZhTextInput
             className="zh-input"
             type="password"
             autoComplete="new-password"
@@ -153,7 +154,7 @@ export function AssignTemporaryPasswordModal({
           )}
           error={errors.confirmPassword?.message}
         >
-          <input
+          <ZhTextInput
             className="zh-input"
             type="password"
             autoComplete="new-password"

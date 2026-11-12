@@ -1,7 +1,8 @@
 import { ZHBrandMark } from "./ZHBrandMark";
-import React, { useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { Link, type LinkProps } from "react-router-dom";
 import { useI18n } from "../../i18n/i18n";
+import { ZHFieldErrorContext } from "./zhFieldContext";
 
 export function ZHFormHeader(props: {
   title: string;
@@ -125,6 +126,11 @@ export function ZHField(props: {
     children,
   } = props;
   const fieldError = fieldErrorProp ?? error;
+  const messageId = useId();
+  const errorContext = useMemo(
+    () => (fieldError?.trim() ? { messageId } : null),
+    [fieldError, messageId],
+  );
   const effectiveHint = fieldError?.trim() ? fieldError : hint;
   const effectiveHintType: ZHFieldHintType | undefined = fieldError?.trim()
     ? "error"
@@ -146,9 +152,12 @@ export function ZHField(props: {
           {required ? <span className="zh-field-required">*</span> : null}
         </span>
       ) : null}
-      <div className="zh-field-control">{children}</div>
+      <ZHFieldErrorContext.Provider value={errorContext}>
+        <div className="zh-field-control">{children}</div>
+      </ZHFieldErrorContext.Provider>
       {effectiveHint ? (
         <p
+          id={errorContext ? messageId : undefined}
           className={`zh-field-hint${effectiveHintType ? ` zh-field-hint--${effectiveHintType}` : ""}`}
         >
           {effectiveHint}

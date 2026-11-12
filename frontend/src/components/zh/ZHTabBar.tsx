@@ -15,6 +15,10 @@ export type ZHTab<TId extends string> = {
    * navegan (p.ej. "Historial").
    */
   inert?: boolean;
+  /** Tooltip nativo de la pestaña (p. ej. el motivo por el que está deshabilitada). */
+  title?: string;
+  /** Contador opcional junto a la etiqueta (p. ej. "Roles 3"); no sustituye al nombre accesible. */
+  count?: number;
 };
 
 type Props<TId extends string> = {
@@ -31,6 +35,15 @@ type Props<TId extends string> = {
    * render estándar. Todo consumidor que la use documenta el motivo junto al prop.
    */
   variant?: "auto" | "standard";
+  /**
+   * Prefijo para el `id` de cada pestaña (`${idPrefix}-${tab.id}`). Junto con `panelIdPrefix`
+   * permite enlazar el tablist con sus `role="tabpanel"` (`aria-labelledby`/`aria-controls`).
+   */
+  idPrefix?: string;
+  /** Prefijo de los paneles controlados: `aria-controls="${panelIdPrefix}-${tab.id}"`. */
+  panelIdPrefix?: string;
+  /** Clase extra del contenedor `.prd-tabs` (solo ajustes de layout del consumidor). */
+  className?: string;
 };
 
 /**
@@ -46,6 +59,9 @@ export function ZHTabBar<TId extends string>({
   ariaLabel,
   fill = false,
   variant = "auto",
+  idPrefix,
+  panelIdPrefix,
+  className,
 }: Props<TId>) {
   const responsiveThree = variant === "auto" && tabs.length === 3;
   const listRef = useRef<HTMLDivElement>(null);
@@ -66,15 +82,18 @@ export function ZHTabBar<TId extends string>({
   return (
     <div
       ref={listRef}
-      className={`prd-tabs${fill ? " prd-tabs--fill" : ""}${responsiveThree ? " prd-tabs--responsive-three" : ""}`}
+      className={`prd-tabs${fill ? " prd-tabs--fill" : ""}${responsiveThree ? " prd-tabs--responsive-three" : ""}${className ? ` ${className}` : ""}`}
       role="tablist"
       aria-label={ariaLabel}
     >
       {tabs.map((tab) => (
         <button
           key={tab.id}
+          id={idPrefix ? `${idPrefix}-${tab.id}` : undefined}
           type="button"
           role="tab"
+          title={tab.title}
+          aria-controls={panelIdPrefix ? `${panelIdPrefix}-${tab.id}` : undefined}
           aria-label={responsiveThree ? tab.label : undefined}
           aria-selected={activeTab === tab.id}
           aria-disabled={tab.disabled || undefined}
@@ -97,6 +116,7 @@ export function ZHTabBar<TId extends string>({
               {tab.mobileLabel && <span className="prd-tab-label--mobile" aria-hidden="true">{tab.mobileLabel}</span>}
             </>
           ) : tab.label}
+          {tab.count !== undefined && <span className="prd-tab-count">{tab.count}</span>}
         </button>
       ))}
     </div>

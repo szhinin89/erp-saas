@@ -138,7 +138,7 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
     const openNew = async () => {
       renderPage();
       await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
-      fireEvent.click(screen.getByRole("button", { name: /Nueva Condición/ }));
+      fireEvent.click(screen.getByRole("tab", { name: /Nueva Condición/ }));
     };
 
     it("cuotas y días son ZhNumberInput (texto numérico), sin input type=number", async () => {

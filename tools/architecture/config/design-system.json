@@ -81,8 +81,7 @@
       "rule": "F-04-pf-field",
       "pattern": "\\bpf-field(__[\\w-]+)?\\b|\\bpf-label\\b",
       "message": "Clase eliminada '.pf-field'/'.pf-field__*'/'.pf-label' (Fase 3B) — usar <ZHField density=\"compact\">."
-    }
-    ,
+    },
     {
       "rule": "F-04-pf-table",
       "pattern": "(?<![\\w-])pf-table(?![\\w-])",
@@ -114,10 +113,170 @@
       "frontend/src/components/zh/zh-file-upload.css": 1,
       "frontend/src/modules/configuracion/facturacionElectronica/sections/sri-config-page.css": 1,
       "frontend/src/modules/items/catalog/wizard/catalog-wizard.css": 1,
-      "frontend/src/modules/masterData/pages/masterdata-pages.css": 1,
       "frontend/src/modules/sales/styles/sales-invoice.css": 2,
       "frontend/src/modules/sales/styles/sales-product-card.css": 3,
       "frontend/src/styles/shared/items-catalog.css": 5
+    }
+  },
+  "nativeControlAllowances": {
+    "$note": "Paquete C5 (F-04-native-* y F-04-tabs-manual): excepciones por archivo con conteo exacto y motivo obligatorio. Solo puede bajar: más ocurrencias que `count` falla, menos también (bajar o eliminar la entrada). Sin equivalente oficial y no marcados: radio, file, color, range, hidden. Los archivos de components/zh/** y de prueba están fuera de alcance.",
+    "F-04-tabs-manual": {
+      "frontend/src/components/shared/ConfigTabsLayout.tsx": {
+        "count": 2,
+        "reason": "ConfigTabsLayout FROZEN: pestañas fijas Lista/Editor de los módulos de configuración."
+      },
+      "frontend/src/modules/inventory/kardex/pages/KardexPage.tsx": {
+        "count": 2,
+        "reason": "Selector de modo de búsqueda (producto/documento) dentro de la tarjeta de filtros: excepción aprobada en el Paquete C."
+      }
+    },
+    "F-04-native-select": {
+      "frontend/src/components/CompanySwitcher.tsx": {
+        "count": 1,
+        "reason": "Selector del encabezado de la aplicación (cromo propio `company-switcher-select`), no un campo de formulario."
+      },
+      "frontend/src/modules/items/detail/components/VariantsSection.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      }
+    },
+    "F-04-native-textarea": {
+      "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx": {
+        "count": 2,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/components/ItemForm/SettingsTab.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      }
+    },
+    "F-04-native-input": {
+      "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx": {
+        "count": 8,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/components/items/ItemEditorModal/ItemEditorPurchaseInfo.tsx": {
+        "count": 4,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/components/ReportPageTemplate.tsx": {
+        "count": 1,
+        "reason": "Plantilla de reportes compartida: buscador con comportamiento propio, fuera del alcance de los formularios."
+      },
+      "frontend/src/modules/admin-core/pages/AdminCoreLoginPage.tsx": {
+        "count": 2,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/CompletePasswordResetPage.tsx": {
+        "count": 2,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/ForgotPasswordPage.tsx": {
+        "count": 1,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/LoginPage.tsx": {
+        "count": 2,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/ResetPasswordPage.tsx": {
+        "count": 2,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/SetupPage.tsx": {
+        "count": 6,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/inventory/warehouses/components/WarehouseListTab.tsx": {
+        "count": 1,
+        "reason": "Buscador de lista con icono y botón limpiar (`prd-search-*`) y ref propio; no es un campo de formulario."
+      },
+      "frontend/src/modules/items/components/ItemForm/BarcodeListEditor.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/components/ItemForm/GeneralTab.tsx": {
+        "count": 3,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/components/ItemForm/SupplierCodesSection.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/detail/components/VariantsSection.tsx": {
+        "count": 3,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/pages/ItemTypesPage.tsx": {
+        "count": 3,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx": {
+        "count": 1,
+        "reason": "Buscador de lista con icono y botón limpiar (`prd-search-*`) y ref propio; no es un campo de formulario."
+      },
+      "frontend/src/modules/masterData/components/MasterDataPartnerWizard.tsx": {
+        "count": 1,
+        "reason": "Buscador de lista con icono y botón limpiar (`prd-search-*`) y ref propio; no es un campo de formulario."
+      },
+      "frontend/src/modules/purchases/components/PendingProductRow.tsx": {
+        "count": 4,
+        "reason": "Compras CLOSED: solo se reabre por bug u operación (ver project_purchases_module_closed)."
+      },
+      "frontend/src/modules/sales/components/CustomerPicker.tsx": {
+        "count": 1,
+        "reason": "Selector/buscador especializado con navegación por teclado, debounce y ref propios."
+      },
+      "frontend/src/modules/sales/components/SalesInvoiceDetailsSection.tsx": {
+        "count": 1,
+        "reason": "Selector/buscador especializado con navegación por teclado, debounce y ref propios."
+      },
+      "frontend/src/modules/sales/components/SalesReturnInvoicePicker.tsx": {
+        "count": 1,
+        "reason": "Selector/buscador especializado con navegación por teclado, debounce y ref propios."
+      }
+    },
+    "F-04-native-checkbox": {
+      "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/admin-core/pages/AdminCoreDashboardPage.tsx": {
+        "count": 1,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/auth/pages/LoginPage.tsx": {
+        "count": 1,
+        "reason": "Formulario de acceso (Auth/AdminCore) con estilo propio (lp-*/zh-auth-*): fuera del alcance del Paquete C."
+      },
+      "frontend/src/modules/items/catalog/pages/AttributeDefinitionsPage.tsx": {
+        "count": 2,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/catalog/wizard/TreeEditor.tsx": {
+        "count": 1,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/items/detail/components/CollectionSection.tsx": {
+        "count": 6,
+        "reason": "Ítems FROZEN v1.0: el módulo no se modifica (ver frozen-infrastructure y ADR-040/041)."
+      },
+      "frontend/src/modules/purchases/components/DistributeCostModal.tsx": {
+        "count": 1,
+        "reason": "Compras CLOSED: solo se reabre por bug u operación (ver project_purchases_module_closed)."
+      },
+      "frontend/src/modules/purchases/components/PendingProductRow.tsx": {
+        "count": 1,
+        "reason": "Compras CLOSED: solo se reabre por bug u operación (ver project_purchases_module_closed)."
+      },
+      "frontend/src/modules/purchases/components/PurchaseReceptionFilters.tsx": {
+        "count": 1,
+        "reason": "Compras CLOSED: solo se reabre por bug u operación (ver project_purchases_module_closed)."
+      },
+      "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx": {
+        "count": 1,
+        "reason": "Compras CLOSED: solo se reabre por bug u operación (ver project_purchases_module_closed)."
+      }
     }
   }
 }

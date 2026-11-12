@@ -19,6 +19,7 @@ import {
   ZhPhoneInput,
   ZhTextarea,
   ZhSelect,
+  ZhCheckbox,
 } from "../../../components/zh/inputs";
 import { message } from "../../../lib/messages";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
@@ -49,6 +50,7 @@ import type {
   UpdateContactBody,
 } from "../types/businessPartner.types";
 import "./masterdata-pages.css";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -615,21 +617,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             ))}
           </div>
 
-          <nav className="md-detail-tabs">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`md-detail-tab ${activeTab === tab.id ? "md-detail-tab--active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-                {tab.count !== undefined && (
-                  <span className="md-detail-tab__count">{tab.count}</span>
-                )}
-              </button>
-            ))}
-          </nav>
+          <ZHTabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
           {/* ── Identity ──────────────────────────────────────────── */}
           {activeTab === "identity" && (
@@ -765,7 +753,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                   <div className="md-detail-section__header">
                     <h3>Ubicaciones</h3>
                     <div className="md-detail-filter-actions">
-                      <select
+                      <ZhSelect
                         className="md-detail-filter-select zh-select--compact"
                         value={locFilter}
                         onChange={(e) =>
@@ -777,7 +765,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                         <option value="active">Activas</option>
                         <option value="inactive">Inactivas</option>
                         <option value="all">Todas</option>
-                      </select>
+                      </ZhSelect>
                       <ZHBtn
                         variant="primary"
                         size="sm"
@@ -1001,7 +989,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               required
               error={locForm.formState.errors.type?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving}
                 {...locForm.register("type", { valueAsNumber: true })}
               >
@@ -1010,7 +998,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                     {t.label}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
           </ZHGrid>
           <ZHField
@@ -1108,8 +1096,7 @@ export function MasterDataBusinessPartnerDetailPage() {
             <div className="md-detail-purpose-options">
               {PURPOSE_FLAGS.map((pf) => (
                 <label key={pf.flag} className="zh-checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     checked={(locForm.watch("purpose") & pf.flag) !== 0}
                     onChange={(e) => {
                       const cur = locForm.getValues("purpose");
@@ -1127,8 +1114,7 @@ export function MasterDataBusinessPartnerDetailPage() {
           </ZHField>
           {locModal?.mode === "create" && (
             <label className="zh-checkbox-label md-detail-primary-option">
-              <input
-                type="checkbox"
+              <ZhCheckbox
                 {...locForm.register("isPrimary")}
                 disabled={saving}
               />
@@ -1191,7 +1177,7 @@ export function MasterDataBusinessPartnerDetailPage() {
               required
               error={conForm.formState.errors.role?.message}
             >
-              <select
+              <ZhSelect
                 disabled={saving}
                 {...conForm.register("role", { valueAsNumber: true })}
               >
@@ -1200,7 +1186,7 @@ export function MasterDataBusinessPartnerDetailPage() {
                     {r.label}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
             <ZHField label="Cargo">
               <ZhTextInput
@@ -1238,14 +1224,14 @@ export function MasterDataBusinessPartnerDetailPage() {
             </ZHField>
           </ZHGrid>
           <ZHField label="Ubicación asociada">
-            <select disabled={saving} {...conForm.register("locationId")}>
+            <ZhSelect disabled={saving} {...conForm.register("locationId")}>
               <option value="">— Ninguna —</option>
               {activeLocs.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name} ({l.typeLabel})
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Notas">
             <ZhTextarea
@@ -1257,8 +1243,7 @@ export function MasterDataBusinessPartnerDetailPage() {
           </ZHField>
           {conModal?.mode === "create" && (
             <label className="zh-checkbox-label md-detail-primary-option">
-              <input
-                type="checkbox"
+              <ZhCheckbox
                 {...conForm.register("isPrimary")}
                 disabled={saving}
               />

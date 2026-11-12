@@ -13,7 +13,7 @@ import {  formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { ZhSelect } from "../../../components/zh/inputs";
+import { ZhSelect, ZhCheckbox } from "../../../components/zh/inputs";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { itemPriceListFacade } from "../../items/facades/itemPriceListFacade";
 import {  message } from "../../../lib/messages";
@@ -536,8 +536,7 @@ function ExceptionDrawer({
       {existingRule && canShow("pricing.delete") && (
         <div className="zh-field">
           <label className="zh-checkbox-label prd-checkbox-field">
-            <input
-              type="checkbox"
+            <ZhCheckbox
               checked={active}
               onChange={(e) => setActive(e.target.checked)}
             />

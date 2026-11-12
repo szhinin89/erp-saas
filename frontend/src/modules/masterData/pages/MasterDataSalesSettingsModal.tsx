@@ -6,6 +6,7 @@ import { paymentTermService, type PaymentTermDto } from "../api/paymentTermServi
 import type { BusinessPartnerSummaryDto, CompanyBpSalesSettingsDto } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
+import { ZhSelect } from "../../../components/zh/inputs";
 
 type Props = {
   partner: BusinessPartnerSummaryDto;
@@ -57,11 +58,11 @@ export function MasterDataSalesSettingsModal({ partner, initialSettings, saving,
         {(error || formError) && <ZHPageNotice variant="error" message={error ?? formError!} />}
         {invalidSelection && !loading && <ZHPageNotice variant="warning" message="La condición configurada no está disponible. Seleccione una condición activa o quite el valor predeterminado." />}
         <ZHField label="Condición predeterminada para ventas" hint="Aplica a la empresa activa. Sin valor predeterminado, deberá seleccionar una condición al crear la venta.">
-          <select aria-label="Condición predeterminada para ventas" value={paymentTermId} disabled={loading || saving || loadFailed} onChange={(event) => setPaymentTermId(event.target.value)}>
+          <ZhSelect aria-label="Condición predeterminada para ventas" value={paymentTermId} disabled={loading || saving || loadFailed} onChange={(event) => setPaymentTermId(event.target.value)}>
             <option value="">Sin condición predeterminada</option>
             {invalidSelection && <option value={paymentTermId} disabled>Condición no disponible</option>}
             {terms.filter((pt) => pt.isActive).map((pt) => <option key={pt.id} value={pt.id}>{pt.code} — {pt.name} ({pt.summary})</option>)}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHFormActions onCancel={handleClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />
       </form>

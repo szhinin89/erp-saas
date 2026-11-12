@@ -4,7 +4,7 @@ import { useI18n } from "../../../i18n/i18n";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhDecimalInput } from "../../../components/zh/inputs";
+import { ZhDecimalInput, ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import type { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
 import type { CashMovementReasonDto } from "../api/cajaService";
 import type { RecordMovementFormValues } from "../schemas/cajaSchema";
@@ -72,14 +72,14 @@ export function ManualCashMovementModal({
           required
           fieldError={errors.movementType?.message}
         >
-          <select {...register("movementType")}>
+          <ZhSelect {...register("movementType")}>
             <option value="">{t("caja.movements.form.selectPlaceholder")}</option>
             {movementTypes.map((mt) => (
               <option key={mt.value} value={mt.value}>
                 {mt.label}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         {/* TREASURY-CASH-MANUAL-MOVEMENTS-01 — motivo dinámico desde el backend
             (CashMovementReason), filtrado por Tenant+Company+Tipo — nunca texto libre
@@ -91,7 +91,7 @@ export function ManualCashMovementModal({
           required
           fieldError={errors.reasonId?.message}
         >
-          <select
+          <ZhSelect
             {...register("reasonId")}
             disabled={!selectedMovementType || reasonsLoading || reasons.length === 0}
           >
@@ -107,7 +107,7 @@ export function ManualCashMovementModal({
                 {r.name}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField
           density="compact"
@@ -125,7 +125,7 @@ export function ManualCashMovementModal({
           required
           fieldError={errors.description?.message}
         >
-          <input type="text" {...register("description")} />
+          <ZhTextInput type="text" {...register("description")} />
         </ZHField>
         {saveError && (
           <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={saveError} />

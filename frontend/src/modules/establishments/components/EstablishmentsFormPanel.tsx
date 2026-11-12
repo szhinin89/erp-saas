@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
@@ -9,6 +8,7 @@ import {
 } from "../../../components/zh/ZHForm";
 import type { EstablishmentsPageContext } from "../hooks/useEstablishmentsPage";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import { ConfigFormPanelHeader } from "../../../components/shared/ConfigFormPanelHeader";
 
 type Props = Pick<
   EstablishmentsPageContext,
@@ -41,36 +41,15 @@ export function EstablishmentsFormPanel({
   save,
 }: Props) {
   const isEdit = Boolean(editingId);
-  const [activeTab] = useState<"general">("general");
 
   return (
     <div>
-      {/* Panel header */}
-      <div className="cfg-panel-hd">
-        <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {isEdit ? "edit" : "add_circle"}
-        </span>
-        <div>
-          <p className="cfg-panel-hd__title">
-            {isEdit
-              ? (editingName ?? "Editar Establecimiento")
-              : "Nuevo Establecimiento SRI"}
-          </p>
-          {isEdit && editingCode && (
-            <p className="cfg-panel-hd__sub">Código SRI: {editingCode}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="prd-tabs cfg-panel-tabs">
-        <button
-          type="button"
-          className={`prd-tab-btn ${activeTab === "general" ? "prd-tab-btn--active" : ""}`}
-        >
-          General
-        </button>
-      </div>
+      <ConfigFormPanelHeader
+        icon={isEdit ? "edit" : "add_circle"}
+        title={isEdit ? (editingName ?? "Editar Establecimiento") : "Nuevo Establecimiento SRI"}
+        subtitle={isEdit && editingCode ? `Código SRI: ${editingCode}` : undefined}
+        tabLabel="General"
+      />
 
       {/* Error */}
       {saveError && (

@@ -12,7 +12,7 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { ZhSelect, ZhTextarea } from "../../../components/zh/inputs";
+import { ZhSelect, ZhTextarea, ZhCheckbox } from "../../../components/zh/inputs";
 import {
   ZHDataTable,
   type ZHDataTableColumn,
@@ -181,8 +181,7 @@ export function AccountingPostingsPage() {
               header: t("accounting.continuity.postings.select"),
               render: (row: AccountingPostingDto) =>
                 row.status === "Pending" || row.status === "Failed" ? (
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     aria-label={`${t("accounting.continuity.postings.select")} ${row.id}`}
                     checked={selected.includes(row.id)}
                     disabled={

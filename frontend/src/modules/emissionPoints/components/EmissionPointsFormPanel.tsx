@@ -1,5 +1,4 @@
-﻿import { useState } from "react";
-import { Controller } from "react-hook-form";
+﻿import { Controller } from "react-hook-form";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   ZHField,
@@ -14,6 +13,7 @@ import {
   EMISSION_TYPE_PHYSICAL,
 } from "../api/emissionPointsService";
 import type { EmissionPointsPageContext } from "../hooks/useEmissionPointsPage";
+import { ConfigFormPanelHeader } from "../../../components/shared/ConfigFormPanelHeader";
 
 type Props = Pick<
   EmissionPointsPageContext,
@@ -46,36 +46,15 @@ export function EmissionPointsFormPanel({
   save,
 }: Props) {
   const isEdit = Boolean(editingId);
-  const [activeTab] = useState<"general">("general");
 
   return (
     <div>
-      {/* Panel header */}
-      <div className="cfg-panel-hd">
-        <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {isEdit ? "edit" : "add_circle"}
-        </span>
-        <div>
-          <p className="cfg-panel-hd__title">
-            {isEdit
-              ? (editingName ?? "Editar Punto de Emisión")
-              : "Nuevo Punto de Emisión"}
-          </p>
-          {isEdit && editingCode && (
-            <p className="cfg-panel-hd__sub">Código: {editingCode}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="prd-tabs cfg-panel-tabs">
-        <button
-          type="button"
-          className={`prd-tab-btn ${activeTab === "general" ? "prd-tab-btn--active" : ""}`}
-        >
-          General
-        </button>
-      </div>
+      <ConfigFormPanelHeader
+        icon={isEdit ? "edit" : "add_circle"}
+        title={isEdit ? (editingName ?? "Editar Punto de Emisión") : "Nuevo Punto de Emisión"}
+        subtitle={isEdit && editingCode ? `Código: ${editingCode}` : undefined}
+        tabLabel="General"
+      />
 
       {/* Error */}
       {saveError && (

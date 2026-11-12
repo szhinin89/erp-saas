@@ -439,7 +439,7 @@ export function BranchGeneralSection({
               />
             </ZHField>
             <ZHField label="Correo Electrónico" error={errors.email?.message}>
-              <input
+              <ZhTextInput
                 className="zh-input"
                 type="email"
                 disabled={saving || !canUpdate}
@@ -484,7 +484,7 @@ export function BranchGeneralSection({
               />
             </ZHField>
             <ZHField label="Correo" error={errors.managerEmail?.message}>
-              <input
+              <ZhTextInput
                 className="zh-input"
                 type="email"
                 disabled={saving || !canUpdate}

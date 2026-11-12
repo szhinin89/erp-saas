@@ -8,6 +8,7 @@ import {
   ZhTextarea,
 } from "../../../components/zh/inputs";
 import type { CashRegistersPageContext } from "../hooks/useCashRegistersPage";
+import { ConfigFormPanelHeader } from "../../../components/shared/ConfigFormPanelHeader";
 
 type Props = Pick<
   CashRegistersPageContext,
@@ -62,20 +63,11 @@ export function CashRegistersFormPanel({
 
   return (
     <div>
-      {/* Panel header */}
-      <div className="cfg-panel-hd">
-        <span className="material-symbols-outlined cfg-panel-hd__icon">
-          {isEdit ? "edit" : "add_circle"}
-        </span>
-        <div>
-          <p className="cfg-panel-hd__title">
-            {isEdit ? (editingName ?? "Editar Caja") : "Nueva Caja"}
-          </p>
-          {isEdit && editingCode && (
-            <p className="cfg-panel-hd__sub">Código: {editingCode}</p>
-          )}
-        </div>
-      </div>
+      <ConfigFormPanelHeader
+        icon={isEdit ? "edit" : "add_circle"}
+        title={isEdit ? (editingName ?? "Editar Caja") : "Nueva Caja"}
+        subtitle={isEdit && editingCode ? `Código: ${editingCode}` : undefined}
+      />
 
       {saveError && (
         <div className="cfg-panel-error">
@@ -250,7 +242,7 @@ export function CashRegistersFormPanel({
                   label="Bodega por defecto"
                   error={errors.defaultWarehouseId?.message}
                 >
-                  <select
+                  <ZhSelect
                     className="zh-input"
                     disabled={saving || loadingWarehouses || !watchedBranchId}
                     {...register("defaultWarehouseId")}
@@ -265,7 +257,7 @@ export function CashRegistersFormPanel({
                         {w.code ? `${w.code} — ${w.name}` : w.name}
                       </option>
                     ))}
-                  </select>
+                  </ZhSelect>
                 </ZHField>
 
                 <ZHField

@@ -212,7 +212,7 @@ export function WarehouseFormTab({
                   label={t("warehouses.form.field.lat", "Latitud")}
                   error={errors.latitude?.message}
                 >
-                  <input
+                  <ZhTextInput
                     className="zh-input mono"
                     placeholder="0.000000"
                     disabled={saving}
@@ -223,7 +223,7 @@ export function WarehouseFormTab({
                   label={t("warehouses.form.field.lng", "Longitud")}
                   error={errors.longitude?.message}
                 >
-                  <input
+                  <ZhTextInput
                     className="zh-input mono"
                     placeholder="0.000000"
                     disabled={saving}
@@ -265,7 +265,7 @@ export function WarehouseFormTab({
                   label={t("warehouses.form.field.email", "Correo Electrónico")}
                   error={errors.email?.message}
                 >
-                  <input
+                  <ZhTextInput
                     className="zh-input"
                     type="email"
                     placeholder="bodega@empresa.com"

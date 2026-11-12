@@ -2,6 +2,7 @@ import React from "react";
 import { allowsIntegerKey } from "../../../lib/validators/numericValidators";
 import { sanitizeInteger } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
+import { useZHFieldA11y } from "../zhFieldContext";
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   positiveOnly?: boolean;
@@ -20,6 +21,7 @@ type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
  */
 export const ZhNumberInput = React.forwardRef<HTMLInputElement, Props>(
   ({ positiveOnly = false, onKeyDown, onPaste, className, ...props }, ref) => {
+    const a11y = useZHFieldA11y(props);
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (!allowsIntegerKey(e, positiveOnly)) e.preventDefault();
       onKeyDown?.(e);
@@ -36,6 +38,7 @@ export const ZhNumberInput = React.forwardRef<HTMLInputElement, Props>(
     return (
       <input
         {...props}
+        {...a11y}
         ref={ref}
         type="text"
         inputMode="numeric"

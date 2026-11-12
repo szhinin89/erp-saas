@@ -4,7 +4,7 @@ import { useI18n } from "../../../i18n/i18n";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhDecimalInput } from "../../../components/zh/inputs";
+import { ZhDecimalInput, ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import type { CompanyBankAccountDto } from "../../finance/facades/bankAccountLookupFacade";
 import type { BankDepositFormValues } from "../schemas/cajaSchema";
 import "../styles/cash-form-shared.css";
@@ -56,7 +56,7 @@ export function CashBankDepositModal({
           required
           fieldError={errors.companyBankAccountId?.message}
         >
-          <select {...register("companyBankAccountId")} disabled={bankAccountsLoading || bankAccounts.length === 0}>
+          <ZhSelect {...register("companyBankAccountId")} disabled={bankAccountsLoading || bankAccounts.length === 0}>
             <option value="">
               {!bankAccountsLoading && bankAccounts.length === 0
                 ? t("caja.bankDeposit.bankAccountsEmpty")
@@ -67,7 +67,7 @@ export function CashBankDepositModal({
                 {b.displayName} — {b.accountNumber}
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField
           density="compact"
@@ -84,7 +84,7 @@ export function CashBankDepositModal({
           label={t("caja.bankDeposit.reference")}
           fieldError={errors.referenceNumber?.message}
         >
-          <input type="text" {...register("referenceNumber")} />
+          <ZhTextInput type="text" {...register("referenceNumber")} />
         </ZHField>
         <ZHField
           density="compact"
@@ -93,7 +93,7 @@ export function CashBankDepositModal({
           required
           fieldError={errors.description?.message}
         >
-          <input type="text" {...register("description")} />
+          <ZhTextInput type="text" {...register("description")} />
         </ZHField>
         {saveError && (
           <ZHPageNotice variant="error" message={t("common.errorPrefix")} detail={saveError} />

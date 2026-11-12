@@ -36,6 +36,7 @@ import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
+import { ZhSelect } from "../../../components/zh/inputs";
 
 const TABS = [
   {
@@ -222,7 +223,7 @@ function SupplierConfigModal({
               (taxSupportOrphan ? ORPHAN_CODE_MESSAGE : undefined)
             }
           >
-            <select
+            <ZhSelect
               value={taxSupportCode}
               onChange={(e) => setTaxSupportCode(e.target.value)}
               disabled={saving || loadingTaxSupport}
@@ -244,13 +245,13 @@ function SupplierConfigModal({
                   ))}
                 </>
               )}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField
             label="Método de pago SRI"
             fieldError={paymentMethodsError ?? undefined}
           >
-            <select
+            <ZhSelect
               value={paymentMethodCode}
               onChange={(e) => setPaymentMethodCode(e.target.value)}
               disabled={saving || loadingPaymentMethods}
@@ -265,10 +266,10 @@ function SupplierConfigModal({
                   </option>
                 ))
               )}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField label="Tipo de Proveedor">
-            <select
+            <ZhSelect
               value={refundProviderType}
               onChange={(e) => setRefundProviderType(e.target.value)}
               disabled={saving}
@@ -279,7 +280,7 @@ function SupplierConfigModal({
                   {o.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <div className="zh-col-span-2">
             <ZHToggle
@@ -323,7 +324,7 @@ function SupplierConfigModal({
           label="Condición predeterminada para compras/gastos"
           hint="Aplica solo a la empresa activa. Si este proveedor trabaja con otra empresa, puede tener una condición distinta."
         >
-          <select
+          <ZhSelect
             value={purchaseDefaultPtId}
             onChange={(e) => {
               setPurchaseDefaultPtId(e.target.value);
@@ -343,7 +344,7 @@ function SupplierConfigModal({
                   {pt.code} — {pt.name} ({pt.summary})
                 </option>
               ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHBtn
           type="button"
@@ -570,7 +571,7 @@ function SupplierRetentionDefaultsSection({
 
       <ZHGrid cols={3}>
         <ZHField label="Tipo de impuesto">
-          <select
+          <ZhSelect
             value={newTaxType}
             onChange={(e) => {
               setNewTaxType(e.target.value as "IVA" | "RENTA");
@@ -580,10 +581,10 @@ function SupplierRetentionDefaultsSection({
           >
             <option value="IVA">IVA</option>
             <option value="RENTA">Renta</option>
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField label="Código de retención SRI">
-          <select
+          <ZhSelect
             value={newCodeId}
             onChange={(e) => setNewCodeId(e.target.value)}
             disabled={disabled || adding || loadingCatalog}
@@ -598,7 +599,7 @@ function SupplierRetentionDefaultsSection({
                 </option>
               ))
             )}
-          </select>
+          </ZhSelect>
         </ZHField>
         <div className="md-supplier-retention-add-btn">
           <ZHBtn

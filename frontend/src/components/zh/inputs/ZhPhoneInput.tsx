@@ -3,6 +3,7 @@ import { allowsPhoneDigitKey } from "../../../lib/validators/textValidators";
 import { sanitizePhoneLocal } from "../../../lib/sanitizers";
 import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 import { phoneConfig } from "../../../lib/config/phone.config";
+import { useZHFieldA11y } from "../zhFieldContext";
 import "./ZhInputs.css";
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
   id?: string;
   name?: string;
   placeholder?: string;
+  "aria-invalid"?: React.AriaAttributes["aria-invalid"];
+  "aria-describedby"?: string;
 };
 
 /**
@@ -37,7 +40,10 @@ export function ZhPhoneInput({
   id,
   name,
   placeholder,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: Props) {
+  const a11y = useZHFieldA11y({ "aria-invalid": ariaInvalid, "aria-describedby": ariaDescribedBy });
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const prefix = phoneConfig.defaultCountryCode;
@@ -86,6 +92,7 @@ export function ZhPhoneInput({
       <input
         id={inputId}
         name={name}
+        {...a11y}
         type="tel"
         inputMode="tel"
         value={localValue}

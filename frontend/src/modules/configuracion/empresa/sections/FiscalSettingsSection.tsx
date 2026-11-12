@@ -13,6 +13,7 @@ import {
   ZhSelect,
   ZhDecimalInput,
   ZhDateInput,
+  ZhCheckbox,
 } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
@@ -323,8 +324,7 @@ export function FiscalSettingsSection() {
             <div className="zh-checkbox-grid">
               <div className="zh-checkbox-label">
                 <label className="zh-checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     disabled={saving || !canEdit}
                     {...register("isAccountingReq")}
                   />
@@ -334,8 +334,7 @@ export function FiscalSettingsSection() {
               </div>
               <div className="zh-checkbox-label">
                 <label className="zh-checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     disabled={saving || !canEdit}
                     {...register("isForeignTrade")}
                   />
@@ -345,8 +344,7 @@ export function FiscalSettingsSection() {
               </div>
               <div className="zh-checkbox-label">
                 <label className="zh-checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     disabled={saving || !canEdit}
                     {...register("withholdsRenta")}
                   />
@@ -356,8 +354,7 @@ export function FiscalSettingsSection() {
               </div>
               <div className="zh-checkbox-label">
                 <label className="zh-checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ZhCheckbox
                     disabled={saving || !canEdit}
                     {...register("withholdsVat")}
                   />

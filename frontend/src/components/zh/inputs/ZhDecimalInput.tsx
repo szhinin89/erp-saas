@@ -5,6 +5,7 @@ import { setProgrammaticInputValue } from "../../../lib/inputUtils";
 import type { PrecisionKind } from "../../../lib/config/precisionPolicy.config";
 import { SemanticDecimals } from "../SemanticDecimals";
 import type { ZhInputDensity } from "./ZhTextInput";
+import { useZHFieldA11y } from "../zhFieldContext";
 
 type Props = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
@@ -56,6 +57,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
     },
     ref,
   ) => {
+    const a11y = useZHFieldA11y(props);
     // ZH-DESIGN-SYSTEM-PRECISION-03D — "entrar y salir sin modificar no es una edición". Metadata
     // efímera (no una copia del valor): se activa con el onChange de React, que solo ocurre por
     // entrada real (teclado, borrado, paste y coma normalizada, que se inyectan como input); no
@@ -115,6 +117,7 @@ const ZhDecimalInputCore = React.forwardRef<HTMLInputElement, Props>(
     return (
       <input
         {...props}
+        {...a11y}
         ref={ref}
         type="text"
         inputMode="decimal"
