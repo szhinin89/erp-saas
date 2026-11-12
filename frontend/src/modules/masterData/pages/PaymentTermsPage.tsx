@@ -15,6 +15,8 @@ import { paymentTermService } from "../api/paymentTermService";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import "../../../styles/shared/items-catalog.css";
+import "../../../styles/shared/erp-form-core.css";
+import "./masterdata-pages.css";
 
 type Tab = "listado" | "nuevo";
 

@@ -14,6 +14,7 @@ import {
 } from "../api/supplierPaymentService";
 import { SupplierPaymentStatusBadge } from "../components/SupplierPaymentStatusBadge";
 import "../styles/supplier-payments.css";
+import "../../../styles/shared/pay-list-cell.css";
 
 const PERMISSIONS = { view: "supplier-payments.view", create: "supplier-payments.create" } as const;
 

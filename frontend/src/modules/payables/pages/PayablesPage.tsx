@@ -18,6 +18,7 @@ import { PayableOriginBadge } from "../components/PayableOriginBadge";
 import { PayableStatusBadge } from "../components/PayableStatusBadge";
 import { PayablesFilters, type PayablesFiltersValue } from "../components/PayablesFilters";
 import "../styles/payables.css";
+import "../../../styles/shared/pay-list-cell.css";
 
 const PERMISSIONS = { view: "payables.view" } as const;
 
