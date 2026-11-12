@@ -139,4 +139,65 @@ describe("CreditTermsPage — activar/desactivar: confirmación y feedback (ante
     promptSpy.mockRestore();
     alertSpy.mockRestore();
   });
+
+  describe("campos numéricos (ZhNumberInput)", () => {
+    const FIN_CT = {
+      ...ACTIVE_CT,
+      mode: "2", // parseInt("2") → Financiero Estricto (muestra cuotas)
+      totalDays: 60,
+      installments: [{ installmentNumber: 1, daysOffset: 5, percentage: 100 }],
+    } as unknown as CreditTermDto;
+
+    const fieldInput = (label: string) => {
+      const field = screen.getByText(label).closest(".zh-field") as HTMLElement;
+      return field.querySelector("input") as HTMLInputElement;
+    };
+
+    const openEdit = async () => {
+      vi.mocked(creditTermService.list).mockResolvedValue([FIN_CT]);
+      renderPage();
+      await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
+      fireEvent.click(screen.getByTitle(/Editar condición de crédito 30D/));
+    };
+
+    it("plazo total y días offset son ZhNumberInput; offset conserva su clase de ancho", async () => {
+      await openEdit();
+      const total = fieldInput("Plazo total (días)");
+      const offset = fieldInput("Días offset");
+      for (const input of [total, offset]) {
+        expect(input.type).toBe("text");
+        expect(input.inputMode).toBe("numeric");
+        expect(input.classList.contains("zh-numeric-input")).toBe(true);
+      }
+      expect(offset.classList.contains("ct-installment-days-input")).toBe(true);
+      expect(total.value).toBe("60");
+      expect(offset.value).toBe("5");
+      expect(document.querySelector('input[type="number"]')).toBeNull();
+    });
+
+    it("bloquea teclas no numéricas y el signo menos", async () => {
+      await openEdit();
+      const total = fieldInput("Plazo total (días)");
+      expect(fireEvent.keyDown(total, { key: "e" })).toBe(false);
+      expect(fireEvent.keyDown(total, { key: "-" })).toBe(false);
+      expect(fireEvent.keyDown(total, { key: "7" })).toBe(true);
+    });
+
+    it("transmite totalDays y daysOffset numéricos en el payload de actualización (sin clamp)", async () => {
+      vi.mocked(creditTermService.update).mockResolvedValue(FIN_CT);
+      await openEdit();
+      fireEvent.change(fieldInput("Plazo total (días)"), { target: { value: "90" } });
+      // Valor mayor que el plazo total: no se aplica ningún límite en la UI (el backend valida).
+      fireEvent.change(fieldInput("Días offset"), { target: { value: "120" } });
+      fireEvent.click(screen.getByRole("button", { name: /Actualizar/ }));
+      await waitFor(() => expect(creditTermService.update).toHaveBeenCalled());
+      expect(creditTermService.update).toHaveBeenCalledWith(
+        "ct-1",
+        expect.objectContaining({
+          totalDays: 90,
+          installments: [{ number: 1, daysOffset: 120, percentage: 100 }],
+        }),
+      );
+    });
+  });
 });

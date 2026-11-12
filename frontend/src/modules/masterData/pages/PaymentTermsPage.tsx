@@ -5,7 +5,7 @@ import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { ZhTextInput } from "../../../components/zh/inputs";
+import { ZhNumberInput, ZhTextInput } from "../../../components/zh/inputs";
 import type {
   PaymentTermDto,
   CreatePaymentTermPayload,
@@ -278,36 +278,20 @@ export function PaymentTermsPage() {
                 />
               </div>
             </div>
-            {/* fInstallments/fDays: NO migrado — ver reporte 14A-2 (input
-                type="number" con min/max nativos y sin Zod/RHF equivalente
-                que los reemplace; ZhNumberInput no soporta min/max). */}
-            <div className="zh-field">
-              <label className="zh-field-label">
-                Número de cuotas <span className="zh-field-required">*</span>
-              </label>
-              <div className="zh-field-control">
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  value={fInstallments}
-                  onChange={(e) => setFInstallments(Number(e.target.value))}
-                />
-              </div>
-            </div>
-            <div className="zh-field">
-              <label className="zh-field-label">
-                Días entre cuotas <span className="zh-field-required">*</span>
-              </label>
-              <div className="zh-field-control">
-                <input
-                  type="number"
-                  min={0}
-                  value={fDays}
-                  onChange={(e) => setFDays(Number(e.target.value))}
-                />
-              </div>
-            </div>
+            <ZHField label="Número de cuotas" required>
+              <ZhNumberInput
+                positiveOnly
+                value={fInstallments}
+                onChange={(e) => setFInstallments(Number(e.target.value))}
+              />
+            </ZHField>
+            <ZHField label="Días entre cuotas" required>
+              <ZhNumberInput
+                positiveOnly
+                value={fDays}
+                onChange={(e) => setFDays(Number(e.target.value))}
+              />
+            </ZHField>
           </div>
 
           {/* Preview */}

@@ -32,3 +32,32 @@ describe("SalesRepricingTable — salesUnitPrice semántico (04E)", () => {
     expect(read()).toEqual(["$12.3456", "$10.5000"]);
   });
 });
+
+describe("SalesRepricingTable — Design System (ZHDataTable)", () => {
+  it("usa la tabla oficial (.table--compact) y no las clases inexistentes zh-table*", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, salesUnitPriceDecimals: 2, moneyDecimals: 2 });
+    const { container } = render(<SalesRepricingTable rows={[row]} />);
+    const table = container.querySelector("table");
+    expect(table?.classList.contains("table")).toBe(true);
+    expect(table?.classList.contains("table--compact")).toBe(true);
+    expect(container.querySelector(".table-scroll")).not.toBeNull();
+    expect(container.querySelector(".zh-table, .zh-table-wrap")).toBeNull();
+  });
+
+  it("conserva las tres columnas y alinea a la derecha las monetarias", () => {
+    setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, salesUnitPriceDecimals: 2, moneyDecimals: 2 });
+    const { container } = render(<SalesRepricingTable rows={[row]} />);
+    const headers = Array.from(container.querySelectorAll("th"));
+    expect(headers.map((h) => h.textContent)).toEqual(["Producto", "Precio actual", "Nuevo precio"]);
+    expect(headers[0].classList.contains("zh-text-align-right")).toBe(false);
+    for (const th of headers.slice(1)) {
+      expect(th.classList.contains("zh-text-align-right")).toBe(true);
+      expect(th.classList.contains("zh-table-cell--num")).toBe(true);
+    }
+    const cells = Array.from(container.querySelectorAll("tbody td"));
+    expect(cells[0].textContent).toBe("Producto X");
+    expect(cells[1].classList.contains("zh-text-align-right")).toBe(true);
+    expect(cells[2].classList.contains("zh-text-align-right")).toBe(true);
+    expect(cells[1].querySelector(".zh-money-value")).not.toBeNull();
+  });
+});

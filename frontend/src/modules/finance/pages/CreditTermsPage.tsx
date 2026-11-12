@@ -6,6 +6,7 @@ import { Badge } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import {
   ZhDecimalInput,
+  ZhNumberInput,
   ZhTextInput,
   ZhSelect,
 } from "../../../components/zh/inputs";
@@ -346,13 +347,9 @@ export function CreditTermsPage() {
                 ))}
               </ZhSelect>
             </FormField>
-            {/* fDays: NO migrado — ver reporte 14A-2 (input type="number" con
-                min nativo y sin Zod/RHF equivalente; ZhNumberInput no soporta
-                min/max). */}
             <FormField label="Plazo total (días)">
-              <input
-                type="number"
-                min={0}
+              <ZhNumberInput
+                positiveOnly
                 value={fDays}
                 onChange={(e) => setFDays(Number(e.target.value))}
               />
@@ -384,14 +381,9 @@ export function CreditTermsPage() {
                   <span className="ct-installment-number">
                     #{inst.number}
                   </span>
-                  {/* daysOffset: NO migrado — ver reporte 14A-2 (min/max
-                      nativo con max dinámico por fila = fDays; sin Zod/RHF
-                      equivalente que reemplace ese límite). */}
                   <FormField label="Días offset">
-                    <input
-                      type="number"
-                      min={0}
-                      max={fDays}
+                    <ZhNumberInput
+                      positiveOnly
                       value={inst.daysOffset}
                       onChange={(e) =>
                         updateInstallment(

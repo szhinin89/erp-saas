@@ -133,4 +133,62 @@ describe("PaymentTermsPage — activar/desactivar: confirmación y feedback (ant
     promptSpy.mockRestore();
     alertSpy.mockRestore();
   });
+
+  describe("campos numéricos (ZhNumberInput)", () => {
+    const openNew = async () => {
+      renderPage();
+      await waitFor(() => expect(screen.getByText("30D")).toBeTruthy());
+      fireEvent.click(screen.getByRole("button", { name: /Nueva Condición/ }));
+    };
+
+    it("cuotas y días son ZhNumberInput (texto numérico), sin input type=number", async () => {
+      await openNew();
+      const installments = screen.getByLabelText(/Número de cuotas/) as HTMLInputElement;
+      const days = screen.getByLabelText(/Días entre cuotas/) as HTMLInputElement;
+      for (const input of [installments, days]) {
+        expect(input.type).toBe("text");
+        expect(input.inputMode).toBe("numeric");
+        expect(input.classList.contains("zh-numeric-input")).toBe(true);
+      }
+      expect(installments.value).toBe("1");
+      expect(days.value).toBe("0");
+      expect(document.querySelector('input[type="number"]')).toBeNull();
+    });
+
+    it("bloquea teclas no numéricas y el signo menos", async () => {
+      await openNew();
+      const installments = screen.getByLabelText(/Número de cuotas/);
+      expect(fireEvent.keyDown(installments, { key: "a" })).toBe(false);
+      expect(fireEvent.keyDown(installments, { key: "-" })).toBe(false);
+      expect(fireEvent.keyDown(installments, { key: "." })).toBe(false);
+      expect(fireEvent.keyDown(installments, { key: "5" })).toBe(true);
+    });
+
+    it("transmite cuotas y días numéricos en el payload de creación (sin clamp)", async () => {
+      vi.mocked(paymentTermService.create).mockResolvedValue(ACTIVE_PT);
+      await openNew();
+      fireEvent.change(screen.getByPlaceholderText("CONTADO, NET30, 3X30"), { target: { value: "3X30" } });
+      fireEvent.change(screen.getByPlaceholderText("Contado / Crédito 30 días"), { target: { value: "Tres cuotas" } });
+      fireEvent.change(screen.getByLabelText(/Número de cuotas/), { target: { value: "3" } });
+      fireEvent.change(screen.getByLabelText(/Días entre cuotas/), { target: { value: "30" } });
+      fireEvent.click(screen.getByRole("button", { name: /Crear/ }));
+      await waitFor(() => expect(paymentTermService.create).toHaveBeenCalled());
+      expect(paymentTermService.create).toHaveBeenCalledWith({
+        code: "3X30",
+        name: "Tres cuotas",
+        installments: 3,
+        daysBetweenInstallments: 30,
+      });
+    });
+
+    it("conserva la regla existente: Guardar se deshabilita con cuotas < 1", async () => {
+      await openNew();
+      fireEvent.change(screen.getByPlaceholderText("CONTADO, NET30, 3X30"), { target: { value: "X" } });
+      fireEvent.change(screen.getByPlaceholderText("Contado / Crédito 30 días"), { target: { value: "N" } });
+      const save = screen.getByRole("button", { name: /Crear/ }) as HTMLButtonElement;
+      expect(save.disabled).toBe(false);
+      fireEvent.change(screen.getByLabelText(/Número de cuotas/), { target: { value: "0" } });
+      expect(save.disabled).toBe(true);
+    });
+  });
 });
