@@ -388,7 +388,12 @@ literales → falla; menos → falla hasta bajar el allowance). **Solo documenta
 literal. El mapeo estado → familia es una guía visual, **no** se impone por guard.
 Código legacy permitido temporalmente vía
 `tools/architecture/architecture-grandfather.json#designSystemGrandfathered`
-(`{file, rules}`); archivos/reglas no listados allí bloquean el PR. Detalle de
+(`{file, rules}`); archivos/reglas no listados allí bloquean el PR. Además: `F-04-pf-table` (clase y selector
+`.pf-table` retirados), `F-04-tabs-manual` y `F-04-native-select/-textarea/-input/-checkbox` (controles nativos
+con equivalente oficial; excepciones por archivo en `config/design-system.json#nativeControlAllowances`, con
+conteo exacto y motivo, solo pueden bajar) y `F-04-css-reach` (`npm run architecture:css-deps`; línea base vacía
+en `config/css-reachability.json`: una pantalla debe cargar por sí sola las hojas de sus clases). Las tablas
+editables de varias columnas se envuelven en `.table-scroll` para no desbordar el documento en móvil. Detalle de
 reglas: [`pr-rules-catalog.md#f-04`](./pr-rules-catalog.md#f-04--design-system-único-ui).
 
 ### Alineación de datos numéricos (F-05 / NUM-001)

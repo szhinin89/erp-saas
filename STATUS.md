@@ -1,5 +1,54 @@
 # Project Status
 
+## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
+
+El propietario confirma GitHub Actions CI #1164 SUCCESS sobre `main`, commit
+`ef104002f53af476e38a73d321808a4bd4068a20`. CI #1163 falló en la prueba de concurrencia de Backend API
+`SalesCancelCollectionConcurrencyTests.Cancel_y_devolucion_con_credito_a_CxC_simultaneas_no_se_bloquean_y_quedan_consistentes`;
+el grupo Backend API pasó en #1164. Sin cambios de backend, permisos, cálculos ni contratos.
+
+Alcance del cierre: la **consolidación arquitectónica del Design System UI/UX de V1** (componentes globales,
+dependencias CSS, guardrails y excepciones). **No** certifica la validación funcional completa del ERP ni la
+accesibilidad con tecnología asistiva (ver limitaciones).
+
+- **Paquete A — dependencias CSS entre rutas:** `0e5aec1b9`, `664db91e3`. Guardrail nuevo
+  `check-css-reachability` (`F-04-css-reach`, `npm run architecture:css-deps`): cada pantalla carga por sí sola
+  las hojas de las clases que usan sus componentes (acceso directo/recarga). Línea base **vacía**
+  (`tools/architecture/config/css-reachability.json`).
+- **Paquete B — resto de dependencias CSS:** `0d0787507`.
+- **Paquete C — componentes globales y accesibilidad:** `2ee2545a0`. `ZhCheckbox`; `ZhTextInput` con `type`
+  email/password/search; contrato `aria-invalid`/`aria-describedby` de `ZHField` hacia los diez inputs oficiales;
+  `ZHTabBar` (pestañas deshabilitadas, `aria-controls`, conservación de foco). Guardrails `F-04-native-*` y
+  `F-04-tabs-manual` con `nativeControlAllowances` (conteo exacto y motivo por archivo; solo pueden bajar).
+- **Paquete D — validación final y corrección responsive:** `ef104002f`. Las dos tablas del cronograma de pagos
+  de Compras (borrador y persistido) van dentro de `.table-scroll`; cabecera y pie del cronograma con `flex-wrap`
+  (solución local, sin tocar estilos globales). Prueba `frontend/e2e/payment-schedule-responsive.spec.ts`
+  (Chromium, 375 y 1280 px): falló contra el defecto original (overflow de documento de 312 px y superposición del
+  pie) y pasa con la corrección; cubre además edición, foco e importes.
+- **Antecedentes (2026-11-12):** `c5ad82c89`, `df36d137d`, `39c06cb1b`, `bdf9f14d3`, `ae30fd21c`, `910147698`
+  (violaciones visuales, tablas editables alineadas y retiro de `.pf-table` con guardrail `F-04-pf-table`).
+- **Verificado en la validación final (Paquete D):** `architecture:design-system`, `architecture:css-deps`,
+  `architecture:css` y `check-architecture-guardrails.ps1` (PR-7) en PASS; 57 pruebas de los guardrails
+  (diseño, alcanzabilidad, grandfather) en PASS; 183 pruebas focalizadas de `ZHField`, `ZHTabBar` y de los
+  inputs oficiales en PASS; auditoría estática de los módulos Ventas, Compras, Caja, Inventario, Configuración y
+  Maestros: sin `style={{}}` fuera de pruebas ni selectores retirados en uso.
+- **Excepciones vigentes (justificadas, no son deuda nueva):** controles nativos de Ítems FROZEN y de Compras
+  CLOSED; formularios de Auth y AdminCore con estilo propio; buscadores y selectores especializados
+  (`prd-search-*`, `CustomerPicker`, etc.); pestañas manuales de `ConfigTabsLayout` (FROZEN) y de Kardex; deuda
+  de tamaño de archivo de [ADR-047](docs/decisions/ADR-047-historical-tsx-size-debt.md). Su detalle y motivo
+  están en `design-system.json#nativeControlAllowances`.
+- **Limitaciones de validación (no corregidas; no se declaran como verificadas):**
+  - Sin prueba con lector de pantalla real ni herramienta automática de accesibilidad (axe no está instalado):
+    el contrato ARIA se validó con pruebas jsdom.
+  - La prueba responsive monta el `PaymentScheduleSection` real con CSS real, pero con el estado del
+    contexto simulado: **no** se ejecutó el flujo completo de Compras contra un backend real.
+  - La apertura directa de cada ruta en navegador está cubierta por el guardrail de alcanzabilidad; no hubo
+    recorrido visual pantalla por pantalla de los seis módulos. La tabla de retenciones de Compras
+    (`RetentionSection`) no se revisó en móvil.
+  - `ZHTabBar` usa `role="tab"` navegable con Tab, sin flechas ni tabindex itinerante.
+- **Relacionado, fuera de este alcance:** la prueba de concurrencia de #1163 pertenece a Ventas/Backend; no
+  se modificó ni se analizó su causa en esta entrega.
+
 ## COMPANY-ADMIN-CONSOLIDATION-01 — Administración empresarial en una sola fuente — CLOSED (2026-11-11)
 
 El propietario confirma en GitHub Actions CI #1151 SUCCESS sobre `main`, commit
