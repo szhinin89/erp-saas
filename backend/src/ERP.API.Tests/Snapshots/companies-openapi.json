@@ -996,6 +996,14 @@
       "name": "CashMovementReasons"
     },
     {
+      "description": "Cajas registradoras (\u0060CashRegister\u0060): recurso de configuraci\u00F3n por sucursal, con punto de\r\nemisi\u00F3n, bodega y cliente por defecto y cuenta contable. No se eliminan: se habilitan o\r\ndeshabilitan.",
+      "name": "CashRegister"
+    },
+    {
+      "description": "Sesiones (turnos) de caja: apertura, cierre con arqueo, movimientos manuales de efectivo,\r\ndep\u00F3sitos bancarios y consultas. Una sesi\u00F3n pertenece a la sucursal activa y la opera solo el\r\nusuario que la abri\u00F3.",
+      "name": "CashSession"
+    },
+    {
       "description": "Lectura de los 6 cat\u00E1logos de clasificaci\u00F3n de Customer (CLASS-BP-CATALOGS-01):\r\ncategor\u00EDa, segmento, rating de cr\u00E9dito, loyalty tier, formato de factura preferido y\r\nclasificaci\u00F3n tributaria/comercial. Reemplazan los arrays hardcodeados del frontend y los\r\nHashSet fijos de \u0060CustomerRoleConfig\u0060. Solo GET \u2014 CRUD administrativo queda fuera de\r\nalcance de este bloque (bloque futuro).",
       "name": "CatalogClassifications"
     },
@@ -1026,6 +1034,10 @@
     {
       "description": "CONFIG-FOUNDATION-P2-01: endpoint m\u00EDnimo de solo lectura sobre ConfigurationChangeLog \u2014 no\r\nhay UI de historial todav\u00EDa (fuera de alcance de este bloque), pero el historial debe ser\r\nconsultable por soporte/auditor\u00EDa. Gateado con SettingsPermissions.CompaniesUpdate (el mismo\r\npermiso administrativo que ya protege escribir las configuraciones que este endpoint audita)\r\n\u2014 no se inventa un permiso nuevo.",
       "name": "ConfigurationChangeLog"
+    },
+    {
+      "description": "Cat\u00E1logo de condiciones de cr\u00E9dito (plazos y cuotas). Las consultas y escrituras se resuelven por tenant;\r\nal crear se registra la empresa del contexto. Las condiciones se habilitan/deshabilitan; no se eliminan.",
+      "name": "CreditTerms"
     },
     {
       "description": "DOCUMENT-FLOW-POLICY-01 \u2014 Configuraci\u00F3n \u2192 Documentos \u2192 Pol\u00EDticas de documentos. Administra C\u00D3MO se comporta\r\ncada tipo de documento por empresa (\u0060DocumentFlowPolicy\u0060). Los permisos de esta pantalla\r\nsolo controlan el acceso a la configuraci\u00F3n \u2014 nunca reemplazan los permisos de acci\u00F3n de cada\r\nm\u00F3dulo (p. ej. \u0060expenses.documents.cancel\u0060), que se administran en Roles y Permisos.",
@@ -1126,6 +1138,10 @@
     {
       "description": "ERP-CORE-CLOSEOUT-09 \u2014 datos del proveedor del sistema de facturaci\u00F3n electr\u00F3nica (qui\u00E9n\r\nconstruy\u00F3/mantiene el software). Deliberadamente NO company-scoped: es un dato \u00FAnico por\r\ninstancia del ERP, distinto del emisor de cada comprobante (\u0060Company\u0060/\u0060SriSettings\u0060,\r\nque s\u00ED son por empresa). Acceso: solo AdminGlobalCore (tenant_id == Guid.Empty \u002B rol Admin) \u2014\r\nun Admin de tenant/empresa normal NO debe leer ni modificar este singleton compartido por\r\ntodas las empresas del SaaS. Ver policy \u0022PlatformAdmin\u0022 en Program.cs.",
       "name": "SystemProviderSettings"
+    },
+    {
+      "description": "API de integraci\u00F3n para sistemas externos (aprovisionamiento de tenants y empresas). Ruta propia\r\n\u0060/api/integration/v1\u0060, fuera del patr\u00F3n \u0060/api/v1\u0060, protegida por la pol\u00EDtica\r\n\u0060IntegrationApi\u0060 (JWT con el claim \u0060integration_api=true\u0060). Todas las respuestas usan el\r\nenvelope est\u00E1ndar \u0060ApiResponse\u003CT\u003E\u0060; el detalle de error viaja en \u0060data.errors\u0060.",
+      "name": "Integration"
     },
     {
       "description": "Carga inicial (INITIAL-LOAD-ARCH-01) \u2014 solo Clientes disponible en esta entrega.",

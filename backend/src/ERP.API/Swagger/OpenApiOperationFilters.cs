@@ -192,6 +192,17 @@ public sealed class OpenApiErrorResponsesOperationFilter : IOperationFilter
             $"Error interno no controlado (ExceptionMiddleware). Envelope con `code` `{ApiResponseCodes.Common.InternalError}`.",
             envelope
         );
+
+        // Respuestas de error declaradas solo con <response code="..."> (sin [ProducesResponseType]):
+        // el XML crea la respuesta con descripción pero sin cuerpo. Todo error de la API, salvo el
+        // rechazo del middleware de autenticación/autorización (401/403), viaja en el envelope.
+        foreach (var (status, response) in operation.Responses)
+        {
+            if (status.Length != 3 || status[0] is not ('4' or '5') || status is "401" or "403")
+                continue;
+            if (response.Content.Count == 0)
+                response.Content["application/json"] = new OpenApiMediaType { Schema = envelope };
+        }
     }
 
     private void FixInferredProblemDetails(

@@ -346,4 +346,135 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         op["requestBody"].Should().BeNull("la operación solo enlaza query");
         op["responses"]!.AsObject().ContainsKey("422").Should().BeTrue();
     }
+
+    // ── API-DOC-V1 / Fase 2B-1: Integraciones, Caja y Finanzas/Tesorería ───────────────────────
+
+    /// <summary>Prefijo de <c>operationId</c> (= controller) de los tres módulos documentados.</summary>
+    private static readonly string[] Phase2B1Controllers =
+    [
+        "Integration",
+        "CashRegister",
+        "CashSession",
+        "CashFundingRequests",
+        "CashMovementReasons",
+        "CreditTerms",
+        "SupplierCredit",
+        "FinancePayments",
+        "CompanyBankAccount",
+        "PaymentMethods",
+        "SupplierPayments",
+        "Payables",
+    ];
+
+    private IEnumerable<(string Path, string Method, JsonObject Op)> Phase2B1Operations() =>
+        Operations()
+            .Where(o =>
+                Phase2B1Controllers.Contains(o.Op["operationId"]!.GetValue<string>().Split('_')[0])
+            );
+
+    [Fact]
+    public void Las_71_operaciones_de_Integraciones_Caja_y_Finanzas_estan_inventariadas()
+    {
+        Phase2B1Operations().Should().HaveCount(71);
+    }
+
+    [Fact]
+    public void Remarks_y_seccion_de_autorizacion_conviven_en_la_descripcion()
+    {
+        // El filtro XML asigna Description (<remarks>): la sección generada por Fase 2A debe seguir
+        // presente en TODAS las operaciones, también en las que tienen remarks.
+        Operations()
+            .Select(o => o.Op["description"]?.GetValue<string>() ?? "")
+            .Should()
+            .OnlyContain(d => d.Contains("**Autorización:**"));
+
+        var close = FindOperation("/api/v1/cash-sessions/{id}/close", "POST")["description"]!
+            .GetValue<string>();
+        close.Should().Contain("una única transacción").And.Contain("**Autorización:**");
+    }
+
+    [Fact]
+    public void Operaciones_de_los_tres_modulos_tienen_summary_contrato_2xx_tipado_y_respuestas_descritas()
+    {
+        foreach (var (path, method, op) in Phase2B1Operations())
+        {
+            var label = $"{method.ToUpperInvariant()} {path}";
+            op["summary"]?.GetValue<string>().Should().NotBeNullOrWhiteSpace(label);
+
+            var success = op["responses"]!
+                .AsObject()
+                .Where(r => r.Key.StartsWith('2'))
+                .ToList();
+            success.Should().ContainSingle(label);
+            success[0]
+                .Value!["content"]!["application/json"]!["schema"]!["$ref"]!.GetValue<string>()
+                .Should()
+                .Contain("/ApiResponseOf", label);
+
+            foreach (var (code, response) in op["responses"]!.AsObject())
+                response!["description"]!.GetValue<string>()
+                    .Should()
+                    .NotBeNullOrWhiteSpace($"{label} {code}");
+
+            foreach (var parameter in op["parameters"]?.AsArray() ?? [])
+                parameter!["description"]
+                    ?.GetValue<string>()
+                    .Should()
+                    .NotBeNullOrWhiteSpace($"{label} parámetro {parameter["name"]}");
+        }
+    }
+
+    [Theory]
+    [InlineData("/api/integration/v1/tenants", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/integration/v1/tenants/{id}/status", "GET", "200", new[] { "404" })]
+    [InlineData("/api/integration/v1/tenants/{id}/activate", "PUT", "200", new[] { "404" })]
+    [InlineData("/api/integration/v1/tenants/{id}/suspend", "PUT", "200", new[] { "404" })]
+    [InlineData("/api/integration/v1/companies", "POST", "201", new[] { "409" })]
+    [InlineData("/api/integration/v1/companies/{id}/status", "GET", "200", new[] { "404" })]
+    [InlineData("/api/integration/v1/companies/{id}/activate", "PUT", "200", new[] { "404" })]
+    [InlineData("/api/integration/v1/companies/{id}/suspend", "PUT", "200", new[] { "404" })]
+    [InlineData("/api/v1/cash-sessions/{id}/close", "POST", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/cash-sessions/open", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/cash-funding-requests/{id}/cancel", "POST", "200", new[] { "403", "404", "422" })]
+    [InlineData("/api/v1/supplier-payments", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/finance/collections", "POST", "201", new[] { "404", "409", "422" })]
+    public void Contratos_representativos_declaran_exito_y_errores_especificos(
+        string path,
+        string method,
+        string success,
+        string[] errors
+    )
+    {
+        var responses = FindOperation(path, method)["responses"]!.AsObject();
+
+        responses.ContainsKey(success).Should().BeTrue($"{method} {path} éxito {success}");
+        foreach (var code in errors)
+            responses.ContainsKey(code).Should().BeTrue($"{method} {path} error {code}");
+        // Los errores específicos usan el envelope oficial, nunca ProblemDetails.
+        foreach (var code in errors.Where(c => c != "403"))
+            responses[code]!["content"]!["application/json"]!["schema"]!["$ref"]!
+                .GetValue<string>()
+                .Should()
+                .EndWith("/ApiResponseOfObject");
+    }
+
+    [Fact]
+    public void Todo_error_declarado_distinto_de_401_y_403_lleva_el_envelope()
+    {
+        // Incluye los declarados solo con <response code="..."> en XML (sin [ProducesResponseType]).
+        var offenders = Operations()
+            .SelectMany(o =>
+                o.Op["responses"]!.AsObject()
+                    .Where(r =>
+                        r.Key.Length == 3
+                        && r.Key[0] is '4' or '5'
+                        && r.Key is not ("401" or "403")
+                        && r.Value!["content"] is null
+                    )
+                    .Select(r => $"{o.Method.ToUpperInvariant()} {o.Path} {r.Key}")
+            )
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
 }

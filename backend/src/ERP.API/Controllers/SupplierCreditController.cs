@@ -35,6 +35,8 @@ public sealed class SupplierCreditController : ControllerBase
     // ══════════════════════════════════════════════════════════════════════
 
     /// <summary>Obtiene un crédito de proveedor por Id, con su historial de movimientos.</summary>
+    /// <param name="id">Identificador del crédito de proveedor.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Crédito encontrado.</response>
     /// <response code="404">El crédito no existe.</response>
     [HttpGet("{id:guid}")]
@@ -48,6 +50,12 @@ public sealed class SupplierCreditController : ControllerBase
     /// Lista créditos de proveedor paginados. ZH-SUPPLIER-CREDIT-READ-MODEL-02D-D: filtros opcionales
     /// server-side por proveedor, origen (<c>PurchaseReturn</c>|<c>SupplierPayment</c>) y abierto/cerrado.
     /// </summary>
+    /// <param name="page">Número de página (por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 20).</param>
+    /// <param name="supplierId">Filtra por proveedor.</param>
+    /// <param name="sourceType">Filtra por origen del crédito.</param>
+    /// <param name="isOpen"><c>true</c> solo créditos con saldo abierto; <c>false</c> solo cerrados.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{FinancePermissions.View}")]
@@ -92,6 +100,15 @@ public sealed class SupplierCreditController : ControllerBase
     /// Aplica el crédito contra una <c>PurchasePayable</c> destino (Lock A del destino → Lock B
     /// del crédito, en ese orden fijo). Idempotente por <c>ClientRequestId</c> (§16.2).
     /// </summary>
+    /// <remarks>
+    /// <c>clientRequestId</c> es obligatorio y estable en reintentos: repetirlo con los mismos datos
+    /// devuelve el estado ya aplicado; con datos distintos se rechaza con 422 (en este caso de uso el
+    /// conflicto de idempotencia no usa 409). Responde con el mismo detalle enriquecido que
+    /// <see cref="GetById"/>.
+    /// </remarks>
+    /// <param name="id">Identificador del crédito de proveedor.</param>
+    /// <param name="request">CxP destino, monto a aplicar e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Crédito aplicado.</response>
     /// <response code="404">El crédito o la cuenta por pagar destino no existen.</response>
     /// <response code="422">
@@ -123,11 +140,19 @@ public sealed class SupplierCreditController : ControllerBase
         );
 
     /// <summary>Revierte una aplicación previa — nunca edita el movimiento original, crea uno nuevo.</summary>
+    /// <remarks>
+    /// <c>clientRequestId</c> obligatorio e idempotente (mismos datos: resultado ya registrado; datos
+    /// distintos: 422). La CxP indicada debe ser el destino real del movimiento original.
+    /// </remarks>
+    /// <param name="id">Identificador del crédito de proveedor.</param>
+    /// <param name="movementId">Identificador del movimiento de aplicación a revertir.</param>
+    /// <param name="request">CxP destino original e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Aplicación revertida.</response>
-    /// <response code="404">El crédito no existe.</response>
+    /// <response code="404">El crédito o la cuenta por pagar destino no existen, o la CxP no corresponde al crédito.</response>
     /// <response code="422">
-    /// Movimiento inexistente/no es una aplicación/ya revertido, CxP destino cancelada (SC-014),
-    /// o conflicto de idempotencia.
+    /// Movimiento original inexistente o que no es una aplicación, CxP indicada distinta del destino
+    /// real, CxP destino anulada (SC-014), modificación concurrente, o conflicto de idempotencia.
     /// </response>
     [HttpPost("{id:guid}/apply/{movementId:guid}/reverse")]
     [Authorize(Policy = $"perm:{FinancePermissions.Update}")]
@@ -163,6 +188,14 @@ public sealed class SupplierCreditController : ControllerBase
     /// destino + cuenta contable + crea el movimiento de Caja si aplica, todo en una única
     /// transacción. Idempotente por <c>ClientRequestId</c> (§16.2ter).
     /// </summary>
+    /// <remarks>
+    /// Exactamente un destino financiero: cuenta bancaria o caja. <c>clientRequestId</c> obligatorio e
+    /// idempotente (datos distintos: 422). El reembolso a caja requiere una sesión de caja abierta
+    /// controlada por el usuario.
+    /// </remarks>
+    /// <param name="id">Identificador del crédito de proveedor.</param>
+    /// <param name="request">Destino, método de pago, monto, fecha efectiva, referencia e idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Reembolso registrado.</response>
     /// <response code="404">El crédito o el destino financiero no existen.</response>
     /// <response code="422">
@@ -199,9 +232,18 @@ public sealed class SupplierCreditController : ControllerBase
         );
 
     /// <summary>Revierte un reembolso previo — nunca edita el movimiento original, crea uno nuevo.</summary>
+    /// <remarks>
+    /// <c>clientRequestId</c> obligatorio e idempotente (datos distintos: 422). Solo se revierte una
+    /// transacción de tipo ingreso de reembolso; si fue a caja, la compensación requiere una sesión de
+    /// caja activa controlada por el usuario.
+    /// </remarks>
+    /// <param name="id">Identificador del crédito de proveedor.</param>
+    /// <param name="movementId">Identificador del movimiento de reembolso a revertir.</param>
+    /// <param name="request">Motivo, fecha efectiva e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
     /// <response code="200">Reembolso revertido.</response>
-    /// <response code="404">El crédito o la transacción de reembolso original no existen.</response>
-    /// <response code="422">Ya revertido, sesión de caja no disponible, o conflicto de idempotencia.</response>
+    /// <response code="404">El crédito, la transacción de reembolso original o su sesión de caja original no existen.</response>
+    /// <response code="422">Ya revertido, no es un ingreso de reembolso, sesión de caja no disponible o no controlada por el usuario, o conflicto de idempotencia.</response>
     [HttpPost("{id:guid}/refund/{movementId:guid}/reverse")]
     [Authorize(Policy = $"perm:{FinancePermissions.Update}")]
     [ProducesResponseType(

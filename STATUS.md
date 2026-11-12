@@ -1,5 +1,45 @@
 # Project Status
 
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fase 2B-1 implementada; pendiente de CI)
+
+**No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y
+ejemplos es parcial fuera de los módulos ya trabajados). Solo metadatos y pruebas: sin cambios de rutas, métodos,
+permisos, DTO, validadores ni lógica.
+
+- **Fase 2A — infraestructura central** (`4f0db58f9`, pendiente confirmar CI): filtros en `ERP.API/Swagger/`
+  (seguridad por operación con `security: [{}]` en las 11 operaciones públicas, sección «Autorización» y
+  `x-required-permissions` derivados de las políticas, 401/403/422/429/500 comunes solo donde el pipeline los
+  garantiza, `ProblemDetails` inferido sustituido por el envelope, `operationId` `{Controller}_{Action}`, ids de
+  esquema portables, `required` en esquemas solo de respuesta, `writeOnly` en secretos de entrada). Pruebas en
+  `ERP.API.Tests/Swagger/OpenApiContractTests.cs`.
+- **Fase 2B-1 — Integraciones (8), Caja (29) y Finanzas/Tesorería (34), 71 operaciones:** `summary`, `remarks`
+  verificados contra el handler, `[ProducesResponseType]` tipado, errores 400/404/409/422 solo con evidencia,
+  descripción de parámetros. 13 POST pasan a documentar 201 (el código ya respondía 201). Dos correcciones a la
+  Fase 2A: los filtros de operación se registran **después** de los comentarios XML (el filtro XML sobrescribía la
+  descripción de las operaciones con `<remarks>` y borraba la sección «Autorización») y todo error 4xx/5xx
+  declarado solo con `<response>` XML, salvo 401/403, recibe el envelope. Efecto: el 404 de tres operaciones de
+  Compras (`GET purchases/returns/{id}`, `GET purchases/invoices/{invoiceId}/returnable-lines`,
+  `DELETE purchases/{id}`) ya documentado en XML gana el cuerpo envelope, comprobado contra
+  `ToOkOrNotFound`/`ToOkOrBadRequest` y `Result<T>.NotFound`; sus controladores no se tocaron.
+- **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
+
+### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
+
+Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente (`KEEP` / `BUG REAL` / `DEBT` /
+`FALTA`); el comportamiento actual queda documentado tal cual.
+
+| ID | Ubicación | Hallazgo |
+|---|---|---|
+| API-DOC-F-01 | `IntegrationCompanyCreateRequest.BrandingJson` → `CreateIntegrationCompanyHandler` | Se entrega al parámetro `website` de `CreateManagedCompanyAsync`; posible cableado de posición incorrecto. |
+| API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. |
+| API-DOC-F-03 | `GET /api/v1/finance/collections/receivable/{id}` | Exige el permiso `ReverseCollection`, no uno de lectura. |
+| API-DOC-F-04 | `SupplierCredit` frente a `FinancePayments.RegisterCollection` | Un conflicto de idempotencia sale como 422 (`ValidationFailure`) en SupplierCredit y como 409 (`Conflict`) en cobros; criterio no uniforme. |
+| API-DOC-F-05 | `PaymentMethods` | Código duplicado responde 422 (no 409); `SetAccount` tiene un 404 inalcanzable (el validador rechaza antes con 422); `Update` exige el id en ruta y cuerpo (400 si difieren). |
+| API-DOC-F-06 | `SupplierPayments.Register` | El reintento idempotente responde 201 en lugar de 200. |
+| API-DOC-F-07 | `CashMovementReasons.Update` | Con id de ruta distinto al del cuerpo devuelve `BadRequest()` sin envelope; `CashRegister.Update` usa `ApiBadRequest` con envelope. No verificado en ejecución. |
+| API-DOC-F-08 | `CashSession.Close/RecordMovement/RecordBankDeposit` | Sesión ajena o cerrada responde 422, no 403. Contrato vigente documentado; confirmar si es intencional. |
+| API-DOC-F-09 | `IntegrationController.CreateCompany` | `NormalizeOfficial` rellena con ceros o trunca el RUC a 13 caracteres; un tercero puede no esperarlo. |
+
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 
 El propietario confirma GitHub Actions CI #1164 SUCCESS sobre `main`, commit

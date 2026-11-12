@@ -24,8 +24,6 @@ public static class SwaggerExtensions
             options.CustomOperationIds(OpenApiOperationIds.Base);
             options.SupportNonNullableReferenceTypes();
             options.SchemaFilter<OpenApiSchemaTypeRegistryFilter>(schemaTypes);
-            options.OperationFilter<OpenApiAuthorizationOperationFilter>();
-            options.OperationFilter<OpenApiErrorResponsesOperationFilter>(schemaIds);
             options.DocumentFilter<OpenApiOperationIdsDocumentFilter>();
             options.DocumentFilter<OpenApiSchemaContractDocumentFilter>(schemaTypes);
 
@@ -89,6 +87,12 @@ public static class SwaggerExtensions
                 if (File.Exists(xmlPath))
                     options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
             }
+
+            // Deben registrarse DESPUÉS de los comentarios XML: el filtro XML asigna
+            // operation.Description (<remarks>) y sobrescribiría la sección «Autorización». Aquí se
+            // anexa a lo que ya escribió el XML y el contrato de errores completa lo declarado.
+            options.OperationFilter<OpenApiAuthorizationOperationFilter>();
+            options.OperationFilter<OpenApiErrorResponsesOperationFilter>(schemaIds);
         });
 
         return services;
