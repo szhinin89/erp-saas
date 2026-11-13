@@ -120,14 +120,14 @@ public sealed class IntegrationController : ControllerBase
     /// sistema y ser un RUC ecuatoriano válido de 13 dígitos o un identificador provisional <c>TMP-EC-</c> con el
     /// formato del sistema; no se rellena, trunca ni recorta (un valor inválido responde 422). Valores
     /// por defecto: <c>countryCode</c> ECU, <c>timezone</c> America/Guayaquil, <c>currencyCode</c> USD.
-    /// El campo <c>brandingJson</c> del request se entrega al parámetro <c>website</c> del servicio de
-    /// aprovisionamiento. La operación no es idempotente.
+    /// El campo <c>brandingJson</c> se conserva en el contrato v1 pero no está soportado: debe omitirse o
+    /// enviarse vacío (un valor no vacío responde 422) y nunca se persiste. La operación no es idempotente.
     /// </remarks>
     /// <param name="request">Tenant, RUC, razón social, dirección principal y usuario creador obligatorios.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     /// <response code="201">Empresa creada.</response>
     /// <response code="409">Ya existe una empresa con ese RUC (<c>COMPANY_RUC_ALREADY_EXISTS</c>).</response>
-    /// <response code="422">RUC vacío, de longitud distinta de 13, con caracteres no numéricos o con dígito verificador incorrecto o con espacios iniciales o finales (salvo provisional <c>TMP-EC-</c> válido).</response>
+    /// <response code="422">RUC vacío, de longitud distinta de 13, con caracteres no numéricos o con dígito verificador incorrecto o con espacios iniciales o finales (salvo provisional <c>TMP-EC-</c> válido), o <c>brandingJson</c> no vacío.</response>
     [HttpPost("companies")]
     [ProducesResponseType(typeof(ApiResponse<IntegrationCompanyStatusDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]

@@ -257,6 +257,21 @@ rellenado o truncado; no se tocan datos (consulta de solo lectura sugerida:
 esquema). Impacto sobre consumidores v1: ninguno conocido en el repositorio; un cliente externo que enviara RUC
 inválidos recibirá 422. Los demás hallazgos de F-01 a F-52 conservan su estado.
 
+### Resolución de hallazgos F-01 a F-52 — bloque L3/C2 (F-01, Integración)
+
+Autorización del propietario 2026-11-13: excepción específica al congelamiento de
+[ADR-ERP-002](docs/decisions/ADR-ERP-002-platform-separation.md#excepciones-aprobadas-al-congelamiento) para corregir
+solo F-01; sin nuevas funciones de branding ni cambio estructural de v1.
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-01 | BUG REAL | Corregido localmente; **pendiente revisión del propietario y CI** | `CreateIntegrationCompanyHandler` pasaba `request.BrandingJson` en la posición de `website` de `CreateManagedCompanyAsync`. Se elimina ese argumento (sin otro destino de persistencia) y `CreateIntegrationCompanyCommandValidator` rechaza un `brandingJson` no vacío ni solo espacios con **422** (`request.BrandingJson`), independiente de la validación del RUC (F-09). `brandingJson` se conserva en v1 pero no se admite su uso hasta definir su contrato. Antes: 9 de 15 casos de Application y 5 de 11 HTTP fallaban (el branding se guardaba o se rechazaba mal). Después: `IntegrationBrandingJsonTests` 15/15 y `IntegrationCompanyBrandingJsonHttpTests` 11/11 (HTTP + PostgreSQL real; 422 sin empresa creada, `Company.Website` nulo, 201 y 409 conservados); F-09 sigue en 30/30 y 12/12. |
+
+Contrato: el `422` de `POST /companies` (ya declarado por C1) añade `brandingJson` no vacío; remarks del endpoint y
+comentario de `Platform.Contracts.CompanyProvisionRequest` actualizados. Riesgo de datos históricos: pueden existir
+empresas con JSON en `website`; no se tocan datos. El branding real vive en `CompanyBranding`; incorporarlo al
+aprovisionamiento es `FALTA` y requiere un contrato nuevo. C3 (F-02) sigue pendiente como bloque independiente.
+
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
   (`Warehouses.GetAll` ahora publica `activeStatus`, `onlyActive`, `search` y `sucursalId` sin añadir 422), F-07

@@ -3,6 +3,10 @@ namespace Platform.Contracts.Integration.Dtos;
 /// <summary>
 /// Request to provision a new company under a tenant in the ERP via the public integration API.
 /// </summary>
+/// <remarks>
+/// <see cref="BrandingJson"/> is kept in the v1 contract but is not supported yet: send it null or empty.
+/// The ERP rejects a non-empty value with HTTP 422 and never persists it until its contract is defined.
+/// </remarks>
 public sealed record CompanyProvisionRequest(
     Guid TenantId,
     string TaxId,

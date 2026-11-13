@@ -44,7 +44,6 @@ public sealed class CreateIntegrationCompanyHandler
             request.CountryCode,
             request.Timezone,
             request.CurrencyCode,
-            request.BrandingJson,
             cancellationToken: cancellationToken
         );
 
