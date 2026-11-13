@@ -764,7 +764,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("/api/integration/v1/tenants/{id}/status", "GET", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/tenants/{id}/activate", "PUT", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/tenants/{id}/suspend", "PUT", "200", new[] { "404" })]
-    [InlineData("/api/integration/v1/companies", "POST", "201", new[] { "409" })]
+    [InlineData("/api/integration/v1/companies", "POST", "201", new[] { "409", "422" })]
     [InlineData("/api/integration/v1/companies/{id}/status", "GET", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/companies/{id}/activate", "PUT", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/companies/{id}/suspend", "PUT", "200", new[] { "404" })]

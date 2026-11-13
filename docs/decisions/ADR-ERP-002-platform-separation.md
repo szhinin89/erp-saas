@@ -55,6 +55,15 @@ Contratos y casos de uso en `ERP.Application/Modules/Integration/` (`Integration
 3. Ningún DbContext, tabla o entidad de dominio se comparte entre ERP y Platform.
 4. Nuevas capacidades de integración se agregan como nuevas rutas/versión bajo `/api/integration/v{n}/*`, nunca como acceso directo a internals del ERP.
 
+## Excepciones aprobadas al congelamiento
+
+Cada excepción modifica el comportamiento de `/api/integration/v1/*` y debe autorizarla expresamente el
+propietario; son específicas y no abren la frontera a otros cambios.
+
+| Fecha | Alcance | Contrato resultante | Impacto |
+|-------|---------|---------------------|---------|
+| 2026-11-13 | API-DOC-V1 F-09 — `POST /companies`: el RUC (`taxId`) ya no se rellena con ceros ni se trunca en silencio. | Se exige un RUC ecuatoriano válido (`RucValidator`: 13 dígitos, provincia, tipo y dígito verificador de persona natural) o un identificador provisional `TMP-EC-` + 8 hexadecimales (formato de `ProvisionalTaxIdGenerator`), sin espacios iniciales ni finales. Cualquier otro valor responde **422** antes de aprovisionar y no crea nada. `CreateIntegrationCompanyCommandValidator`; sin cambio de rutas, DTO ni esquema de base de datos. | Nuevo 422 en una operación v1. Un llamador que enviaba RUC cortos, largos, vacíos o inválidos (aceptados antes como valores rellenados) recibe ahora error. No hay consumidor conocido en el repositorio (`Platform.Contracts` es solo contrato y nada emite el claim `integration_api`). Riesgo de datos históricos: pueden existir empresas creadas por esta ruta con RUC rellenado con ceros o truncado; no se modifican. |
+
 ## Referencias
 
 - [ADR-ERP-001 — ERP Core Independence](./ADR-ERP-001-core-independence.md)

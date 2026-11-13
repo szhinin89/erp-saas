@@ -55,3 +55,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   conserva sus restricciones de cierre): BUG REAL F-14, el reintento idempotente de `ManualJournal.Create`
   debe reflejar el estado, la versión y el número reales del asiento existente. Alcance y evidencia en
   [STATUS](../../STATUS.md). Bloque independiente de API-DOC-F35-L1.
+- API-DOC-F09-L3C1 (PUBLICADO, pendiente resultado del CI; revisión del propietario aprobada 2026-11-13, autorizado con
+  excepción específica a ADR-ERP-002): BUG REAL F-09, el RUC de `POST /api/integration/v1/companies` se
+  valida (RUC ecuatoriano o provisional `TMP-EC-`) en lugar de rellenarse o truncarse; respuesta 422. Alcance
+  y evidencia en [STATUS](../../STATUS.md). C2 (F-01, `BrandingJson`) y C3 (F-02, `Activate` y `IsActive`) están
+  aprobados conceptualmente y se ejecutan después como bloques independientes, aún sin implementar.

@@ -240,6 +240,23 @@ Casos cubiertos: reintento sin cambios, tras editar, tras publicar (número real
 auditoría/intentos/secuencias adicionales, aislamiento entre empresas del mismo tenant y creaciones concurrentes con la
 misma clave (un único asiento). Los demás hallazgos de F-01 a F-52 conservan su estado.
 
+### Resolución de hallazgos F-01 a F-52 — bloque L3/C1 (F-09, Integración)
+
+Autorización del propietario 2026-11-13: **excepción específica** al congelamiento de
+[ADR-ERP-002](docs/decisions/ADR-ERP-002-platform-separation.md#excepciones-aprobadas-al-congelamiento) para corregir
+solo F-09. C2 (F-01) y C3 (F-02) están aprobados conceptualmente y se ejecutan después como bloques independientes.
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-09 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | `POST /api/integration/v1/companies` aceptaba cualquier `taxId` y `NormalizeOfficial` lo rellenaba con ceros o lo truncaba (vacío → `0000000000000`; `1790012345` → `1790012345000`). Ahora `CreateIntegrationCompanyCommandValidator` exige `RucValidator.EsRucValido` o `TMP-EC-` + 8 hexadecimales, sin espacios iniciales ni finales (lo validado es lo persistido; no se recorta); otro valor responde **422** antes de aprovisionar. Sin cambio de `RucValidator`, DTO, rutas ni dominio (el relleno de `Company.CreateManaged` queda como defensa). Antes: 7 de 10 casos HTTP fallaban (RUC inválido devolvía 201 y creaba la empresa). Después: `IntegrationTaxIdValidationTests` 30/30 y `IntegrationCompanyTaxIdHttpTests` 12/12 (HTTP + PostgreSQL real; 422 sin empresa creada, 201 válido y provisional, 409 duplicado conservado). |
+
+Contrato: nuevo `422` documentado en `POST /companies` (remarks y `ProducesResponseType`); `OpenApiContractTests` declara
+ahora `201` + `409`/`422`. Riesgo de datos históricos: pueden existir empresas creadas por esta ruta con un RUC ya
+rellenado o truncado; no se tocan datos (consulta de solo lectura sugerida:
+`SELECT id, tax_identification_number FROM companies WHERE tax_identification_number LIKE '%000'`, a confirmar contra el
+esquema). Impacto sobre consumidores v1: ninguno conocido en el repositorio; un cliente externo que enviara RUC
+inválidos recibirá 422. Los demás hallazgos de F-01 a F-52 conservan su estado.
+
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
   (`Warehouses.GetAll` ahora publica `activeStatus`, `onlyActive`, `search` y `sucursalId` sin añadir 422), F-07

@@ -117,7 +117,8 @@ public sealed class IntegrationController : ControllerBase
     /// Alta atómica (todo o nada): crea la empresa, la membresía del usuario creador con el rol indicado
     /// (<c>creatorRole</c>, por defecto Admin), el bootstrap de datos iniciales de la empresa y el
     /// acceso del creador a la sucursal principal. El RUC (<c>taxId</c>) debe ser único en todo el
-    /// sistema; un RUC oficial se normaliza a 13 caracteres (se rellena con ceros o se trunca). Valores
+    /// sistema y ser un RUC ecuatoriano válido de 13 dígitos o un identificador provisional <c>TMP-EC-</c> con el
+    /// formato del sistema; no se rellena, trunca ni recorta (un valor inválido responde 422). Valores
     /// por defecto: <c>countryCode</c> ECU, <c>timezone</c> America/Guayaquil, <c>currencyCode</c> USD.
     /// El campo <c>brandingJson</c> del request se entrega al parámetro <c>website</c> del servicio de
     /// aprovisionamiento. La operación no es idempotente.
@@ -126,9 +127,11 @@ public sealed class IntegrationController : ControllerBase
     /// <param name="cancellationToken">Token de cancelación.</param>
     /// <response code="201">Empresa creada.</response>
     /// <response code="409">Ya existe una empresa con ese RUC (<c>COMPANY_RUC_ALREADY_EXISTS</c>).</response>
+    /// <response code="422">RUC vacío, de longitud distinta de 13, con caracteres no numéricos o con dígito verificador incorrecto o con espacios iniciales o finales (salvo provisional <c>TMP-EC-</c> válido).</response>
     [HttpPost("companies")]
     [ProducesResponseType(typeof(ApiResponse<IntegrationCompanyStatusDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateCompany(
         [FromBody] IntegrationCompanyCreateRequest request,
         CancellationToken cancellationToken
