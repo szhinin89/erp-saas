@@ -47,24 +47,54 @@ jobs:
           $minimum = [version]$sdk.version
           $channel = "$($minimum.Major).$($minimum.Minor)"
           $feed = 'https://builds.dotnet.microsoft.com/dotnet'
-          $version = ((Invoke-RestMethod "$feed/Sdk/$channel/latest.version").Trim() -split '\s+')[-1]
+          $latest = $null
+          for ($n = 1; $n -le 5 -and -not $latest; $n++) {
+            try { $latest = Invoke-RestMethod "$feed/Sdk/$channel/latest.version" -TimeoutSec 60 } catch {
+              if ($n -eq 5) { throw "Resolve latest SDK $channel failed after 5 attempts: $($_.Exception.Message)" }
+              Start-Sleep -Seconds (5 * $n)
+            }
+          }
+          $version = ($latest.Trim() -split '\s+')[-1]
           if ($sdk.rollForward -ne 'latestFeature' -or $sdk.allowPrerelease -ne $false -or
               $version -notmatch "^$([regex]::Escape($channel))\.\d+$" -or [version]$version -lt $minimum) {
             throw "SDK $version does not satisfy global.json"
           }
           $installDir = Join-Path $env:RUNNER_TEMP 'dotnet'
-          # Exact version + explicit feed bypass aka.ms and the failing origin endpoint.
-          if ($IsWindows) {
-            $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
-            Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
-            $ErrorActionPreference = 'Stop'
-            & $installer -Version $version -AzureFeed $feed -InstallDir $installDir -NoPath
-            if (-not (Test-Path (Join-Path $installDir 'dotnet.exe') -PathType Leaf)) { throw 'Installed dotnet.exe not found' }
-          } else {
-            $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.sh'
-            Invoke-WebRequest 'https://dot.net/v1/dotnet-install.sh' -OutFile $installer
-            bash $installer --version $version --azure-feed $feed --install-dir $installDir --no-path
-            if ($LASTEXITCODE -ne 0) { throw 'dotnet-install failed' }
+          # Los fallos de transporte puntuales (dot.net, builds.dotnet.microsoft.com) se reintentan con espera
+          # creciente; solo se agota el paso tras 5 intentos y el mensaje identifica el origen del fallo.
+          function Invoke-WithRetry([scriptblock]$Action, [string]$What, [int]$Attempts = 5) {
+            for ($i = 1; $i -le $Attempts; $i++) {
+              try { & $Action; return } catch {
+                if ($i -eq $Attempts) { throw "$What failed after $Attempts attempts: $($_.Exception.Message)" }
+                $wait = [math]::Min(60, 5 * [math]::Pow(2, $i - 1))
+                Write-Host "::warning::$What failed (attempt $i/$Attempts): $($_.Exception.Message). Retrying in ${wait}s."
+                Start-Sleep -Seconds $wait
+              }
+            }
+          }
+          # Script oficial: primero su ubicacion final en builds.dotnet.microsoft.com (a donde redirige
+          # https://dot.net/v1), despues el alias dot.net. Ambos sirven el mismo script de Microsoft.
+          $ext = if ($IsWindows) { 'ps1' } else { 'sh' }
+          $installer = Join-Path $env:RUNNER_TEMP "dotnet-install.$ext"
+          $sources = @("$feed/scripts/v1/dotnet-install.$ext", "https://dot.net/v1/dotnet-install.$ext")
+          Invoke-WithRetry -What 'Download dotnet-install' -Action {
+            $last = $null
+            foreach ($source in $sources) {
+              try { Invoke-WebRequest $source -OutFile $installer -TimeoutSec 60; return } catch { $last = $_ }
+            }
+            throw $last
+          }
+          if (-not (Test-Path $installer -PathType Leaf) -or (Get-Item $installer).Length -lt 1024) { throw 'dotnet-install script is empty or missing' }
+          # Version exacta + feed explicito (sin aka.ms). La instalacion tambien descarga el SDK: se reintenta completa.
+          Invoke-WithRetry -What "Install SDK $version" -Action {
+            if ($IsWindows) {
+              $ErrorActionPreference = 'Stop'
+              & $installer -Version $version -AzureFeed $feed -InstallDir $installDir -NoPath
+              if (-not (Test-Path (Join-Path $installDir 'dotnet.exe') -PathType Leaf)) { throw 'Installed dotnet.exe not found' }
+            } else {
+              bash $installer --version $version --azure-feed $feed --install-dir $installDir --no-path
+              if ($LASTEXITCODE -ne 0) { throw "dotnet-install exited with $LASTEXITCODE" }
+            }
           }
           $installDir >> $env:GITHUB_PATH
           "DOTNET_ROOT=$installDir" >> $env:GITHUB_ENV
@@ -79,12 +109,15 @@ jobs:
         with:
           python-version: '3.13'
       - name: Restore, build, verify inventory and test group
+        id: tests
         run: python tools/ci/backend_tests.py --group ${{ matrix.group }}
+      # Si el SDK no se pudo instalar, las pruebas no corrieron: no se publica un reporte vacio que
+      # aparezca como fallo funcional (timings.json inexistente).
       - name: Test outcomes and slowest tests
-        if: always()
+        if: always() && steps.tests.conclusion != 'skipped'
         run: python tools/ci/backend_tests.py --group ${{ matrix.group }} --report
       - name: Upload TRX, inventory, logs and timings
-        if: always()
+        if: always() && steps.tests.conclusion != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: backend-${{ matrix.group }}
