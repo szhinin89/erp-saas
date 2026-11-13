@@ -58,9 +58,12 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 - API-DOC-F09-L3C1 (PUBLICADO, pendiente resultado del CI; revisión del propietario aprobada 2026-11-13, autorizado con
   excepción específica a ADR-ERP-002): BUG REAL F-09, el RUC de `POST /api/integration/v1/companies` se
   valida (RUC ecuatoriano o provisional `TMP-EC-`) en lugar de rellenarse o truncarse; respuesta 422. Alcance
-  y evidencia en [STATUS](../../STATUS.md). C2 (F-01) se lista abajo; C3 (F-02, `Activate` y `IsActive`) está aprobado
-  conceptualmente y se ejecuta después como bloque independiente, aún sin implementar.
+  y evidencia en [STATUS](../../STATUS.md). C2 (F-01) se lista abajo; C3 (F-02, `Activate` y `IsActive`) se lista abajo.
 - API-DOC-F01-L3C2 (IMPLEMENTADO, pendiente revisión del propietario y CI; autorizado 2026-11-13 con excepción
   específica a ADR-ERP-002): BUG REAL F-01, `brandingJson` de `POST /api/integration/v1/companies` ya no llega a
   `Company.Website`; se conserva en v1 pero un valor no vacío responde 422 hasta definir su contrato. Alcance y
   evidencia en [STATUS](../../STATUS.md). Bloque independiente de API-DOC-F09-L3C1.
+- API-DOC-F02-L3C3 (PUBLICADO, pendiente validación CI; revisión del propietario aprobada 2026-11-13; autorizado con
+  excepción específica a ADR-ERP-002): BUG REAL F-02, `PUT /api/integration/v1/companies/{id}/activate` ya no fuerza
+  `IsActive=true`; solo transiciona `OperationalStatus` y conserva la habilitación administrativa previa. Alcance y
+  evidencia en [STATUS](../../STATUS.md). Bloque independiente de C1 y C2.

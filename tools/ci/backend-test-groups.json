@@ -91,6 +91,7 @@
       "runner": "ubuntu-latest",
       "classes": [
         "ERP.Infrastructure.Tests.Accounting.AccountingManual08Tests",
+        "ERP.Infrastructure.Tests.Accounting.IntegrationCompanyActivationIsActiveTests",
         "ERP.Infrastructure.Tests.Accounting.ManualJournalIdempotentCreateReplayTests",
         "ERP.Infrastructure.Tests.Accounting.PurchaseCreditNoteDiscountPostingIntegrationTests",
         "ERP.Infrastructure.Tests.Accounting.PurchaseInvoiceConfirmedPostingIntegrationTests",

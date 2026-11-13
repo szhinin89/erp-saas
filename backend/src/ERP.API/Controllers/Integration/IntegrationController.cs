@@ -161,8 +161,12 @@ public sealed class IntegrationController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Habilita una empresa: estado operativo <c>Operational</c> e <c>isActive=true</c>.</summary>
-    /// <remarks>Idempotente: activar una empresa ya operativa no falla.</remarks>
+    /// <summary>Reactiva las operaciones de una empresa: estado operativo <c>Operational</c>.</summary>
+    /// <remarks>
+    /// Idempotente: activar una empresa ya operativa no falla. Solo cambia el estado operativo:
+    /// <c>isActive</c> (habilitación administrativa) no se modifica, de modo que una empresa
+    /// deshabilitada sigue deshabilitada y sin acceso operativo.
+    /// </remarks>
     /// <param name="id">Identificador de la empresa.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     /// <response code="200">Empresa activada.</response>
@@ -182,7 +186,8 @@ public sealed class IntegrationController : ControllerBase
     /// <summary>Suspende las operaciones de una empresa (estado operativo <c>Suspended</c>).</summary>
     /// <remarks>
     /// Idempotente. Solo cambia el estado operativo: <c>isActive</c> no se modifica, de modo que una
-    /// empresa suspendida puede seguir reportando <c>isActive=true</c>.
+    /// empresa suspendida puede seguir reportando <c>isActive=true</c>; el bloqueo efectivo lo
+    /// determina <c>operationalStatus</c>.
     /// </remarks>
     /// <param name="id">Identificador de la empresa.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

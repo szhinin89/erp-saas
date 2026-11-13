@@ -134,7 +134,7 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | ID | Ubicación | Hallazgo |
 |---|---|---|
 | API-DOC-F-01 | `IntegrationCompanyCreateRequest.BrandingJson` → `CreateIntegrationCompanyHandler` | Se entrega al parámetro `website` de `CreateManagedCompanyAsync`; posible cableado de posición incorrecto. |
-| API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. |
+| API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. **BUG REAL corregido y publicado en L3/C3 (`Activate` ya no toca `IsActive`), pendiente validación CI.** |
 | API-DOC-F-03 | `GET /api/v1/finance/collections/receivable/{id}` | Exige el permiso `ReverseCollection`, no uno de lectura. |
 | API-DOC-F-04 | `SupplierCredit` frente a `FinancePayments.RegisterCollection` | Un conflicto de idempotencia sale como 422 (`ValidationFailure`) en SupplierCredit y como 409 (`Conflict`) en cobros; criterio no uniforme. |
 | API-DOC-F-05 | `PaymentMethods` | Código duplicado responde 422 (no 409); `SetAccount` tiene un 404 inalcanzable (el validador rechaza antes con 422); `Update` exige el id en ruta y cuerpo (400 si difieren). |
@@ -198,7 +198,7 @@ documental aprobada en la Fase 2D (cinco respuestas `ApiResponse<object>`, sin c
 | Clasificación | Estado | Hallazgos |
 |---|---|---|
 | Defecto Swagger | Corregido | F-07, F-16, F-45, F-46, F-47, F-48, F-50 |
-| Problema funcional | Pendiente | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
+| Problema funcional | Pendiente (F-02: BUG REAL corregido y publicado, pendiente validación CI; ver L3/C3) | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
 | Deuda técnica | Pendiente | F-04, F-05, F-06, F-08, F-11, F-12, F-13, F-15, F-19, F-21, F-22, F-23, F-25, F-26, F-27, F-28, F-29, F-36, F-37, F-38, F-39, F-40, F-42, F-43, F-44 |
 | Deuda técnica | Aceptado | F-52 |
 | Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32, F-51 |
@@ -270,7 +270,25 @@ solo F-01; sin nuevas funciones de branding ni cambio estructural de v1.
 Contrato: el `422` de `POST /companies` (ya declarado por C1) añade `brandingJson` no vacío; remarks del endpoint y
 comentario de `Platform.Contracts.CompanyProvisionRequest` actualizados. Riesgo de datos históricos: pueden existir
 empresas con JSON en `website`; no se tocan datos. El branding real vive en `CompanyBranding`; incorporarlo al
-aprovisionamiento es `FALTA` y requiere un contrato nuevo. C3 (F-02) sigue pendiente como bloque independiente.
+aprovisionamiento es `FALTA` y requiere un contrato nuevo. C3 (F-02) se resuelve como bloque independiente (abajo).
+
+### Resolución de hallazgos F-01 a F-52 — bloque L3/C3 (F-02, Integración)
+
+Autorización del propietario 2026-11-13: excepción específica al congelamiento de
+[ADR-ERP-002](docs/decisions/ADR-ERP-002-platform-separation.md#excepciones-aprobadas-al-congelamiento) para corregir
+solo F-02; sin reabrir Integración ni modificar `Suspend`, DTO, rutas, permisos, tokens ni otros handlers.
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-02 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente validación CI** | `ActivateIntegrationCompanyHandler` ejecutaba `company.IsActive = true` tras `MarkOperational()`, de modo que `PUT /api/integration/v1/companies/{id}/activate` habilitaba administrativamente una empresa deshabilitada por otra vía. Se elimina solo esa asignación: `Activate` transiciona `OperationalStatus` a `Operational` y conserva el `IsActive` previo. Antes: 3 de 6 casos de Infrastructure (PostgreSQL real) y 1 de 3 HTTP fallaban (empresa deshabilitada devolvía `isActive=true`). Después: `IntegrationCompanyActivationIsActiveTests` 6/6 (Testcontainers) e `IntegrationCompanyActivationHttpTests` 3/3 (HTTP + PostgreSQL real). |
+
+Cobertura: `Suspend` conserva `IsActive` y el guard bloquea por `OperationalStatus`; `Activate` conserva `true` y `false`;
+una empresa deshabilitada sigue sin acceso operativo tras activar; una suspendida sigue bloqueada hasta activarse;
+tenant y membresías no cambian; las transiciones repetidas son idempotentes. Contrato: sin cambio de DTO, rutas, permisos
+ni esquema OpenAPI; solo se corrigieron los comentarios XML de `Activate` y `Suspend`. Riesgo de datos históricos:
+empresas deshabilitadas que ya fueron reactivadas por este endpoint pueden haber quedado con `IsActive=true`; no se
+modifican datos ni se crean migraciones. Impacto sobre consumidores v1: ninguno conocido en el repositorio; un cliente
+que dependiera de que `activate` habilitara la empresa deberá habilitarla por la vía administrativa correspondiente.
 
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50

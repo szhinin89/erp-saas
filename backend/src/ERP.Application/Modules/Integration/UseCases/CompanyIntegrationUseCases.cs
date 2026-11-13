@@ -110,7 +110,6 @@ public sealed class ActivateIntegrationCompanyHandler
             return Result<IntegrationCompanyStatusDto>.NotFound("Empresa no encontrada.");
 
         company.MarkOperational();
-        company.IsActive = true;
         await _companies.SaveChangesAsync(cancellationToken);
         return Result<IntegrationCompanyStatusDto>.Success(
             CreateIntegrationCompanyHandler.ToDto(company)
