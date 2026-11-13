@@ -25,9 +25,24 @@ public sealed class ItemPackagingLevelsController : ControllerBase
     // PACKAGING LEVELS
     // ══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Reemplaza las presentaciones (empaques) de un ítem.
+    /// </summary>
+    /// <remarks>
+    /// El conjunto enviado sustituye al actual. Un producto exige exactamente una presentación base con cantidad
+    /// base 1; un servicio admite como máximo una. No se repite la combinación de unidad de medida y cantidad base.
+    /// No se puede quitar una presentación usada por códigos de proveedor o por documentos confirmados, ni cambiar
+    /// la cantidad base de una usada en documentos confirmados.
+    /// </remarks>
+    /// <param name="id">Id de el ítem.</param>
+    /// <param name="request">Lista de presentaciones que quedarán asociadas al ítem.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Presentaciones del ítem actualizadas.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}/packaging-levels")]
     [Authorize(Policy = $"perm:{InventoryPermissions.ItemsEdit}")]
     [ProducesResponseType(typeof(ApiResponse<ItemDetailDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReplacePackagingLevels(
         Guid id,
         [FromBody] ReplacePackagingRequest request,

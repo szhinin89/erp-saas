@@ -1,4 +1,5 @@
 using ERP.API.Attributes;
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.ListInventoryAdjustmentReasons;
@@ -36,7 +37,16 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
 
     public InventoryAdjustmentReasonsController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Lista motivos de ajuste de inventario.</summary>
+    /// <summary>
+    /// Lista los motivos de ajuste de inventario.
+    /// </summary>
+    /// <remarks>
+    /// Si no hay resultados devuelve una lista vacía.
+    /// </remarks>
+    /// <param name="companyId">Id de empresa por el que se filtra.</param>
+    /// <param name="includeInactive">Si es <c>true</c> incluye los motivos inactivos.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Motivos de ajuste.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsView}")]
     [ProducesResponseType(
@@ -60,13 +70,23 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
         );
     }
 
-    /// <summary>Crea un motivo de ajuste de inventario.</summary>
+    /// <summary>
+    /// Crea un motivo de ajuste de inventario.
+    /// </summary>
+    /// <remarks>
+    /// Responde 201.
+    /// </remarks>
+    /// <param name="command">Datos del motivo.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Motivo creado.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsManage}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<InventoryAdjustmentReasonDto>),
         StatusCodes.Status201Created
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateInventoryAdjustmentReasonCommand command,
         CancellationToken ct = default
@@ -76,13 +96,26 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
         return this.ToCreatedOrBadRequest(result);
     }
 
-    /// <summary>Actualiza un motivo de ajuste de inventario (Code inmutable).</summary>
+    /// <summary>
+    /// Actualiza un motivo de ajuste de inventario.
+    /// </summary>
+    /// <remarks>
+    /// El código del motivo es inmutable. El id de la ruta debe coincidir con el <c>id</c> del cuerpo; si no,
+    /// responde 400 con cuerpo vacío.
+    /// </remarks>
+    /// <param name="id">Id de el motivo de ajuste.</param>
+    /// <param name="command">Datos del motivo, con su id.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Motivo actualizado.</response>
+    /// <response code="400">La operación incumple una regla de negocio (envelope). Si el id de la ruta no coincide con el del cuerpo también responde 400, pero con cuerpo vacío y sin envelope.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsManage}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<InventoryAdjustmentReasonDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateInventoryAdjustmentReasonCommand command,
@@ -95,13 +128,24 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Activa/desactiva un motivo (soft toggle — nunca borra físico).</summary>
+    /// <summary>
+    /// Activa o desactiva un motivo de ajuste.
+    /// </summary>
+    /// <remarks>
+    /// Baja lógica: nunca elimina el registro.
+    /// </remarks>
+    /// <param name="id">Id de el motivo de ajuste.</param>
+    /// <param name="request">Indica si el motivo se activa (<c>true</c>) o se desactiva (<c>false</c>).</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Estado del motivo actualizado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPost("{id:guid}/toggle")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsManage}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<InventoryAdjustmentReasonDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Toggle(
         Guid id,
         [FromBody] ToggleInventoryAdjustmentReasonRequest request,
@@ -116,15 +160,24 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
     }
 
     /// <summary>
-    /// ACCOUNTING-12A — configura la cuenta contable del motivo para la Company activa (contrapartida
-    /// del asiento del ajuste). La Company sale del contexto autenticado, nunca del body.
+    /// Configura la cuenta contable de un motivo.
     /// </summary>
+    /// <remarks>
+    /// Define la contrapartida del asiento del ajuste para la empresa activa. La empresa sale del contexto
+    /// autenticado, nunca del cuerpo.
+    /// </remarks>
+    /// <param name="id">Id de el motivo de ajuste.</param>
+    /// <param name="request">Id de la cuenta contable.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Cuenta contable del motivo actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}/account")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsManage}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<InventoryAdjustmentReasonDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetAccount(
         Guid id,
         [FromBody] SetInventoryAdjustmentReasonAccountRequest request,

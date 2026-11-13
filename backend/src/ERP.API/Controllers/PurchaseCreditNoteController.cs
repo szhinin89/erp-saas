@@ -20,8 +20,19 @@ public sealed class PurchaseCreditNoteController : ControllerBase
 
     public PurchaseCreditNoteController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Lista las devoluciones históricas que pueden vincularse a una nota de crédito.
+    /// </summary>
+    /// <remarks>
+    /// Devoluciones autorizadas de la factura, pendientes de nota de crédito, sin otro vínculo y compatibles en
+    /// factura, proveedor, empresa, sucursal, líneas e importes.
+    /// </remarks>
+    /// <param name="invoiceId">Id de la factura de compra afectada.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Devoluciones históricas vinculables.</response>
     [HttpGet("historical-returns")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchaseReturnDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetHistoricalReturns([FromQuery] Guid invoiceId, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetCreditNoteHistoricalReturnsQuery(invoiceId), ct));
 
@@ -29,7 +40,11 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     // DRAFT
     // ══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Crea la NC y su motor interno Return, o vincula una devolución histórica compatible.</summary>
+    /// <summary>
+    /// Crea la NC y su motor interno Return, o vincula una devolución histórica compatible.
+    /// </summary>
+    /// <param name="request">Factura afectada, modalidad, datos fiscales de la nota de crédito, motivo y líneas.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="201">Borrador creado.</response>
     /// <response code="404">La factura afectada, la cuenta por pagar o el documento de recepción no existen.</response>
     /// <response code="422">Datos inválidos, factura sin saldo pendiente, documento de recepción inconsistente, o duplicado.</response>
@@ -64,7 +79,13 @@ public sealed class PurchaseCreditNoteController : ControllerBase
             )
         );
 
-    /// <summary>Reemplaza por completo los datos fiscales/motivo/líneas de un borrador. Solo permitido mientras esté en <c>Draft</c>.</summary>
+    /// <summary>
+    /// Reemplaza por completo los datos fiscales/motivo/líneas de un borrador. Solo permitido mientras esté en
+    /// <c>Draft</c>.
+    /// </summary>
+    /// <param name="id">Id de la nota de crédito.</param>
+    /// <param name="request">Datos fiscales, motivo y líneas completos del borrador.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Borrador actualizado.</response>
     /// <response code="404">La nota de crédito no existe.</response>
     /// <response code="422">Ya no está en borrador, datos inválidos o duplicado.</response>
@@ -99,7 +120,12 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     // CONSULTAS
     // ══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Obtiene una nota de crédito de compra por Id, con líneas, factura afectada, saldo y datos de recepción vinculados.</summary>
+    /// <summary>
+    /// Obtiene una nota de crédito de compra por Id, con líneas, factura afectada, saldo y datos de recepción
+    /// vinculados.
+    /// </summary>
+    /// <param name="id">Id de la nota de crédito.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Nota de crédito encontrada.</response>
     /// <response code="404">La nota de crédito no existe.</response>
     [HttpGet("{id:guid}")]
@@ -109,7 +135,17 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetPurchaseCreditNoteByIdQuery(id), ct));
 
-    /// <summary>Lista notas de crédito de compra paginadas, con filtros opcionales.</summary>
+    /// <summary>
+    /// Lista notas de crédito de compra paginadas, con filtros opcionales.
+    /// </summary>
+    /// <param name="status">Filtra por estado de la nota de crédito.</param>
+    /// <param name="supplierId">Filtra por proveedor.</param>
+    /// <param name="invoiceId">Filtra por factura afectada.</param>
+    /// <param name="dateFrom">Fecha de negocio inicial (<c>YYYY-MM-DD</c>).</param>
+    /// <param name="dateTo">Fecha de negocio final (<c>YYYY-MM-DD</c>).</param>
+    /// <param name="page">Número de página, base 1.</param>
+    /// <param name="pageSize">Cantidad de notas de crédito por página.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
@@ -147,8 +183,14 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     // AUTORIZACIÓN / CANCELACIÓN
     // ══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Autoriza la NC según su modalidad; la vinculación histórica no repite efectos.</summary>
+    /// <summary>
+    /// Autoriza la NC según su modalidad; la vinculación histórica no repite efectos.
+    /// </summary>
+    /// <param name="id">Id de la nota de crédito.</param>
+    /// <param name="request">Identificador de idempotencia de la solicitud.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Nota de crédito autorizada.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
     /// <response code="404">La nota de crédito, la factura o el documento de recepción no existen.</response>
     /// <response code="422">Excede el saldo pendiente, ya autorizada/cancelada, o conflicto de idempotencia.</response>
     [HttpPost("{id:guid}/authorize")]
@@ -156,6 +198,7 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseCreditNoteDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Authorize(
         Guid id,
         [FromBody] AuthorizePurchaseCreditNoteRequest request,
@@ -168,8 +211,14 @@ public sealed class PurchaseCreditNoteController : ControllerBase
             )
         );
 
-    /// <summary>Cancelación interna y reversas canónicas; no anula el comprobante ante el SRI.</summary>
+    /// <summary>
+    /// Cancelación interna y reversas canónicas; no anula el comprobante ante el SRI.
+    /// </summary>
+    /// <param name="id">Id de la nota de crédito.</param>
+    /// <param name="request">Motivo de la cancelación e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Nota de crédito cancelada.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
     /// <response code="404">La nota de crédito no existe.</response>
     /// <response code="422">Ya cancelada o conflicto de idempotencia.</response>
     [HttpPost("{id:guid}/cancel")]
@@ -177,6 +226,7 @@ public sealed class PurchaseCreditNoteController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseCreditNoteDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancel(
         Guid id,
         [FromBody] CancelPurchaseCreditNoteRequest request,

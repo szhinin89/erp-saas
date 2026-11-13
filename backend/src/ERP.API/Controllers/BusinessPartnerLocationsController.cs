@@ -32,7 +32,16 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
 
     public BusinessPartnerLocationsController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Lista las ubicaciones del BP. Por defecto solo activas.</summary>
+    /// <summary>
+    /// Lista las ubicaciones de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// Por defecto solo las activas.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="onlyActive">Si es <c>true</c> (por defecto) lista solo los registros activos; con <c>false</c> incluye los desactivados.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicaciones del tercero.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -52,7 +61,14 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Obtiene una ubicación por Id.</summary>
+    /// <summary>
+    /// Obtiene una ubicación de un tercero.
+    /// </summary>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="locationId">Id de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicación.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("{locationId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<BpLocationDto>), StatusCodes.Status200OK)]
@@ -71,15 +87,24 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     }
 
     /// <summary>
-    /// Crea una nueva ubicación.
-    /// Si IsPrimary=true, se quita la marca de primaria de la ubicación anterior automáticamente.
-    /// Para LocationType=Other, OtherDescription es obligatorio.
-    /// Purpose es un bitmask: Billing=1, Delivery=2, Fiscal=4, Correspondence=8 (combinables).
+    /// Crea una ubicación de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Responde 201. Con <c>isPrimary</c> en verdadero, la ubicación primaria anterior pierde la marca. Para el
+    /// tipo <c>Other</c>, <c>otherDescription</c> es obligatorio. <c>purpose</c> es una máscara de bits combinable:
+    /// facturación = 1, entrega = 2, fiscal = 4, correspondencia = 8.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="body">Datos de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Ubicación creada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BpLocationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateLocation(
         [FromRoute] Guid bpId,
         [FromBody] CreateLocationRequest body,
@@ -105,7 +130,19 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza los datos de la ubicación. No cambia IsPrimary — usar set-primary.</summary>
+    /// <summary>
+    /// Actualiza una ubicación de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// No cambia la marca de primaria; para eso se usa <c>set-primary</c>.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="locationId">Id de la ubicación.</param>
+    /// <param name="body">Datos de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicación actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPut("{locationId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BpLocationDto>), StatusCodes.Status200OK)]
@@ -138,13 +175,22 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     }
 
     /// <summary>
-    /// Marca esta ubicación como primaria del BP.
-    /// La ubicación primaria anterior pierde el flag automáticamente.
+    /// Marca una ubicación como primaria del tercero.
     /// </summary>
+    /// <remarks>
+    /// La ubicación primaria anterior pierde la marca.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="locationId">Id de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicación marcada como primaria.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{locationId:guid}/set-primary")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetPrimary(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
@@ -158,10 +204,18 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Reactiva una ubicación previamente desactivada.</summary>
+    /// <summary>
+    /// Reactiva una ubicación desactivada.
+    /// </summary>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="locationId">Id de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicación activada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPatch("{locationId:guid}/activate")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,
@@ -176,13 +230,23 @@ public sealed class BusinessPartnerLocationsController : ControllerBase
     }
 
     /// <summary>
-    /// Desactiva la ubicación (soft delete).
-    /// Devuelve 422 si es la ubicación primaria o tiene contactos activos.
+    /// Desactiva una ubicación de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Baja lógica (el método DELETE no elimina el registro). No se puede desactivar la ubicación primaria ni una
+    /// con contactos activos.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="locationId">Id de la ubicación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Ubicación desactivada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpDelete("{locationId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid locationId,

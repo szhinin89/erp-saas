@@ -25,10 +25,23 @@ public sealed class GlobalAuthController : ControllerBase
 
     public GlobalAuthController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Requiere token global (tenant_id == Guid.Empty + rol Admin) — ver policy "PlatformAdmin".</summary>
+    /// <summary>
+    /// Opera una empresa como administrador global.
+    /// </summary>
+    /// <remarks>
+    /// Puente auditable entre el token global (tenant vacío) y un token operativo de una empresa concreta. Requiere
+    /// la política <c>PlatformAdmin</c>. El administrador global no llama endpoints operativos con su token global:
+    /// usa el token que devuelve esta operación y puede volver con <c>auth/global/return</c>. Emite cookie de
+    /// refresh.
+    /// </remarks>
+    /// <param name="request">Id de la empresa destino.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Token operativo de la empresa destino.</response>
+    /// <response code="400">Usuario no autenticado o no autorizado como administrador global, o la empresa o el tenant destino no existen o están inactivos.</response>
     [HttpPost("operate-company")]
     [Authorize(Policy = "PlatformAdmin")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> OperateCompany(
         [FromBody] OperateCompanyRequest request,
         CancellationToken cancellationToken
@@ -42,14 +55,19 @@ public sealed class GlobalAuthController : ControllerBase
     }
 
     /// <summary>
-    /// El token que llama aquí es OPERATIVO (tenant_id real), no global — "PlatformAdmin" lo
-    /// rechazaría. Se usa la policy "Session" por defecto (cualquier sesión autenticada con
-    /// tenant real) y la autorización real la hace <c>ReturnToGlobalHandler</c> verificando los
-    /// claims <c>operator_mode</c>/<c>global_admin_user_id</c> — ver <see cref="ReturnToGlobalCommand"/>.
+    /// Vuelve del modo operador a la sesión de administrador global.
     /// </summary>
+    /// <remarks>
+    /// Se llama con el token operativo emitido por <c>operate-company</c>. La autorización real la verifica el
+    /// handler con los claims de modo operador; un token de sesión ordinaria es rechazado.
+    /// </remarks>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Token global restablecido.</response>
+    /// <response code="400">La sesión no proviene de un modo operador válido.</response>
     [HttpPost("return")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Return(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new ReturnToGlobalCommand(), cancellationToken);

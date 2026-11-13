@@ -19,6 +19,14 @@ public sealed class SetupController : ControllerBase
 
     public SetupController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Consulta si la instalación inicial ya se completó.
+    /// </summary>
+    /// <remarks>
+    /// Operación pública del flujo de primera ejecución. No exige ni revela el token de instalación.
+    /// </remarks>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Estado de la instalación inicial.</response>
     [HttpGet("status")]
     [ProducesResponseType(typeof(ApiResponse<SetupStatusDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStatus(CancellationToken cancellationToken)
@@ -27,6 +35,18 @@ public sealed class SetupController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Crea el administrador inicial de la instalación.
+    /// </summary>
+    /// <remarks>
+    /// Operación pública protegida por el token de instalación de un solo uso (no acepta tenant ni rol del
+    /// cliente). Solo funciona mientras la instalación no esté inicializada: si ya lo está responde 409 y, con
+    /// token inválido, 401. Este endpoint forma parte del flujo first-run que completa el propietario.
+    /// </remarks>
+    /// <param name="command">Token de instalación y datos del administrador inicial.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Administrador inicial creado.</response>
+    /// <response code="409">La instalación ya fue inicializada.</response>
     [HttpPost("admin")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

@@ -1,4 +1,5 @@
 using ERP.API.Attributes;
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetKardexByDocument;
@@ -34,7 +35,18 @@ public sealed class KardexController : ControllerBase
 
     public KardexController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Historial del Kardex de un producto (todas las bodegas, o una si se filtra).</summary>
+    /// <summary>
+    /// Historial de Kardex de un producto.
+    /// </summary>
+    /// <remarks>
+    /// Incluye todas las bodegas o solo la indicada. Si no hay resultados devuelve una lista vacía.
+    /// </remarks>
+    /// <param name="productId">Id del producto (ítem).</param>
+    /// <param name="warehouseId">Filtra por bodega; omitido, incluye todas.</param>
+    /// <param name="from">Fecha de negocio inicial (<c>YYYY-MM-DD</c>).</param>
+    /// <param name="to">Fecha de negocio final (<c>YYYY-MM-DD</c>).</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Movimientos del Kardex.</response>
     [HttpGet("{productId:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
@@ -56,7 +68,16 @@ public sealed class KardexController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockMovementDto>());
     }
 
-    /// <summary>Movimientos generados por un documento origen específico (búsqueda exacta por Id).</summary>
+    /// <summary>
+    /// Movimientos de Kardex generados por un documento origen.
+    /// </summary>
+    /// <remarks>
+    /// Búsqueda exacta por id y tipo del documento origen. Si no hay resultados devuelve una lista vacía.
+    /// </remarks>
+    /// <param name="sourceDocId">Id del documento origen.</param>
+    /// <param name="sourceDocType">Tipo del documento origen.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Movimientos del documento.</response>
     [HttpGet("by-document/{sourceDocId:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
@@ -76,13 +97,23 @@ public sealed class KardexController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockMovementDto>());
     }
 
-    /// <summary>Expediente completo de un movimiento: hecho de inventario + documento origen + actor.</summary>
+    /// <summary>
+    /// Detalle completo de un movimiento de Kardex.
+    /// </summary>
+    /// <remarks>
+    /// Reúne el hecho de inventario, el documento origen y el actor.
+    /// </remarks>
+    /// <param name="id">Id de el recurso.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Detalle del movimiento.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("movement/{id:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<KardexMovementDetailDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMovementDetail(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetKardexMovementDetailQuery(id), ct);

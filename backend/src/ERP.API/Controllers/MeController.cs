@@ -21,9 +21,14 @@ public sealed class MeController : ControllerBase
     public MeController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>
-    /// Menú lateral filtrado por permisos del usuario autenticado.
-    /// El resultado ya está filtrado — el frontend solo renderiza, no evalúa permisos.
+    /// Devuelve el menú lateral filtrado por los permisos del usuario.
     /// </summary>
+    /// <remarks>
+    /// El resultado ya viene filtrado: el frontend solo lo renderiza y no evalúa permisos. Si el usuario no tiene
+    /// opciones, la lista va vacía.
+    /// </remarks>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Grupos de menú del usuario.</response>
     [HttpGet("menu")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(

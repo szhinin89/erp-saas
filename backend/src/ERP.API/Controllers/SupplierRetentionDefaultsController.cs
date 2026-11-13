@@ -35,7 +35,15 @@ public sealed class SupplierRetentionDefaultsController : ControllerBase
 
     public SupplierRetentionDefaultsController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Lista todas las retenciones predeterminadas (activas e inactivas) del proveedor en la empresa activa.</summary>
+    /// <summary>
+    /// Lista las retenciones predeterminadas de un proveedor.
+    /// </summary>
+    /// <remarks>
+    /// Incluye las activas y las inactivas, en la empresa activa.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Retenciones predeterminadas del proveedor.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -54,7 +62,19 @@ public sealed class SupplierRetentionDefaultsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Agrega una retención predeterminada al proveedor en la empresa activa.</summary>
+    /// <summary>
+    /// Agrega una retención predeterminada a un proveedor.
+    /// </summary>
+    /// <remarks>
+    /// Responde 201. Se asocia un código de retención del catálogo SRI al proveedor en la empresa activa.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="body">Id del código de retención SRI.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Retención predeterminada creada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}")]
     [ProducesResponseType(
@@ -63,6 +83,7 @@ public sealed class SupplierRetentionDefaultsController : ControllerBase
     )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddRetentionDefault(
         [FromRoute] Guid bpId,
         [FromBody] AddRetentionDefaultRequest body,
@@ -74,7 +95,19 @@ public sealed class SupplierRetentionDefaultsController : ControllerBase
         return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Activa/desactiva (soft-disable) y/o reordena una retención predeterminada existente.</summary>
+    /// <summary>
+    /// Activa, desactiva o reordena una retención predeterminada.
+    /// </summary>
+    /// <remarks>
+    /// Baja lógica: desactivar no elimina el registro. El filtro de empresa garantiza que el registro pertenece a
+    /// la empresa activa.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="id">Id de la retención predeterminada del proveedor.</param>
+    /// <param name="body">Estado activo y orden de presentación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Retención predeterminada actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPatch("{id:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}")]
     [ProducesResponseType(

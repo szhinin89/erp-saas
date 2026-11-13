@@ -41,9 +41,19 @@ public sealed class BusinessPartnersController : ControllerBase
     // ── Búsqueda y consulta ───────────────────────────────────────────────────
 
     /// <summary>
-    /// Busca Business Partners con filtros opcionales. Paginado.
-    /// Filtro por roles: usa el parámetro 'roles' (extensible) en lugar de isCustomer/isSupplier.
+    /// Busca terceros (Business Partners) con filtros y paginación.
     /// </summary>
+    /// <remarks>
+    /// Resultado paginado por <c>skip</c> y <c>take</c> (50 por defecto). El filtro <c>roles</c> acepta uno o
+    /// varios tipos de rol (por ejemplo cliente o proveedor) y es la forma extensible de filtrar por rol.
+    /// </remarks>
+    /// <param name="q">Texto libre de búsqueda por identificación o nombre.</param>
+    /// <param name="isActive">Filtra por estado activo (<c>true</c>) o inactivo (<c>false</c>); omitido, no filtra.</param>
+    /// <param name="roles">Tipos de rol por los que se filtra; omitido, no filtra por rol.</param>
+    /// <param name="skip">Cantidad de registros a omitir (0 por defecto).</param>
+    /// <param name="take">Cantidad máxima de registros a devolver (50 por defecto).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Página de terceros.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -67,8 +77,12 @@ public sealed class BusinessPartnersController : ControllerBase
     }
 
     /// <summary>
-    /// Obtiene el line completo de un BP incluyendo todos sus roles con configs.
+    /// Obtiene el detalle de un tercero con todos sus roles y configuraciones.
     /// </summary>
+    /// <param name="id">Id de el tercero (Business Partner).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Detalle del tercero.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerDetailDto>), StatusCodes.Status200OK)]
@@ -85,10 +99,19 @@ public sealed class BusinessPartnersController : ControllerBase
     // ── Creación ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Crea la identidad fiscal de un nuevo tercero en el tenant.
-    /// Solo registra la identidad — asignar roles y contactos en pasos posteriores.
-    /// Validación algoritmo RUC/CI ecuatoriano aplicada automáticamente.
+    /// Crea la identidad fiscal de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Responde 201. Solo registra la identidad (tipo y número de identificación, tipo de persona, nombre legal y
+    /// comercial, país); los roles y contactos se asignan en pasos posteriores. Aplica la validación del algoritmo
+    /// de RUC y cédula ecuatorianos.
+    /// </remarks>
+    /// <param name="body">Identificación, tipo de entidad legal, nombre legal, nombre comercial y país.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Tercero creado.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersCreate}")]
     [ProducesResponseType(
@@ -97,6 +120,7 @@ public sealed class BusinessPartnersController : ControllerBase
     )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
         [FromBody] CreateBusinessPartnerRequest body,
         CancellationToken cancellationToken = default
@@ -117,7 +141,19 @@ public sealed class BusinessPartnersController : ControllerBase
 
     // ── Actualizaciones ───────────────────────────────────────────────────────
 
-    /// <summary>Actualiza nombre legal, nombre comercial, tipo de persona y país.</summary>
+    /// <summary>
+    /// Actualiza el perfil de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// Actualiza nombre legal, nombre comercial, tipo de entidad legal y país. La identificación fiscal se cambia
+    /// con <c>PATCH {id}/identification</c>.
+    /// </remarks>
+    /// <param name="id">Id de el tercero (Business Partner).</param>
+    /// <param name="body">Nombre legal, nombre comercial, tipo de entidad legal y país.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Perfil actualizado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerSummaryDto>), StatusCodes.Status200OK)]
@@ -141,14 +177,25 @@ public sealed class BusinessPartnersController : ControllerBase
     }
 
     /// <summary>
-    /// Cambia la identificación fiscal. Operación de alto impacto — genera evento de auditoría.
-    /// Valida algoritmo RUC/CI ecuatoriano. Devuelve 409 si el nuevo número ya existe.
+    /// Cambia la identificación fiscal de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Operación de alto impacto: genera un evento de auditoría y valida el algoritmo de RUC y cédula ecuatorianos.
+    /// Si el nuevo número ya existe responde 409.
+    /// </remarks>
+    /// <param name="id">Id de el tercero (Business Partner).</param>
+    /// <param name="body">Nuevo tipo y número de identificación.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Identificación actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{id:guid}/identification")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerSummaryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateIdentification(
         [FromRoute] Guid id,
         [FromBody] UpdateIdentificationRequest body,
@@ -166,7 +213,13 @@ public sealed class BusinessPartnersController : ControllerBase
 
     // ── Ciclo de vida ─────────────────────────────────────────────────────────
 
-    /// <summary>Reactiva un BP previamente desactivado.</summary>
+    /// <summary>
+    /// Reactiva un tercero desactivado.
+    /// </summary>
+    /// <param name="id">Id de el tercero (Business Partner).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Tercero activado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPatch("{id:guid}/activate")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -184,9 +237,16 @@ public sealed class BusinessPartnersController : ControllerBase
     }
 
     /// <summary>
-    /// Desactiva el BP (soft delete). No elimina ni sus roles ni sus ubicaciones.
-    /// No se puede desactivar un BP con roles activos y documentos en curso (ver ADR-BP-14).
+    /// Desactiva un tercero.
     /// </summary>
+    /// <remarks>
+    /// Baja lógica (el método DELETE no elimina el registro): conserva los roles y las ubicaciones del tercero.
+    /// </remarks>
+    /// <param name="id">Id de el tercero (Business Partner).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Tercero desactivado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersDisable}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]

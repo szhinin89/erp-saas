@@ -36,7 +36,16 @@ public sealed class BusinessPartnerContactsController : ControllerBase
 
     public BusinessPartnerContactsController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Lista los contactos del BP. Por defecto solo activos.</summary>
+    /// <summary>
+    /// Lista los contactos de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// Por defecto solo los activos.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="onlyActive">Si es <c>true</c> (por defecto) lista solo los registros activos; con <c>false</c> incluye los desactivados.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contactos del tercero.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -56,7 +65,14 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Obtiene un contacto por Id.</summary>
+    /// <summary>
+    /// Obtiene un contacto de un tercero.
+    /// </summary>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="contactId">Id del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contacto.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("{contactId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(typeof(ApiResponse<BpContactDto>), StatusCodes.Status200OK)]
@@ -75,14 +91,23 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     }
 
     /// <summary>
-    /// Registra un nuevo contacto del BP.
-    /// Si IsPrimary=true, el contacto primario anterior pierde el flag automáticamente.
-    /// LocationId opcional — si se especifica, debe pertenecer al mismo BP.
+    /// Registra un contacto de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Responde 201. Con <c>isPrimary</c> en verdadero, el contacto primario anterior pierde la marca.
+    /// <c>locationId</c> es opcional y, si se indica, debe pertenecer al mismo tercero.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="body">Datos del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Contacto creado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BpContactDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateContact(
         [FromRoute] Guid bpId,
         [FromBody] CreateContactRequest body,
@@ -108,7 +133,19 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         return result.IsSuccess ? this.ApiCreated(result.Value!) : this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza los datos del contacto.</summary>
+    /// <summary>
+    /// Actualiza un contacto de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// No cambia la marca de primario; para eso se usa <c>set-primary</c>.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="contactId">Id del contacto.</param>
+    /// <param name="body">Datos del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contacto actualizado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPut("{contactId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BpContactDto>), StatusCodes.Status200OK)]
@@ -141,13 +178,22 @@ public sealed class BusinessPartnerContactsController : ControllerBase
     }
 
     /// <summary>
-    /// Marca este contacto como primario del BP.
-    /// El contacto primario anterior pierde el flag automáticamente.
+    /// Marca un contacto como primario del tercero.
     /// </summary>
+    /// <remarks>
+    /// El contacto primario anterior pierde la marca.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="contactId">Id del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contacto marcado como primario.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{contactId:guid}/set-primary")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetPrimary(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
@@ -161,10 +207,18 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Reactiva un contacto previamente desactivado.</summary>
+    /// <summary>
+    /// Reactiva un contacto desactivado.
+    /// </summary>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="contactId">Id del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contacto activado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPatch("{contactId:guid}/activate")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Activate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,
@@ -178,11 +232,23 @@ public sealed class BusinessPartnerContactsController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Desactiva el contacto (soft delete).</summary>
+    /// <summary>
+    /// Desactiva un contacto de un tercero.
+    /// </summary>
+    /// <remarks>
+    /// Baja lógica (el método DELETE no elimina el registro).
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="contactId">Id del contacto.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Contacto desactivado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpDelete("{contactId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid bpId,
         [FromRoute] Guid contactId,

@@ -12,11 +12,9 @@ completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cam
 límites, baseline, grandfather ni funcionalidad por esta corrección.
 Sin staging, commit ni push; no CLOSED.
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 a 2B-3 en `main`; Fase 2B-4 implementada, pendiente de revisión)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 a 2B-4 en `main`; Fase 2B-5, 229 operaciones, implementada y pendiente de revisión final)
 
-**No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y
-ejemplos es parcial fuera de los módulos ya trabajados). Solo metadatos y pruebas: sin cambios de rutas, métodos,
-permisos, DTO, validadores ni lógica.
+**No está CLOSED:** pendientes la revisión final de la Fase 2B-5 y los ejemplos. Solo metadatos y pruebas: sin cambios de rutas, métodos, permisos, DTO, validadores ni lógica.
 
 - **Fase 2A — infraestructura central** (`4f0db58f9`, pendiente confirmar CI): filtros en `ERP.API/Swagger/`
   (seguridad por operación con `security: [{}]` en las 11 operaciones públicas, sección «Autorización» y
@@ -66,6 +64,34 @@ permisos, DTO, validadores ni lógica.
   (`application/xml`, `application/pdf`): `RetentionsController` no tiene `[Produces]` de clase. Los dos `DELETE`
   de Precios son baja lógica (desactivan la asignación o deshabilitan la regla). Los 403 con envelope de
   `Register` y de las cuatro operaciones de anulación de retenciones están verificados en los handlers.
+- **Fase 2B-5 — Auth, Sesión, Público, Maestros, Catálogo, Ítems, Business Partners, Inventario, Compras y
+  Facturación electrónica, 229 operaciones** (209 en lotes A–D1 sobre 39 controladores, más 20 en D2; lote A: `Auth` 10, `GlobalAuth` 2, `Session` 3, `Me` 1, `Public` 1, `Setup` 2,
+  `PaymentTerms` 6 = 25; lote B: Catálogo 44 e Ítems 34 = 78; lote C: Business Partners 35 e Inventario 28 = 63;
+  lote D1: Compras 43). Mismo procedimiento que 2B-1 a 2B-4: solo XML, `[ProducesResponseType]` y `using`.
+  Los módulos FROZEN/CLOSED (Catálogo, Ítems, Business Partners, Inventario, Compras) se documentaron solo con
+  metadatos por autorización expresa del propietario; la comparación contra `HEAD` (sin `///`, sin
+  `[ProducesResponseType]`, sin `using`) deja el código de los 39 controladores idéntico. 8 POST (catálogo: marcas, nodos, grupos y definiciones de atributo; ítems; tipos de ítem; variantes; códigos de barras) pasan de documentar 200 a 201 (el código ya respondía 201). Validación:
+  `OpenApiContractTests` + `OpenApiSchemaIds`: 93/93 PASS (2 fallos iniciales por corte de conexión a
+  PostgreSQL, repetidos en verde); `architecture:check` y guardrail oficial PASS. `PaymentTerms.List` responde el arreglo sin envelope (se añade a
+  la lista cerrada de la prueba). Las operaciones públicas de `Auth` y `Setup` responden 401 por credenciales o
+  token inválidos, pero el contrato central de la Fase 2A solo documenta 401 en operaciones que exigen token: el 401
+  se describe en las `remarks`, no como respuesta del contrato (API-DOC-F-46). Los contratos ambiguos (cookies de
+  refresh, carga multipart de Recepción, filtros leídos de la cadena de consulta de Bodegas, `Public` sin DTO) se
+  investigaron contra el código y se documentan tal cual. No se ejecutó ningún flujo de autenticación ni se leyó
+  ninguna credencial.
+- **Fase 2B-5, lote D2 — Facturación electrónica, 20 operaciones** (`ElectronicDocumentsController` 10,
+  `ElectronicInvoicingController` 6, `SriServiceHealthController` 1, `RideController` 3). Inicialmente retenido porque
+  [frozen-infrastructure.md](docs/architecture/frozen-infrastructure.md#electronicdocuments-v10-facturación-electrónica-sri)
+  y ADR-023 exigen una de cuatro causas para «cualquier cambio al núcleo» y la documentación Swagger no es ninguna.
+  **Excepción documental registrada (decisión del propietario, 2026-11-12):** se autoriza, solo para API-DOC-V1,
+  comentarios XML, `[ProducesResponseType]` y `using` en esos cuatro controladores. Registro formal previo a la
+  modificación: [ADR-023 § Addendum 2026-11-12](docs/decisions/ADR-023-electronic-documents-v1-closure.md) y la extensión
+  del mismo día en frozen-infrastructure.md (mismo mecanismo que SRI-TOGGLE-02: decisión del propietario fuera de las
+  cuatro causas). No modifica las causas ordinarias, no autoriza cambios de comportamiento del SRI ni de otros componentes
+  congelados y no crea precedente. Código idéntico a `HEAD` retirados los metadatos (comprobado). Dos operaciones
+  responden un archivo sin envelope: el PDF de `Ride.GetContent` (`application/pdf`; el `[Produces]` de clase hace que
+  el contrato publique `application/json`, como en 2B-3) y la carga multipart del certificado (`.p12`/`.pfx`, 5 MB). Los
+  409 de `Register`, `Retry` y `RetransmitCorrected` se verificaron contra el emisor.
 - **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
@@ -119,6 +145,14 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-42 | `Retentions.SubmitAnnulment`, `VerifyAnnulmentWithSri` | El 200 puede llevar un `code` de error de catálogo (`RETENTION_ANNULMENT_SRI_*`) dentro de una respuesta exitosa; un cliente que solo mire el HTTP no distingue una verificación fallida de una exitosa. |
 | API-DOC-F-43 | `Retentions.VerifyAnnulmentWithSri` | Una solicitud ya cerrada responde 422, pero una ya aceptada responde 200 con `FINALIZED`: criterio de estado repetido no uniforme (relacionado con F-12 y F-29). |
 | API-DOC-F-44 | `Retentions.GetRidePdf` frente a `GetElectronicXml` | `RetentionRidePdfService` usa `Failure` sin código para fallos de branding y de render (400), mientras los errores de XML usan `ValidationFailure` (422). |
+| API-DOC-F-45 | `AuthController` (`GlobalLogin`, `CompletePasswordReset`), `PurchaseReceptionController.RefreshStatus` | Había comentarios XML desplazados: el de «Fase H» (restablecimiento obligatorio) estaba sobre `global-login`, y `refresh-status` tenía dos `<summary>` (el primero describe la descarga en lote). Se publicaba una descripción equivocada; corregido en 2B-5 (solo comentarios). |
+| API-DOC-F-46 | `Auth` (`login`, `global-login`, `complete-password-reset`, `refresh`, `reauthenticate`) y `Setup.CreateInitialAdmin` | Responden 401 (credenciales o token inválidos), pero la regla de la Fase 2A («401 solo si exige token») impide declararlo en operaciones públicas; el 401 queda solo en las `remarks`. |
+| API-DOC-F-47 | `PaymentTerms.List` | Responde `Ok(arreglo)` sin envelope (mismo patrón que F-27); `PaymentTerms.Update` responde `BadRequest("ID mismatch.")` en texto plano. |
+| API-DOC-F-48 | `StockAdjustments.UpdateAdjustment`, `InventoryAdjustmentReasons.Update` | Con id de ruta distinto al del cuerpo devuelven `BadRequest()` sin cuerpo ni envelope (mismo patrón que F-07); el resto de los `Update` revisados usa `ApiBadRequest`. |
+| API-DOC-F-49 | `Items.ResolveItem` | Usa `ToOkOrNotFound`, pero si ningún ítem coincide el handler responde 200 con `data` nulo (no 404). |
+| API-DOC-F-50 | `Warehouses.GetAll` | Lee `activeStatus`, `onlyActive`, `search` y `sucursalId` directamente de la cadena de consulta: no figuran como parámetros del contrato; `sucursalId` es el único nombre de parámetro en español de la API revisada. |
+| API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. |
+| API-DOC-F-52 | `Public.GetDeploymentInfo` | Devuelve un objeto anónimo sin DTO: el esquema 2xx es `ApiResponse<object>` y los campos se describen solo en `remarks`. |
 
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 

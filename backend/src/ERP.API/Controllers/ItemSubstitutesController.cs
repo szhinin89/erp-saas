@@ -25,9 +25,22 @@ public sealed class ItemSubstitutesController : ControllerBase
     // SUBSTITUTES
     // ══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Reemplaza los ítems sustitutos de un ítem.
+    /// </summary>
+    /// <remarks>
+    /// El conjunto enviado sustituye al actual. Los sustitutos deben ser ítems de la misma empresa y un ítem no
+    /// puede ser sustituto de sí mismo. Cada sustituto lleva prioridad y nota.
+    /// </remarks>
+    /// <param name="id">Id de el ítem.</param>
+    /// <param name="request">Lista de sustitutos con prioridad y nota.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Sustitutos del ítem actualizados.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}/substitutes")]
     [Authorize(Policy = $"perm:{InventoryPermissions.ItemsEdit}")]
     [ProducesResponseType(typeof(ApiResponse<ItemDetailDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReplaceSubstitutes(
         Guid id,
         [FromBody] ReplaceSubstitutesRequest request,

@@ -25,9 +25,22 @@ public sealed class ItemUnitConversionsController : ControllerBase
     // UNIT CONVERSIONS
     // ══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Reemplaza las conversiones de unidad de medida de un ítem.
+    /// </summary>
+    /// <remarks>
+    /// El conjunto enviado sustituye al actual. Cada conversión define unidad de origen, unidad de destino y un
+    /// factor mayor que cero.
+    /// </remarks>
+    /// <param name="id">Id de el ítem.</param>
+    /// <param name="request">Lista de conversiones de unidad.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Conversiones del ítem actualizadas.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}/unit-conversions")]
     [Authorize(Policy = $"perm:{InventoryPermissions.ItemsEdit}")]
     [ProducesResponseType(typeof(ApiResponse<ItemDetailDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ReplaceUnitConversions(
         Guid id,
         [FromBody] ReplaceConversionsRequest request,

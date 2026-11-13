@@ -32,9 +32,16 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     public BusinessPartnerRolesController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>
-    /// Lista todos los roles del BP. Por defecto solo activos.
-    /// Usar onlyActive=null para incluir roles revocados (historial).
+    /// Lista los roles de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Por defecto solo los activos; con <c>onlyActive</c> nulo o falso se incluyen los roles revocados
+    /// (historial).
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="onlyActive">Si es <c>true</c> (por defecto) lista solo los registros activos; con <c>false</c> incluye los desactivados.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Roles del tercero.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -55,12 +62,20 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     }
 
     /// <summary>
-    /// Asigna un rol al BP. Semántica UPSERT:
-    ///   - Si el rol no existe → crea nuevo
-    ///   - Si el rol existe revocado → lo reactiva
-    ///   - Si el rol ya está activo → devuelve 422
-    /// Las configs (SupplierConfig, CarrierConfig) son opcionales en la asignación.
+    /// Asigna un rol a un tercero.
     /// </summary>
+    /// <remarks>
+    /// Responde 201. Semántica de alta o reactivación: si el rol no existe se crea; si existe revocado se reactiva;
+    /// si ya está activo la solicitud se rechaza. Las configuraciones de proveedor, transportista y cliente son
+    /// opcionales en la asignación.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="body">Tipo de rol y configuraciones opcionales por rol.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Rol asignado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPost]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(
@@ -69,6 +84,7 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignRole(
         [FromRoute] Guid bpId,
         [FromBody] AssignRoleRequest body,
@@ -88,9 +104,17 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     }
 
     /// <summary>
-    /// Revoca el rol. El registro histórico se conserva (is_active = false).
-    /// ATENCIÓN: el sistema verificará documentos activos en futuras versiones (ADR-BP-14).
+    /// Revoca un rol de un tercero.
     /// </summary>
+    /// <remarks>
+    /// Baja lógica (el método DELETE no elimina el registro): el rol queda inactivo y se conserva en el historial.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="roleId">Id del rol del tercero.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Rol revocado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpDelete("{roleId:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -111,11 +135,24 @@ public sealed class BusinessPartnerRolesController : ControllerBase
 
     // ── Actualización de configs ───────────────────────────────────────────────
 
-    /// <summary>Actualiza defaults SRI del rol Supplier (códigos de retención, sustento, plazo).</summary>
+    /// <summary>
+    /// Actualiza la configuración de proveedor de un rol.
+    /// </summary>
+    /// <remarks>
+    /// Defaults SRI del rol Supplier: códigos de retención, sustento y plazo.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="roleId">Id del rol del tercero.</param>
+    /// <param name="body">Configuración de proveedor.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración de proveedor actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{roleId:guid}/supplier-config")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSupplierConfig(
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
@@ -130,11 +167,24 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza datos de transporte del rol Carrier (número autorización, capacidad).</summary>
+    /// <summary>
+    /// Actualiza la configuración de transportista de un rol.
+    /// </summary>
+    /// <remarks>
+    /// Datos de transporte del rol Carrier: número de autorización y capacidad.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="roleId">Id del rol del tercero.</param>
+    /// <param name="body">Configuración de transportista.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración de transportista actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{roleId:guid}/carrier-config")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateCarrierConfig(
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
@@ -150,14 +200,23 @@ public sealed class BusinessPartnerRolesController : ControllerBase
     }
 
     /// <summary>
-    /// Actualiza la configuración Customer: categoría, segmento, zona, rating, fidelización.
-    /// CRM-ready — soporta segmentación comercial, scoring y automatización documental.
-    /// Solo aplica a roles con RoleType = Customer.
+    /// Actualiza la configuración de cliente de un rol.
     /// </summary>
+    /// <remarks>
+    /// Categoría, segmento, zona, calificación y fidelización. Solo aplica a roles con tipo Customer.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="roleId">Id del rol del tercero.</param>
+    /// <param name="body">Configuración de cliente.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración de cliente actualizada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPatch("{roleId:guid}/customer-config")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerRoleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateCustomerConfig(
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,
@@ -172,10 +231,22 @@ public sealed class BusinessPartnerRolesController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza las notas internas de cualquier rol.</summary>
+    /// <summary>
+    /// Actualiza las notas internas de un rol.
+    /// </summary>
+    /// <remarks>
+    /// Aplica a cualquier tipo de rol.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="roleId">Id del rol del tercero.</param>
+    /// <param name="body">Notas internas.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Notas del rol actualizadas.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPatch("{roleId:guid}/notes")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersUpdate}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateNotes(
         [FromRoute] Guid bpId,
         [FromRoute] Guid roleId,

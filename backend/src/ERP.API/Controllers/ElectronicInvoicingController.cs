@@ -38,18 +38,17 @@ public sealed class ElectronicInvoicingController : ControllerBase
     }
 
     /// <summary>
-    /// Estado liviano de facturación electrónica para UI transversal (banner de ambiente) —
-    /// visible para cualquier usuario autenticado de la empresa, sin requerir el permiso de
-    /// Configuración SRI: no expone datos sensibles, solo ambiente/estado de emisión.
-    ///
-    /// ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: por defecto (<c>checkConnectivity</c>
-    /// ausente u <c>false</c>) NO hace ping externo al SRI — solo resuelve estado local
-    /// (certificado/ambiente/URL). Es el modo que usa el bootstrap global de sesión
-    /// (SessionBootstrap) y el cambio de empresa: nunca deben disparar una llamada de red al SRI.
-    /// Pasar <c>?checkConnectivity=true</c> fuerza el ping real — usado explícitamente por Ventas
-    /// al entrar a /sales y antes de emitir (con caché corto en el frontend), nunca por pantallas
-    /// que solo necesitan mostrar el banner de ambiente.
+    /// Estado liviano de la facturación electrónica de la empresa.
     /// </summary>
+    /// <remarks>
+    /// Visible para cualquier usuario autenticado de la empresa, sin requerir el permiso de Configuración SRI: solo
+    /// informa ambiente y estado de emisión. Por defecto (<c>checkConnectivity</c> ausente o falso) no hace ping
+    /// externo al SRI: resuelve solo el estado local (certificado, ambiente y URL). Con
+    /// <c>checkConnectivity=true</c> fuerza el ping real.
+    /// </remarks>
+    /// <param name="checkConnectivity">Si es <c>true</c> hace un ping real al SRI; por defecto solo resuelve el estado local.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Estado de la facturación electrónica.</response>
     [HttpGet("status")]
     [ProducesResponseType(
         typeof(ApiResponse<ElectronicInvoicingStatusDto>),
@@ -67,6 +66,11 @@ public sealed class ElectronicInvoicingController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Obtiene la configuración SRI de la empresa.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración SRI.</response>
     [HttpGet("sri-configuration")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.View}")]
     [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto?>), StatusCodes.Status200OK)]
@@ -78,6 +82,16 @@ public sealed class ElectronicInvoicingController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Crea o actualiza la configuración SRI de la empresa.
+    /// </summary>
+    /// <remarks>
+    /// Los secretos del cuerpo (por ejemplo la contraseña del certificado) son de solo escritura y no se devuelven.
+    /// </remarks>
+    /// <param name="command">Datos de la configuración SRI.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración SRI guardada.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPut("sri-configuration")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto>), StatusCodes.Status200OK)]
@@ -92,9 +106,14 @@ public sealed class ElectronicInvoicingController : ControllerBase
     }
 
     /// <summary>
-    /// Diagnostica la configuración SRI actual (certificado, contraseña, vigencia, conectividad
-    /// del webservice) — solo lectura, nunca modifica la configuración guardada.
+    /// Diagnostica la configuración SRI actual.
     /// </summary>
+    /// <remarks>
+    /// Revisa certificado, contraseña, vigencia y conectividad del webservice. Solo lectura: nunca modifica la
+    /// configuración guardada.
+    /// </remarks>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Resultado del diagnóstico.</response>
     [HttpGet("sri-configuration/validate")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.View}")]
     [ProducesResponseType(
@@ -110,9 +129,18 @@ public sealed class ElectronicInvoicingController : ControllerBase
     }
 
     /// <summary>
-    /// Sube (o reemplaza) el certificado digital .p12/.pfx de la empresa. El backend administra
-    /// el almacenamiento — el cliente nunca envía ni conoce una ruta de servidor.
+    /// Sube o reemplaza el certificado digital de la empresa.
     /// </summary>
+    /// <remarks>
+    /// Solicitud <c>multipart/form-data</c> con el archivo en el campo <c>file</c>. Acepta solo extensiones
+    /// <c>.p12</c> y <c>.pfx</c>, hasta 5 MB. El backend administra el almacenamiento: el cliente nunca envía ni
+    /// conoce una ruta de servidor.
+    /// </remarks>
+    /// <param name="file">Archivo del certificado digital (<c>.p12</c> o <c>.pfx</c>, máximo 5 MB).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Certificado cargado.</response>
+    /// <response code="400">No se adjuntó archivo o el archivo está vacío.</response>
+    /// <response code="422">El certificado no supera la validación (extensión, tamaño o contenido).</response>
     [HttpPost("sri-configuration/certificate")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [Consumes("multipart/form-data")]
@@ -121,6 +149,7 @@ public sealed class ElectronicInvoicingController : ControllerBase
         StatusCodes.Status200OK
     )]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UploadCertificate(
         IFormFile? file,
         CancellationToken cancellationToken = default
@@ -138,12 +167,20 @@ public sealed class ElectronicInvoicingController : ControllerBase
     }
 
     /// <summary>
-    /// Prueba una contraseña contra el certificado ya subido, sin persistirla — usado para dar
-    /// feedback en vivo mientras el usuario escribe, antes de pulsar "Guardar".
+    /// Prueba una contraseña contra el certificado ya subido.
     /// </summary>
+    /// <remarks>
+    /// No persiste la contraseña. Sirve para dar retroalimentación mientras el usuario escribe, antes de guardar la
+    /// configuración.
+    /// </remarks>
+    /// <param name="query">Contraseña a probar.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Información del certificado.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPost("sri-configuration/certificate/inspect")]
     [Authorize(Policy = $"perm:{ElectronicInvoicingPermissions.Configure}")]
     [ProducesResponseType(typeof(ApiResponse<SriCertificateInfoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> InspectCertificate(
         [FromBody] InspectSriCertificateQuery query,
         CancellationToken cancellationToken = default

@@ -1,3 +1,4 @@
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Ride.DTOs;
@@ -41,13 +42,20 @@ public sealed class RideController : ControllerBase
     }
 
     /// <summary>
-    /// Obtiene el RIDE ya generado o lo genera si corresponde. La respuesta siempre es 200 con el
-    /// <c>Outcome</c> correspondiente (incluidos <c>PendingSource</c>/<c>NotApplicable</c>) — un
-    /// documento inexistente o de otra empresa nunca es distinguible de "no aplica" en la
-    /// respuesta (mismo criterio de no-enumeración que <c>ElectronicDocuments</c>).
+    /// Obtiene el RIDE de un documento o lo genera si corresponde.
     /// </summary>
+    /// <remarks>
+    /// La respuesta siempre es 200 con el <c>outcome</c> correspondiente (incluidos <c>PendingSource</c> y
+    /// <c>NotApplicable</c>). Un documento inexistente o de otra empresa no se distingue de «no aplica» (criterio
+    /// de no enumeración).
+    /// </remarks>
+    /// <param name="sourceModule">Módulo de origen del documento (por ejemplo <c>Sales</c>).</param>
+    /// <param name="sourceEntityId">Id del documento de origen en su módulo.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Resultado de la generación del RIDE.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{RidePermissions.View}")]
+    [ProducesResponseType(typeof(ApiResponse<RideGenerationResultDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOrGenerate(
         [FromQuery] string sourceModule,
         [FromQuery] Guid sourceEntityId,
@@ -58,23 +66,43 @@ public sealed class RideController : ControllerBase
             "OK"
         );
 
-    /// <summary>Fuerza la regeneración del RIDE aunque el cache siga siendo válido.</summary>
+    /// <summary>
+    /// Fuerza la regeneración del RIDE.
+    /// </summary>
+    /// <remarks>
+    /// Regenera aunque la caché siga siendo válida.
+    /// </remarks>
+    /// <param name="command">Módulo y documento de origen.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Resultado de la regeneración del RIDE.</response>
     [HttpPost("regenerate")]
     [Authorize(Policy = $"perm:{RidePermissions.Regenerate}")]
+    [ProducesResponseType(typeof(ApiResponse<RideGenerationResultDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Regenerate(
         [FromBody] RegenerateRideCommand command,
         CancellationToken ct
     ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
 
     /// <summary>
-    /// Sirve los bytes del PDF ya generado (o lo genera si corresponde), vía el mismo
-    /// <c>GetOrGenerateRideQuery</c> que <see cref="GetOrGenerate"/>. 404 si el documento de
-    /// origen todavía no tiene un RIDE disponible (<c>PendingSource</c>/<c>NotApplicable</c>/
-    /// <c>Failed</c>) — el frontend siempre debe consultar el <c>Outcome</c> primero para mostrar
-    /// el mensaje correcto y solo llamar aquí cuando corresponda.
+    /// Descarga el PDF del RIDE de un documento.
     /// </summary>
+    /// <remarks>
+    /// Sirve los bytes del PDF ya generado (o lo genera si corresponde) con el mismo caso de uso que <c>GET
+    /// ride</c>. El éxito es un archivo PDF (<c>application/pdf</c>, nombre <c>RIDE-{sourceEntityId}.pdf</c>), no
+    /// un envelope JSON; los errores sí usan el envelope. Responde 404 si el documento todavía no tiene un RIDE
+    /// disponible (<c>PendingSource</c>, <c>NotApplicable</c> o <c>Failed</c>) o si el archivo ya no está en el
+    /// almacenamiento: el cliente debe consultar antes el <c>outcome</c>. El contrato publica el tipo de medio como
+    /// <c>application/json</c> porque el <c>[Produces]</c> de clase prevalece.
+    /// </remarks>
+    /// <param name="sourceModule">Módulo de origen del documento (por ejemplo <c>Sales</c>).</param>
+    /// <param name="sourceEntityId">Id del documento de origen en su módulo.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Archivo PDF del RIDE.</response>
+    /// <response code="404">El documento no tiene un RIDE disponible todavía, o el archivo ya no está disponible en el almacenamiento.</response>
     [HttpGet("content")]
     [Authorize(Policy = $"perm:{RidePermissions.View}")]
+    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK, "application/pdf")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetContent(
         [FromQuery] string sourceModule,
         [FromQuery] Guid sourceEntityId,

@@ -24,6 +24,15 @@ public sealed class SriServiceHealthController : ControllerBase
 
     public SriServiceHealthController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Salud técnica de los servicios del SRI.
+    /// </summary>
+    /// <remarks>
+    /// Estado de Recepción y Autorización observado de las comunicaciones existentes (monitor en memoria). No hace
+    /// llamadas nuevas al SRI.
+    /// </remarks>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Salud de los servicios del SRI.</response>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<SriServiceHealthDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken cancellationToken = default)

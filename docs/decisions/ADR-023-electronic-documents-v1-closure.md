@@ -452,6 +452,23 @@ espera), `ElectronicDocumentIssuerEmissionSwitchTests`, `ValidateSriConfiguratio
 `PurchaseRetentionConfirmIntegrationTests.SRI_TOGGLE_07_un_cambio_durante_la_firma_*` sustituye al test de 04 de
 re-habilitación durante la firma (esa ventana ya no existe: el cambio espera a la llamada en curso).
 
+## Addendum (2026-11-12): API-DOC-V1 — excepción documental de los controladores (decisión del propietario)
+
+**Causa.** No es una de las cuatro causas de la regla permanente: el propietario autorizó expresamente, para el
+alcance API-DOC-V1 y de forma limitada, la documentación Swagger/OpenAPI de las 20 operaciones de Facturación
+electrónica (`ElectronicDocumentsController` 10, `ElectronicInvoicingController` 6, `SriServiceHealthController` 1 y
+`RideController` 3). Sin esa autorización los dos primeros, componentes FROZEN de este ADR, no se habrían tocado.
+
+**Decisión.** Se permite en esos cuatro controladores, y solo en ellos: comentarios XML de documentación,
+atributos `[ProducesResponseType]` que reflejen contratos existentes e imports estrictamente necesarios.
+La comparación contra `HEAD` (retirados `///`, `[ProducesResponseType]` y `using`) debe dejar el código idéntico.
+
+**Sin cambios:** estados, transiciones, pipeline, XML, XAdES, SOAP, clientes SRI, DTO, servicios, rutas, métodos,
+permisos, `operationId`, validadores, handlers, persistencia y respuestas HTTP reales. La excepción **no** modifica
+las cuatro causas ordinarias de reapertura funcional, no autoriza ningún cambio de comportamiento del SRI ni de otros
+componentes congelados, y no crea precedente para otros cambios en el núcleo. Registro de ejecución:
+[STATUS.md](../../STATUS.md) (API-DOC-V1, Fase 2B-5).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

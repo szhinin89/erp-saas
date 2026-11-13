@@ -435,6 +435,8 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "InitialLoad_DownloadTemplate",
         "Retentions_GetElectronicXml",
         "Retentions_GetRidePdf",
+        "PaymentTerms_List",
+        "Ride_GetContent",
     ];
 
     /// <summary>API-DOC-V1 / Fase 2B-4: Gastos (18), Precios (17) y Retenciones (7).</summary>
@@ -446,7 +448,83 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "Retentions",
     ];
 
-    /// <summary>Todas las operaciones con documentación funcional completa (2B-1 a 2B-4).</summary>
+    /// <summary>API-DOC-V1 / Fase 2B-5, lote A: Auth, Sesión, Público y Condiciones de pago (25).</summary>
+    private static readonly string[] Phase2B5LotA =
+    [
+        "Auth",
+        "GlobalAuth",
+        "Session",
+        "Me",
+        "Public",
+        "Setup",
+        "PaymentTerms",
+    ];
+
+    /// <summary>API-DOC-V1 / Fase 2B-5, lote B: Catálogo e Ítems (78).</summary>
+    private static readonly string[] Phase2B5LotB =
+    [
+        "Catalog",
+        "CatalogBrands",
+        "CatalogCategoryNodes",
+        "CatalogClassifications",
+        "CatalogAttributeGroups",
+        "CatalogAttributeDefinitions",
+        "Items",
+        "ItemImages",
+        "ItemPackagingLevels",
+        "ItemPricing",
+        "ItemSubstitutes",
+        "ItemSupplierCodes",
+        "ItemTypes",
+        "ItemUnitConversions",
+        "ItemVariants",
+    ];
+
+    /// <summary>API-DOC-V1 / Fase 2B-5, lote C: Business Partners e Inventario (63).</summary>
+    private static readonly string[] Phase2B5LotC =
+    [
+        "BusinessPartners",
+        "BusinessPartnerContacts",
+        "BusinessPartnerLocations",
+        "BusinessPartnerRoles",
+        "CompanyBpPurchaseSettings",
+        "CompanyBpSalesSettings",
+        "SupplierRetentionDefaults",
+        "Warehouses",
+        "Stock",
+        "StockAdjustments",
+        "StockTransfers",
+        "Kardex",
+        "InventoryAdjustmentReasons",
+    ];
+
+    /// <summary>API-DOC-V1 / Fase 2B-5, lote D1: Compras (43).</summary>
+    private static readonly string[] Phase2B5LotD1 =
+    [
+        "Purchases",
+        "PurchaseReception",
+        "PurchaseCreditNote",
+        "PurchaseReturn",
+    ];
+
+    /// <summary>
+    /// API-DOC-V1 / Fase 2B-5, lote D2: Facturación electrónica (20). Excepción documental autorizada por el
+    /// propietario (ADR-023, addendum 2026-11-12): solo XML, <c>[ProducesResponseType]</c> y <c>using</c>.
+    /// </summary>
+    private static readonly string[] Phase2B5LotD2 =
+    [
+        "ElectronicDocuments",
+        "ElectronicInvoicing",
+        "SriServiceHealth",
+        "Ride",
+    ];
+
+    /// <summary>
+    /// Único controlador sin metadatos añadidos: <c>OrgConfig</c> (API pública congelada, ya cumplía).
+    /// </summary>
+    private static readonly string[] NotDocumentedControllers = ["OrgConfig"];
+
+    /// <summary>Todas las operaciones con documentación funcional completa (2B-1 a 2B-5).</summary>
     private IEnumerable<(string Path, string Method, JsonObject Op)> DocumentedOperations() =>
         OperationsOf(
             [
@@ -454,6 +532,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
                 .. Phase2B2Controllers,
                 .. Phase2B3Controllers,
                 .. Phase2B4Controllers,
+                .. Phase2B5LotA,
+                .. Phase2B5LotB,
+                .. Phase2B5LotC,
+                .. Phase2B5LotD1,
+                .. Phase2B5LotD2,
             ]
         );
 
@@ -582,6 +665,86 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public void Las_229_operaciones_de_2B_5_estan_inventariadas()
+    {
+        OperationsOf(Phase2B5LotD2).Should().HaveCount(20);
+        OperationsOf(["ElectronicDocuments"]).Should().HaveCount(10);
+        OperationsOf(["ElectronicInvoicing"]).Should().HaveCount(6);
+        OperationsOf(["SriServiceHealth"]).Should().HaveCount(1);
+        OperationsOf(["Ride"]).Should().HaveCount(3);
+        OperationsOf([.. Phase2B5LotA, .. Phase2B5LotB, .. Phase2B5LotC, .. Phase2B5LotD1, .. Phase2B5LotD2])
+            .Should()
+            .HaveCount(229);
+
+        OperationsOf(Phase2B5LotA).Should().HaveCount(25);
+        OperationsOf(Phase2B5LotB).Should().HaveCount(78);
+        OperationsOf(Phase2B5LotC).Should().HaveCount(63);
+        OperationsOf(Phase2B5LotD1).Should().HaveCount(43);
+
+        var previous = OperationsOf(
+                [.. Phase2B1Controllers, .. Phase2B2Controllers, .. Phase2B3Controllers, .. Phase2B4Controllers]
+            )
+            .Select(o => o.Op["operationId"]!.GetValue<string>())
+            .ToHashSet();
+        OperationsOf([.. Phase2B5LotA, .. Phase2B5LotB, .. Phase2B5LotC, .. Phase2B5LotD1, .. Phase2B5LotD2])
+            .Select(o => o.Op["operationId"]!.GetValue<string>())
+            .Should()
+            .NotIntersectWith(previous, "no hay solapamiento con 2B-1 a 2B-4");
+    }
+
+    [Fact]
+    public void El_inventario_total_no_omite_ni_duplica_operaciones()
+    {
+        var all = Operations().ToList();
+        all.Should().HaveCount(518);
+        all.Select(o => o.Op["operationId"]!.GetValue<string>()).Should().OnlyHaveUniqueItems();
+        all.Select(o => $"{o.Method} {o.Path}").Should().OnlyHaveUniqueItems();
+
+        DocumentedOperations().Should().HaveCount(514);
+        OperationsOf(NotDocumentedControllers).Should().HaveCount(4);
+
+        // Cada operación está documentada o figura en la lista explícita de excepciones: nada queda sin dueño.
+        var documented = DocumentedOperations().Select(o => o.Op["operationId"]!.GetValue<string>()).ToHashSet();
+        var excepted = OperationsOf(NotDocumentedControllers).Select(o => o.Op["operationId"]!.GetValue<string>()).ToHashSet();
+        documented.Should().NotIntersectWith(excepted);
+        (documented.Count + excepted.Count).Should().Be(all.Count);
+    }
+
+    [Fact]
+    public void Operaciones_que_leen_parametros_fuera_del_modelo_lo_declaran_en_su_descripcion()
+    {
+        // Warehouses.GetAll lee activeStatus/onlyActive/search/sucursalId directamente de la cadena de consulta:
+        // no son parámetros del contrato, así que la descripción debe nombrarlos.
+        var op = FindOperation("/api/v1/inventory/warehouses", "GET");
+        var description = op["description"]!.GetValue<string>();
+        foreach (var name in new[] { "activeStatus", "onlyActive", "search", "sucursalId" })
+            description.Should().Contain(name);
+    }
+
+    [Fact]
+    public void Facturacion_electronica_documenta_archivos_y_multipart_con_su_contrato_real()
+    {
+        var cert = FindOperation("/api/v1/electronic-invoicing/sri-configuration/certificate", "POST");
+        cert["requestBody"]!["content"]!.AsObject().ContainsKey("multipart/form-data").Should().BeTrue();
+        var description = cert["description"]!.GetValue<string>();
+        description.Should().Contain(".p12").And.Contain(".pfx").And.Contain("5 MB");
+
+        var content = FindOperation("/api/v1/ride/content", "GET");
+        content["description"]!.GetValue<string>().Should().Contain("application/pdf");
+        var schema = content["responses"]!["200"]!["content"]!.AsObject().First().Value!["schema"]!;
+        schema["$ref"]?.GetValue<string>().Should().NotContain("/ApiResponseOf");
+        content["responses"]!.AsObject().ContainsKey("404").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Carga_de_archivo_de_recepcion_documenta_multipart()
+    {
+        var import = FindOperation("/api/v1/purchases/reception/import", "POST");
+        import["requestBody"]!["content"]!.AsObject().ContainsKey("multipart/form-data").Should().BeTrue();
+        import["description"]!.GetValue<string>().Should().Contain("multipart/form-data");
+    }
+
     [Theory]
     [InlineData("/api/integration/v1/tenants", "POST", "201", new[] { "409", "422" })]
     [InlineData("/api/integration/v1/tenants/{id}/status", "GET", "200", new[] { "404" })]
@@ -624,6 +787,23 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("/api/v1/cash-funding-requests/{id}/cancel", "POST", "200", new[] { "403", "404", "422" })]
     [InlineData("/api/v1/supplier-payments", "POST", "201", new[] { "404", "409", "422" })]
     [InlineData("/api/v1/finance/collections", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/auth/login", "POST", "200", new[] { "409", "429", "503" })]
+    [InlineData("/api/v1/setup/admin", "POST", "200", new[] { "409" })]
+    [InlineData("/api/v1/master/payment-terms", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/catalog/brands", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/items", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/items/{id}", "GET", "200", new[] { "404" })]
+    [InlineData("/api/v1/master/business-partners", "POST", "201", new[] { "400", "409", "422" })]
+    [InlineData("/api/v1/master/business-partners/{bpId}/roles", "POST", "201", new[] { "404", "409", "422" })]
+    [InlineData("/api/v1/inventory/warehouses", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/inventory/stock/adjustments/{id}/execute", "POST", "200", new[] { "404" })]
+    [InlineData("/api/v1/purchases/{id}/confirm", "POST", "200", new[] { "400", "404" })]
+    [InlineData("/api/v1/purchases/reception/import", "POST", "200", new[] { "400", "409", "422" })]
+    [InlineData("/api/v1/purchases/credit-notes/{id}/authorize", "POST", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/electronic-documents/register", "POST", "200", new[] { "409", "422" })]
+    [InlineData("/api/v1/electronic-documents/{id}", "GET", "200", new[] { "404" })]
+    [InlineData("/api/v1/electronic-documents/{id}/retry", "POST", "200", new[] { "400", "404", "409" })]
+    [InlineData("/api/v1/electronic-invoicing/sri-configuration/certificate", "POST", "200", new[] { "400", "422" })]
     public void Contratos_representativos_declaran_exito_y_errores_especificos(
         string path,
         string method,

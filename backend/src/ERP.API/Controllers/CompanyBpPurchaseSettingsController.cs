@@ -39,9 +39,14 @@ public sealed class CompanyBpPurchaseSettingsController : ControllerBase
     public CompanyBpPurchaseSettingsController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>
-    /// Obtiene el default de condición de pago del proveedor en la empresa activa.
-    /// Si no existe configuración, retorna DTO con valores por defecto (hasCustomConfiguration=false).
+    /// Obtiene la condición de pago por defecto de un proveedor en la empresa activa.
     /// </summary>
+    /// <remarks>
+    /// Si no existe configuración devuelve valores por defecto con <c>hasCustomConfiguration</c> en falso.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración de compras del proveedor.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
@@ -61,9 +66,19 @@ public sealed class CompanyBpPurchaseSettingsController : ControllerBase
     }
 
     /// <summary>
-    /// Crea o actualiza el default de condición de pago del proveedor en la empresa activa.
-    /// PaymentTermId null limpia el default — Compras/Gastos exigirán selección explícita.
+    /// Crea o actualiza la condición de pago por defecto de un proveedor en la empresa activa.
     /// </summary>
+    /// <remarks>
+    /// Con <c>paymentTermId</c> nulo se limpia el valor por defecto: Compras y Gastos exigirán entonces una
+    /// selección explícita.
+    /// </remarks>
+    /// <param name="bpId">Id del tercero (Business Partner).</param>
+    /// <param name="body">Id de la condición de pago por defecto, o nulo para limpiarla.</param>
+    /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Configuración de compras guardada.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
+    /// <response code="409">Conflicto con el estado actual del recurso o con un valor que debe ser único.</response>
+    /// <response code="422">La solicitud no supera la validación de entrada.</response>
     [HttpPut]
     [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}")]
     [ProducesResponseType(
@@ -72,6 +87,7 @@ public sealed class CompanyBpPurchaseSettingsController : ControllerBase
     )]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpsertSettings(
         [FromRoute] Guid bpId,
         [FromBody] UpsertPurchaseSettingsRequest body,

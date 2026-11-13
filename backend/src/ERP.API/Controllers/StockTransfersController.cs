@@ -1,4 +1,5 @@
 using ERP.API.Attributes;
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.UseCases.ConfirmStockTransfer;
@@ -27,13 +28,16 @@ public sealed class StockTransfersController : ControllerBase
     public StockTransfersController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>
-    /// Crea una transferencia entre bodegas en estado Draft. Único punto de entrada de menú de
-    /// "Stock" (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver
-    /// comentario de cabecera — Stock en general no es menú-visible), pero Transferencias sí es
-    /// una pantalla propia — [AppFeature] a nivel de método (soportado por el atributo) le da
-    /// entrada de menú dedicada sin exponer Ajustes/consultas de Stock como ítems de menú.
-    /// Reutiliza el mismo permiso que ya protege este endpoint — no crea uno nuevo.
+    /// Crea una transferencia entre bodegas en estado Draft.
     /// </summary>
+    /// <remarks>
+    /// Responde 201. El origen debe ser distinto del destino, con al menos una línea y solo productos de la
+    /// empresa.
+    /// </remarks>
+    /// <param name="command">Bodega de origen, bodega de destino y líneas.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="201">Transferencia creada.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
     [AppFeature(
         "Transferencias entre bodegas",
         $"perm:{InventoryPermissions.StockManage}",
@@ -48,6 +52,7 @@ public sealed class StockTransfersController : ControllerBase
         typeof(Contracts.ApiResponse<StockTransferDto>),
         StatusCodes.Status201Created
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateTransfer(
         [FromBody] CreateStockTransferCommand command,
         CancellationToken ct = default
@@ -57,9 +62,23 @@ public sealed class StockTransfersController : ControllerBase
         return this.ToCreatedOrBadRequest(result);
     }
 
-    /// <summary>Confirma una transferencia Draft: mueve stock entre bodegas.</summary>
+    /// <summary>
+    /// Confirma una transferencia Draft.
+    /// </summary>
+    /// <remarks>
+    /// Mueve el stock entre bodegas: registra la salida en el origen al costo promedio corrido y la entrada en el
+    /// destino. No existe operación de anulación de transferencias.
+    /// </remarks>
+    /// <param name="id">Id de la transferencia.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Transferencia confirmada.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPost("transfers/{id:guid}/confirm")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockManage}")]
+    [ProducesResponseType(typeof(ApiResponse<StockTransferDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmTransfer(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ConfirmStockTransferCommand(id), ct);

@@ -1,4 +1,6 @@
+using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Modules.Inventory.Costing;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetAggregatedStock;
 using ERP.Application.Modules.Inventory.Stock.UseCases.GetCurrentStockReport;
@@ -28,18 +30,39 @@ public sealed class StockController : ControllerBase
 
     public StockController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>
+    /// Lista los costos de inventario pendientes.
+    /// </summary>
+    /// <remarks>
+    /// Costos de inventario que todavía no están determinados: sin base de costo conocida el costo queda nulo,
+    /// nunca cero.
+    /// </remarks>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Costos pendientes.</response>
     [HttpGet("costs/pending")]
     [Authorize(Policy = $"perm:{InventoryPermissions.PendingCostsView}")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PendingInventoryCostDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingCosts(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new ERP.Application.Modules.Inventory.Costing.GetPendingInventoryCostsQuery(), ct));
 
-    /// <summary>Consulta stock actual por item y/o bodega.</summary>
+    /// <summary>
+    /// Consulta el stock actual por ítem y bodega.
+    /// </summary>
+    /// <remarks>
+    /// Ambos filtros son opcionales y se combinan. Si no hay resultados devuelve una lista vacía.
+    /// </remarks>
+    /// <param name="itemId">Filtra por ítem.</param>
+    /// <param name="warehouseId">Filtra por bodega.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Stock actual.</response>
+    /// <response code="400">La operación no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<IReadOnlyList<CurrentStockDto>>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStock(
         [FromQuery] Guid? itemId,
         [FromQuery] Guid? warehouseId,
@@ -51,15 +74,24 @@ public sealed class StockController : ControllerBase
     }
 
     /// <summary>
-    /// Reporte básico de stock actual por bodega (piloto Sumak). Sin warehouseId, incluye
-    /// todas las bodegas de la empresa activa.
+    /// Reporte de stock actual por bodega.
     /// </summary>
+    /// <remarks>
+    /// Sin <c>warehouseId</c> incluye todas las bodegas de la empresa activa. Si no hay resultados devuelve una
+    /// lista vacía.
+    /// </remarks>
+    /// <param name="warehouseId">Filtra por bodega; omitido, incluye todas.</param>
+    /// <param name="search">Texto libre de búsqueda de ítems.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Filas del reporte de stock.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("report")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<IReadOnlyList<StockReportRowDto>>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetReport(
         [FromQuery] Guid? warehouseId,
         [FromQuery] string? search,
@@ -70,7 +102,18 @@ public sealed class StockController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockReportRowDto>());
     }
 
-    /// <summary>Consulta movimientos de stock por item y bodega.</summary>
+    /// <summary>
+    /// Consulta los movimientos de stock de un ítem en una bodega.
+    /// </summary>
+    /// <remarks>
+    /// Si no hay resultados devuelve una lista vacía.
+    /// </remarks>
+    /// <param name="itemId">Id del ítem.</param>
+    /// <param name="warehouseId">Id de la bodega.</param>
+    /// <param name="from">Fecha de negocio inicial (<c>YYYY-MM-DD</c>); omitida, sin límite inferior.</param>
+    /// <param name="to">Fecha de negocio final (<c>YYYY-MM-DD</c>); omitida, sin límite superior.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Movimientos de stock.</response>
     [HttpGet("movements")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
@@ -92,7 +135,12 @@ public sealed class StockController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockMovementDto>());
     }
 
-    /// <summary>Stock agregado de un item a través de todas las bodegas.</summary>
+    /// <summary>
+    /// Stock agregado de un ítem en todas las bodegas.
+    /// </summary>
+    /// <param name="itemId">Id del ítem.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Stock agregado del ítem.</response>
     [HttpGet("aggregated/{itemId:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
@@ -105,13 +153,24 @@ public sealed class StockController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Disponibilidad de un item por bodega (para selectores de bodega en documentos de venta).</summary>
+    /// <summary>
+    /// Disponibilidad de un ítem por bodega.
+    /// </summary>
+    /// <remarks>
+    /// Pensado para los selectores de bodega de los documentos de venta. Si no hay resultados devuelve una lista
+    /// vacía.
+    /// </remarks>
+    /// <param name="itemId">Id del ítem.</param>
+    /// <param name="ct">Token de cancelación de la solicitud.</param>
+    /// <response code="200">Disponibilidad por bodega.</response>
+    /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet("items/{itemId:guid}/warehouse-availability")]
     [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<IReadOnlyList<ItemWarehouseAvailabilityDto>>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWarehouseAvailability(
         Guid itemId,
         CancellationToken ct = default
