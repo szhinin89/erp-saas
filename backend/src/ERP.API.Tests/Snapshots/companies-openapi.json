@@ -762,6 +762,7 @@
               "schema": {
                 "properties": {
                   "file": {
+                    "description": "Formulario \u0060multipart/form-data\u0060 con el campo \u0060file\u0060: imagen del logo principal (PNG, JPG o WEBP, hasta 5 MB y 4000 x 4000 px).",
                     "format": "binary",
                     "type": "string"
                   }
@@ -769,7 +770,8 @@
                 "type": "object"
               }
             }
-          }
+          },
+          "description": "Formulario \u0060multipart/form-data\u0060 con el campo \u0060file\u0060: imagen del logo principal (PNG, JPG o WEBP, hasta 5 MB y 4000 x 4000 px)."
         },
         "responses": {
           "200": {
@@ -848,6 +850,7 @@
               "schema": {
                 "properties": {
                   "file": {
+                    "description": "Formulario \u0060multipart/form-data\u0060 con el campo \u0060file\u0060: imagen del logo alterno (PNG, JPG o WEBP, hasta 5 MB y 4000 x 4000 px).",
                     "format": "binary",
                     "type": "string"
                   }
@@ -855,7 +858,8 @@
                 "type": "object"
               }
             }
-          }
+          },
+          "description": "Formulario \u0060multipart/form-data\u0060 con el campo \u0060file\u0060: imagen del logo alterno (PNG, JPG o WEBP, hasta 5 MB y 4000 x 4000 px)."
         },
         "responses": {
           "200": {

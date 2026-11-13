@@ -221,16 +221,61 @@
         "requestBody": {
           "content": {
             "application/*\u002Bjson": {
+              "example": {
+                "lines": [
+                  {
+                    "itemId": "00000000-0000-4000-8000-000000000042",
+                    "itemName": "Producto de ejemplo",
+                    "quantity": 5,
+                    "unitCostBase": 2.5
+                  }
+                ],
+                "movementType": "Ingreso",
+                "notes": "Ajuste de ejemplo",
+                "reasonId": "00000000-0000-4000-8000-000000000041",
+                "warehouseId": "00000000-0000-4000-8000-000000000040",
+                "warehouseName": "Bodega principal"
+              },
               "schema": {
                 "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             },
             "application/json": {
+              "example": {
+                "lines": [
+                  {
+                    "itemId": "00000000-0000-4000-8000-000000000042",
+                    "itemName": "Producto de ejemplo",
+                    "quantity": 5,
+                    "unitCostBase": 2.5
+                  }
+                ],
+                "movementType": "Ingreso",
+                "notes": "Ajuste de ejemplo",
+                "reasonId": "00000000-0000-4000-8000-000000000041",
+                "warehouseId": "00000000-0000-4000-8000-000000000040",
+                "warehouseName": "Bodega principal"
+              },
               "schema": {
                 "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             },
             "text/json": {
+              "example": {
+                "lines": [
+                  {
+                    "itemId": "00000000-0000-4000-8000-000000000042",
+                    "itemName": "Producto de ejemplo",
+                    "quantity": 5,
+                    "unitCostBase": 2.5
+                  }
+                ],
+                "movementType": "Ingreso",
+                "notes": "Ajuste de ejemplo",
+                "reasonId": "00000000-0000-4000-8000-000000000041",
+                "warehouseId": "00000000-0000-4000-8000-000000000040",
+                "warehouseName": "Bodega principal"
+              },
               "schema": {
                 "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }

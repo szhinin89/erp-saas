@@ -93,6 +93,11 @@ public static class SwaggerExtensions
             // anexa a lo que ya escribió el XML y el contrato de errores completa lo declarado.
             options.OperationFilter<OpenApiAuthorizationOperationFilter>();
             options.OperationFilter<OpenApiErrorResponsesOperationFilter>(schemaIds);
+
+            // API-DOC-V1 / Fase 2D: solo metadato (ejemplos y descripción de cuerpos multipart); va al
+            // final porque el 422 común lo añade el filtro de errores anterior.
+            options.OperationFilter<OpenApiMultipartBodyDescriptionFilter>();
+            options.OperationFilter<OpenApiExamplesOperationFilter>();
         });
 
         return services;

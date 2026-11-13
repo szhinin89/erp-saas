@@ -12,9 +12,9 @@ completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cam
 límites, baseline, grandfather ni funcionalidad por esta corrección.
 Sin staging, commit ni push; no CLOSED.
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B-1 a 2B-4 en `main`; Fase 2B-5, 229 operaciones, implementada y pendiente de revisión final)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B y 2D implementadas; pendiente el CI verde del commit final)
 
-**No está CLOSED:** pendientes la revisión final de la Fase 2B-5 y los ejemplos. Solo metadatos y pruebas: sin cambios de rutas, métodos, permisos, DTO, validadores ni lógica.
+**No está CLOSED:** pendiente el CI verde del commit final de la Fase 2D (ejemplos y cierre documental mínimo). Solo metadatos y pruebas: sin cambios de rutas, métodos, permisos, DTO, validadores ni lógica.
 
 - **Fase 2A — infraestructura central** (`4f0db58f9`, pendiente confirmar CI): filtros en `ERP.API/Swagger/`
   (seguridad por operación con `security: [{}]` en las 11 operaciones públicas, sección «Autorización» y
@@ -92,7 +92,39 @@ Sin staging, commit ni push; no CLOSED.
   responden un archivo sin envelope: el PDF de `Ride.GetContent` (`application/pdf`; el `[Produces]` de clase hace que
   el contrato publique `application/json`, como en 2B-3) y la carga multipart del certificado (`.p12`/`.pfx`, 5 MB). Los
   409 de `Register`, `Retry` y `RetransmitCorrected` se verificaron contra el emisor.
-- **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
+- **Fase 2D — cierre documental mínimo (aprobada técnicamente por el propietario):**
+  - **Ejemplos** (`ERP.API/Swagger/OpenApiExamples.cs`, `OpenApiExamplesOperationFilter`, registrado al final en
+    `SwaggerExtensions.cs`): 12 ejemplos sintéticos, sin tocar DTO, handlers, validadores ni controladores. Request de
+    `Auth_Login`, `Sales_CreateDraft`, `Purchases_CreateDraft`, `ManualJournal_Create`,
+    `StockAdjustments_CreateAdjustment` y `ElectronicDocuments_Register`; respuesta de `Auth_Login` (200),
+    `ManualJournal_Create` (201), `Kardex_GetKardexByProduct` (200) y `Public_GetDeploymentInfo` (200, comparada con el
+    endpoint real); envelope 422 `VALIDATION_ERROR` en `Auth_Login` (solo donde el 422 es el común). Las pruebas
+    validan cada ejemplo contra el esquema generado (tipos, formatos, enums, propiedades no inventadas) y rechazan
+    valores con forma de JWT, clave, correo ajeno a `example.com`, RUC o identificador no sintético.
+  - **Cuerpos multipart:** `requestBody.description` (y la del campo `file`) de las cinco cargas de archivo, por
+    `OpenApiMultipartBodyDescriptionFilter`; solo metadato del documento.
+  - **Excepciones conocidas, no cobertura perfecta (OrgConfig, API pública congelada, intacta):** dos parámetros
+    `branchId` y dos cuerpos sin descripción; la lista cerrada está fijada en `OpenApiContractTests.Phase2D.cs`.
+  - **Cinco respuestas `ApiResponse<object>` (sin cambio de tipo):** `Public.GetDeploymentInfo` (objeto anónimo, F-52),
+    `CompanyUserMemberships.Upsert/Revoke` (`Result<object>`, `{}` de respaldo) y `Auth.ForgotPassword/ResetPasswordWithToken`
+    (el handler devuelve `Result<bool>` aunque el controlador declare `object`). Corregirlo exige tocar controladores.
+  - **Conciliación de cifras:** 518 respuestas 2xx (una por operación) = 510 con envelope + 8 sin envelope (2 arreglos,
+    6 archivos: dos logos, plantilla, XML y PDF de retenciones y PDF del RIDE). La cifra «535/530» contaba pares respuesta × tipo de medio (las
+    respuestas tipadas repiten el esquema en `application/json`, `text/plain` y `text/json`: 538 pares); era un error de
+    conteo del informe 2C, no del contrato.
+  - **Deuda contractual prioritaria (fuera de API-DOC-V1):** los esquemas de entrada casi no declaran `required`
+    (1 de 188) ni describen propiedades (26 de 869); la obligatoriedad vive en los validadores FluentValidation.
+    F-35 sigue como candidato prioritario a investigación funcional independiente. F-01 a F-52 sin cambios.
+  - **Snapshots:** solo `companies-openapi.json` (descripción de los dos logos) y `stock-openapi.json` (ejemplo del ajuste)
+    cambian, y únicamente con metadato documental.
+  - **Evidencia puntual, no restricción permanente:** al implementar la fase se comparó el documento contra el de
+    `49fffc6f3` (518 operaciones: método, ruta, `operationId`, permisos y modo de seguridad idénticos; SHA-256
+    `02585e81…d736` de esas líneas ordenadas). La comparación se retiró de las pruebas: las verificaciones permanentes son
+    inventario, unicidad, seguridad, permisos por política, contratos y cobertura.
+  - **`vatCode: "0"` del ejemplo de ventas verificado:** `SriVatRateConfiguration` lo siembra («0% IVA», 0.00, activo,
+    sin fin de vigencia; migración base) y `SriTaxResolver.GetVatRateWithNameAsync`, usado por Ventas y Compras, resuelve
+    por `Code` activo; el validador solo exige que no esté vacío.
+  - **Pendiente para CLOSED:** CI verde del commit final.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
 
