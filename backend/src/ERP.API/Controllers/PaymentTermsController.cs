@@ -82,13 +82,13 @@ public sealed class PaymentTermsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// El código no se modifica. El id de la ruta debe coincidir con el <c>id</c> del cuerpo; si no, responde 400
-    /// con un texto plano, sin envelope.
+    /// con una cadena JSON (<c>"ID mismatch."</c>, <c>application/json</c>), sin envelope.
     /// </remarks>
     /// <param name="id">Id de la condición de pago.</param>
     /// <param name="cmd">Id, nombre, número de cuotas y días entre cuotas.</param>
     /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Condición de pago actualizada.</response>
-    /// <response code="400">La operación incumple una regla de negocio (envelope). Si el id de la ruta no coincide con el del cuerpo responde 400 con texto plano, sin envelope.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo: cadena JSON (`"ID mismatch."`), sin envelope. Es el único 400 de la operación (las reglas de entrada responden 422).</response>
     /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{MasterDataPermissions.PaymentTermsManage}")]

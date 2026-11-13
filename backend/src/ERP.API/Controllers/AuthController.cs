@@ -58,11 +58,13 @@ public sealed class AuthController : ControllerBase
     /// <param name="loginThrottle">Servicio de control de intentos (inyectado; no forma parte del contrato).</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Sesión iniciada; incluye el token de acceso o, si corresponde, el token de restablecimiento de contraseña.</response>
+    /// <response code="401">Credenciales inválidas o cuenta en un estado que no permite iniciar sesión (envelope `UNAUTHORIZED`). No exige token: es un rechazo del caso de uso.</response>
     /// <response code="409">Conflicto al registrar la sesión del usuario.</response>
     /// <response code="429">Se superó el límite de intentos de login para el usuario o la dirección IP.</response>
     /// <response code="503">El almacén de límites de login no está disponible; el intento no se procesó.</response>
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
@@ -80,18 +82,20 @@ public sealed class AuthController : ControllerBase
     /// está disponible el almacén de límites). Solo autoriza a usuarios con rol global de administrador; el token
     /// resultante no sirve para endpoints operativos: primero se debe pasar por <c>auth/global/operate-company</c>.
     /// Emite la cookie httpOnly de refresh cuando la respuesta trae token de refresh. Las credenciales inválidas, el
-    /// usuario inactivo o sin rol de administrador global responden 401; esa respuesta no se declara en el contrato
-    /// porque el contrato central solo documenta 401 en operaciones que exigen token.
+    /// usuario inactivo o sin rol de administrador global responden 401 con envelope; no es un rechazo por falta de
+    /// token (la operación no lo exige).
     /// </remarks>
     /// <param name="command">Usuario y contraseña del administrador global.</param>
     /// <param name="loginThrottle">Servicio de control de intentos (inyectado; no forma parte del contrato).</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Sesión global iniciada.</response>
+    /// <response code="401">Credenciales inválidas, usuario inactivo o sin rol de administrador global (envelope `UNAUTHORIZED`). No exige token: es un rechazo del caso de uso.</response>
     /// <response code="429">Se superó el límite de intentos de login para el usuario o la dirección IP.</response>
     /// <response code="503">El almacén de límites de login no está disponible; el intento no se procesó.</response>
     [HttpPost("global-login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
     public Task<IActionResult> GlobalLogin(
@@ -152,15 +156,17 @@ public sealed class AuthController : ControllerBase
     /// <remarks>
     /// Operación pública. Recibe el token de restablecimiento que <c>login</c> devolvió cuando el usuario debía
     /// cambiar su contraseña (sin JWT), fija la nueva contraseña y devuelve una sesión completa, igual que un login
-    /// exitoso, con cookie de refresh. Un token inválido o vencido responde 401; esa respuesta no se declara en el
-    /// contrato porque el contrato central solo documenta 401 en operaciones que exigen token.
+    /// exitoso, con cookie de refresh. Un token de restablecimiento inválido o vencido responde 401 con envelope; no
+    /// es un rechazo por falta de JWT (la operación no lo exige).
     /// </remarks>
     /// <param name="command">Token de restablecimiento y nueva contraseña.</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Contraseña actualizada y sesión iniciada.</response>
+    /// <response code="401">Token de restablecimiento inválido o vencido (envelope `UNAUTHORIZED`).</response>
     [HttpPost("complete-password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CompletePasswordReset(
         [FromBody] CompletePasswordResetCommand command,
         CancellationToken cancellationToken
@@ -187,10 +193,12 @@ public sealed class AuthController : ControllerBase
     /// <param name="request">Refresh token opcional; si se omite se usa la cookie de refresh.</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Sesión renovada con un nuevo token de acceso.</response>
+    /// <response code="401">Falta el refresh token (cuerpo y cookie) o es inválido, revocado o vencido, o el usuario, la empresa o la membresía ya no son válidos (envelope `UNAUTHORIZED`).</response>
     [HttpPost("refresh")]
     [AllowAnonymous]
     [EnableRateLimiting("auth-refresh-ip")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshRequest? request,
         CancellationToken cancellationToken
@@ -223,10 +231,12 @@ public sealed class AuthController : ControllerBase
     /// <param name="request">Contraseña del usuario de la sesión bloqueada.</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Sesión reautenticada con un nuevo token de acceso.</response>
+    /// <response code="401">Falta la cookie de refresh, o la contraseña o la sesión no son válidas (envelope `UNAUTHORIZED`).</response>
     [HttpPost("reauthenticate")]
     [AllowAnonymous]
     [EnableRateLimiting("auth-refresh-ip")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Reauthenticate(
         [FromBody] ReauthenticateRequest request,
         CancellationToken cancellationToken

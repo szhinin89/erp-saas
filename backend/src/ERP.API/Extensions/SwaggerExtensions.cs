@@ -94,6 +94,12 @@ public static class SwaggerExtensions
             options.OperationFilter<OpenApiAuthorizationOperationFilter>();
             options.OperationFilter<OpenApiErrorResponsesOperationFilter>(schemaIds);
 
+            // API-DOC-V1 (correcciones de hallazgos): solo metadato. El de parámetros va DESPUÉS del filtro
+            // de errores para no heredar su 422 (esos parámetros no se enlazan al modelo).
+            options.OperationFilter<OpenApiQueryParametersOperationFilter>();
+            options.OperationFilter<OpenApiResponseMediaTypesOperationFilter>();
+            options.OperationFilter<OpenApiRouteIdMismatchResponseFilter>();
+
             // API-DOC-V1 / Fase 2D: solo metadato (ejemplos y descripción de cuerpos multipart); va al
             // final porque el 422 común lo añade el filtro de errores anterior.
             options.OperationFilter<OpenApiMultipartBodyDescriptionFilter>();

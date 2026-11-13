@@ -186,6 +186,48 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. |
 | API-DOC-F-52 | `Public.GetDeploymentInfo` | Devuelve un objeto anónimo sin DTO: el esquema 2xx es `ApiResponse<object>` y los campos se describen solo en `remarks`. |
 
+### Revisión de F-01 a F-52 contra el contrato publicado (pendiente de revisión del propietario; API-DOC-V1 no está CLOSED)
+
+Cada hallazgo se contrastó con el documento OpenAPI generado (518 operaciones) y, donde era decisivo, con el
+comportamiento HTTP real. Se registran dos atributos independientes: **clasificación** (defecto Swagger, problema
+funcional, deuda técnica, evidencia insuficiente) y **estado** (corregido, pendiente, aceptado, requiere
+investigación). Que el documento represente fielmente un comportamiento cuestionable **no** lo resuelve: esos
+hallazgos quedan «pendiente» hasta decisión del propietario. Únicamente **F-52** figura «aceptado», por la excepción
+documental aprobada en la Fase 2D (cinco respuestas `ApiResponse<object>`, sin cambio de tipo).
+
+| Clasificación | Estado | Hallazgos |
+|---|---|---|
+| Defecto Swagger | Corregido | F-07, F-16, F-45, F-46, F-47, F-48, F-50 |
+| Problema funcional | Pendiente | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
+| Deuda técnica | Pendiente | F-04, F-05, F-06, F-08, F-11, F-12, F-13, F-15, F-19, F-21, F-22, F-23, F-25, F-26, F-27, F-28, F-29, F-36, F-37, F-38, F-39, F-40, F-42, F-43, F-44 |
+| Deuda técnica | Aceptado | F-52 |
+| Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32, F-51 |
+
+Los 52 identificadores aparecen exactamente una vez (7 + 15 + 25 + 1 + 4). Residuos que **no** se cierran con la
+corrección documental: F-07 y F-48 conservan el `BadRequest()` sin envelope y F-47 el `BadRequest("ID mismatch.")` y el
+listado sin envelope (todos pendientes como deuda técnica); F-27 sigue sin envelope. Limitación registrada: bajo el
+mismo 400 de esas cuatro operaciones conviven el envelope (regla de dominio) y otro cuerpo (`ProblemDetails` en `application/json`
+o cadena JSON); el documento publica el envelope como esquema y describe el otro cuerpo en texto, porque declararlo
+como segundo esquema exigiría publicar `ProblemDetails` en el contrato.
+
+Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
+  `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
+  (`Warehouses.GetAll` ahora publica `activeStatus`, `onlyActive`, `search` y `sucursalId` sin añadir 422), F-07
+  (`CashMovementReasons.Update` no declaraba ningún 400), F-16 (`text/plain` y `text/json` publicados en 49 respuestas de
+  `ManualJournal` y `Retentions`, que la API no emite). Hallazgos nuevos de la misma revisión: cuatro respuestas de
+  archivo (`Ride.GetContent`, `InitialLoad.DownloadTemplate`, dos logos de `CompanyProfile`) publicaban
+  `application/json` en lugar de su tipo real, y la descripción «cuerpo vacío» de F-07/F-48 era incorrecta: el
+  `BadRequest()` sin valor de un `[ApiController]` devuelve un `ProblemDetails` (`type`, `title`, `status`, `traceId`), y el
+  «texto plano» de `PaymentTerms.Update` (F-47) es una cadena JSON en `application/json`.
+- Evidencia insuficiente: F-20 (código HTTP final de un conflicto de concurrencia no resuelto), F-24 (409 de nombre
+  duplicado inferido del índice único, sin prueba), F-32 (otros fallos de transporte de correo no verificados) y F-51
+  (verificación de roles activos no comprobada).
+- Limitación registrada, fuera de API-DOC-V1 y sin tocar (sin identificador F propio; no duplica ningún hallazgo):
+  `Branches`, `Establishments` y `EmissionPoints` (OrgConfig, API pública congelada) leen `activeStatus`/`onlyActive`/
+  `search` (y `branchId` en Establishments) de la cadena de consulta con el mismo patrón que F-50, de modo que esos
+  parámetros siguen omitidos del contrato; publicarlos requiere autorización expresa. Se suma a las cuatro excepciones
+  de cobertura de OrgConfig ya fijadas en la Fase 2D (dos parámetros `branchId` y dos cuerpos sin descripción).
+
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 
 El propietario confirma GitHub Actions CI #1164 SUCCESS sobre `main`, commit

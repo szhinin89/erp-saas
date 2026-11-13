@@ -79,6 +79,7 @@ public sealed class CashMovementReasonsController : ControllerBase
     /// <param name="id">Id del motivo; debe coincidir con <c>id</c> del cuerpo.</param>
     /// <param name="command">Nuevo nombre y orden.</param>
     /// <response code="200">Motivo actualizado.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo: `ProblemDetails` estándar de ASP.NET Core, sin envelope. Es el único 400 de la operación (las reglas de entrada responden 422).</response>
     /// <response code="404">El motivo no existe en la empresa activa.</response>
     /// <response code="422">Datos inválidos.</response>
     [HttpPut("{id:guid}")]

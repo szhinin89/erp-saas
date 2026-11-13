@@ -149,7 +149,16 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         var offenders = Operations()
             .SelectMany(o =>
                 o.Op["responses"]!.AsObject()
-                    .Where(r => r.Value!.ToJsonString().Contains("ProblemDetails"))
+                    // Solo el contenido (esquemas): una descripción puede nombrar el ProblemDetails que ASP.NET Core
+                    // devuelve en un `BadRequest()` sin valor (id de ruta distinto al del cuerpo).
+                    .Where(r => (r.Value!["content"]?.ToJsonString() ?? "").Contains("ProblemDetails"))
+                    // Única excepción: el 400 de `BadRequest()` sin valor (id de ruta distinto al del cuerpo), que
+                    // ASP.NET Core serializa como ProblemDetails; lista cerrada en OpenApiRouteIdMismatchResponseFilter.
+                    .Where(r =>
+                        !(r.Key == "400"
+                            && ERP.API.Swagger.OpenApiRouteIdMismatchResponseFilter.ProblemDetailsOperations.Contains(
+                                o.Op["operationId"]!.GetValue<string>()
+                            )))
                     .Select(r => $"{o.Method.ToUpperInvariant()} {o.Path} {r.Key}")
             )
             .ToList();
@@ -167,7 +176,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             var label = $"{method.ToUpperInvariant()} {path}";
 
             responses.ContainsKey("500").Should().BeTrue($"{label}: ExceptionMiddleware envuelve el pipeline");
-            responses.ContainsKey("401").Should().Be(secured, $"{label}: 401 solo si exige token");
+            // 401 = rechazo del middleware JWT (solo si exige token) o, en las operaciones públicas de la lista
+            // cerrada, rechazo del caso de uso con envelope (F-46; ver OpenApiContractTests.FindingFixes.cs).
+            var publicUseCase401 = PublicOperationsThatReturn401.Contains(op["operationId"]!.GetValue<string>());
+            responses.ContainsKey("401").Should().Be(secured || publicUseCase401, $"{label}: 401 solo si exige token o es un 401 de caso de uso declarado");
             responses.ContainsKey("403").Should().Be(secured, $"{label}: 403 solo si exige política");
         }
     }
@@ -712,14 +724,16 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Operaciones_que_leen_parametros_fuera_del_modelo_lo_declaran_en_su_descripcion()
+    public void Operaciones_que_leen_parametros_fuera_del_modelo_los_publican_como_parametros_de_consulta()
     {
-        // Warehouses.GetAll lee activeStatus/onlyActive/search/sucursalId directamente de la cadena de consulta:
-        // no son parámetros del contrato, así que la descripción debe nombrarlos.
+        // Warehouses.GetAll lee activeStatus/onlyActive/search/sucursalId directamente de la cadena de consulta
+        // (F-50): se publican como parámetros del contrato mediante [OpenApiQueryParameter] (solo metadato).
         var op = FindOperation("/api/v1/inventory/warehouses", "GET");
-        var description = op["description"]!.GetValue<string>();
-        foreach (var name in new[] { "activeStatus", "onlyActive", "search", "sucursalId" })
-            description.Should().Contain(name);
+        op["parameters"]!
+            .AsArray()
+            .Select(p => p!["name"]!.GetValue<string>())
+            .Should()
+            .Equal("activeStatus", "onlyActive", "search", "sucursalId");
     }
 
     [Fact]

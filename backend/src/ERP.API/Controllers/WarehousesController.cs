@@ -1,6 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.API.Swagger;
 using ERP.Application.Modules.Inventory.Warehouses.DTOs;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.CreateWarehouse;
 using ERP.Application.Modules.Inventory.Warehouses.UseCases.DisableWarehouse;
@@ -40,15 +41,37 @@ public sealed class WarehousesController : ControllerBase
     /// Lista las bodegas con filtros de estado, búsqueda y sucursal.
     /// </summary>
     /// <remarks>
-    /// Los filtros se leen directamente de la cadena de consulta y no figuran como parámetros del contrato:
-    /// <c>activeStatus</c> (<c>all</c>, <c>active</c> o <c>inactive</c>; por defecto solo activas),
-    /// <c>onlyActive</c> (compatibilidad: <c>true</c> = activas, <c>false</c> = todas), <c>search</c> (texto libre)
-    /// y <c>sucursalId</c> (id de sucursal).
+    /// Los filtros se leen directamente de la cadena de consulta (no se enlazan al modelo): un valor no
+    /// reconocido nunca produce 422, se interpreta con el valor por defecto. Por defecto solo se listan las bodegas
+    /// activas. <c>activeStatus</c> tiene prioridad sobre <c>onlyActive</c>. El nombre <c>sucursalId</c> es el de la
+    /// sucursal y se conserva por compatibilidad.
     /// </remarks>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Bodegas.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{InventoryPermissions.WarehousesView}")]
+    [OpenApiQueryParameter(
+        "activeStatus",
+        OpenApiQueryParameterType.String,
+        "Filtro de estado, sin distinguir mayúsculas: `active` (solo activas), `inactive` (solo inactivas) o `all` (todas). Un valor no reconocido se trata como `active`.",
+        AllowedValues = ["all", "active", "inactive"],
+        Default = "active"
+    )]
+    [OpenApiQueryParameter(
+        "onlyActive",
+        OpenApiQueryParameterType.Boolean,
+        "Compatibilidad: `true` = solo activas, `false` = todas. Se ignora si viene `activeStatus` y también cuando no es un booleano válido."
+    )]
+    [OpenApiQueryParameter(
+        "search",
+        OpenApiQueryParameterType.String,
+        "Texto libre de búsqueda; se recortan los espacios y un texto vacío equivale a no filtrar."
+    )]
+    [OpenApiQueryParameter(
+        "sucursalId",
+        OpenApiQueryParameterType.Guid,
+        "Id de la sucursal por la que se filtra. Un valor que no sea un GUID válido se ignora (sin filtro de sucursal)."
+    )]
     [ProducesResponseType(
         typeof(ApiResponse<IReadOnlyList<WarehouseListItemDto>>),
         StatusCodes.Status200OK

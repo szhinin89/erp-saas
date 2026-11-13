@@ -46,9 +46,11 @@ public sealed class SetupController : ControllerBase
     /// <param name="command">Token de instalación y datos del administrador inicial.</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Administrador inicial creado.</response>
+    /// <response code="401">El token de instalación es inválido (envelope `UNAUTHORIZED`). No exige JWT: es un rechazo del caso de uso.</response>
     /// <response code="409">La instalación ya fue inicializada.</response>
     [HttpPost("admin")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateInitialAdmin(
         [FromBody] CreateInitialAdminCommand command,

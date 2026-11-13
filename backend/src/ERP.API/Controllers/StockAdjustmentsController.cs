@@ -140,13 +140,14 @@ public sealed class StockAdjustmentsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Actualiza la cabecera y reemplaza todas las líneas. Solo un ajuste en Draft se edita. El id de la ruta debe
-    /// coincidir con el <c>id</c> del cuerpo; si no, responde 400 con cuerpo vacío.
+    /// coincidir con el <c>id</c> del cuerpo; si no, responde 400 con un <c>ProblemDetails</c> estándar de ASP.NET Core
+    /// (sin envelope).
     /// </remarks>
     /// <param name="id">Id de el ajuste de inventario.</param>
     /// <param name="command">Cabecera y líneas del ajuste, con su id.</param>
     /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Ajuste actualizado.</response>
-    /// <response code="400">La operación incumple una regla de negocio (envelope). Si el id de la ruta no coincide con el del cuerpo también responde 400, pero con cuerpo vacío y sin envelope.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo: `ProblemDetails` estándar de ASP.NET Core, sin envelope. Es el único 400 de la operación (las reglas de entrada responden 422).</response>
     /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpPut("adjustments/{id:guid}")]
     [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentsUpdate}")]

@@ -403,7 +403,7 @@
         ]
       },
       "put": {
-        "description": "Actualiza la cabecera y reemplaza todas las l\u00EDneas. Solo un ajuste en Draft se edita. El id de la ruta debe\r\ncoincidir con el \u0060id\u0060 del cuerpo; si no, responde 400 con cuerpo vac\u00EDo.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.update\u0060.",
+        "description": "Actualiza la cabecera y reemplaza todas las l\u00EDneas. Solo un ajuste en Draft se edita. El id de la ruta debe\r\ncoincidir con el \u0060id\u0060 del cuerpo; si no, responde 400 con un \u0060ProblemDetails\u0060 est\u00E1ndar de ASP.NET Core\r\n(sin envelope).\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.update\u0060.",
         "operationId": "StockAdjustments_UpdateAdjustment",
         "parameters": [
           {
@@ -452,11 +452,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             },
-            "description": "La operaci\u00F3n incumple una regla de negocio (envelope). Si el id de la ruta no coincide con el del cuerpo tambi\u00E9n responde 400, pero con cuerpo vac\u00EDo y sin envelope."
+            "description": "El id de la ruta no coincide con el del cuerpo. \u0060ProblemDetails\u0060 est\u00E1ndar de ASP.NET Core (\u0060type\u0060, \u0060title\u0060, \u0060status\u0060 y \u0060traceId\u0060 como propiedad adicional), sin envelope. Es el \u00FAnico 400 de la operaci\u00F3n: las reglas de entrada responden 422."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
