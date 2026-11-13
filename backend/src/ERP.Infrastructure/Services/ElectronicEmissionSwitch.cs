@@ -1,6 +1,7 @@
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Retentions;
@@ -149,25 +150,34 @@ public static class ElectronicEmissionSwitchQuery
     {
         var enabled = Enabled(db);
         var sources = SourceActivity(db);
-        return documents.Where(x =>
-            enabled.Any(e =>
-                e.TenantId == x.TenantId
-                && e.CompanyId == x.CompanyId
-                && (
-                    x.LastAttemptUtc
-                    ?? sources
-                        .Where(s =>
-                            s.TenantId == x.TenantId
-                            && s.CompanyId == x.CompanyId
-                            && s.SourceModule == x.SourceModule
-                            && s.DocumentType == x.DocumentType
-                            && s.SourceEntityId == x.SourceEntityId
-                        )
-                        .Select(s => s.ActivityUtc)
-                        .FirstOrDefault()
-                ) >= e.EnabledSinceUtc
+        var pausedCompanies = db.Companies.AsPlatformQuery().Where(CompanyAutomaticProcessingPause.IsPaused);
+        return documents
+            .Where(x =>
+                enabled.Any(e =>
+                    e.TenantId == x.TenantId
+                    && e.CompanyId == x.CompanyId
+                    && (
+                        x.LastAttemptUtc
+                        ?? sources
+                            .Where(s =>
+                                s.TenantId == x.TenantId
+                                && s.CompanyId == x.CompanyId
+                                && s.SourceModule == x.SourceModule
+                                && s.DocumentType == x.DocumentType
+                                && s.SourceEntityId == x.SourceEntityId
+                            )
+                            .Select(s => s.ActivityUtc)
+                            .FirstOrDefault()
+                    ) >= e.EnabledSinceUtc
+                )
             )
-        );
+            // ADR-048 — empresa suspendida o deshabilitada: una transmisión NUEVA (Draft/Failed: nunca salió al
+            // SRI) no es candidata y no ocupa el lote de las demás. Signed/Dispatching/Sent/Received siguen
+            // siendo candidatos: la consulta de un envío previo o incierto no se pausa.
+            .Where(x =>
+                (x.CurrentState != ElectronicDocumentState.Draft && x.CurrentState != ElectronicDocumentState.Failed)
+                || !pausedCompanies.Any(c => c.Id == x.CompanyId && c.TenantId == x.TenantId)
+            );
     }
 
     /// <summary>
@@ -217,10 +227,10 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
         // snapshot read committed) ve el valor ya confirmado. Dentro de la transacción del lock: una
         // habilitación no puede fechar su registro entre el lock y la lectura.
         if (_db.Database.CurrentTransaction is not null)
-            return await LockedReadAsync(tenantId, companyId, exclusive: false, ct);
+            return await LockedReadAsync(tenantId, companyId, exclusive: false, lockCompanyRow: lockForShare, ct);
 
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        var state = await LockedReadAsync(tenantId, companyId, exclusive: false, ct);
+        var state = await LockedReadAsync(tenantId, companyId, exclusive: false, lockCompanyRow: false, ct);
         await transaction.CommitAsync(ct);
         return state;
     }
@@ -329,6 +339,7 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
         Guid tenantId,
         Guid companyId,
         bool exclusive,
+        bool lockCompanyRow,
         CancellationToken ct
     )
     {
@@ -338,9 +349,33 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
             .Where(e => e.TenantId == tenantId && e.CompanyId == companyId)
             .Select(e => (DateTime?)e.EnabledSinceUtc)
             .FirstOrDefaultAsync(ct);
-        return enabled is null
-            ? ElectronicEmissionState.Disabled
-            : new ElectronicEmissionState(true, enabled);
+
+        // ADR-048 — estado de la empresa en la misma lectura. En un reclamo de envío (lockCompanyRow) la fila de
+        // la empresa se bloquea FOR SHARE hasta el commit: una suspensión confirmada después espera a que termine
+        // el reclamo (milisegundos, nunca la llamada al SRI) y ningún reclamo nuevo puede ver «operativa» tras
+        // confirmarse la suspensión. Lo ya reclamado (en vuelo) termina.
+        if (lockCompanyRow)
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM company WHERE id = {companyId} AND tenant_id = {tenantId} FOR SHARE",
+                ct
+            );
+        var company = await _db.Companies
+            .AsPlatformQuery()
+            .Where(c => c.Id == companyId && c.TenantId == tenantId)
+            .Select(c => new { c.IsActive, c.OperationalStatus })
+            .FirstOrDefaultAsync(ct);
+        var pause = company is null
+            ? CompanyPauseReason.None
+            : CompanyAutomaticProcessingPause.ReasonOf(company.IsActive, company.OperationalStatus);
+
+        return (
+            enabled is null
+                ? ElectronicEmissionState.Disabled
+                : new ElectronicEmissionState(true, enabled)
+        ) with
+        {
+            CompanyPause = pause,
+        };
     }
 
     // Lock consultivo de transacción por empresa (cubre también la primera habilitación, que es un INSERT

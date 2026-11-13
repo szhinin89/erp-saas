@@ -39,6 +39,7 @@ public sealed partial class ElectronicDocumentRetryJob : IRecurringJob
             candidates = await queryScope
                 .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
                 .GetRetryCandidatesAsync(batchSize, cancellationToken);
+            await ReportPausedAsync(queryScope.ServiceProvider, cancellationToken);
         }
 
         // La consulta ya aplicó la política (ElectronicDocumentRetryPolicy) y la preferencia
@@ -77,6 +78,39 @@ public sealed partial class ElectronicDocumentRetryJob : IRecurringJob
             }
         }
     }
+
+    /// <summary>
+    /// ADR-048 — observabilidad de la pausa por estado de empresa. Nunca hace fallar el job.
+    /// </summary>
+    private async Task ReportPausedAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var db = services.GetService<ERP.Infrastructure.Persistence.ErpDbContext>();
+            if (db is null)
+                return;
+            var paused = await CompanyPausedPendingQueries.ElectronicDocumentsAsync(db, 50, cancellationToken);
+            CompanyPausedPendingQueries.RecordMetric("company-paused-electronic", paused);
+            foreach (var row in paused)
+                LogPausedByCompanyState(row.CompanyId, row.Count, row.OldestAgeHours, row.Reason.ToString());
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            LogPausedReportFailed(ex);
+        }
+    }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "ElectronicDocumentRetryJob: transmisiones nuevas pausadas por estado de empresa {CompanyId}: pendientes={PendingCount}, más antiguo={OldestAgeHours:0.0} h, motivo={PauseReason}"
+    )]
+    private partial void LogPausedByCompanyState(Guid companyId, long pendingCount, double oldestAgeHours, string pauseReason);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "ElectronicDocumentRetryJob: no se pudo informar la pausa por estado de empresa"
+    )]
+    private partial void LogPausedReportFailed(Exception ex);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

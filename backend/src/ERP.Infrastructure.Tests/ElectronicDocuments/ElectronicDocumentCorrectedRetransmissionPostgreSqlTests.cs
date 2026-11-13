@@ -467,6 +467,142 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
             .Should().BeNull("un intento sin RECIBIDA propia no tiene plazo calculable (fail-closed)");
     }
 
+    // ── 6. ADR-048 / SEC-SUSP-01: empresa suspendida o deshabilitada ──────────────────────────
+
+    /// <summary>
+    /// Decorador del interruptor REAL: tras la N-ésima lectura SIN lock (la comprobación previa al reclamo) suspende la
+    /// empresa, de modo que la lectura del RECLAMO (FOR SHARE, en su transacción) ya la ve.
+    /// </summary>
+    private sealed class SuspendAfterReadsSwitch(IElectronicEmissionSwitch inner, int nonLockReads, Func<Task> suspend)
+        : IElectronicEmissionSwitch
+    {
+        private int _reads;
+        public List<bool> LockedReadSawPause { get; } = [];
+
+        public async Task<ElectronicEmissionState> GetAsync(Guid tenantId, Guid companyId, bool lockForShare, CancellationToken ct = default)
+        {
+            var state = await inner.GetAsync(tenantId, companyId, lockForShare, ct);
+            if (lockForShare)
+                LockedReadSawPause.Add(state.CompanyPaused);
+            else if (++_reads == nonLockReads)
+                await suspend();
+            return state;
+        }
+
+        public Task<DateTime?> GetSourceActivityUtcAsync(Guid tenantId, Guid companyId, string sourceModule,
+            ElectronicDocumentType documentType, Guid sourceEntityId, CancellationToken ct = default) =>
+            inner.GetSourceActivityUtcAsync(tenantId, companyId, sourceModule, documentType, sourceEntityId, ct);
+
+        public Task<IAsyncDisposable> EnterSriCallAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+            inner.EnterSriCallAsync(tenantId, companyId, ct);
+
+        public Task LockForChangeAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+            inner.LockForChangeAsync(tenantId, companyId, ct);
+    }
+
+    private async Task SetCompanyStateAsync(bool isActive, CompanyOperationalStatus status)
+    {
+        await using var db = CreateContext();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE company SET is_active = {isActive}, operational_status = {(int)status} WHERE id = {_companyId}");
+    }
+
+    private async Task<Result<ElectronicDocumentDto>> RetransmitWithSwitchAsync(
+        Guid documentId,
+        RetransmissionSri sri,
+        Func<ErpDbContext, IElectronicEmissionSwitch> switchFactory,
+        Action<ErpDbContext>? afterCall = null)
+    {
+        await using var db = CreateContext();
+        var guards = new ElectronicDocumentSourceLifecycleGuardResolver([
+            new SalesElectronicSourceLifecycleGuard(
+                new SalesInvoiceRepository(db, new FixedCurrentCompany(_companyId)),
+                new SalesReturnRepository(db, new FixedCurrentCompany(_companyId))),
+        ]);
+        var issuer = new ElectronicDocumentIssuer(
+            new ElectronicDocumentRepository(db, new CompanyClock(db)),
+            sri.Suppliers.Object, sri.Validators.Object, sri.Signing.Object, Storage(),
+            sri.Reception.Object, sri.Authorization.Object, new PostgresDatabaseExceptionTranslator(),
+            guards, switchFactory(db), new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance);
+        var result = await issuer.RetransmitCorrectedAsync(
+            new CorrectedRetransmissionRequest(_tenantId, documentId, "Corrección de dirección matriz", Guid.NewGuid(), _userId));
+        afterCall?.Invoke(db);
+        return result;
+    }
+
+    private async Task EnableEmissionAsync()
+    {
+        await using var db = CreateContext();
+        await ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(db, _tenantId, _companyId, _userId);
+    }
+
+    [Theory]
+    [InlineData(true, CompanyOperationalStatus.Suspended)]
+    [InlineData(false, CompanyOperationalStatus.Operational)]
+    public async Task SEC_SUSP_01_retransmision_corregida_de_empresa_pausada_no_consulta_ni_transmite_ni_pierde_intentos(
+        bool isActive, CompanyOperationalStatus status)
+    {
+        await EnableEmissionAsync();
+        var (invoiceId, documentId, key) = await SeedRejectedInvoiceAsync();
+        var before = (await ReadElectronicAsync(invoiceId))!;
+        await SetCompanyStateAsync(isActive, status);
+        var sri = new RetransmissionSri(_companyId, key);
+
+        var result = await RetransmitWithSwitchAsync(documentId, sri, db => new ElectronicEmissionSwitch(db));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        sri.SendCalls.Should().Be(0, "ninguna transmisión externa");
+        sri.HistoryCalls.Should().Be(0, "la pausa se evalúa antes de consultar el historial");
+        (await ReadAttemptsAsync(documentId)).Should().BeEmpty();
+        Directory.Exists(AttemptsDirectory(documentId)).Should().BeFalse();
+        var after = (await ReadElectronicAsync(invoiceId))!;
+        after.CurrentState.Should().Be(ElectronicDocumentState.Rejected).And.NotBe(ElectronicDocumentState.DeadLetter);
+        after.TransmissionAttempt.Should().Be(before.TransmissionAttempt);
+        after.RetryCount.Should().Be(before.RetryCount, "sin intentos consumidos");
+
+        // Reanudación: al restablecer ambos estados la misma retransmisión se transmite una sola vez.
+        await SetCompanyStateAsync(true, CompanyOperationalStatus.Operational);
+        (await RetransmitWithSwitchAsync(documentId, sri, db => new ElectronicEmissionSwitch(db))).IsSuccess.Should().BeTrue();
+        sri.SendCalls.Should().Be(1);
+        (await ReadAttemptsAsync(documentId)).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SEC_SUSP_01_el_reclamo_de_retransmision_bloquea_una_suspension_posterior_a_la_comprobacion_inicial()
+    {
+        await EnableEmissionAsync();
+        var (invoiceId, documentId, key) = await SeedRejectedInvoiceAsync();
+        var before = (await ReadElectronicAsync(invoiceId))!;
+        var sri = new RetransmissionSri(_companyId, key);
+        SuspendAfterReadsSwitch? sw = null;
+        bool? transactionOpen = null;
+
+        var result = await RetransmitWithSwitchAsync(
+            documentId, sri,
+            db => sw = new SuspendAfterReadsSwitch(new ElectronicEmissionSwitch(db), nonLockReads: 1,
+                suspend: () => SetCompanyStateAsync(true, CompanyOperationalStatus.Suspended)),
+            db => transactionOpen = db.Database.CurrentTransaction is not null);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        sw!.LockedReadSawPause.Should().ContainSingle().Which.Should().BeTrue("el reclamo FOR SHARE ve la suspensión");
+        transactionOpen.Should().BeFalse("el reclamo hizo rollback");
+        sri.HistoryCalls.Should().Be(1, "solo la consulta de historial previa al reclamo");
+        sri.SendCalls.Should().Be(0, "ninguna transmisión externa");
+        (await ReadAttemptsAsync(documentId)).Should().BeEmpty("el intento no se registró (rollback)");
+        var after = (await ReadElectronicAsync(invoiceId))!;
+        after.CurrentState.Should().Be(ElectronicDocumentState.Rejected).And.NotBe(ElectronicDocumentState.DeadLetter);
+        after.TransmissionAttempt.Should().Be(before.TransmissionAttempt);
+        after.RetryCount.Should().Be(before.RetryCount);
+
+        // La fila de la empresa quedó libre y la reanudación transmite exactamente una vez.
+        await SetCompanyStateAsync(true, CompanyOperationalStatus.Operational).WaitAsync(Wait);
+        (await RetransmitWithSwitchAsync(documentId, sri, db => new ElectronicEmissionSwitch(db))).IsSuccess.Should().BeTrue();
+        sri.SendCalls.Should().Be(1);
+        (await ReadAttemptsAsync(documentId)).Should().ContainSingle();
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────────────────
 
     private const string OriginalDirMatriz = "Av. Principal 123";

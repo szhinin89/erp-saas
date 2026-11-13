@@ -51,6 +51,38 @@ public sealed class CommunicationOutboxDeliveryStore
         BackgroundProcessing.JobMetrics.RecordBacklog(row.Count, row.Oldest);
     }
 
+    /// <summary>
+    /// ADR-048 — observabilidad: filas Pending de empresas suspendidas o deshabilitadas, por empresa (identificador
+    /// técnico, cantidad y antigüedad de la más antigua). Sin destinatarios, asunto ni contenido.
+    /// </summary>
+    public async Task<IReadOnlyList<PausedCommunicationRow>> GetPausedPendingAsync(int top, CancellationToken ct)
+    {
+        var companyScope = nameof(CommunicationScopeKind.Company);
+        var pending = nameof(CommunicationStatus.Pending);
+        var suspendedStatus = (int)ERP.Domain.Modules.Company.Enums.CompanyOperationalStatus.Suspended;
+        return await _db.Database.SqlQuery<PausedCommunicationRow>($"""
+            SELECT q.company_id AS "CompanyId", count(*) AS "Count", min(q.scheduled_at_utc) AS "Oldest",
+                   bool_or(c.is_active = false) AS "Inactive",
+                   bool_or(c.operational_status = {suspendedStatus}) AS "Suspended"
+            FROM communication_outbox AS q
+            JOIN company AS c ON c.id = q.company_id AND c.tenant_id = q.tenant_id
+            WHERE q.scope_kind = {companyScope} AND q.status = {pending}
+              AND (c.is_active = false OR c.operational_status = {suspendedStatus})
+            GROUP BY q.company_id
+            ORDER BY min(q.scheduled_at_utc)
+            LIMIT {top}
+            """).ToListAsync(ct);
+    }
+
+    public sealed class PausedCommunicationRow
+    {
+        public Guid CompanyId { get; set; }
+        public long Count { get; set; }
+        public DateTime? Oldest { get; set; }
+        public bool Inactive { get; set; }
+        public bool Suspended { get; set; }
+    }
+
     private sealed class BacklogRow
     {
         public long Count { get; set; }
@@ -70,19 +102,29 @@ public sealed class CommunicationOutboxDeliveryStore
         var processing = nameof(CommunicationStatus.Processing);
         var abandoned = nameof(CommunicationAttemptResult.Abandoned);
         var transport = EmailTransport;
+        var companyScope = nameof(CommunicationScopeKind.Company);
+        var suspendedStatus = (int)ERP.Domain.Modules.Company.Enums.CompanyOperationalStatus.Suspended;
 
         var claimed = await _db
             .Database.SqlQuery<ClaimedCommunication>(
                 $"""
                 WITH candidate AS (
-                    SELECT id, status AS previous_status
-                    FROM communication_outbox
-                    WHERE (status = {pending}
-                           AND scheduled_at_utc <= {utcNow}
-                           AND (next_attempt_at_utc IS NULL OR next_attempt_at_utc <= {utcNow}))
-                       OR (status = {processing} AND (lease_until_utc IS NULL OR lease_until_utc < {utcNow}))
-                    ORDER BY CASE priority WHEN 'High' THEN 3 WHEN 'Normal' THEN 2 ELSE 1 END DESC,
-                             scheduled_at_utc
+                    SELECT q.id, q.status AS previous_status
+                    FROM communication_outbox AS q
+                    WHERE ((q.status = {pending}
+                            AND q.scheduled_at_utc <= {utcNow}
+                            AND (q.next_attempt_at_utc IS NULL OR q.next_attempt_at_utc <= {utcNow}))
+                        OR (q.status = {processing} AND (q.lease_until_utc IS NULL OR q.lease_until_utc < {utcNow})))
+                      -- ADR-048: la entrega externa de una empresa suspendida o deshabilitada se pausa. La fila no
+                      -- se reclama: queda Pending (o Processing con lease vencido) sin intento y sin tocar
+                      -- retry_count. El alcance System no depende de ninguna empresa.
+                      AND (q.scope_kind <> {companyScope}
+                           OR NOT EXISTS (
+                               SELECT 1 FROM company AS c
+                               WHERE c.id = q.company_id AND c.tenant_id = q.tenant_id
+                                 AND (c.is_active = false OR c.operational_status = {suspendedStatus})))
+                    ORDER BY CASE q.priority WHEN 'High' THEN 3 WHEN 'Normal' THEN 2 ELSE 1 END DESC,
+                             q.scheduled_at_utc
                     LIMIT 1
                     FOR UPDATE SKIP LOCKED
                 ),

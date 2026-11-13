@@ -1,5 +1,23 @@
 # Project Status
 
+## SEC-SUSP — Empresa suspendida o deshabilitada — SEC-SUSP-01 PUBLICADO, pendiente validación CI (2026-11-13)
+
+Auditoría posterior a F-02. Decisiones del propietario y excepción FROZEN limitada en
+[ADR-048](docs/decisions/ADR-048-company-suspension-automatic-processes.md) (Accepted) y
+[frozen-infrastructure.md](docs/architecture/frozen-infrastructure.md). **Publicado; pendiente de validación CI (no
+validado en CI).**
+
+| ID | Estado | Evidencia |
+|---|---|---|
+| SEC-SUSP-01 | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente validación CI** | Antes (reproducido con PostgreSQL desechable y dobles): el job de reintentos procesaba 3/3 comprobantes (Failed, Signed, Received) de empresas suspendida y deshabilitada y el claim reclamaba sus correos. Ahora: la transmisión nueva (Draft, Failed, DeadLetter desde ellos, retransmisión corregida) se bloquea sin escrituras ni DeadLetter con `ELECTRONIC_DOCUMENT_EMISSION_DISABLED`; Signed/Received se siguen consultando; el correo de empresas pausadas queda Pending sin intento ni `retry_count`; System, PendingSetup y operativas sin cambios; la suspensión concurrente espera al reclamo abierto (FOR SHARE). Pruebas: `ElectronicDocumentIssuerCompanyPauseTests` 15/15 (sin el gate fallan 8), `CompanyPauseAutomaticProcessingPostgreSqlTests` 15/15, `CompanyPauseBackgroundJobsTests` 3/3, descubrimiento de retenciones y reclamo guardado real (`PurchaseRetentionConfirmIntegrationTests.SEC_SUSP_01_*`) 7/7, retransmisión corregida R12 (`ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.SEC_SUSP_01_*`) 3/3; sin el gate fallan 6 de estas 10. |
+| SEC-SUSP-02 | KEEP la emisión de sesión para empresas suspendidas | SwitchCompany, Refresh, Reauthenticate y OperateCompany emiten sesión (200) para una suspendida; con ese token el guard responde 403 a `companies/profile`. Deshabilitada: 400/401. La interfaz espera ese flujo. |
+| SEC-SUSP-02b | Defecto reproducido; **sin implementación**, propuesta pendiente | Refresh rechazado tras la rotación (p. ej. empresa deshabilitada, 401) consume el token anterior y deja un sucesor activo que el cliente nunca recibe (tokens 1→2, activos 1→1). |
+
+Deuda y límites conocidos: la recuperación de ventas sigue create-only (crea Draft que quedan pausados); el único camino sin
+lock de fila en la comprobación es un origen sin guard registrado (API genérica de ElectronicDocuments), documentado en
+ADR-048 D5; una pausa mayor a 90 días expone los pendientes al error SRI [65] (visible en el log/gauge de antigüedad).
+Las pruebas `CompanyStateBypassAuditReproTests` y la L0 de F-03 siguen sin seguimiento y no forman parte de ningún gate.
+
 ## CI-1169 — Conteo de controllers Windows/Linux — pendiente de revisión y gate del propietario
 
 BUG REAL reproducido sobre `AccountingController.cs` versionado en `c198fd3dc`: LF reconocía 118 líneas XML

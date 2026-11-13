@@ -13,6 +13,16 @@ public sealed record ElectronicEmissionState(bool Enabled, DateTime? EnabledSinc
     public static readonly ElectronicEmissionState Disabled = new(false, null);
 
     /// <summary>
+    /// ADR-048 — empresa suspendida o deshabilitada, leída en la misma lectura (y, en un reclamo, con la fila de la
+    /// empresa bloqueada FOR SHARE hasta el commit). Solo pausa la TRANSMISIÓN NUEVA al SRI; no interviene en
+    /// <see cref="AllowsSriAccess"/> (consultas, conciliación y reintentos de resultado pendiente siguen).
+    /// </summary>
+    public ERP.Domain.Modules.Company.Entities.CompanyPauseReason CompanyPause { get; init; } =
+        ERP.Domain.Modules.Company.Entities.CompanyPauseReason.None;
+
+    public bool CompanyPaused => CompanyPause != ERP.Domain.Modules.Company.Entities.CompanyPauseReason.None;
+
+    /// <summary>
     /// SRI-TOGGLE-06 — ¿Puede este pendiente llegar al SRI (transmisión, reintento, consulta de autorización,
     /// historial R12 o ConsultaComprobante)? Deshabilitada = nunca (pausa total). Un usuario (acción
     /// explícita) solo necesita la emisión habilitada. Un proceso automático (<paramref name="automatic"/>,

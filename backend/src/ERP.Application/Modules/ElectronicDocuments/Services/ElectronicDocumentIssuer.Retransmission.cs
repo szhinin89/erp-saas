@@ -74,7 +74,7 @@ public sealed partial class ElectronicDocumentIssuer
                 ApiResponseCodes.ElectronicDocuments.RetransmissionNotAllowed
             );
         // SRI-TOGGLE-02 — una retransmisión es una transmisión nueva: requiere emisión habilitada.
-        if (await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct) is { } emissionBlocked)
+        if (await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct, newTransmission: true) is { } emissionBlocked)
             return emissionBlocked;
         var guard = _sourceGuards.Resolve(document.SourceModule)!;
         var stage = eligibility.RejectionStage!.Value;
@@ -384,7 +384,7 @@ public sealed partial class ElectronicDocumentIssuer
 
             // SRI-TOGGLE-02/04 — dentro del reclamo: el lock compartido del interruptor (hasta el commit)
             // serializa con su apagado/habilitación.
-            if (await EmissionBlockedAsync(document, request.UserId, lockForShare: true, ct) is { } emissionBlocked)
+            if (await EmissionBlockedAsync(document, request.UserId, lockForShare: true, ct, newTransmission: true) is { } emissionBlocked)
             {
                 await _unitOfWork.RollbackAsync(ct);
                 return emissionBlocked;

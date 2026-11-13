@@ -4,6 +4,7 @@ using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
+using ERP.Domain.Modules.Company.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Retentions;
@@ -102,6 +103,14 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
                         && e.SourceModule == RetentionElectronicDocumentSource.SourceModule
                         && e.SourceEntityId == r.Id
                     )
+            )
+            // ADR-048 — la transmisión inicial es una transmisión NUEVA: una empresa suspendida o
+            // deshabilitada no aporta candidatos (el issuer igualmente la bloquea) ni ocupa el lote.
+            .Where(r =>
+                !_db
+                    .Companies.AsPlatformQuery()
+                    .Where(CompanyAutomaticProcessingPause.IsPaused)
+                    .Any(c => c.Id == r.CompanyId && c.TenantId == r.TenantId)
             );
         return await BackgroundJobProgress.ReadBatchAsync(_db, "retention-start", query,
             r => new RetentionElectronicStartCandidate(r.TenantId, r.CompanyId, r.Id),

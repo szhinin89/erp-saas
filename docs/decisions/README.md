@@ -50,6 +50,7 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-045](ADR-045-accounting-operational-continuity.md) | ADR-045 — Consolidación de la arquitectura de Accounting |
 | [ADR-046](ADR-046-historical-handler-size-debt.md) | ADR-046 — Excepción temporal para deuda histórica de tamaño de handlers C-03 |
 | [ADR-047](ADR-047-historical-tsx-size-debt.md) | ADR-047 — Excepción temporal para deuda histórica de tamaño TSX (PR-7) |
+| [ADR-048](ADR-048-company-suspension-automatic-processes.md) | ADR-048 — Empresa suspendida o deshabilitada: procesos automáticos y sesiones |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 

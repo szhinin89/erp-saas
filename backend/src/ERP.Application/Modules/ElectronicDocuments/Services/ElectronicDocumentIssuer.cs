@@ -221,7 +221,7 @@ public sealed partial class ElectronicDocumentIssuer
         // SRI-TOGGLE-02 — sin emisión habilitada (o pendiente sin reanudación explícita) no se genera,
         // firma ni transmite nada: sin escrituras, el documento conserva Draft/Failed y sus intentos.
         if (
-            await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct)
+            await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct, newTransmission: true)
             is { } emissionBlocked
         )
             return emissionBlocked;
@@ -304,7 +304,7 @@ public sealed partial class ElectronicDocumentIssuer
             {
                 // SRI-TOGGLE-02 — revalidación inmediatamente antes de persistir Signed (sin lock de origen).
                 if (
-                    await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct)
+                    await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct, newTransmission: true)
                     is { } claimBlocked
                 )
                     return claimBlocked;
@@ -558,7 +558,7 @@ public sealed partial class ElectronicDocumentIssuer
         // SRI-TOGGLE-06 — todo reintento termina en el SRI (pipeline o consulta de autorización): con la
         // emisión pausada (o un pendiente anterior a la habilitación, si es automático) no hay reactivación,
         // intento ni consulta — cero escrituras.
-        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct) is { } emissionBlocked)
+        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct, newTransmission: document.CanBeDiscarded) is { } emissionBlocked)
             return emissionBlocked;
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
@@ -727,7 +727,7 @@ public sealed partial class ElectronicDocumentIssuer
             return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
 
         // SRI-TOGGLE-06 — mismo control que el reintento v1.0: sin reactivación, intento ni consulta.
-        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct) is { } emissionBlocked)
+        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct, newTransmission: document.CanBeDiscarded) is { } emissionBlocked)
             return emissionBlocked;
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
@@ -875,7 +875,7 @@ public sealed partial class ElectronicDocumentIssuer
             // SRI-TOGGLE-02/04 — dentro del mismo reclamo: el lock compartido del interruptor (hasta el commit)
             // serializa con su apagado/habilitación.
             if (
-                await EmissionBlockedAsync(document, userId, lockForShare: true, ct)
+                await EmissionBlockedAsync(document, userId, lockForShare: true, ct, newTransmission: true)
                 is { } emissionBlocked
             )
             {
@@ -918,7 +918,8 @@ public sealed partial class ElectronicDocumentIssuer
         ElectronicDocument document,
         Guid userId,
         bool lockForShare,
-        CancellationToken ct
+        CancellationToken ct,
+        bool newTransmission = false
     )
     {
         var automatic = userId == Guid.Empty;
@@ -941,9 +942,29 @@ public sealed partial class ElectronicDocumentIssuer
                     ct
                 )
                 : null;
-        return emission.AllowsSriAccess(document.LastAttemptUtc, sourceActivity, automatic)
-            ? null
-            : EmissionBlocked(emission, document.Id, document.CompanyId);
+        if (!emission.AllowsSriAccess(document.LastAttemptUtc, sourceActivity, automatic))
+            return EmissionBlocked(emission, document.Id, document.CompanyId);
+
+        // ADR-048 — solo una transmisión NUEVA (el comprobante nunca salió al SRI) se pausa con la empresa
+        // suspendida o deshabilitada; consulta, conciliación y reintento de un envío previo/incierto continúan.
+        // Sin escrituras. Mismo código y semántica que el interruptor: los consumidores (pendiente, sin
+        // DeadLetter por exhaución) no cambian.
+        return newTransmission && emission.CompanyPaused
+            ? CompanyPausedBlocked(emission, document.Id, document.CompanyId)
+            : null;
+    }
+
+    private Result<ElectronicDocumentDto> CompanyPausedBlocked(
+        ElectronicEmissionState emission,
+        Guid documentId,
+        Guid companyId
+    )
+    {
+        LogCompanyPausedBlocked(documentId, companyId, emission.CompanyPause.ToString());
+        return Result<ElectronicDocumentDto>.ValidationFailure(
+            "La empresa está suspendida o deshabilitada: el comprobante no se transmite al SRI hasta que vuelva a estar operativa.",
+            ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+        );
     }
 
     private Result<ElectronicDocumentDto> EmissionBlocked(
@@ -1414,6 +1435,12 @@ public sealed partial class ElectronicDocumentIssuer
         Guid sourceEntityId,
         string reason
     );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Transmisión nueva de {ElectronicDocumentId} pausada (empresa {CompanyId}, motivo={PauseReason}): empresa suspendida o deshabilitada"
+    )]
+    private partial void LogCompanyPausedBlocked(Guid electronicDocumentId, Guid companyId, string pauseReason);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

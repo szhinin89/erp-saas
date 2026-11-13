@@ -59,6 +59,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
         await _store.RecordBacklogAsync(ct);
+        await ReportPausedAsync(ct);
         for (var processed = 0; processed < batchSize; processed++)
         {
             ct.ThrowIfCancellationRequested();
@@ -74,6 +75,50 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
             BackgroundProcessing.JobMetrics.RecordProcessed();
         }
     }
+
+    /// <summary>ADR-048 — observabilidad de la pausa por estado de empresa. Nunca hace fallar el procesamiento.</summary>
+    private async Task ReportPausedAsync(CancellationToken ct)
+    {
+        try
+        {
+            var rows = await _store.GetPausedPendingAsync(50, ct);
+            BackgroundProcessing.JobMetrics.RecordBacklog(
+                rows.Sum(r => r.Count),
+                rows.Count == 0 ? null : rows.Min(r => r.Oldest),
+                "company-paused-communications"
+            );
+            foreach (var row in rows)
+                LogPausedByCompanyState(
+                    row.CompanyId,
+                    row.Count,
+                    row.Oldest is { } oldest ? Math.Max(0, (UtcNow() - oldest).TotalHours) : 0,
+                    (
+                        (row.Inactive ? ERP.Domain.Modules.Company.Entities.CompanyPauseReason.Inactive : 0)
+                        | (row.Suspended ? ERP.Domain.Modules.Company.Entities.CompanyPauseReason.Suspended : 0)
+                    ).ToString()
+                );
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            LogPausedReportFailed(ex);
+        }
+    }
+
+    [LoggerMessage(
+        EventId = 4250,
+        EventName = "CommunicationsPausedByCompanyState",
+        Level = LogLevel.Warning,
+        Message = "Communications: entrega pausada por estado de empresa {CompanyId}: pendientes={PendingCount}, más antigua={OldestAgeHours:0.0} h, motivo={PauseReason}"
+    )]
+    private partial void LogPausedByCompanyState(Guid companyId, long pendingCount, double oldestAgeHours, string pauseReason);
+
+    [LoggerMessage(
+        EventId = 4251,
+        EventName = "CommunicationsPausedReportFailed",
+        Level = LogLevel.Warning,
+        Message = "Communications: no se pudo informar la pausa por estado de empresa"
+    )]
+    private partial void LogPausedReportFailed(Exception ex);
 
     private async Task ProcessClaimAsync(ClaimedCommunication claim, CancellationToken ct)
     {
