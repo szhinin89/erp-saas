@@ -50,6 +50,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   Relacionado con la evidencia pendiente de CI-SELECTIVE-01 en [STATUS](../../STATUS.md).
 - API-DOC-F35-L1 (PUBLICADO, pendiente resultado del CI; gate del propietario aprobado 2026-11-13; Gastos permanece
   CLOSED, sin reapertura general): BUG REAL F-35, `PUT` de categorías de gasto no debe revertir
-  `isDeductible`/`requiresInvoice`. Alcance exacto y evidencia en [STATUS](../../STATUS.md). L2 (F-14,
-  reintento idempotente de `ManualJournal.Create`) está autorizado como bloque independiente, aún sin
-  implementar; el resto de F-01 a F-52 sigue pendiente de autorización por bloque.
+  `isDeductible`/`requiresInvoice`. Alcance exacto y evidencia en [STATUS](../../STATUS.md). el resto de F-01 a F-52 sigue pendiente de autorización por bloque.
+- API-DOC-F14-L2 (PUBLICADO, pendiente resultado del CI; revisión del propietario aprobada 2026-11-13; Contabilidad
+  conserva sus restricciones de cierre): BUG REAL F-14, el reintento idempotente de `ManualJournal.Create`
+  debe reflejar el estado, la versión y el número reales del asiento existente. Alcance y evidencia en
+  [STATUS](../../STATUS.md). Bloque independiente de API-DOC-F35-L1.

@@ -115,7 +115,8 @@ public sealed class ManualJournalHandler(
             var existing = await journal.FindByKeyAsync(tenant.TenantId, company.CompanyId,
                 JournalEntry.ManualModule, JournalEntry.ManualFact, cmd.IdempotencyKey, ct);
             if (existing is not null)
-                return Result<ManualJournalResultDto>.Success(new(existing.Id, "Draft", 1, null));
+                // F-14: el reintento idempotente refleja el estado real del asiento existente (sin modificarlo).
+                return Ok(existing);
             var period = await DraftPeriodAsync(cmd.EntryDate, ct);
             if (!period.IsSuccess) return Failure(period);
             var accountResult = await ValidateDraftAccountsAsync(cmd.Lines, ct);

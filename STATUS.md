@@ -225,6 +225,21 @@ solo vienen del seed), lo que sería `FALTA` y requiere decisión propia. Los no
 revertido a `true` no se recuperan automáticamente. Los demás hallazgos de F-01 a F-52 conservan su estado; L2 (F-14)
 está autorizado como bloque independiente y no forma parte de este.
 
+### Resolución de hallazgos F-01 a F-52 — bloque L2 (F-14, Contabilidad)
+
+Autorización del propietario 2026-11-13: corregir **solo F-14** (reintento idempotente de
+`ManualJournalController.Create`) como BUG REAL; Contabilidad conserva sus restricciones de cierre y no se reabren
+funcionalidades ni reglas de contabilización. Antes de la corrección, 2 de 6 casos fallaban (versión 1 tras editar;
+`Draft` sin número tras publicar).
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-14 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | `ManualJournalHandler.Handle(CreateManualJournalCommand)` devuelve `Ok(existing)` (estado, versión y número reales del asiento hallado por `FindByKeyAsync`, ya acotado por tenant y empresa) en lugar de `Draft`/1/`null` fijos. Sin cambio de DTO, controlador ni contrato HTTP; el reintento no crea, contabiliza ni modifica. `ManualJournalIdempotentCreateReplayTests` (6 casos, PostgreSQL real, grupo `infrastructure-03`): 6/6 después; `AccountingManual08Tests` 5/5 y `AccountingManual08PermissionTests` 1/1 siguen en verde. |
+
+Casos cubiertos: reintento sin cambios, tras editar, tras publicar (número real, sin recontabilizar), sin duplicados ni
+auditoría/intentos/secuencias adicionales, aislamiento entre empresas del mismo tenant y creaciones concurrentes con la
+misma clave (un único asiento). Los demás hallazgos de F-01 a F-52 conservan su estado.
+
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
   (`Warehouses.GetAll` ahora publica `activeStatus`, `onlyActive`, `search` y `sucursalId` sin añadir 422), F-07
