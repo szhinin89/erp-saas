@@ -8,9 +8,10 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   limitada a ElectronicDocuments/SRI/Communications FROZEN, [ADR-048](../decisions/ADR-048-company-suspension-automatic-processes.md)):
   transmisiones SRI nuevas y entrega de correo pausadas para empresas suspendidas o deshabilitadas, sin detener
   consultas ni conciliación; observabilidad por empresa. Evidencia y archivos en [STATUS](../../STATUS.md).
-- SEC-SUSP-02b (PENDIENTE; sin implementación autorizada): refresh token huérfano tras un rechazo posterior a la
-  rotación; primero se presenta la comparación de secuencias (validación previa, rotación transaccional, revocación
-  compensatoria). SEC-SUSP-02 (sesión para empresas suspendidas) queda como KEEP.
+- SEC-SUSP-02b (PUBLICADO, pendiente validación CI; aprobado por el propietario 2026-11-13): el refresh
+  valida el estado de usuario/tenant/empresa/membresía antes de rotar, sin sucesor huérfano ni falsa alarma de
+  reutilización; pruebas PostgreSQL 11/11 y gates OK. Evidencia en [STATUS](../../STATUS.md). SEC-SUSP-02 (sesión
+  para empresas suspendidas) queda como KEEP.
 - IAM-V1-F2 (IMPLEMENTADO, pendiente gate del propietario; autorizado 2026-11-10; CI #1144
   SUCCESS valida su contenido; IAM-V1-F3 ya CLOSED con CI #1146 SUCCESS y aceptación del propietario
   2026-11-11, evidencia en [STATUS](../../STATUS.md); sin siguiente fase IAM autorizada): administración de Perfiles, Permisos y Usuarios, visibilidad

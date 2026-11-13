@@ -40,6 +40,24 @@ public sealed class RefreshTokenHandler
         CancellationToken cancellationToken
     )
     {
+        // SEC-SUSP-02b: el estado de usuario/tenant/empresa/membresía se resuelve ANTES de consumir
+        // el token. Si el refresh va a rechazarse, el token no se rota: no queda un sucesor activo
+        // que el cliente nunca recibió, y el reintento no se confunde con reutilización maliciosa.
+        // Un token que no pasa la lectura previa (inexistente, revocado, vencido) sí va al camino
+        // de rotación, que conserva la detección de reutilización, la auditoría y los límites.
+        var peek = await _refreshTokenService.ValidateWithoutRotatingAsync(
+            command.RawRefreshToken,
+            cancellationToken
+        );
+
+        Result<AuthResponseDto>? resolved = null;
+        if (peek.IsValid)
+        {
+            resolved = await ResolveSessionAsync(peek, cancellationToken);
+            if (!resolved.IsSuccess)
+                return resolved;
+        }
+
         var v = await _refreshTokenService.ValidateAndRotateAsync(
             command.RawRefreshToken,
             cancellationToken
@@ -54,6 +72,30 @@ public sealed class RefreshTokenHandler
             return Result<AuthResponseDto>.Failure(v.Error ?? "Refresh token inválido.");
         }
 
+        // Defensa en profundidad: si la lectura previa no pudo validar (p. ej. un doble de prueba
+        // o un cambio entre ambas lecturas), se resuelve con el resultado de la rotación.
+        resolved ??= await ResolveSessionAsync(v, cancellationToken);
+        if (!resolved.IsSuccess)
+            return resolved;
+
+        return Result<AuthResponseDto>.Success(
+            resolved.Value! with
+            {
+                RefreshToken = v.NewToken,
+                RefreshTokenExpiry = v.NewExpiry,
+            }
+        );
+    }
+
+    /// <summary>
+    /// Resuelve la sesión (usuario, tenant, empresa, membresía y rol) y arma la respuesta SIN
+    /// refresh token. No escribe nada: es seguro llamarlo antes de rotar.
+    /// </summary>
+    private async Task<Result<AuthResponseDto>> ResolveSessionAsync(
+        RefreshTokenValidationResult v,
+        CancellationToken cancellationToken
+    )
+    {
         if (v.UserType != RefreshUserType.Identity)
             return Result<AuthResponseDto>.Failure(
                 "Tipo de sesión no soportado. Inicie sesión nuevamente."
@@ -94,8 +136,6 @@ public sealed class RefreshTokenHandler
                     CompanyId = null,
                     RequiresCompanySelection = false,
                     OnboardingCompleted = true,
-                    RefreshToken = v.NewToken,
-                    RefreshTokenExpiry = v.NewExpiry,
                 }
             );
         }
@@ -162,8 +202,6 @@ public sealed class RefreshTokenHandler
                             RequiresCompanySelection = false,
                             OnboardingCompleted = resolvedCompany.OnboardingCompleted,
                             OperationalStatus = resolvedCompany.OperationalStatus,
-                            RefreshToken = v.NewToken,
-                            RefreshTokenExpiry = v.NewExpiry,
                             OperatorMode = true,
                             GlobalAdminUserId = globalAdminUserId,
                         }
@@ -225,8 +263,6 @@ public sealed class RefreshTokenHandler
                     {
                         CompanyId = null,
                         RequiresCompanySelection = true,
-                        RefreshToken = v.NewToken,
-                        RefreshTokenExpiry = v.NewExpiry,
                     }
                 );
             }
@@ -260,8 +296,6 @@ public sealed class RefreshTokenHandler
                 CompanyId = companyId,
                 OnboardingCompleted = resolvedCompany?.OnboardingCompleted ?? false,
                 OperationalStatus = resolvedCompany?.OperationalStatus,
-                RefreshToken = v.NewToken,
-                RefreshTokenExpiry = v.NewExpiry,
             }
         );
     }

@@ -141,6 +141,15 @@ diff review. Si desaparece o cambia de ruta el handler, retirar la entrada vieja
 la nueva ruta vuelve al límite general y no hereda la excepción automáticamente.
 Una reducción solo de comentarios o formato no demuestra una mejora estructural.
 
+**Excepciones retiradas:** `RefreshTokenHandler` (SEC-SUSP-02b, 2026-11-13). Al
+resolver el estado de sesión antes de rotar el token, `Handle` quedó en 47 líneas
+y la entrada se eliminó del JSON; la lógica de resolución pasó a un método privado
+(el guardrail C-03 mide solo `Handle`). La fila del inventario inicial se conserva
+como evidencia fechada. **Deuda residual:** `ResolveSessionAsync` conserva unas 190
+líneas de complejidad (ramas global, operador, empresa única y multiempresa); queda
+registrada como deuda pendiente de una remediación autorizada, sin refactor adicional
+en SEC-SUSP-02b.
+
 ### Pruebas de aceptación del mecanismo
 
 Fixtures aisladas; no cambiar los ocho handlers ni tocar servicios o bases reales

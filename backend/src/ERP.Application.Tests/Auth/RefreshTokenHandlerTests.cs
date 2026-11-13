@@ -36,6 +36,20 @@ public sealed class RefreshTokenHandlerTests
         public Mock<IAccessTokenService> TokenService { get; } = new();
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
 
+        public Fixture()
+        {
+            // Por defecto la lectura previa (sin rotar) no valida: el handler cae al camino de
+            // rotación, que es lo que ejercitan los tests históricos de operator_mode.
+            RefreshTokenService
+                .Setup(s =>
+                    s.ValidateWithoutRotatingAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(RefreshTokenValidationResult.Fail("sin lectura previa"));
+        }
+
         public RefreshTokenHandler BuildHandler() =>
             new(
                 RefreshTokenService.Object,
@@ -295,5 +309,143 @@ public sealed class RefreshTokenHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("Membresía no activa para la empresa.");
+    }
+
+    // ── SEC-SUSP-02b: validar el estado ANTES de consumir el refresh token ─────────────────────
+
+    private static RefreshTokenValidationResult Peek(Guid userId, Guid tenantId, Guid companyId) =>
+        RefreshTokenValidationResult.Identity(
+            userId,
+            tenantId,
+            companyId,
+            RefreshUserType.Identity
+        );
+
+    private static void SetupPeek(Fixture f, RefreshTokenValidationResult peek) =>
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateWithoutRotatingAsync("raw-token", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(peek);
+
+    private static void VerifyNotRotated(Fixture f) =>
+        f.RefreshTokenService.Verify(
+            s => s.ValidateAndRotateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+    [Fact]
+    public async Task Usuario_inactivo_rechaza_sin_rotar_el_token()
+    {
+        var (f, tenant, company, user) = BuildBaseContext();
+        user.Deactivate(CreatedBy);
+        SetupPeek(f, Peek(user.Id, tenant.Id, company.Id));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Usuario no válido.");
+        VerifyNotRotated(f);
+    }
+
+    [Fact]
+    public async Task Tenant_inactivo_rechaza_sin_rotar_el_token()
+    {
+        var (f, tenant, company, user) = BuildBaseContext();
+        f.TenantRepo.Setup(t => t.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Tenant?)null);
+        SetupPeek(f, Peek(user.Id, tenant.Id, company.Id));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        VerifyNotRotated(f);
+    }
+
+    [Fact]
+    public async Task Empresa_no_resuelta_rechaza_sin_rotar_el_token()
+    {
+        var (f, tenant, company, user) = BuildBaseContext();
+        f.CompanyRepo.Setup(c =>
+                c.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((Company?)null);
+        SetupPeek(f, Peek(user.Id, tenant.Id, company.Id));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Empresa no válida para el tenant.");
+        VerifyNotRotated(f);
+    }
+
+    [Fact]
+    public async Task Membresia_inactiva_rechaza_sin_rotar_el_token()
+    {
+        var (f, tenant, company, user) = BuildBaseContext();
+        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        membership.Deactivate(CreatedBy);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        SetupPeek(f, Peek(user.Id, tenant.Id, company.Id));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Membresía no activa para la empresa.");
+        VerifyNotRotated(f);
+    }
+
+    [Fact]
+    public async Task Estado_valido_rota_una_sola_vez_y_entrega_el_sucesor()
+    {
+        var (f, tenant, company, user) = BuildBaseContext();
+        var membership = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        f.AccessRepo.Setup(a =>
+                a.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.TokenService.Setup(s => s.GenerateSessionToken(user, tenant.Id, membership.Role))
+            .Returns("jwt");
+        SetupPeek(f, Peek(user.Id, tenant.Id, company.Id));
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(NormalSession(user.Id, tenant.Id, company.Id));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.RefreshToken.Should().Be("new-raw-refresh-token");
+        result.Value.RefreshTokenExpiry.Should().NotBeNull();
+        f.RefreshTokenService.Verify(
+            s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Token_que_no_pasa_la_lectura_previa_va_al_camino_de_rotacion_para_detectar_reuso()
+    {
+        var (f, _, _, _) = BuildBaseContext();
+        f.RefreshTokenService.Setup(s =>
+                s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(RefreshTokenValidationResult.Fail("Refresh token revocado."));
+
+        var result = await f.BuildHandler()
+            .Handle(new RefreshTokenCommand("raw-token"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        f.RefreshTokenService.Verify(
+            s => s.ValidateAndRotateAsync("raw-token", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }

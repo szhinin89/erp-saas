@@ -9,12 +9,6 @@
       "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
     },
     {
-      "file": "backend/src/ERP.Application/Modules/Auth/UseCases/RefreshToken/RefreshTokenHandler.cs",
-      "maxHandleLines": 226,
-      "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
-      "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
-    },
-    {
       "file": "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ConfirmImportBatch/ConfirmImportBatchHandler.cs",
       "maxHandleLines": 155,
       "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
