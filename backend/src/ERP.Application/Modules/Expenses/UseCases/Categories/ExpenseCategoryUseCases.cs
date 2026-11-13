@@ -40,8 +40,8 @@ public sealed record UpdateExpenseCategoryNodeCommand(
     string Name,
     Guid? AccountingAccountId,
     string? Description = null,
-    bool IsDeductible = true,
-    bool RequiresInvoice = true
+    bool? IsDeductible = null,
+    bool? RequiresInvoice = null
 ) : IRequest<Result<ExpenseCategoryNodeDto>>, ICompanyScopedRequest;
 
 public sealed record ActivateExpenseCategoryNodeCommand(Guid Id)
@@ -458,7 +458,12 @@ public sealed class UpdateExpenseCategoryNodeHandler
                 return accountValidation;
 
             node.ChangeSubcategoryAccount(cmd.AccountingAccountId.Value, _u.UserId);
-            node.UpdateSubcategoryTaxRules(cmd.IsDeductible, cmd.RequiresInvoice, _u.UserId);
+            // F-35: un PUT que no informa los indicadores fiscales conserva los valores actuales.
+            node.UpdateSubcategoryTaxRules(
+                cmd.IsDeductible ?? node.IsDeductible,
+                cmd.RequiresInvoice ?? node.RequiresInvoice,
+                _u.UserId
+            );
         }
 
         try

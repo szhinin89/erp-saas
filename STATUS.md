@@ -210,6 +210,21 @@ mismo 400 de esas cuatro operaciones conviven el envelope (regla de dominio) y o
 o cadena JSON); el documento publica el envelope como esquema y describe el otro cuerpo en texto, porque declararlo
 como segundo esquema exigiría publicar `ProblemDetails` en el contrato.
 
+### Resolución de hallazgos F-01 a F-52 — bloque L1 (F-35, Gastos)
+
+Autorización del propietario 2026-11-13: corregir **solo F-35** como BUG REAL directamente relacionado; Gastos
+permanece CLOSED (sin reapertura general). L0 reprodujo el defecto con el handler real sobre PostgreSQL desechable:
+10 de 14 casos fallaban antes de la corrección (flags conservados al cambiar nombre, código o cuenta).
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-35 | BUG REAL | Corregido y publicado (gate del propietario aprobado 2026-11-13); **pendiente resultado del CI** | `UpdateExpenseCategoryNodeCommand.IsDeductible`/`RequiresInvoice` pasan a `bool?` (`null` por omisión); el handler usa `cmd.X ?? node.X`. Sin cambio de request, controlador, DTO, endpoints, validadores, esquema ni snapshots. `ExpenseCategoryTaxFlagsPreservationTests` (14 casos, PostgreSQL real, grupo `infrastructure-03`): 14/14 después. Focales: `ExpenseCategoryUseCasesTests` 11/11, `ExpenseCategoriesControllerTests` 12/12, `ExpenseCategoryNodeTests` 4/4. |
+
+Fuera de alcance, sin cambio: la API no permite fijar los indicadores (`Create` y `Update` no los reciben; los `false`
+solo vienen del seed), lo que sería `FALTA` y requiere decisión propia. Los nodos que un PUT anterior ya haya
+revertido a `true` no se recuperan automáticamente. Los demás hallazgos de F-01 a F-52 conservan su estado; L2 (F-14)
+está autorizado como bloque independiente y no forma parte de este.
+
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
   (`Warehouses.GetAll` ahora publica `activeStatus`, `onlyActive`, `search` y `sucursalId` sin añadir 422), F-07

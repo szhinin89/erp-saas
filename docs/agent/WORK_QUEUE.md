@@ -48,3 +48,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   de las listas de `ci_changes.mjs`; p. ej. CI #1121 sobre `bd816be40`). Evitar el FULL innecesario
   conservando fail-closed y probando los perfiles frontend, backend, mixed, full y documentation.
   Relacionado con la evidencia pendiente de CI-SELECTIVE-01 en [STATUS](../../STATUS.md).
+- API-DOC-F35-L1 (PUBLICADO, pendiente resultado del CI; gate del propietario aprobado 2026-11-13; Gastos permanece
+  CLOSED, sin reapertura general): BUG REAL F-35, `PUT` de categorías de gasto no debe revertir
+  `isDeductible`/`requiresInvoice`. Alcance exacto y evidencia en [STATUS](../../STATUS.md). L2 (F-14,
+  reintento idempotente de `ManualJournal.Create`) está autorizado como bloque independiente, aún sin
+  implementar; el resto de F-01 a F-52 sigue pendiente de autorización por bloque.

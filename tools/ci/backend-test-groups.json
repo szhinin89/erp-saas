@@ -95,6 +95,7 @@
         "ERP.Infrastructure.Tests.Accounting.PurchaseInvoiceConfirmedPostingIntegrationTests",
         "ERP.Infrastructure.Tests.Accounting.SupplierCreditAppliedPostingIntegrationTests",
         "ERP.Infrastructure.Tests.Codes.Barcodes.Code128BarcodeGeneratorTests",
+        "ERP.Infrastructure.Tests.Expenses.ExpenseCategoryTaxFlagsPreservationTests",
         "ERP.Infrastructure.Tests.InitialLoad.ConfirmItemsAtomicPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.UpdatePurchaseDraftAtomicityPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.AdminUserSessionIntegrationTests",
