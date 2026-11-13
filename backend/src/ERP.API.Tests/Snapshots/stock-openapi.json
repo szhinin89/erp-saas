@@ -2,10 +2,11 @@
   "paths": {
     "/api/v1/inventory/stock": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "description": "Ambos filtros son opcionales y se combinan. Si no hay resultados devuelve una lista vac\u00EDa.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
         "operationId": "Stock_GetStock",
         "parameters": [
           {
+            "description": "Filtra por \u00EDtem.",
             "in": "query",
             "name": "itemId",
             "schema": {
@@ -14,6 +15,7 @@
             }
           },
           {
+            "description": "Filtra por bodega.",
             "in": "query",
             "name": "warehouseId",
             "schema": {
@@ -31,7 +33,17 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Stock actual."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La operaci\u00F3n no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -65,7 +77,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Consulta stock actual por item y/o bodega.",
+        "summary": "Consulta el stock actual por \u00EDtem y bodega.",
         "tags": [
           "Stock"
         ],
@@ -76,10 +88,11 @@
     },
     "/api/v1/inventory/stock/adjustments": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.view\u0060.",
+        "description": "Resultado paginado (20 por p\u00E1gina por defecto).\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.view\u0060.",
         "operationId": "StockAdjustments_ListAdjustments",
         "parameters": [
           {
+            "description": "Filtra por bodega.",
             "in": "query",
             "name": "warehouseId",
             "schema": {
@@ -88,6 +101,7 @@
             }
           },
           {
+            "description": "Filtra por estado del ajuste (Draft, Executed o Cancelled).",
             "in": "query",
             "name": "status",
             "schema": {
@@ -95,6 +109,7 @@
             }
           },
           {
+            "description": "Filtra por motivo de ajuste.",
             "in": "query",
             "name": "reasonId",
             "schema": {
@@ -103,6 +118,7 @@
             }
           },
           {
+            "description": "Filtra por tipo de movimiento del ajuste.",
             "in": "query",
             "name": "movementType",
             "schema": {
@@ -110,6 +126,7 @@
             }
           },
           {
+            "description": "Fecha de negocio inicial (\u0060YYYY-MM-DD\u0060).",
             "in": "query",
             "name": "startDate",
             "schema": {
@@ -118,6 +135,7 @@
             }
           },
           {
+            "description": "Fecha de negocio final (\u0060YYYY-MM-DD\u0060).",
             "in": "query",
             "name": "endDate",
             "schema": {
@@ -126,6 +144,7 @@
             }
           },
           {
+            "description": "N\u00FAmero de p\u00E1gina, base 1.",
             "in": "query",
             "name": "pageNumber",
             "schema": {
@@ -135,6 +154,7 @@
             }
           },
           {
+            "description": "Cantidad de ajustes por p\u00E1gina (20 por defecto).",
             "in": "query",
             "name": "pageSize",
             "schema": {
@@ -153,7 +173,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "P\u00E1gina de ajustes."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -187,7 +207,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Lista ajustes de inventario paginados, con filtros.",
+        "summary": "Lista los ajustes de inventario con filtros y paginaci\u00F3n.",
         "tags": [
           "Stock"
         ],
@@ -196,7 +216,7 @@
         ]
       },
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.create\u0060.",
+        "description": "Responde 201. El motivo debe ser de la empresa, estar activo y admitir la direcci\u00F3n del ajuste (ingreso,\r\negreso o ambos); si exige observaciones, deben venir.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.create\u0060.",
         "operationId": "StockAdjustments_CreateAdjustment",
         "requestBody": {
           "content": {
@@ -215,7 +235,8 @@
                 "$ref": "#/components/schemas/CreateStockAdjustmentCommand"
               }
             }
-          }
+          },
+          "description": "Cabecera y l\u00EDneas del ajuste."
         },
         "responses": {
           "201": {
@@ -226,7 +247,7 @@
                 }
               }
             },
-            "description": "Created"
+            "description": "Ajuste creado."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -275,6 +296,7 @@
         "operationId": "StockAdjustments_GetAdjustment",
         "parameters": [
           {
+            "description": "Id de el ajuste de inventario.",
             "in": "path",
             "name": "id",
             "required": true,
@@ -293,13 +315,23 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Ajuste de inventario."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "500": {
             "content": {
@@ -317,7 +349,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Obtiene un ajuste de inventario por Id (cabecera \u002B l\u00EDneas).",
+        "summary": "Obtiene un ajuste de inventario con sus l\u00EDneas.",
         "tags": [
           "Stock"
         ],
@@ -326,10 +358,11 @@
         ]
       },
       "put": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.update\u0060.",
+        "description": "Actualiza la cabecera y reemplaza todas las l\u00EDneas. Solo un ajuste en Draft se edita. El id de la ruta debe\r\ncoincidir con el \u0060id\u0060 del cuerpo; si no, responde 400 con cuerpo vac\u00EDo.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.update\u0060.",
         "operationId": "StockAdjustments_UpdateAdjustment",
         "parameters": [
           {
+            "description": "Id de el ajuste de inventario.",
             "in": "path",
             "name": "id",
             "required": true,
@@ -356,7 +389,8 @@
                 "$ref": "#/components/schemas/UpdateStockAdjustmentCommand"
               }
             }
-          }
+          },
+          "description": "Cabecera y l\u00EDneas del ajuste, con su id."
         },
         "responses": {
           "200": {
@@ -367,13 +401,33 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Ajuste actualizado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La operaci\u00F3n incumple una regla de negocio (envelope). Si el id de la ruta no coincide con el del cuerpo tambi\u00E9n responde 400, pero con cuerpo vac\u00EDo y sin envelope."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "422": {
             "content": {
@@ -401,7 +455,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Actualiza un ajuste en Draft (cabecera \u002B reemplazo total de l\u00EDneas).",
+        "summary": "Actualiza un ajuste en estado Draft.",
         "tags": [
           "Stock"
         ],
@@ -412,10 +466,11 @@
     },
     "/api/v1/inventory/stock/adjustments/{id}/cancel": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.cancel\u0060.",
+        "description": "Solo un ajuste en Executed se anula, con motivo obligatorio. Registra el movimiento contrario por l\u00EDnea en\r\nel Kardex y pasa el ajuste a Cancelled.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.cancel\u0060.",
         "operationId": "StockAdjustments_CancelAdjustment",
         "parameters": [
           {
+            "description": "Id de el ajuste de inventario.",
             "in": "path",
             "name": "id",
             "required": true,
@@ -442,17 +497,35 @@
                 "$ref": "#/components/schemas/CancelStockAdjustmentRequest"
               }
             }
-          }
+          },
+          "description": "Motivo de la anulaci\u00F3n."
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfStockAdjustmentDto"
+                }
+              }
+            },
+            "description": "Ajuste anulado."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "422": {
             "content": {
@@ -480,7 +553,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Anula un ajuste Ejecutado posteando movimientos inversos de Kardex.",
+        "summary": "Anula un ajuste ejecutado.",
         "tags": [
           "Stock"
         ],
@@ -491,10 +564,11 @@
     },
     "/api/v1/inventory/stock/adjustments/{id}/execute": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.confirm\u0060.",
+        "description": "Aplica los movimientos de stock del ajuste en una transacci\u00F3n con el ajuste bloqueado y pasa el ajuste a\r\nExecuted. Solo un ajuste en Draft se ejecuta.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.adjustments.confirm\u0060.",
         "operationId": "StockAdjustments_ExecuteAdjustment",
         "parameters": [
           {
+            "description": "Id de el ajuste de inventario.",
             "in": "path",
             "name": "id",
             "required": true,
@@ -506,13 +580,30 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfStockAdjustmentDto"
+                }
+              }
+            },
+            "description": "Ajuste ejecutado."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "500": {
             "content": {
@@ -530,7 +621,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Ejecuta un ajuste Draft: aplica el/los movimiento(s) de stock.",
+        "summary": "Ejecuta un ajuste Draft.",
         "tags": [
           "Stock"
         ],
@@ -545,6 +636,7 @@
         "operationId": "Stock_GetAggregated",
         "parameters": [
           {
+            "description": "Id del \u00EDtem.",
             "in": "path",
             "name": "itemId",
             "required": true,
@@ -563,7 +655,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Stock agregado del \u00EDtem."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -587,7 +679,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Stock agregado de un item a trav\u00E9s de todas las bodegas.",
+        "summary": "Stock agregado de un \u00EDtem en todas las bodegas.",
         "tags": [
           "Stock"
         ],
@@ -598,11 +690,18 @@
     },
     "/api/v1/inventory/stock/costs/pending": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.pending-costs.view\u0060.",
+        "description": "Costos de inventario que todav\u00EDa no est\u00E1n determinados: sin base de costo conocida el costo queda nulo,\r\nnunca cero.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.pending-costs.view\u0060.",
         "operationId": "Stock_GetPendingCosts",
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfIReadOnlyListOfPendingInventoryCostDto"
+                }
+              }
+            },
+            "description": "Costos pendientes."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -626,6 +725,7 @@
             "Bearer": []
           }
         ],
+        "summary": "Lista los costos de inventario pendientes.",
         "tags": [
           "Stock"
         ],
@@ -636,10 +736,11 @@
     },
     "/api/v1/inventory/stock/items/{itemId}/warehouse-availability": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "description": "Pensado para los selectores de bodega de los documentos de venta. Si no hay resultados devuelve una lista\r\nvac\u00EDa.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
         "operationId": "Stock_GetWarehouseAvailability",
         "parameters": [
           {
+            "description": "Id del \u00EDtem.",
             "in": "path",
             "name": "itemId",
             "required": true,
@@ -658,13 +759,23 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Disponibilidad por bodega."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "500": {
             "content": {
@@ -682,7 +793,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Disponibilidad de un item por bodega (para selectores de bodega en documentos de venta).",
+        "summary": "Disponibilidad de un \u00EDtem por bodega.",
         "tags": [
           "Stock"
         ],
@@ -693,10 +804,11 @@
     },
     "/api/v1/inventory/stock/movements": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "description": "Si no hay resultados devuelve una lista vac\u00EDa.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
         "operationId": "Stock_GetMovements",
         "parameters": [
           {
+            "description": "Id del \u00EDtem.",
             "in": "query",
             "name": "itemId",
             "schema": {
@@ -705,6 +817,7 @@
             }
           },
           {
+            "description": "Id de la bodega.",
             "in": "query",
             "name": "warehouseId",
             "schema": {
@@ -713,6 +826,7 @@
             }
           },
           {
+            "description": "Fecha de negocio inicial (\u0060YYYY-MM-DD\u0060); omitida, sin l\u00EDmite inferior.",
             "in": "query",
             "name": "from",
             "schema": {
@@ -721,6 +835,7 @@
             }
           },
           {
+            "description": "Fecha de negocio final (\u0060YYYY-MM-DD\u0060); omitida, sin l\u00EDmite superior.",
             "in": "query",
             "name": "to",
             "schema": {
@@ -738,7 +853,7 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Movimientos de stock."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -772,7 +887,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Consulta movimientos de stock por item y bodega.",
+        "summary": "Consulta los movimientos de stock de un \u00EDtem en una bodega.",
         "tags": [
           "Stock"
         ],
@@ -783,10 +898,11 @@
     },
     "/api/v1/inventory/stock/report": {
       "get": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
+        "description": "Sin \u0060warehouseId\u0060 incluye todas las bodegas de la empresa activa. Si no hay resultados devuelve una\r\nlista vac\u00EDa.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.view\u0060.",
         "operationId": "Stock_GetReport",
         "parameters": [
           {
+            "description": "Filtra por bodega; omitido, incluye todas.",
             "in": "query",
             "name": "warehouseId",
             "schema": {
@@ -795,6 +911,7 @@
             }
           },
           {
+            "description": "Texto libre de b\u00FAsqueda de \u00EDtems.",
             "in": "query",
             "name": "search",
             "schema": {
@@ -811,13 +928,23 @@
                 }
               }
             },
-            "description": "OK"
+            "description": "Filas del reporte de stock."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "422": {
             "content": {
@@ -845,7 +972,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Reporte b\u00E1sico de stock actual por bodega (piloto Sumak). Sin warehouseId, incluye\r\ntodas las bodegas de la empresa activa.",
+        "summary": "Reporte de stock actual por bodega.",
         "tags": [
           "Stock"
         ],
@@ -856,7 +983,7 @@
     },
     "/api/v1/inventory/stock/transfers": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
+        "description": "Responde 201. El origen debe ser distinto del destino, con al menos una l\u00EDnea y solo productos de la\r\nempresa.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
         "operationId": "StockTransfers_CreateTransfer",
         "requestBody": {
           "content": {
@@ -875,7 +1002,8 @@
                 "$ref": "#/components/schemas/CreateStockTransferCommand"
               }
             }
-          }
+          },
+          "description": "Bodega de origen, bodega de destino y l\u00EDneas."
         },
         "responses": {
           "201": {
@@ -886,7 +1014,17 @@
                 }
               }
             },
-            "description": "Created"
+            "description": "Transferencia creada."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La operaci\u00F3n no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
@@ -920,7 +1058,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Crea una transferencia entre bodegas en estado Draft. \u00DAnico punto de entrada de men\u00FA de\r\n\u0022Stock\u0022 (P1-INVENTORY-WAREHOUSE-TRANSFER-UI-01): la clase no tiene [AppFeature] (ver\r\ncomentario de cabecera \u2014 Stock en general no es men\u00FA-visible), pero Transferencias s\u00ED es\r\nuna pantalla propia \u2014 [AppFeature] a nivel de m\u00E9todo (soportado por el atributo) le da\r\nentrada de men\u00FA dedicada sin exponer Ajustes/consultas de Stock como \u00EDtems de men\u00FA.\r\nReutiliza el mismo permiso que ya protege este endpoint \u2014 no crea uno nuevo.",
+        "summary": "Crea una transferencia entre bodegas en estado Draft.",
         "tags": [
           "Stock"
         ],
@@ -931,10 +1069,11 @@
     },
     "/api/v1/inventory/stock/transfers/{id}/confirm": {
       "post": {
-        "description": "**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
+        "description": "Mueve el stock entre bodegas: registra la salida en el origen al costo promedio corrido y la entrada en el\r\ndestino. No existe operaci\u00F3n de anulaci\u00F3n de transferencias.\n\n**Autorizaci\u00F3n:** requiere JWT Bearer; permiso: \u0060inventory.stock.manage\u0060.",
         "operationId": "StockTransfers_ConfirmTransfer",
         "parameters": [
           {
+            "description": "Id de la transferencia.",
             "in": "path",
             "name": "id",
             "required": true,
@@ -946,13 +1085,40 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfStockTransferDto"
+                }
+              }
+            },
+            "description": "Transferencia confirmada."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "La operaci\u00F3n no se puede completar por una regla de negocio incumplida; el envelope detalla el motivo."
           },
           "401": {
             "description": "No autenticado: token ausente, inv\u00E1lido o vencido (rechazo del middleware JWT, sin cuerpo) o rechazo del caso de uso con envelope \u0060code\u0060 \u0060UNAUTHORIZED\u0060."
           },
           "403": {
             "description": "Autorizaci\u00F3n denegada: pol\u00EDtica del endpoint (rechazo del middleware de autorizaci\u00F3n, sin cuerpo) o alcance de empresa/sucursal (envelope \u0060code\u0060 \u0060COMPANY_SCOPE_FORBIDDEN\u0060/\u0060BRANCH_SCOPE_FORBIDDEN\u0060)."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOfObject"
+                }
+              }
+            },
+            "description": "El recurso indicado no existe o no es visible para la empresa activa."
           },
           "500": {
             "content": {
@@ -970,7 +1136,7 @@
             "Bearer": []
           }
         ],
-        "summary": "Confirma una transferencia Draft: mueve stock entre bodegas.",
+        "summary": "Confirma una transferencia Draft.",
         "tags": [
           "Stock"
         ],
