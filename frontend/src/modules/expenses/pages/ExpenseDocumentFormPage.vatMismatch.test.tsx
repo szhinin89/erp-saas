@@ -40,7 +40,7 @@ vi.mock("../../items/facades/sriLookupFacade", () => ({
 }));
 vi.mock("../api/expenseCategoryService", () => ({
   expenseCategoryService: { getTree: async () => [{ children: [{ children: [
-    { id: "subcategory", isActive: true, accountingAccountId: "account" },
+    { id: "subcategory", isActive: true, accountingAccountId: "account", accountingAccountCode: "5.1.1", accountingAccountName: "Servicios" },
   ] }] }] },
 }));
 vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn() } }));

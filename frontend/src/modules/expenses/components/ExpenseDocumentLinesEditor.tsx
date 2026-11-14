@@ -7,12 +7,12 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { useI18n } from "../../../i18n/i18n";
-import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import {
   calculateExpenseLineTotals,
   newExpenseDraftLine,
+  type ExpenseAccountRef,
   type ExpenseDraftLineScales,
   type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
@@ -37,7 +37,7 @@ export type ExpenseLineFieldErrors = Record<
 interface Props {
   lines: ExpenseDraftLineState[];
   tree: ExpenseCategoryTreeNodeDto[];
-  accountsById: Map<string, AccountDto>;
+  accountsById: Map<string, ExpenseAccountRef>;
   vatRates: SriVatRateLookup[];
   vatRateByCode: VatRateByCode;
   disabled?: boolean;

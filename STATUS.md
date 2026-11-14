@@ -1,6 +1,21 @@
 # Project Status
 
-## EXPENSE-UX-01 — Captura de gastos: correcciones UX del formulario — IMPLEMENTADO y probado, pendiente de publicación (aprobado por el propietario 2026-11-13)
+## EXPENSE-BACKEND-01 — Gastos: tipo de documento (U4) y dependencia de `accounting.view` — PUBLICADO, pendiente de validación CI (aprobado por el propietario 2026-11-14)
+
+Bloque focalizado aprobado por el propietario (U4 + EXPENSE-ACCOUNTING-VIEW-01). Sin tocar contabilidad, retenciones, SRI, cuentas por pagar ni la autorización de `GET /accounting/accounts`.
+
+| Ítem | Causa confirmada | Solución |
+|---|---|---|
+| U4 | `ExpenseDraftHeaderRules` solo validaba la longitud de `DocumentType` (máx. 5): cualquier texto corto quedaba guardado sin comprobar el catálogo SRI (Compras ya lo valida con CLEAN-01C, pero con la variante electrónica). | `CreateExpenseDraftHandler`, `UpdateExpenseDraftHandler` y `CreateConfirmedExpenseHandler` validan con `ISriDocTypeCatalogResolver.IsActiveDocTypeAsync` (existe y activo; **no** exige modalidad electrónica, así que un comprobante físico activo, p. ej. 02, sigue permitido). Rechazo 422 «El tipo de documento 'X' no existe o está inactivo en el catálogo SRI.» antes de persistir. Compatibilidad: la edición de un borrador solo valida si el tipo **cambia** (un borrador histórico con un código ya no vigente sigue editable); confirmar un borrador existente no revalida; la factura recibida conserva su tipo (se compara contra la recepción) y también pasa por el catálogo. |
+| EXPENSE-ACCOUNTING-VIEW-01 | El formulario cargaba `GET /accounting/accounts` (`accounting.view`) solo para validar y mostrar la cuenta destino de cada subcategoría; un perfil con permisos de Gastos y sin `accounting.view` recibía 403 y la pantalla no abría (`Promise.all`). Ningún perfil inicial concede los permisos de Gastos junto con `accounting.view` salvo Contador. | Solución mínima y aditiva: `GET /expenses/categories` (`expenses.catalog.view`) devuelve en cada nodo `accountingAccountCode` y `accountingAccountName` de la cuenta **vinculada** a la subcategoría y **de la empresa activa** (null si no hay cuenta o no es de la empresa; no se consulta el plan si ningún nodo tiene cuenta). El formulario arma `accountsById` desde el árbol y **ya no llama** a `accountLookupFacade.listAccounts`. `GET /accounting/accounts` y sus permisos no cambian; no se expone ninguna otra cuenta. La pantalla de configuración de categorías sigue usando el plan de cuentas (es de configuración). |
+
+Contratos afectados: `ExpenseCategoryTreeNodeDto` (+2 campos opcionales, aditivo) en `GET /api/v1/expenses/categories`; 422 nuevo y documentado por regla para `POST/PUT /expenses/documents` y `POST /expenses/documents/confirmed`. Sin cambios de rutas, permisos ni de otros DTO.
+
+Evidencia de seguridad (HTTP real con PostgreSQL desechable, `ExpenseCategoryAccountVisibilityHttpTests` 5/5): un perfil con `expenses.catalog.view`, `documents.view` y `documents.create` y **sin** `accounting.view` carga las categorías con código y nombre de la cuenta vinculada; la respuesta no contiene otra cuenta del plan; el mismo perfil recibe **403** en `GET /accounting/accounts` y en `GET /accounting/accounts/{id}`; un perfil solo con `accounting.view` sigue obteniendo 200 en cuentas y 403 en categorías; un perfil sin permisos recibe 403 en ambos.
+
+Validación (focalizada, sin suite completa): `ERP.Application.Tests` Expenses 109/109 (nuevas: 6 de U4 en borrador/edición, 2 en crear confirmado, 5 del árbol con cuenta), `ERP.Infrastructure.Tests` Expenses (PostgreSQL) 65/65, `ERP.API.Tests` (Expense, OpenApi, Swagger, incluye los 5 HTTP de permisos) 174/174; frontend `expenses` 148/148, `tsc -b`, ESLint (0 errores), `architecture:check` PASS (0 violaciones nuevas), guardrail oficial (`-SkipFrontendChunk`) OK. Techo de `ExpenseDocumentFormPage.tsx` en ADR-047/grandfather: 683 → 678 (regla 6). Sin regenerar Dashboard.
+
+## EXPENSE-UX-01 — Captura de gastos: correcciones UX del formulario — PUBLICADO (`dafdd7bdc`), CI #1191 SUCCESS (2026-11-14)
 
 Solo frontend (más las claves i18n y la gobernanza ADR-047). Sin cambios de backend, permisos, rutas, contratos, cuentas por pagar, contabilidad ni emisión SRI; se mantiene **Guardar borrador → Confirmar**.
 
@@ -16,9 +31,7 @@ Solo frontend (más las claves i18n y la gobernanza ADR-047). Sin cambios de bac
 
 Gobernanza: `ExpenseRetentionSection.tsx` se reduce a 430 líneas extrayendo `ExpenseRetentionSummary.tsx`; se **retira su excepción** de `architecture-grandfather.json` y de [ADR-047](docs/decisions/ADR-047-historical-tsx-size-debt.md), y el techo de `ExpenseDocumentFormPage.tsx` baja de 692 a 683 (regla 6 del ADR). Aprobado por el propietario.
 
-Pendientes separados (fuera de este diff, sin implementar):
-- **U4** — aprobada la validación del tipo de documento con `ISriDocTypeCatalogResolver.IsActiveDocTypeAsync` (existe y activo, sin exigir modalidad electrónica, a diferencia de Compras). Pendiente de implementación backend focalizada.
-- **Dependencia de `accounting.view`** — `GET /accounting/accounts` exige ese permiso y su ausencia impide abrir el formulario de gastos. Corrección aprobada; pendiente de diseño mínimo e implementación.
+Publicado en `dafdd7bdcacac8c7486e46b0f293eda8b3aec61c`; CI #1191 (`dafdd7bdc`) terminó `success` (verificado en la API pública de GitHub Actions 2026-11-14). U4 y la dependencia de `accounting.view` se resolvieron aparte en EXPENSE-BACKEND-01 (sección anterior). B2 backend (identificar la línea en errores de negocio del handler): ampliación **no autorizada**; se conserva el manejo general. Sin cambios a la política Guardar borrador → Confirmar.
 
 Validación (focalizada, sin suite completa): módulo `expenses` 143/143 antes del ajuste de mensaje; tras él, `expenses/pages` 59/59 (incluye 3 pruebas nuevas del mensaje); `tsc -b`, `npm run build`, ESLint (0 errores), guardrail oficial (`-SkipFrontendChunk`), integridad grandfather y `architecture:i18n/precision/design-system/css` PASS. Sin regenerar Dashboard. Las pruebas `FinanceCollectionsReadPermissionReproTests` y `CompanyStateBypassAuditReproTests` siguen sin seguimiento.
 

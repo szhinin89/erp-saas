@@ -79,6 +79,9 @@ function treeNode(
     description: null,
     level,
     accountingAccountId: accountId,
+    // EXPENSE-BACKEND-01: la cuenta destino viene en el árbol, no del plan de cuentas.
+    accountingAccountCode: accountId ? "5.1.1" : null,
+    accountingAccountName: accountId ? "Servicios" : null,
     isActive: true,
     children,
   };
@@ -196,6 +199,51 @@ async function openAndSave(error: unknown) {
   await waitFor(() => expect(expenseDocumentService.update).toHaveBeenCalled());
   await waitFor(() => expect(vi.mocked(message.error)).toHaveBeenCalled());
 }
+
+describe("ExpenseDocumentFormPage — cuenta destino sin accounting.view (EXPENSE-BACKEND-01)", () => {
+  it("abre y permite guardar sin consultar el plan de cuentas; la cuenta sale del árbol de categorías", async () => {
+    vi.mocked(expenseDocumentService.update).mockResolvedValue(DRAFT);
+    render(
+      <I18nProvider>
+        <MemoryRouter>
+          <ExpenseDocumentFormPage />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("Proveedor Uno S.A.")).toBeTruthy());
+    const save = screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement;
+    await waitFor(() => expect(save.disabled).toBe(false));
+
+    expect(screen.getByText("5.1.1 - Servicios")).toBeTruthy();
+    expect(accountLookupFacade.listAccounts).not.toHaveBeenCalled();
+
+    fireEvent.click(save);
+    await waitFor(() => expect(expenseDocumentService.update).toHaveBeenCalled());
+  });
+
+  it("una subcategoría sin cuenta resuelta no habilita el guardado (validación contable vigente)", async () => {
+    vi.mocked(expenseCategoryService.getTree).mockResolvedValue([
+      treeNode("t1", "Type", [
+        treeNode("c1", "Category", [
+          { ...treeNode("sub-1", "Subcategory", [], "acc-1"), accountingAccountCode: null, accountingAccountName: null },
+        ]),
+      ]),
+    ]);
+    render(
+      <I18nProvider>
+        <MemoryRouter>
+          <ExpenseDocumentFormPage />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("Proveedor Uno S.A.")).toBeTruthy());
+
+    await waitFor(() =>
+      expect(screen.getByText("No hay subcategorías de gasto listas para usar.")).toBeTruthy(),
+    );
+    expect((screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
 
 describe("ExpenseDocumentFormPage — errores del backend al guardar (B2)", () => {
   it("muestra errores de campo y de línea en su sitio y un mensaje que remite a los campos marcados", async () => {

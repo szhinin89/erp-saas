@@ -1,7 +1,6 @@
 import Decimal from "decimal.js";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDecimalDisplay, normalizeOptionalCode } from "../../../lib/sanitizers";
-import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
 import type {
@@ -21,6 +20,37 @@ export interface ExpenseLineTotals {
 }
 
 export type VatRateByCode = Map<string, number>;
+
+/**
+ * EXPENSE-BACKEND-01 — cuenta contable destino de una subcategoría, tal como la entrega el árbol de
+ * categorías (`expenses.catalog.view`). Reemplaza al listado del plan de cuentas, que exige
+ * `accounting.view`, y solo contiene las cuentas vinculadas a subcategorías.
+ */
+export interface ExpenseAccountRef {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export function buildExpenseAccountsById(
+  tree: ExpenseCategoryTreeNodeDto[],
+): Map<string, ExpenseAccountRef> {
+  const accounts = new Map<string, ExpenseAccountRef>();
+  const visit = (nodes: ExpenseCategoryTreeNodeDto[]) => {
+    for (const node of nodes) {
+      if (node.accountingAccountId && node.accountingAccountCode) {
+        accounts.set(node.accountingAccountId, {
+          id: node.accountingAccountId,
+          code: node.accountingAccountCode,
+          name: node.accountingAccountName ?? "",
+        });
+      }
+      visit(node.children ?? []);
+    }
+  };
+  visit(tree);
+  return accounts;
+}
 
 /**
  * ZH-DESIGN-SYSTEM-PRECISION-04G — escalas del MODELO TEXTUAL del borrador (los inputs de la línea
@@ -191,7 +221,7 @@ export function flattenExpenseSubcategories(
 
 export function hasConfiguredExpenseSubcategory(
   tree: ExpenseCategoryTreeNodeDto[],
-  accountsById: Map<string, AccountDto>,
+  accountsById: Map<string, ExpenseAccountRef>,
 ): boolean {
   return flattenExpenseSubcategories(tree).some(
     (node) =>

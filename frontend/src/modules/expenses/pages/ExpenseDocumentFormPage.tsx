@@ -18,7 +18,6 @@ import {
   readApiErrorCode,
   parseValidationErrors,
 } from "../../lib/apiError";
-import { accountLookupFacade, type AccountDto } from "../../accounting/facades/accountLookupFacade";
 import {
   sriLookupFacade,
   type SriDocTypeLookup,
@@ -55,6 +54,7 @@ import {
   mapExpenseBackendErrors,
 } from "../utils/expenseBackendErrors";
 import {
+  buildExpenseAccountsById,
   buildExpenseDraftPayload,
   calculateExpenseDocumentTotals,
   documentToHeader,
@@ -139,7 +139,6 @@ export function ExpenseDocumentFormPage() {
   }, [draftScales]);
   const [lines, setLines] = useState<ExpenseDraftLineState[]>(() => [newExpenseDraftLine(draftScales)]);
   const [tree, setTree] = useState<ExpenseCategoryTreeNodeDto[]>([]);
-  const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTermDto[]>([]);
   const [sriDocTypes, setSriDocTypes] = useState<SriDocTypeLookup[]>([]);
   const [sriTaxSupports, setSriTaxSupports] = useState<SriTaxSupportLookup[]>([]);
@@ -166,10 +165,9 @@ export function ExpenseDocumentFormPage() {
     useState<RetentionEligibilityResult | null>(null);
   const [retentionRefreshKey, setRetentionRefreshKey] = useState(0);
 
-  const accountsById = useMemo(
-    () => new Map(accounts.map((account) => [account.id, account])),
-    [accounts],
-  );
+  // EXPENSE-BACKEND-01: la cuenta destino de cada subcategoría viene en el propio árbol de
+  // categorías (expenses.catalog.view); el formulario ya no consulta el plan de cuentas.
+  const accountsById = useMemo(() => buildExpenseAccountsById(tree), [tree]);
   const vatRateByCode: VatRateByCode = useMemo(
     () => new Map(vatRates.map((rate) => [rate.code, rate.percentage])),
     [vatRates],
@@ -202,7 +200,6 @@ export function ExpenseDocumentFormPage() {
     try {
       const requests = [
         canReadCatalog ? expenseCategoryService.getTree(false) : Promise.resolve([]),
-        accountLookupFacade.listAccounts(),
         paymentTermLookupFacade.list(),
         sriLookupFacade.docTypes(),
         sriLookupFacade.taxSupportCodes(),
@@ -211,7 +208,6 @@ export function ExpenseDocumentFormPage() {
       ] as const;
       const [
         categoryTree,
-        accountRows,
         paymentTermRows,
         sriDocTypeRows,
         sriTaxSupportRows,
@@ -220,7 +216,6 @@ export function ExpenseDocumentFormPage() {
       ] = await Promise.all(requests);
 
       setTree(categoryTree);
-      setAccounts(accountRows);
       setPaymentTerms(paymentTermRows);
       setSriDocTypes(sriDocTypeRows);
       setSriTaxSupports(sriTaxSupportRows);

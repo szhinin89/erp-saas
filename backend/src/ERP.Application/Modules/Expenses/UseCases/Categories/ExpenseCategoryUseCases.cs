@@ -166,12 +166,21 @@ public sealed class ListExpenseCategoryTreeHandler
     >
 {
     private readonly IExpenseCategoryRepository _repo;
+    private readonly IAccountRepository _accounts;
     private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
 
-    public ListExpenseCategoryTreeHandler(IExpenseCategoryRepository repo, ICurrentTenant t)
+    public ListExpenseCategoryTreeHandler(
+        IExpenseCategoryRepository repo,
+        IAccountRepository accounts,
+        ICurrentTenant t,
+        ICurrentCompany c
+    )
     {
         _repo = repo;
+        _accounts = accounts;
         _t = t;
+        _c = c;
     }
 
     public async Task<Result<IReadOnlyList<ExpenseCategoryTreeNodeDto>>> Handle(
@@ -180,7 +189,24 @@ public sealed class ListExpenseCategoryTreeHandler
     )
     {
         var nodes = await _repo.GetTreeAsync(_t.TenantId, q.IncludeInactive, ct);
-        return Result<IReadOnlyList<ExpenseCategoryTreeNodeDto>>.Success(Map.ToTree(nodes));
+
+        // EXPENSE-BACKEND-01: solo las cuentas vinculadas a una subcategoría y solo de la empresa
+        // activa; el resto del plan de cuentas nunca sale por este endpoint.
+        var linked = nodes
+            .Where(n => n.AccountingAccountId.HasValue)
+            .Select(n => n.AccountingAccountId!.Value)
+            .ToHashSet();
+        var accountsById = new Dictionary<Guid, Account>();
+        if (linked.Count > 0)
+            foreach (
+                var account in await _accounts.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct)
+            )
+                if (linked.Contains(account.Id))
+                    accountsById[account.Id] = account;
+
+        return Result<IReadOnlyList<ExpenseCategoryTreeNodeDto>>.Success(
+            Map.ToTree(nodes, accountsById)
+        );
     }
 }
 
@@ -585,7 +611,8 @@ file static class Map
         );
 
     public static IReadOnlyList<ExpenseCategoryTreeNodeDto> ToTree(
-        IReadOnlyList<ExpenseCategoryNode> nodes
+        IReadOnlyList<ExpenseCategoryNode> nodes,
+        IReadOnlyDictionary<Guid, Account> accountsById
     )
     {
         var childrenByParent = nodes
@@ -599,8 +626,13 @@ file static class Map
                 ? children.Select(ToTreeNode).ToList()
                 : [];
 
-        ExpenseCategoryTreeNodeDto ToTreeNode(ExpenseCategoryNode node) =>
-            new(
+        ExpenseCategoryTreeNodeDto ToTreeNode(ExpenseCategoryNode node)
+        {
+            Account? account = null;
+            if (node.AccountingAccountId is { } accountId)
+                accountsById.TryGetValue(accountId, out account);
+
+            return new(
                 node.Id,
                 node.CompanyId,
                 node.ParentId,
@@ -612,8 +644,11 @@ file static class Map
                 node.IsDeductible,
                 node.RequiresInvoice,
                 node.IsActive,
-                Build(node.Id)
+                Build(node.Id),
+                account?.Code.Value,
+                account?.Name
             );
+        }
     }
 }
 

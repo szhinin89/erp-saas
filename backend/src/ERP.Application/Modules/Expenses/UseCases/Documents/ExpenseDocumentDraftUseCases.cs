@@ -192,6 +192,7 @@ public sealed class CreateExpenseDraftHandler
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
+    private readonly ISriDocTypeCatalogResolver _docTypes;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
@@ -209,6 +210,7 @@ public sealed class CreateExpenseDraftHandler
         IBusinessPartnerRoleRepository roles,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
+        ISriDocTypeCatalogResolver docTypes,
         IDocumentFlowPolicyService workflowPolicy,
         ERP.Domain.Modules.Purchases.Interfaces.IPurchaseInvoiceRepository purchaseRepo,
         IPurchaseReceptionDocumentRepository receptionRepo,
@@ -226,6 +228,7 @@ public sealed class CreateExpenseDraftHandler
         _roles = roles;
         _ptResolver = ptResolver;
         _tax = tax;
+        _docTypes = docTypes;
         _workflowPolicy = workflowPolicy;
         _purchaseRepo = purchaseRepo;
         _receptionRepo = receptionRepo;
@@ -260,6 +263,14 @@ public sealed class CreateExpenseDraftHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 "Una nota de crédito no puede crear un gasto."
             );
+        // EXPENSE-BACKEND-01 (U4): el tipo de documento debe existir y estar activo en el catálogo SRI.
+        var documentTypeError = await ExpenseDraftRules.ValidateDocumentTypeAsync(
+            _docTypes,
+            cmd.DocumentType,
+            ct
+        );
+        if (documentTypeError is not null)
+            return documentTypeError.ToResult<ExpenseDocumentDetailDto>();
         if (cmd.ReceptionDocumentId is null && !string.IsNullOrWhiteSpace(cmd.AccessKey))
         {
             var sourceDocument = await _receptionRepo.GetByAccessKeyAsync(
@@ -449,6 +460,7 @@ public sealed class UpdateExpenseDraftHandler
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
+    private readonly ISriDocTypeCatalogResolver _docTypes;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -462,6 +474,7 @@ public sealed class UpdateExpenseDraftHandler
         IBusinessPartnerRoleRepository roles,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
+        ISriDocTypeCatalogResolver docTypes,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -475,6 +488,7 @@ public sealed class UpdateExpenseDraftHandler
         _roles = roles;
         _ptResolver = ptResolver;
         _tax = tax;
+        _docTypes = docTypes;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -493,6 +507,19 @@ public sealed class UpdateExpenseDraftHandler
             return Result<ExpenseDocumentDetailDto>.ValidationFailure(
                 "Solo se pueden editar gastos en estado borrador."
             );
+
+        // EXPENSE-BACKEND-01 (U4): solo se valida si el tipo cambia — un borrador histórico con un
+        // código ya no vigente sigue siendo editable mientras conserve su tipo.
+        if (!string.Equals(cmd.DocumentType.Trim(), document.DocumentType, StringComparison.Ordinal))
+        {
+            var documentTypeError = await ExpenseDraftRules.ValidateDocumentTypeAsync(
+                _docTypes,
+                cmd.DocumentType,
+                ct
+            );
+            if (documentTypeError is not null)
+                return documentTypeError.ToResult<ExpenseDocumentDetailDto>();
+        }
 
         var supplier = await ExpenseDraftRules.ResolveSupplierAsync(
             _businessPartners,
@@ -711,6 +738,22 @@ internal static class ExpenseDraftRules
     /// recibe IPaymentTermRepository ni BusinessPartnerRole: el resolver central resuelve el
     /// default internamente, sin caer a SupplierRoleConfig.PaymentTermId.
     /// </summary>
+    public static async Task<ExpenseDraftError?> ValidateDocumentTypeAsync(
+        ISriDocTypeCatalogResolver docTypes,
+        string documentType,
+        CancellationToken ct
+    )
+    {
+        // IsActiveDocTypeAsync (no la variante electrónica): un gasto puede amparar un comprobante
+        // físico; solo se exige que el código exista y esté activo en el catálogo SRI.
+        var code = documentType.Trim();
+        return await docTypes.IsActiveDocTypeAsync(code, ct)
+            ? null
+            : Validation(
+                $"El tipo de documento '{code}' no existe o está inactivo en el catálogo SRI."
+            );
+    }
+
     public static async Task<PaymentTermResolution> ResolvePaymentTermAsync(
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         Guid supplierId,

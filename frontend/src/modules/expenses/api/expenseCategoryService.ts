@@ -17,6 +17,13 @@ export interface ExpenseCategoryNodeDto {
 }
 
 export interface ExpenseCategoryTreeNodeDto extends ExpenseCategoryNodeDto {
+  /**
+   * EXPENSE-BACKEND-01 — código y nombre de la cuenta vinculada a la subcategoría (solo lectura,
+   * de la empresa activa). Evita consultar el plan de cuentas (`accounting.view`) para mostrar la
+   * cuenta destino; `null` si no hay cuenta o no existe en la empresa.
+   */
+  accountingAccountCode?: string | null;
+  accountingAccountName?: string | null;
   children: ExpenseCategoryTreeNodeDto[];
 }
 

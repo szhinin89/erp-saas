@@ -28,7 +28,13 @@ public sealed record ExpenseCategoryTreeNodeDto(
     bool IsDeductible,
     bool RequiresInvoice,
     bool IsActive,
-    IReadOnlyList<ExpenseCategoryTreeNodeDto> Children
+    IReadOnlyList<ExpenseCategoryTreeNodeDto> Children,
+    // EXPENSE-BACKEND-01: código y nombre de la cuenta contable vinculada a la subcategoría (solo
+    // lectura, de la misma empresa). Permite al formulario de gastos mostrar y validar la cuenta
+    // destino sin consultar el plan de cuentas (que exige accounting.view). Null si no hay cuenta o
+    // no existe en la empresa. No expone ninguna otra cuenta.
+    string? AccountingAccountCode = null,
+    string? AccountingAccountName = null
 );
 
 public sealed record ExpenseLineDto(

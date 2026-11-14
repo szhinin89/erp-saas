@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { ZHField } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { useI18n } from "../../../i18n/i18n";
-import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
+import type { ExpenseAccountRef } from "../utils/expenseDocumentDraftModel";
 
 interface Props {
   tree: ExpenseCategoryTreeNodeDto[];
-  accountsById: Map<string, AccountDto>;
+  accountsById: Map<string, ExpenseAccountRef>;
   value: string;
   onChange: (subcategoryId: string) => void;
   disabled?: boolean;

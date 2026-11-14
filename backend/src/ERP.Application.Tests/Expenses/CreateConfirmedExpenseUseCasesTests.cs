@@ -45,6 +45,49 @@ public sealed class CreateConfirmedExpenseUseCasesTests
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
+    // EXPENSE-BACKEND-01 (U4): el tipo de documento debe existir y estar activo en el catálogo SRI.
+    [Fact]
+    public async Task Crear_confirmado_rechaza_un_tipo_inexistente_o_inactivo_sin_persistir()
+    {
+        var fx = new Fixture();
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync("99", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await fx.Handler.Handle(
+            fx.ValidCommand() with { DocumentType = "99" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("'99'").And.Contain("catálogo SRI");
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_confirmado_acepta_un_tipo_activo_no_electronico()
+    {
+        var fx = new Fixture();
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync("02", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await fx.Handler.Handle(
+            fx.ValidCommand() with { DocumentType = "02" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        fx.DocTypes.Verify(
+            d => d.IsActiveElectronicDocTypeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
     [Fact]
     public async Task Crear_confirmado_directo_permitido_cuando_politica_GASDOC_no_lo_bloquea()
     {
@@ -335,6 +378,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<ERP.Application.Common.Services.ISriDocTypeCatalogResolver> DocTypes { get; } = new();
         public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
         public Mock<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher> AccountingPostings { get; } = new();
 
@@ -358,6 +402,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Roles.Object,
                 PtResolver.Object,
                 Tax.Object,
+                DocTypes.Object,
                 Payables.Object,
                 WorkflowPolicy.Object,
                 RetentionIssuer.Object,
@@ -372,6 +417,9 @@ public sealed class CreateConfirmedExpenseUseCasesTests
 
         public Fixture()
         {
+            DocTypes
+                .Setup(d => d.IsActiveDocTypeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
             Account = Account.Create(
                 TenantId,
                 CompanyId,

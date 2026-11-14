@@ -614,6 +614,123 @@ public sealed class ExpenseDocumentDraftUseCasesTests
             exposed.Should().NotContain(forbiddenName);
     }
 
+    // ── EXPENSE-BACKEND-01 (U4) — tipo de documento contra el catálogo SRI ─────────────────────
+
+    [Theory]
+    [InlineData("99")]
+    [InlineData("  98  ")]
+    public async Task Create_Draft_rechaza_un_tipo_inexistente_o_inactivo_sin_persistir(string code)
+    {
+        var fx = new Fixture();
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync(code.Trim(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with { DocumentType = code },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain($"'{code.Trim()}'").And.Contain("catálogo SRI");
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Create_Draft_acepta_un_tipo_activo_aunque_no_sea_electronico()
+    {
+        var fx = new Fixture();
+        // 02 (nota de venta): activo en el catálogo. Compras exige modalidad electrónica; Gastos no.
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync("02", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        fx.DocTypes
+            .Setup(d => d.IsActiveElectronicDocTypeAsync("02", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await fx.CreateHandler.Handle(
+            fx.ValidCreateCommand() with { DocumentType = "02" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.DocumentType.Should().Be("02");
+        fx.DocTypes.Verify(
+            d => d.IsActiveElectronicDocTypeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Update_Draft_rechaza_un_tipo_nuevo_inexistente_o_inactivo()
+    {
+        var fx = new Fixture();
+        var document = fx.ExistingDraftDocument();
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync("99", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id) with { DocumentType = "99" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("'99'");
+        document.DocumentType.Should().Be("01");
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Update_Draft_conserva_un_borrador_historico_cuyo_tipo_ya_no_esta_vigente()
+    {
+        var fx = new Fixture();
+        // Borrador guardado con un código que hoy está inactivo: sigue siendo editable si no lo cambia.
+        var document = fx.ExistingDraftDocument(documentType: "99");
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        fx.DocTypes
+            .Setup(d => d.IsActiveDocTypeAsync("99", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id) with { DocumentType = "99" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.DocumentType.Should().Be("99");
+        fx.DocTypes.Verify(
+            d => d.IsActiveDocTypeAsync("99", It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Update_Draft_permite_cambiar_a_un_tipo_activo()
+    {
+        var fx = new Fixture();
+        var document = fx.ExistingDraftDocument(documentType: "99");
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id) with { DocumentType = "01" },
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        fx.DocTypes.Verify(
+            d => d.IsActiveDocTypeAsync("01", It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
     private static void SetPrivateProperty<T>(object target, string propertyName, T value)
     {
         var property = target
@@ -634,6 +751,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
+        public Mock<ISriDocTypeCatalogResolver> DocTypes { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -652,6 +770,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Roles.Object,
                 PtResolver.Object,
                 Tax.Object,
+                DocTypes.Object,
                 WorkflowPolicy.Object,
                 Purchases.Object,
                 Receptions.Object,
@@ -692,6 +811,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Roles.Object,
                 PtResolver.Object,
                 Tax.Object,
+                DocTypes.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -700,6 +820,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
 
         public Fixture()
         {
+            DocTypes
+                .Setup(d => d.IsActiveDocTypeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
             Account = ExpenseAccount();
             Type = ExpenseCategoryNode.CreateType(
                 TenantId,
@@ -849,7 +972,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Notes: "Borrador editado"
             );
 
-        public ExpenseDocument ExistingDraftDocument()
+        public ExpenseDocument ExistingDraftDocument(string documentType = "01")
         {
             var document = ExpenseDocument.CreateDraft(
                 TenantId,
@@ -860,7 +983,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Supplier.Identification.Number,
                 new DateOnly(2026, 8, 27),
                 new DateOnly(2026, 8, 27),
-                "01",
+                documentType,
                 "001-001-000000123",
                 PaymentTerm.Id,
                 PaymentTerm.Name,

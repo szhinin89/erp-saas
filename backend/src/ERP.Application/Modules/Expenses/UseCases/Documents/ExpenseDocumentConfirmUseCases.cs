@@ -413,6 +413,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IBusinessPartnerRoleRepository _roles;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
+    private readonly ISriDocTypeCatalogResolver _docTypes;
     private readonly IAccountsPayableService _payables;
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
@@ -432,6 +433,7 @@ public sealed class CreateConfirmedExpenseHandler
         IBusinessPartnerRoleRepository roles,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
+        ISriDocTypeCatalogResolver docTypes,
         IAccountsPayableService payables,
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
@@ -451,6 +453,7 @@ public sealed class CreateConfirmedExpenseHandler
         _roles = roles;
         _ptResolver = ptResolver;
         _tax = tax;
+        _docTypes = docTypes;
         _payables = payables;
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
@@ -488,6 +491,15 @@ public sealed class CreateConfirmedExpenseHandler
                 ExpenseWorkflowPolicyMessages.Translate(ex)
             );
         }
+
+        // EXPENSE-BACKEND-01 (U4): el tipo de documento debe existir y estar activo en el catálogo SRI.
+        var documentTypeError = await ExpenseDraftRules.ValidateDocumentTypeAsync(
+            _docTypes,
+            cmd.DocumentType,
+            ct
+        );
+        if (documentTypeError is not null)
+            return documentTypeError.ToResult<ExpenseDocumentDetailDto>();
 
         var supplier = await ExpenseDraftRules.ResolveSupplierAsync(
             _businessPartners,
