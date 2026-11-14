@@ -40,9 +40,6 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   movimiento puede confirmarse (`PostingAccountGuard` solo rechaza al contabilizar). Incluye la
   reasignación con propietario inactivo en las seis familias. Revisar antes de producción; detalle
   en [STATUS](../../STATUS.md).
-- PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 (PENDING; Compras CLOSED, requiere reapertura): guardar
-  una compra (alta y actualización del borrador, también manual) no exige rol Proveedor activo.
-  Registro en [STATUS](../../STATUS.md); sin trabajo abierto.
 - PURCHASES-RECEPTION-XML-ATTEMPT-01 (PENDING; requiere backend y migración): historial persistente
   de intentos y resultados de consulta XML. Antes de intervenir el handler congelado, revisar
   ADR-028/ADR-046, migraciones, privacidad y aislamiento; esta cola no autoriza alterar contratos

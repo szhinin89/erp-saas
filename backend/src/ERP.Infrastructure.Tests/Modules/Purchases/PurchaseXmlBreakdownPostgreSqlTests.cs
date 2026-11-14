@@ -189,6 +189,12 @@ public sealed class PurchaseXmlBreakdownPostgreSqlTests : IAsyncLifetime
                         t.PurchaseReceptionLineTaxId!.Value, t.TaxableBase, t.TaxAmount)).ToList()))).ToList();
             var handler = new UpdatePurchaseDraftHandler(
                 new PurchaseInvoiceRepository(db, new FixedCurrentCompany(_companyId)), supplierRepo.Object,
+                Mock.Of<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository>(r =>
+                    r.GetByTypeAsync(_supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+                    == Task.FromResult<ERP.Domain.MasterData.Entities.BusinessPartnerRole?>(
+                        ERP.Domain.MasterData.Entities.BusinessPartnerRole.Create(
+                            _tenantId, _supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, _createdBy,
+                            supplierConfig: ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()))),
                 Mock.Of<IPaymentTermDefaultResolver>(), itemRepo.Object, Mock.Of<IWarehouseRepository>(), resolver.Object,
                 new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
                 new FixedCurrentTenant(_tenantId), Mock.Of<ICurrentUser>(u => u.UserId == _createdBy),

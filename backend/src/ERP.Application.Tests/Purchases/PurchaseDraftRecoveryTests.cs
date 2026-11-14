@@ -108,12 +108,13 @@ public sealed class PurchaseDraftRecoveryTests
 
     private static CreatePurchaseDraftHandler CreateHandler(
         Mock<IPurchaseInvoiceRepository> repo,
-        IPurchaseReceptionDocumentRepository? receptionRepo = null
+        IPurchaseReceptionDocumentRepository? receptionRepo = null,
+        IBusinessPartnerRoleRepository? roleRepo = null
     ) =>
         new(
             repo.Object,
             SupplierRepo().Object,
-            SupplierRoleRepo().Object,
+            roleRepo ?? SupplierRoleRepo().Object,
             PaymentTermResolver().Object,
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
@@ -131,11 +132,13 @@ public sealed class PurchaseDraftRecoveryTests
     private static UpdatePurchaseDraftHandler UpdateHandler(
         Mock<IPurchaseInvoiceRepository> repo,
         IPurchaseReceptionDocumentRepository? receptionRepo = null,
-        PaymentTerm? term = null
+        PaymentTerm? term = null,
+        IBusinessPartnerRoleRepository? roleRepo = null
     ) =>
         new(
             repo.Object,
             SupplierRepo().Object,
+            roleRepo ?? SupplierRoleRepo().Object,
             PaymentTermResolver(term).Object,
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
@@ -282,6 +285,118 @@ public sealed class PurchaseDraftRecoveryTests
             Schedule: schedule,
             RetentionIntent: retentionIntent
         );
+
+    // ── PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01: rol Proveedor activo al guardar ──
+
+    private static IBusinessPartnerRoleRepository RoleRepoFor(BusinessPartnerRole? role) =>
+        Mock.Of<IBusinessPartnerRoleRepository>(r =>
+            r.GetByTypeAsync(
+                SupplierId,
+                Domain.MasterData.Enums.RoleType.Supplier,
+                It.IsAny<CancellationToken>()
+            ) == Task.FromResult(role)
+        );
+
+    private static BusinessPartnerRole SupplierRole(Guid? tenantId = null, bool revoked = false)
+    {
+        var role = BusinessPartnerRole.Create(
+            tenantId ?? TenantId,
+            SupplierId,
+            Domain.MasterData.Enums.RoleType.Supplier,
+            UserId,
+            supplierConfig: SupplierRoleConfig.Create()
+        );
+        if (revoked)
+            role.Revoke(UserId);
+        return role;
+    }
+
+    public static TheoryData<string> RoleStates =>
+        ["revocado", "inexistente", "de_otro_tenant"];
+
+    private static IBusinessPartnerRoleRepository RoleRepoForState(string state) =>
+        RoleRepoFor(
+            state switch
+            {
+                "revocado" => SupplierRole(revoked: true),
+                "inexistente" => null,
+                _ => SupplierRole(Guid.NewGuid()),
+            }
+        );
+
+    [Theory]
+    [MemberData(nameof(RoleStates))]
+    public async Task Crear_compra_manual_con_rol_Proveedor_no_activo_se_rechaza_sin_persistir(
+        string state
+    )
+    {
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+
+        var result = await CreateHandler(repo, roleRepo: RoleRepoForState(state))
+            .Handle(
+                new CreatePurchaseDraftCommand(
+                    SupplierId,
+                    "01",
+                    "001-001-000000888",
+                    IssueDate,
+                    [new PurchaseLineInput(null, "Manual", 1m, 100m, "10")]
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("El tercero no tiene un rol de proveedor activo.");
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_compra_manual_con_tercero_activo_y_rol_Proveedor_activo_se_persiste()
+    {
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+
+        var result = await CreateHandler(repo, roleRepo: RoleRepoFor(SupplierRole()))
+            .Handle(
+                new CreatePurchaseDraftCommand(
+                    SupplierId,
+                    "01",
+                    "001-001-000000889",
+                    IssueDate,
+                    [new PurchaseLineInput(null, "Manual", 1m, 100m, "10")]
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        repo.Verify(
+            r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Theory]
+    [MemberData(nameof(RoleStates))]
+    public async Task Actualizar_borrador_con_rol_Proveedor_no_activo_se_rechaza_y_no_modifica_la_compra(
+        string state
+    )
+    {
+        var inv = DraftWithManualLine();
+        var repo = RepoFor(inv);
+
+        var result = await UpdateHandler(repo, roleRepo: RoleRepoForState(state))
+            .Handle(
+                UpdateCommand(inv, [new PurchaseLineInput(null, "Otra", 5m, 10m, "10")]),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("El tercero no tiene un rol de proveedor activo.");
+        inv.Lines.Should().ContainSingle().Which.Description.Should().Be("Manual");
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     // ── B1: guardar con pendientes ──────────────────────────────────────
 

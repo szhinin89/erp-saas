@@ -31,6 +31,27 @@ public sealed class PurchaseDraftPackagingTests
     private static readonly Guid WhId = Guid.NewGuid();
     private static readonly Guid PtId = Guid.NewGuid();
 
+    private static ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository ActiveSupplierRole()
+    {
+        var role = ERP.Domain.MasterData.Entities.BusinessPartnerRole.Create(
+            TenantId,
+            SupplierId,
+            ERP.Domain.MasterData.Enums.RoleType.Supplier,
+            UserId,
+            supplierConfig: ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()
+        );
+        var repo = new Mock<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository>();
+        repo.Setup(r =>
+                r.GetByTypeAsync(
+                    SupplierId,
+                    ERP.Domain.MasterData.Enums.RoleType.Supplier,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(role);
+        return repo.Object;
+    }
+
     [Fact]
     public async Task UpdateDraft_con_presentacion_preservada_mantiene_factor_y_cantidad_base()
     {
@@ -88,6 +109,7 @@ public sealed class PurchaseDraftPackagingTests
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             bpRepo.Object,
+            ActiveSupplierRole(),
             Mock.Of<IPaymentTermDefaultResolver>(),
             itemRepo.Object,
             whRepo.Object,
@@ -220,6 +242,7 @@ public sealed class PurchaseDraftPackagingTests
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             bpRepo.Object,
+            ActiveSupplierRole(),
             Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),

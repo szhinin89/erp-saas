@@ -280,7 +280,14 @@ public sealed class PurchaseCostDistributionPostgreSqlTests : IAsyncLifetime
         var tax = new Mock<PurchaseTaxResolver>();
         tax.Setup(r => r.GetVatRateWithNameAsync("0", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(0m, "IVA 0%"));
-        var handler = new UpdatePurchaseDraftHandler(Repo(db), suppliers.Object, Mock.Of<IPaymentTermDefaultResolver>(),
+        var handler = new UpdatePurchaseDraftHandler(Repo(db), suppliers.Object,
+            Mock.Of<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository>(r =>
+                r.GetByTypeAsync(_supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+                == Task.FromResult<ERP.Domain.MasterData.Entities.BusinessPartnerRole?>(
+                    ERP.Domain.MasterData.Entities.BusinessPartnerRole.Create(
+                        _tenantId, _supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, _userId,
+                        supplierConfig: ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()))),
+            Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IItemRepository>(), Mock.Of<IWarehouseRepository>(), tax.Object,
             new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(_companyId)),
             new FixedCurrentTenant(_tenantId), Mock.Of<ICurrentUser>(u => u.UserId == _userId),

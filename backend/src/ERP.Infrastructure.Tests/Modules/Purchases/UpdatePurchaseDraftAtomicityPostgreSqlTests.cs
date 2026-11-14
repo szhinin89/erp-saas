@@ -56,6 +56,15 @@ public sealed class UpdatePurchaseDraftAtomicityPostgreSqlTests : IAsyncLifetime
     private Guid _supplierId;
     private Guid _paymentTermId;
     private Guid _createdBy;
+
+    // Rol Proveedor activo en memoria: el Update solo lo lee (PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01).
+    private ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository ActiveSupplierRole() =>
+        Mock.Of<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository>(r =>
+            r.GetByTypeAsync(_supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, It.IsAny<CancellationToken>())
+            == Task.FromResult<ERP.Domain.MasterData.Entities.BusinessPartnerRole?>(
+                ERP.Domain.MasterData.Entities.BusinessPartnerRole.Create(
+                    _tenantId, _supplierId, ERP.Domain.MasterData.Enums.RoleType.Supplier, _createdBy,
+                    supplierConfig: ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create())));
     private Guid _draftId;
 
     public async Task InitializeAsync()
@@ -210,6 +219,7 @@ public sealed class UpdatePurchaseDraftAtomicityPostgreSqlTests : IAsyncLifetime
         var handler = new UpdatePurchaseDraftHandler(
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(_companyId)),
             new BusinessPartnerRepository(db),
+            ActiveSupplierRole(),
             // No se alcanza: el Update no cambia proveedor ni condición de pago.
             Mock.Of<IPaymentTermDefaultResolver>(),
             // Líneas sin ItemId ni bodega: el handler nunca consulta ítems/bodegas/recepción.

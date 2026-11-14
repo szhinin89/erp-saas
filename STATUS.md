@@ -940,14 +940,27 @@ Riesgos residuales:
 - Facturas con proveedor inactivo pasan de «Pendientes de proveedor» a «Por procesar» (siguen en
   «Solo requieren atención»).
 
-### PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 — Rol Proveedor inactivo al guardar una compra — PENDING (sin trabajo abierto)
+### PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 — Rol Proveedor inactivo al guardar una compra — PUBLICADO (2026-11-13), pendiente de validación CI
 
-Hallazgo de la revisión de H4: `CreatePurchaseDraftHandler` y `UpdatePurchaseDraftHandler`
-(`PurchaseDraftUseCases`, flujo manual y desde recepción) rechazan un socio inactivo y el alta exige la
-configuración SRI del rol Proveedor (`SupplierConfig`), pero ninguno comprueba `BusinessPartnerRole.IsActive`:
-un proveedor con el rol revocado puede recibir una compra nueva al guardar. Desde recepción el borrador
-ya lo bloquea `ReceptionSupplierResolver`; la compra manual no. Compras CLOSED: requiere reapertura
-expresa, decisión sobre borradores existentes con rol revocado y pruebas propias; sin cambios aquí.
+Hallazgo de la revisión de H4. BUG REAL reproducido: `CreatePurchaseDraftHandler` y
+`UpdatePurchaseDraftHandler` rechazaban un socio inactivo, pero ninguno comprobaba
+`BusinessPartnerRole.IsActive`; un proveedor con el rol Proveedor revocado (o de otro tenant) podía
+recibir una compra nueva o modificar su borrador. Desde recepción ya lo bloqueaba
+`ReceptionSupplierResolver`.
+
+Excepción de reapertura (Compras CLOSED): solo el punto de guardado del borrador manual. Alta y
+actualización aplican la política vigente de `ReceptionSupplierResolver`: rol Proveedor existente,
+activo y del tenant, con el mismo mensaje («El tercero no tiene un rol de proveedor activo.»); el alta
+conserva además el error de configuración SRI. Decisión sobre borradores existentes con rol revocado:
+no se pueden guardar (se pueden descartar); no son documentos históricos. Sin cambios en
+confirmación, cuentas por pagar, retenciones, compras confirmadas, documentos históricos ni F-51; sin
+cambios de rutas, permisos ni contratos.
+
+Validación agente: antes (validación neutralizada) 4 fallos de las 14 pruebas de borrador (rol revocado y
+de otro tenant, en alta y actualización); después `PurchaseDraftRecoveryTests` y pruebas vecinas de
+Compras/recepción 125/125 PASS, 21/21 en PostgreSQL real (`UpdatePurchaseDraftAtomicity`,
+`PurchaseXmlBreakdown`, `PurchaseCostDistribution`), guardrail `-SkipFrontendChunk` y
+`architecture:check` (199/199, 0 violaciones nuevas) PASS.
 
 ### PURCHASES-RECEPTION-SRI-QUERY-ENV-01 — Entorno para la consulta real del XML — CLOSED (2026-11-08)
 

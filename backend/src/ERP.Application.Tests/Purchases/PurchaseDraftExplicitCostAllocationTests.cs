@@ -180,6 +180,7 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         new(
             repo.Object,
             BuildActiveSupplierRepo().Object,
+            BuildSupplierRoleRepo().Object,
             BuildPaymentTermResolver().Object,
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),
@@ -549,6 +550,7 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         var handler = new UpdatePurchaseDraftHandler(
             repo.Object,
             BuildActiveSupplierRepo().Object,
+            BuildSupplierRoleRepo().Object,
             Mock.Of<IPaymentTermDefaultResolver>(),
             Mock.Of<IItemRepository>(),
             Mock.Of<IWarehouseRepository>(),

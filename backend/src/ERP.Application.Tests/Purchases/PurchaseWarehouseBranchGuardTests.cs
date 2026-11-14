@@ -252,6 +252,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
         new(
             repo.Object,
             BuildActiveSupplierRepo().Object,
+            BuildSupplierRoleRepo().Object,
             BuildPaymentTermResolver().Object,
             Mock.Of<IItemRepository>(),
             whRepo.Object,

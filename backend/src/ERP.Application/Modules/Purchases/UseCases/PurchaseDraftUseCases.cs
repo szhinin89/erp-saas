@@ -748,7 +748,12 @@ public sealed class CreatePurchaseDraftHandler
             Domain.MasterData.Enums.RoleType.Supplier,
             ct
         );
-        if (supplierRole?.SupplierConfig is null)
+        // PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01: misma política que ReceptionSupplierResolver.
+        if (supplierRole is null || !supplierRole.IsActive || supplierRole.TenantId != tid)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                ERP.Application.Modules.Purchases.PurchaseReception.Services.ReceptionSupplierResolver.InactiveSupplierRoleMessage
+            );
+        if (supplierRole.SupplierConfig is null)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
                 "El proveedor no tiene configuración SRI."
             );
@@ -1086,6 +1091,7 @@ public sealed class UpdatePurchaseDraftHandler
 {
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly IBusinessPartnerRoleRepository _roleRepo;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _whRepo;
@@ -1100,6 +1106,7 @@ public sealed class UpdatePurchaseDraftHandler
     public UpdatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
         IBusinessPartnerRepository bpRepo,
+        IBusinessPartnerRoleRepository roleRepo,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         IItemRepository itemRepo,
         IWarehouseRepository whRepo,
@@ -1116,6 +1123,7 @@ public sealed class UpdatePurchaseDraftHandler
         _unitOfWork = unitOfWork;
         _repo = repo;
         _bpRepo = bpRepo;
+        _roleRepo = roleRepo;
         _ptResolver = ptResolver;
         _itemRepo = itemRepo;
         _whRepo = whRepo;
@@ -1137,6 +1145,18 @@ public sealed class UpdatePurchaseDraftHandler
         if (!supplier.IsActive)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
                 $"El proveedor '{supplier.Name.LegalName}' se encuentra inactivo."
+            );
+
+        // PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01: un borrador no es histórico; guardar exige
+        // rol Proveedor activo (descartar sigue permitido para borradores con rol revocado).
+        var supplierRole = await _roleRepo.GetByTypeAsync(
+            cmd.SupplierId,
+            Domain.MasterData.Enums.RoleType.Supplier,
+            ct
+        );
+        if (supplierRole is null || !supplierRole.IsActive || supplierRole.TenantId != _t.TenantId)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                ERP.Application.Modules.Purchases.PurchaseReception.Services.ReceptionSupplierResolver.InactiveSupplierRoleMessage
             );
 
         var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.Id, ct);
