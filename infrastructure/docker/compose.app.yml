@@ -16,6 +16,8 @@ services:
         Hangfire__StorageConnectionString: "${Hangfire__StorageConnectionString:?explicit PostgreSQL Hangfire storage required}"
         Redis__ConnectionString: "${Redis__ConnectionString:?internal Redis connection required}"
         Redis__InstanceName: "${Redis__InstanceName:?shared Redis prefix required}"
+        # SEC-A01: true si hay más de una instancia de API (caché local solo en instancia única).
+        Redis__Required: "${REDIS_REQUIRED:-false}"
         FileStorage__BasePath: /app/data/files
         PasswordReset__PublicBaseUrl: "${PUBLIC_FRONTEND_URL:?required}"
         Communications__Email__Enabled: "${SMTP_ENABLED:-false}"
@@ -30,6 +32,20 @@ services:
       ASPNETCORE_URLS: http://+:8080
       Jwt__SecretKey: ${JWT_SECRET_KEY:?required}
       Cors__AllowedOrigins__0: "${PUBLIC_FRONTEND_URL:?required}"
+      # SEC-A01 — host filtering: dominio(s) reales, sin comodín. 127.0.0.1 es el Host del healthcheck.
+      AllowedHosts: "${ALLOWED_HOSTS:?hosts permitidos (sin comodin) requeridos};127.0.0.1"
+      # SEC-A01 — proxies confiables para X-Forwarded-For/-Proto. Vacío = no se procesan cabeceras
+      # forwarded. Declarar solo la IP/red verificada del proxy (más entradas: __1, __2, ...).
+      ForwardedHeaders__KnownProxies__0: "${FORWARDED_KNOWN_PROXY:-}"
+      ForwardedHeaders__KnownNetworks__0: "${FORWARDED_KNOWN_NETWORK:-}"
+      # SEC-A01 — límites de login; valores aprobados (K2 IpLimit=0 hasta verificar la IP real).
+      LoginThrottle__WindowMinutes: "${LOGIN_THROTTLE_WINDOW_MINUTES:-15}"
+      LoginThrottle__AccountIpLimit: "${LOGIN_THROTTLE_ACCOUNT_IP_LIMIT:-5}"
+      LoginThrottle__IpLimit: "${LOGIN_THROTTLE_IP_LIMIT:-0}"
+      LoginThrottle__AccountLimit: "${LOGIN_THROTTLE_ACCOUNT_LIMIT:-30}"
+      LoginThrottle__MaxConcurrentVerifications: "${LOGIN_THROTTLE_MAX_CONCURRENT:-}"
+      LoginThrottle__QueueLimit: "${LOGIN_THROTTLE_QUEUE_LIMIT:-}"
+      LoginThrottle__MaxQueueWaitMilliseconds: "${LOGIN_THROTTLE_MAX_QUEUE_WAIT_MS:-2000}"
       HealthChecks__SriProbeUrl: ""
     ports:
       - "${API_PORT:-5003}:8080"

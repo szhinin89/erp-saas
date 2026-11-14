@@ -127,16 +127,27 @@ SHA-256 del usuario normalizado y de la IP, nunca en claro) y configuración (`L
 - **Respuestas**: límite excedido o sin capacidad → 429 `RATE_LIMITED`; Redis configurado pero
   inaccesible → 503 `LOGIN_THROTTLE_UNAVAILABLE` sin verificar la contraseña. Sin Redis
   configurado, el respaldo en memoria solo se usa en Development/Testing; en otro entorno → 503.
-- **IP del cliente**: `Connection.RemoteIpAddress`. `X-Forwarded-For` solo se procesa desde
-  `ForwardedHeaders:KnownProxies`/`KnownNetworks` (vacío por defecto = no se procesa; sin loopback
-  implícito; `ForwardLimit = 1`).
+- **IP y esquema del cliente**: `Connection.RemoteIpAddress` y el esquema de la conexión.
+  `X-Forwarded-For` y `X-Forwarded-Proto` solo se procesan desde `ForwardedHeaders:KnownProxies`
+  (IPs)/`KnownNetworks` (CIDR); vacío por defecto = no se procesan (entradas en blanco se ignoran);
+  sin loopback implícito; `ForwardLimit = 1`. El middleware va primero del pipeline, antes de
+  HTTPS, autenticación y rate limiting. Con TLS terminado en el proxy, `X-Forwarded-Proto=https`
+  mantiene `Request.IsHttps` (cookie de refresh `Secure`, sin bucle de `UseHttpsRedirection`); un
+  origen no declarado no puede falsificar IP ni esquema.
 - **Riesgo residual aceptado**: sin cookie de dispositivo, un atacante que conoce un usuario puede
   bloquearlo temporalmente desde cualquier origen al llenar K3, y desde la misma IP al llenar K1.
 
-**Gates pendientes antes de producción**: valores definitivos de límites, concurrencia y cola
-(`t_bcrypt` medido en el hardware real); IP real del cliente verificada detrás del proxy de
-despliegue y `KnownProxies`/`KnownNetworks` reales antes de activar K2; Redis disponible y
-`Redis:Required` acorde al número de instancias; HTTPS/`X-Forwarded-Proto` fuera de este alcance.
+**Código preparado y probado (SEC-A01-INFRA-01):** procesamiento de `X-Forwarded-Proto` y
+parametrización Compose de `ForwardedHeaders__*`, `LoginThrottle__*`, `Redis__Required` y
+`AllowedHosts`.
+
+**Gates pendientes antes de producción (verificación en el servidor):** valores definitivos de
+concurrencia y cola (`t_bcrypt` medido en el hardware real); IP real del cliente verificada detrás
+del proxy y `KnownProxies`/`KnownNetworks` reales antes de activar K2; Redis disponible y
+`Redis:Required` acorde al número de instancias; `AllowedHosts` con el dominio real. **Obligaciones de
+despliegue:** HTTPS público, API y base de datos sin exposición directa innecesaria, Redis sin
+puerto público, `/metrics` inaccesible públicamente, y proxies confiables configurados antes de
+confiar en cabeceras reenviadas.
 
 ---
 

@@ -2938,10 +2938,30 @@ Cierre documental publicado en `9cb872adac3cd82992c52ba76387c69b969cb3e5`;
 (ejecución `41743143238`: 19 jobs exitosos, 0 fallidos y 1 omitido: Deploy — Azure Web App).
 No acredita despliegue ni ERP V1 listo para producción.
 
+**SEC-A01-INFRA-01 (2026-11-13) — código y configuración preparados, sin desplegar** (aprobado por el
+propietario; publicado, pendiente de validación CI). Hallazgo: solo se procesaba `X-Forwarded-For`; con TLS terminado
+en el proxy, `Request.IsHttps` quedaba falso (cookie de refresh sin `Secure`, `UseHttpsRedirection`
+sobre HTTP interno). `TrustedProxyForwardedHeaders` ahora procesa `X-Forwarded-For` **y**
+`X-Forwarded-Proto` solo desde `KnownProxies`/`KnownNetworks` explícitos (`ForwardLimit=1`, sin
+loopback implícito, entradas vacías ignoradas = sin proxies). El middleware ya corre antes de HTTPS,
+autenticación y rate limiting (`Program.cs`). `compose.app.yml` y `.env.app.example` parametrizan
+`ForwardedHeaders__*`, `LoginThrottle__*` (valores aprobados: K1 5/15 min, K2 0, K3 30/15 min),
+`Redis__Required` y `AllowedHosts` (`ALLOWED_HOSTS` obligatorio, sin comodín). BCrypt (costo 12), JWT,
+sesiones y reglas de auth sin cambios.
+PASS agente (focales): `TrustedProxyForwardedHeadersTests` 16 (IsHttps, cookie `Secure`, sin bucle
+de redirección, origen no confiable no falsifica esquema ni IP, un salto, For existente) y, junto a
+`AuthLoginThrottleContractTests`/`AuthRefreshCookieContractTests`, 55/55; Architecture.Tests 145/145;
+`architecture:check` 0 violaciones nuevas; guardrail oficial OK; `docker compose config` válido y
+variables resueltas (falla sin `ALLOWED_HOSTS`). No acredita despliegue ni validación en producción.
+
 **Verificaciones de configuración pendientes del despliegue** (servidor productivo; el despliegue a
 producción no procede hasta completarlas; no son desarrollo pendiente):
-- Verificar la IP real del cliente detrás del proxy y configurar `ForwardedHeaders:KnownProxies`/
-  `KnownNetworks` reales; K2 por IP sigue desactivado hasta entonces.
+- Verificar la IP real del cliente detrás del proxy y declarar `FORWARDED_KNOWN_PROXY`/
+  `FORWARDED_KNOWN_NETWORK` reales (el código ya está preparado); K2 por IP sigue desactivado hasta
+  entonces. Definir `ALLOWED_HOSTS` con el dominio real y TLS público.
+- Obligaciones de exposición: HTTPS público, API/BD sin exposición directa innecesaria, Redis sin
+  puerto público, `/metrics` inaccesible públicamente (regla del proxy) — ver
+  [runbook](docs/deployment/README.md#límites-de-login-sec-a01).
 - Verificar Redis disponible en el entorno de despliegue y el número real de instancias API
   (`Redis:Required` acorde).
 - Medir `t_bcrypt` en el hardware real y validar los parámetros definitivos de concurrencia, cola

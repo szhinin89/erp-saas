@@ -18,8 +18,9 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   fail-closed y protección de rutas por permisos efectivos. Estado, evidencia y archivos en
   [STATUS](../../STATUS.md). La decisión de datos sobre el perfil `DataEntry` sigue siendo del
   propietario (sin cambios).
-- SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
-  real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
+- SEC-A01 (requisitos de despliegue; implementación CLOSED; SEC-A01-INFRA-01 deja el código de
+  `X-Forwarded-Proto` y las variables Compose preparados y probados, sin desplegar): antes de
+  producción, verificar IP real tras el proxy y declarar proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son
   comprobaciones de configuración del servidor productivo previas al despliegue. Estado y gates en
   [STATUS](../../STATUS.md).

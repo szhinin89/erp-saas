@@ -78,6 +78,28 @@ desactivado). `ForwardedHeaders__KnownProxies__N`/`ForwardedHeaders__KnownNetwor
 no declarar proxies sin haber verificado la IP/red real del proxy del despliegue. Contrato y gates:
 [Seguridad — Límites de intentos de login](../architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-v1-closed--verificaciones-de-despliegue-pendientes).
 
+### Variables SEC-A01 (`.env.app`) y obligaciones de despliegue
+
+| Variable | Efecto | Valor |
+|---|---|---|
+| `ALLOWED_HOSTS` | `AllowedHosts` (obligatoria; se añade `127.0.0.1` para el healthcheck) | Dominio real, separado por `;`; nunca `*` |
+| `FORWARDED_KNOWN_PROXY` / `FORWARDED_KNOWN_NETWORK` | `ForwardedHeaders__KnownProxies__0`/`KnownNetworks__0` (IP / CIDR) | Vacío = no se procesan cabeceras forwarded. Más entradas: `__1`, `__2` en el compose |
+| `LOGIN_THROTTLE_*` | `LoginThrottle__*` | Aprobados: K1 5, K2 0, K3 30, ventana 15; concurrencia y cola vacías hasta medir BCrypt |
+| `REDIS_REQUIRED` | `Redis__Required` | `true` con más de una instancia de API |
+
+Con proxy confiable declarado, `X-Forwarded-Proto=https` hace que la API vea HTTPS (cookie de refresh
+`Secure`, sin bucle de redirección). Sin proxy declarado no se procesan cabeceras forwarded: con TLS
+terminado en un proxy, declararlo es **obligatorio**. Obligaciones (verificar en el servidor antes de
+producción; este repo no las aplica):
+
+- HTTPS público obligatorio; publicar solo 443.
+- API y base de datos sin exposición directa innecesaria (los puertos `API_PORT`/`FRONTEND_PORT` del
+  compose no deben quedar públicos si hay proxy delante).
+- Redis sin puerto público (el `compose.base.yml` local publica 6379 solo para desarrollo).
+- `/metrics` inaccesible públicamente (regla del proxy o red interna).
+- Proxies confiables configurados antes de habilitar cabeceras reenviadas; nunca un rango amplio.
+- `ALLOWED_HOSTS` restringido al dominio real.
+
 ## Configuración compartida y específica
 
 El anchor común de Compose comparte conexión ERP, `Hangfire__StorageConnectionString`,

@@ -44,6 +44,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="ERP.API.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="Templates\**\*.cshtml" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>
