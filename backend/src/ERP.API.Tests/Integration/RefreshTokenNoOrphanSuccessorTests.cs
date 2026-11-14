@@ -3,8 +3,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Auth.Entities;
+using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -270,6 +273,47 @@ public sealed class RefreshTokenNoOrphanSuccessorTests : IClassFixture<CompanyId
         var tokens = await TokensAsync(s.UserId);
         tokens.Should().HaveCount(2);
         tokens.Count(t => !t.Revoked).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Rotacion_con_contextos_precargados_serializa_en_PostgreSql_sin_gate_del_servicio()
+    {
+        var s = await NewSessionAsync();
+        using var scopeA = _f.CreateScope();
+        using var scopeB = _f.CreateScope();
+        var repoA = scopeA.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
+        var repoB = scopeB.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
+        var hash = RefreshTokenService.Hash(s.Refresh);
+        // Fuerza la lectura previa en ambos trackers, sin depender del scheduler HTTP.
+        var parentA = (await repoA.GetByHashAsync(hash))!;
+        var parentB = (await repoB.GetByHashAsync(hash))!;
+        parentA.IsRevoked.Should().BeFalse();
+        parentB.IsRevoked.Should().BeFalse();
+
+        static RefreshToken Successor(RefreshToken parent) => RefreshToken.Create(
+            parent.UserId, parent.TenantId, parent.CompanyId, parent.UserType,
+            RefreshTokenService.Hash(Guid.NewGuid().ToString()), parent.ExpiresAt,
+            parent.AbsoluteExpiresAt, familyId: parent.FamilyId, parentTokenId: parent.Id,
+            rotationDepth: parent.RotationDepth + 1
+        );
+
+        var results = await Task.WhenAll(
+            repoA.TryRotateAsync(hash, Successor(parentA)),
+            repoB.TryRotateAsync(hash, Successor(parentB))
+        );
+
+        results.Count(r => r.Success).Should().Be(1);
+        using var verification = _f.CreateScope();
+        var db = verification.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var tokens = await db.RefreshTokens.AsNoTracking().Where(t => t.UserId == s.UserId).ToListAsync();
+        tokens.Should().HaveCount(2);
+        var parent = tokens.Single(t => t.Id == parentA.Id);
+        var successor = tokens.Single(t => !t.IsRevoked);
+        parent.IsRevoked.Should().BeTrue();
+        parent.ReplacedByHash.Should().Be(successor.TokenHash);
+        successor.ParentTokenId.Should().Be(parent.Id);
+        successor.FamilyId.Should().Be(parent.FamilyId);
+        successor.RotationDepth.Should().Be(parent.RotationDepth + 1);
     }
 
     [Fact]

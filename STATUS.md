@@ -48,9 +48,28 @@ Los registros antiguos «sin commit» o «pendiente Git/CI» fuera de estas entr
 commit específico y aceptación; no se cierran con un CI posterior ni se reabren por
 esta conciliación. Se conserva explícitamente esa limitación de verificación.
 
-## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASES 1 (`72a9afc3d`) y 2 (`f99332051`) CONFIRMADAS (locales) y FASE 3 (formulario de Gastos) IMPLEMENTADA sin commit (2026-11-14), pendiente gate del propietario
+## CI-1196 — Refresh concurrente — CORREGIDO y confirmado localmente (2026-11-14)
 
-Fases 1 y 2 confirmadas (CI de la 1: #1195 SUCCESS); Fase 3 sin commit ni push. [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; solo D4 no
+BUG REAL reproducido antes del cambio con la prueba HTTP focalizada y PostgreSQL efímero real:
+dos respuestas 200 para el mismo token. La lectura previa de SEC-SUSP-02b deja el token seguido
+por cada contexto EF; el semáforo del servicio serializa llamadas pero la consulta de rotación
+reutiliza esa instancia obsoleta. Además, la transacción no bloqueaba el predecesor entre procesos.
+`RefreshTokenRepository` aplica el patrón existente de Caja: `FOR UPDATE` parametrizado y
+`ReloadAsync` dentro de la transacción, antes de validar y persistir revocación + sucesor.
+Sin nuevas dependencias, cambios de esquema, relajación de aserciones ni cambios al handler de auth.
+Contrato vigente en [Seguridad](docs/architecture/security.md#refresh-rotation).
+
+Regresión añadida en la clase existente: dos repositorios con contextos precargados rotan sin
+pasar por el gate del servicio; exige un único éxito, dos filas, un activo y enlaces padre/hash/familia/profundidad
+consistentes. Validación local: refresh/servicio 33/33, contratos auth/cookie 46/46,
+Application (Gastos + RefreshTokenHandler) 153/153 y arquitectura backend 145/145.
+Las dos regresiones concurrentes (HTTP y repositorio precargado) pasaron en cinco ejecuciones
+independientes consecutivas con PostgreSQL real: 10/10.
+Verificación del gate: control negativo con el repositorio original (`HEAD`) — las dos regresiones fallan (HTTP: dos 200; repositorio: dos éxitos de rotación) y pasan con el arreglo; `RefreshTokenNoOrphanSuccessorTests` 12/12 en 5 corridas consecutivas; refresh/auth (`RefreshTokenNoOrphanSuccessorTests`, `RefreshTokenServiceTests`, `AuthRefreshCookieContractTests`, `AuthControllerTests`) 79/79; Application (`RefreshTokenHandlerTests`, Logout, OperateCompany, Reauthenticate) 30/30; `ERP.Architecture.Tests` 145/145; guardrail oficial OK. Reuso tardío, ventana de gracia y revocación de familia no cambian (sus pruebas siguen en verde). Confirmado en `fix(auth): serialize concurrent refresh token rotation`; sin push.
+
+## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASES 1 (`72a9afc3d`) y 2 (`f99332051`) CONFIRMADAS (locales) y FASE 3 (formulario de Gastos) CONFIRMADA (`f4a0bc483`, local) (2026-11-14)
+
+Fases 1 y 2 confirmadas (CI de la 1: #1195 SUCCESS); Fase 3 confirmada localmente sin push. [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; solo D4 no
 aplicó: no se recreó ninguna base de datos). Comportamiento vigente en la SSOT [Gastos](docs/architecture/expenses.md).
 
 | Ítem | Estado |
@@ -87,8 +106,9 @@ El intento amplio de OpenAPI se interrumpi? tras un timeout Npgsql en el arranqu
 (`FirstRunOwnershipCoordinator`), antes de evaluar el contrato: no acredita PASS de esa clase completa.
 El intento focalizado (4 contratos) tampoco alcanz? las aserciones: primero timeout del daemon Docker;
 el reintento lleg? a PostgreSQL y volvi? a fallar en el arranque con timeout Npgsql. Se detuvo la ejecuci?n
-restante; OpenAPI queda pendiente del gate del propietario sin el timeout de arranque del fixture.
+restante; OpenAPI quedó pendiente en esa ejecución sin el timeout de arranque del fixture.
 No se modificaron timeouts, infraestructura First Run ni expectativas para forzar el paso.
+Ejecución posterior (misma fecha, sin cambios de infraestructura): `ERP.API.Tests` OpenAPI + contrato del controlador **118/118 PASS** (19 min 12 s), de modo que el timeout de arranque anterior era del entorno y no de una aserción; ambos resultados se conservan como evidencia.
 
 ## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
 

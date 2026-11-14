@@ -72,11 +72,22 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            // Serializa también entre instancias de API. La lectura previa del handler puede
+            // haber dejado una entidad obsoleta en el tracker: lock y recarga, como en Caja.
+            if ((_context.Database.ProviderName ?? string.Empty).Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"SELECT 1 FROM refresh_tokens WHERE token_hash = {tokenHash} FOR UPDATE",
+                    cancellationToken
+                );
+
             var now = DateTime.UtcNow;
             var stored = await _context.RefreshTokens.FirstOrDefaultAsync(
                 t => t.TokenHash == tokenHash,
                 cancellationToken
             );
+
+            if (stored is not null)
+                await _context.Entry(stored).ReloadAsync(cancellationToken);
 
             if (stored is null || stored.IsRevoked || stored.ExpiresAt <= now)
             {

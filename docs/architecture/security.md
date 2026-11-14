@@ -85,6 +85,11 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
 
 ## Refresh rotation
 
+- Rotación atómica en PostgreSQL: `RefreshTokenRepository.TryRotateAsync` bloquea la fila del
+  predecesor con `FOR UPDATE` dentro de la transacción y recarga la entidad seguida por EF antes
+  de validar su estado. Revocación e inserción del sucesor se confirman juntas: dos consumidores
+  del mismo token solo pueden crear un sucesor, incluso con contextos precargados o instancias
+  distintas de API. Los semáforos del proceso no sustituyen esta garantía de persistencia.
 - **FamilyId** por sesión/dispositivo
 - Reuso benigno (< grace) → 401 sin revocar familia
 - Reuso sospechoso → `RevokeFamilyAsync` (no logout global)
