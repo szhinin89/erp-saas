@@ -436,8 +436,8 @@ public sealed class AccountingController : ControllerBase
     /// <param name="fiscalYear">Ejercicio a cerrar (entre 2000 y 2999).</param>
     /// <param name="ct">Token de cancelación de la solicitud.</param>
     /// <response code="200">Asiento de cierre generado en estado Draft.</response>
-    /// <response code="400">No se cumple una precondición del cierre anual; el código del envelope indica cuál (ejercicio sin períodos completos, último período no abierto o períodos anteriores abiertos, ejercicio no terminado, contabilidad no habilitada, información incompleta, borradores pendientes, asiento de cierre ya existente o ya contabilizado, sin resultado que cerrar, cuenta de resultado inválida).</response>
-    /// <response code="422">Ejercicio fuera de rango, o regla de dominio violada al crear el asiento.</response>
+    /// <response code="400">Solicitud inválida sin código de negocio propio.</response>
+    /// <response code="422">No se cumple una precondición del cierre anual; el <c>code</c> del envelope indica cuál (<c>FISCAL_YEAR_PERIODS_INCOMPLETE</c>, <c>FISCAL_YEAR_LAST_PERIOD_NOT_OPEN</c>, <c>FISCAL_YEAR_PREVIOUS_PERIODS_OPEN</c>, <c>FISCAL_YEAR_NOT_ENDED</c>, <c>ACCOUNTING_NOT_ENABLED</c>, <c>FISCAL_YEAR_ACCOUNTING_INCOMPLETE</c>, <c>FISCAL_YEAR_DRAFT_ENTRIES</c>, <c>YEAR_END_CLOSING_DRAFT_EXISTS</c>, <c>YEAR_END_CLOSING_ALREADY_POSTED</c>, <c>YEAR_END_CLOSING_NOTHING_TO_CLOSE</c>, <c>YEAR_END_RESULT_ACCOUNT_INVALID</c>), ejercicio fuera de rango, o regla de dominio violada al crear el asiento.</response>
     [ProducesResponseType(
         typeof(ApiResponse<FiscalYearClosingDto>),
         StatusCodes.Status200OK

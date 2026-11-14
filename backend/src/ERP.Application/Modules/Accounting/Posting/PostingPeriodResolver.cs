@@ -26,7 +26,7 @@ internal sealed class PostingPeriodResolver
         return period is null
             ? Result<AccountingPeriod>.ValidationFailure(
                 "No existe un período contable abierto que contenga la fecha del asiento.",
-                "PERIOD_NOT_OPEN"
+                ApiResponseCodes.Accounting.PeriodNotOpen
             )
             : Result<AccountingPeriod>.Success(period);
     }

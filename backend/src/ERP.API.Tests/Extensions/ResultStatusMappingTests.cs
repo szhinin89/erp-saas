@@ -138,12 +138,13 @@ public sealed class ResultStatusMappingTests
     [Fact]
     public void Codigo_no_catalogado_conserva_400_con_su_propio_code()
     {
-        // Deuda ADR-027 Fase 1 (códigos de módulo aún literales): documentada, no silenciosa.
-        var failure = Result<string>.ValidationFailure("Período cerrado.", "PERIOD_NOT_OPEN");
+        // Deuda ADR-027 Fase 1 (códigos de módulo aún literales): documentada, no silenciosa. Los códigos
+        // de Contabilidad/Carga Inicial (F-10/F-33) ya están catalogados: aquí se usa un literal ajeno.
+        var failure = Result<string>.ValidationFailure("SKU repetido.", "SKU_DUPLICATE");
 
         Read(Controller().ToOkOrBadRequest(failure))
             .Should()
-            .BeEquivalentTo((400, "PERIOD_NOT_OPEN", new[] { "Período cerrado." }));
+            .BeEquivalentTo((400, "SKU_DUPLICATE", new[] { "SKU repetido." }));
     }
 
     [Theory]

@@ -1,5 +1,23 @@
 # Project Status
 
+## API-DOC-B-MSG — F-10 y F-33 (códigos de Contabilidad y Carga Inicial fuera de MessageCatalog) — PUBLICADO, pendiente resultado del CI (aprobado por el propietario 2026-11-13)
+
+Autorización del propietario: catalogar los códigos de validación de Accounting, ManualJournal e InitialLoad de F-10/F-33 más el preflight de apertura; sin reglas globales ni cambios en otros módulos. Cierre de Contabilidad e Initial Load sin reapertura funcional: solo clasificación y mensajes.
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-10, F-33 | BUG REAL (misma causa) | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | El status HTTP sale solo de la categoría de `MessageCatalog`; un código no catalogado cae en el fallback BusinessRule (400, «Ocurrió un error inesperado.» / «Unmapped response code.») aunque se cree con `Result.ValidationFailure` (documentado 422). Se declaran `ApiResponseCodes.Accounting` y `ApiResponseCodes.InitialLoad` (38 códigos, **mismos valores de `code`**): 37 se catalogan como Validation → 422 con mensaje propio y `MANUAL_POST_INTERNAL` como InternalError → 500 (ver abajo); los códigos del dominio apuntan a esas constantes. Sin cambio de `Result`, `ApiErrorStatus`, `ResponseFactory`, handlers ni rutas. Antes: `AccountingInitialLoadValidationCodesTests` 76 de 78 casos fallaban (400 y mensaje genérico); después 78/78. |
+
+Códigos (Contabilidad): `PERIOD_NOT_OPEN`, `MANUAL_FUTURE_DATE`, `ACCOUNTING_NOT_ENABLED`, `OPENING_REVERSAL_REQUIRES_CORRECTION_FLOW`, `FISCAL_YEAR_*` (6) y `YEAR_END_*` (7). Carga Inicial: `INITIAL_LOAD_CLOSED`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_*` (11) y preflight (`BATCH_NOT_ACCOUNTABLE`, `BATCH_NOT_COMPLETED`, `ALREADY_POSTED`, `SOURCE_EMPTY`, `SOURCE_COST_MISSING`, `AMOUNT_NOT_POSITIVE`).
+
+`MANUAL_POST_INTERNAL` (revisión del gate): nace del `catch (Exception)` técnico de `PostManualJournalCommand` (fallo de flush/commit), no de una regla de negocio; el intento queda registrado y los reintentos con la misma clave lo reproducen. Se cataloga con la categoría InternalError ya existente (500, detalle oculto, mensaje propio; sin contrato general nuevo), `Result.Failure` en lugar de `ValidationFailure`; el valor del código se conserva (persistido y fijado por `AccountingManual08Tests`, 5/5). Antes respondía 400.
+
+Impacto HTTP/OpenAPI: los 37 rechazos de negocio pasan de 400 a **422** (mismo envelope y `code`; el detalle específico sigue en `data.errors`; `message.user` ya no es el genérico). El 400 solo queda para fallos sin código catalogado (id de ruta distinto, error inesperado, política contable como `ACCOUNTING_MODE_NOT_CONFIGURED` y fallas del motor). Se actualizaron remarks y se añadió el 422 a `POST initial-load/batches/{id}/opening-posting` y `POST initial-load/close`; ManualJournal y cierre anual ya declaraban 422. Frontend: solo lee `code` (`CorrectOpeningModal` → `PERIOD_NOT_OPEN`), ningún flujo depende del 400. `ResultStatusMappingTests` usaba `PERIOD_NOT_OPEN` como ejemplo de código no catalogado: ahora usa `SKU_DUPLICATE`; `ApiErrorContractTests` registra los 38 con 422; `error-handling.md` actualizado.
+
+Validación (focalizada, sin suite completa): `ERP.API.Tests` OpenAPI/contrato/Manual Journal/InitialLoad/mapeo 709/709; `ERP.Architecture.Tests` ApiResponseContract 6/6; `ERP.Application.Tests` InitialLoad/Posting/Reverse/ManualJournal/FiscalYear 322/322; `ERP.Infrastructure.Tests` (PostgreSQL) cierre anual, Manual08, preflight/post/publicación/reverso de apertura 90/90; guardrail oficial (`-SkipFrontendChunk`) y `architecture:check` PASS (0 violaciones nuevas). Sin regenerar Dashboard.
+
+Residuo, fuera de alcance y sin tocar: `ACCOUNTING_MODE_NOT_CONFIGURED`, `POSTING_FAILED` y los demás códigos del motor/continuidad contable (compartidos con otros módulos) y los códigos literales de otros módulos siguen en 400. El resto de F-01 a F-52 conserva su estado.
+
 ## SEC-SUSP — Empresa suspendida o deshabilitada — SEC-SUSP-01 PUBLICADO, pendiente validación CI (2026-11-13)
 
 Auditoría posterior a F-02. Decisiones del propietario y excepción FROZEN limitada en

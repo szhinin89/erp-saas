@@ -55,7 +55,7 @@ public sealed class PostOpeningBalanceCommandValidator : AbstractValidator<PostO
 public sealed partial class PostOpeningBalanceCommandHandler
     : IRequestHandler<PostOpeningBalanceCommand, Result<OpeningBalancePostingDto>>
 {
-    public const string SourceChangedCode = "OPENING_SOURCE_CHANGED";
+    public const string SourceChangedCode = ApiResponseCodes.InitialLoad.OpeningSourceChanged;
     private const string InternalErrorMessage = "Error interno del sistema.";
 
     private readonly IOperationalContext _ctx;

@@ -29,7 +29,7 @@ public sealed record CloseInitialLoadCommand : IRequest<Result<InitialLoadClosur
 public sealed partial class CloseInitialLoadCommandHandler
     : IRequestHandler<CloseInitialLoadCommand, Result<InitialLoadClosureDto>>
 {
-    public const string BlockedCode = "INITIAL_LOAD_CLOSE_BLOCKED";
+    public const string BlockedCode = ApiResponseCodes.InitialLoad.CloseBlocked;
     private const string InternalErrorMessage = "Error interno del sistema.";
 
     private readonly IOperationalContext _ctx;

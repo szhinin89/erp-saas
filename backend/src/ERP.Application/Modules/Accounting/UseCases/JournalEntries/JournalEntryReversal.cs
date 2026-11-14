@@ -18,7 +18,7 @@ public sealed class JournalEntryReversal(
         await policies.AcquireSharedLockAsync(companyId, ct);
         var period = await periods.FindContainingDateAsync(tenantId, companyId, effectiveDate, ct);
         return period is null
-            ? Result<AccountingPeriod>.ValidationFailure("No existe un período Open para la fecha efectiva del reverso.", "PERIOD_NOT_OPEN")
+            ? Result<AccountingPeriod>.ValidationFailure("No existe un período Open para la fecha efectiva del reverso.", ApiResponseCodes.Accounting.PeriodNotOpen)
             : new PostingPeriodGuard().Ensure(period);
     }
 

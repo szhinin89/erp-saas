@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 
@@ -14,7 +15,7 @@ namespace ERP.Application.Modules.InitialLoad;
 /// </summary>
 public static class InitialLoadClosedGuard
 {
-    public const string Code = "INITIAL_LOAD_CLOSED";
+    public const string Code = ApiResponseCodes.InitialLoad.Closed;
 
     /// <summary>Motivo de rechazo si la Carga Inicial está cerrada; <c>null</c> si sigue abierta.</summary>
     public static async Task<string?> CheckOpenAsync(IOpeningBalanceConstraintsReader reader, CancellationToken ct) =>

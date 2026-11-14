@@ -81,42 +81,42 @@ public sealed class OpeningBalancePostingPreflight
         var factType = OpeningBalancePostingFacts.ForImportType(batch.ImportType);
         if (factType is null)
         {
-            issues.Add(new("BATCH_NOT_ACCOUNTABLE", "Este tipo de carga inicial no genera asiento de apertura."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.BatchNotAccountable, "Este tipo de carga inicial no genera asiento de apertura."));
             return Result();
         }
         if (batch.Status != ImportStatus.Completed)
         {
-            issues.Add(new("BATCH_NOT_COMPLETED", "Solo un lote confirmado por completo se contabiliza."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.BatchNotCompleted, "Solo un lote confirmado por completo se contabiliza."));
             return Result();
         }
 
         var existing = await _postings.FindByBatchAsync(_ctx.TenantId, _ctx.CompanyId, batch.Id, ct);
         if (existing?.Status == OpeningBalancePostingStatus.Posted)
         {
-            issues.Add(new("ALREADY_POSTED", "La apertura del lote ya está contabilizada."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.AlreadyPosted, "La apertura del lote ya está contabilizada."));
             return Result(status: existing.Status);
         }
 
         var openingDate = await _openingBalance.GetOpeningBalanceDateAsync(ct);
         if (openingDate is null)
         {
-            issues.Add(new("OPENING_DATE_MISSING", "La empresa no tiene definida su fecha de apertura de saldos."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.OpeningDateMissing, "La empresa no tiene definida su fecha de apertura de saldos."));
             return Result(status: existing?.Status);
         }
 
         var source = await _sources.GetConfirmedSourceAsync(batch.Id, batch.ImportType, ct);
         if (source.DocumentCount == 0)
-            issues.Add(new("SOURCE_EMPTY", "El lote no tiene saldos confirmados que contabilizar."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.SourceEmpty, "El lote no tiene saldos confirmados que contabilizar."));
         if (source.MissingCostCount > 0)
-            issues.Add(new("SOURCE_COST_MISSING",
+            issues.Add(new(ApiResponseCodes.InitialLoad.SourceCostMissing,
                 $"{source.MissingCostCount} movimiento(s) de inventario inicial no tienen costo total."));
         if (source.CutoffDates.Any(d => d != openingDate.Value))
-            issues.Add(new("OPENING_DATE_MISMATCH",
+            issues.Add(new(ApiResponseCodes.InitialLoad.OpeningDateMismatch,
                 $"El corte registrado del lote ({string.Join(", ", source.CutoffDates.Order().Select(d => d.ToString("yyyy-MM-dd")))}) "
                     + $"no coincide con la fecha de apertura de la empresa ({openingDate.Value:yyyy-MM-dd})."));
         var amount = OpeningBalancePosting.RoundAmount(source.RawAmount);
         if (amount <= 0m)
-            issues.Add(new("AMOUNT_NOT_POSITIVE", "El monto de apertura del lote debe ser mayor a cero."));
+            issues.Add(new(ApiResponseCodes.InitialLoad.AmountNotPositive, "El monto de apertura del lote debe ser mayor a cero."));
         if (issues.Count > 0)
             return Result(status: existing?.Status);
 

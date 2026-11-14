@@ -55,20 +55,20 @@ public sealed class GenerateFiscalYearClosingEntryCommandValidator
 
 public static class FiscalYearClosingCodes
 {
-    public const string PeriodsIncomplete = "FISCAL_YEAR_PERIODS_INCOMPLETE";
-    public const string LastPeriodNotOpen = "FISCAL_YEAR_LAST_PERIOD_NOT_OPEN";
-    public const string PreviousPeriodsOpen = "FISCAL_YEAR_PREVIOUS_PERIODS_OPEN";
-    public const string NotEnded = "FISCAL_YEAR_NOT_ENDED";
-    public const string NotEnabled = "ACCOUNTING_NOT_ENABLED";
-    public const string AccountingIncomplete = "FISCAL_YEAR_ACCOUNTING_INCOMPLETE";
-    public const string DraftEntriesPending = "FISCAL_YEAR_DRAFT_ENTRIES";
-    public const string DraftExists = "YEAR_END_CLOSING_DRAFT_EXISTS";
-    public const string AlreadyPosted = "YEAR_END_CLOSING_ALREADY_POSTED";
-    public const string NothingToClose = "YEAR_END_CLOSING_NOTHING_TO_CLOSE";
-    public const string ResultAccountInvalid = "YEAR_END_RESULT_ACCOUNT_INVALID";
-    public const string Outdated = "YEAR_END_CLOSING_OUTDATED";
-    public const string NotEditable = "YEAR_END_CLOSING_NOT_EDITABLE";
-    public const string ReversalDateInvalid = "YEAR_END_CLOSING_REVERSAL_DATE";
+    public const string PeriodsIncomplete = ApiResponseCodes.Accounting.FiscalYearPeriodsIncomplete;
+    public const string LastPeriodNotOpen = ApiResponseCodes.Accounting.FiscalYearLastPeriodNotOpen;
+    public const string PreviousPeriodsOpen = ApiResponseCodes.Accounting.FiscalYearPreviousPeriodsOpen;
+    public const string NotEnded = ApiResponseCodes.Accounting.FiscalYearNotEnded;
+    public const string NotEnabled = ApiResponseCodes.Accounting.NotEnabled;
+    public const string AccountingIncomplete = ApiResponseCodes.Accounting.FiscalYearAccountingIncomplete;
+    public const string DraftEntriesPending = ApiResponseCodes.Accounting.FiscalYearDraftEntries;
+    public const string DraftExists = ApiResponseCodes.Accounting.YearEndClosingDraftExists;
+    public const string AlreadyPosted = ApiResponseCodes.Accounting.YearEndClosingAlreadyPosted;
+    public const string NothingToClose = ApiResponseCodes.Accounting.YearEndClosingNothingToClose;
+    public const string ResultAccountInvalid = ApiResponseCodes.Accounting.YearEndResultAccountInvalid;
+    public const string Outdated = ApiResponseCodes.Accounting.YearEndClosingOutdated;
+    public const string NotEditable = ApiResponseCodes.Accounting.YearEndClosingNotEditable;
+    public const string ReversalDateInvalid = ApiResponseCodes.Accounting.YearEndClosingReversalDate;
 }
 
 /// <summary>Asiento calculado del cierre: fecha (31-dic), período destino, líneas y resultado.</summary>

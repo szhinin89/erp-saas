@@ -184,6 +184,77 @@ public static class ApiResponseCodes
         public const string AttachmentUnavailable = "COMMUNICATION_ATTACHMENT_UNAVAILABLE";
     }
 
+    /// <summary>
+    /// ZH-B-MSG (API-DOC F-10): rechazos de negocio de Contabilidad (asientos manuales, reverso, cierre
+    /// anual) que viajan como <c>Result.ValidationFailure(msg, code)</c>. Los valores son el contrato
+    /// público histórico del campo <c>code</c>; solo se catalogan (categoría Validation → 422).
+    /// </summary>
+    public static class Accounting
+    {
+        /// <summary>No existe período abierto para la fecha contable (o el período está cerrado/bloqueado).</summary>
+        public const string PeriodNotOpen = "PERIOD_NOT_OPEN";
+
+        /// <summary>La fecha contable de un asiento manual es futura según la fecha de la empresa.</summary>
+        public const string ManualFutureDate = "MANUAL_FUTURE_DATE";
+
+        /// <summary>Contabilidad no está habilitada en la fecha contable.</summary>
+        public const string NotEnabled = "ACCOUNTING_NOT_ENABLED";
+
+        /// <summary>
+        /// La publicación manual falló por una excepción técnica inesperada (no una regla de negocio): categoría
+        /// InternalError (500); el intento queda registrado con este código y se reproduce en los reintentos.
+        /// </summary>
+        public const string ManualPostInternal = "MANUAL_POST_INTERNAL";
+
+        /// <summary>El asiento de apertura de la Carga Inicial no se reversa por el flujo genérico.</summary>
+        public const string OpeningReversalRequiresCorrectionFlow = "OPENING_REVERSAL_REQUIRES_CORRECTION_FLOW";
+
+        public const string FiscalYearPeriodsIncomplete = "FISCAL_YEAR_PERIODS_INCOMPLETE";
+        public const string FiscalYearLastPeriodNotOpen = "FISCAL_YEAR_LAST_PERIOD_NOT_OPEN";
+        public const string FiscalYearPreviousPeriodsOpen = "FISCAL_YEAR_PREVIOUS_PERIODS_OPEN";
+        public const string FiscalYearNotEnded = "FISCAL_YEAR_NOT_ENDED";
+        public const string FiscalYearAccountingIncomplete = "FISCAL_YEAR_ACCOUNTING_INCOMPLETE";
+        public const string FiscalYearDraftEntries = "FISCAL_YEAR_DRAFT_ENTRIES";
+        public const string YearEndResultAccountInvalid = "YEAR_END_RESULT_ACCOUNT_INVALID";
+        public const string YearEndClosingDraftExists = "YEAR_END_CLOSING_DRAFT_EXISTS";
+        public const string YearEndClosingAlreadyPosted = "YEAR_END_CLOSING_ALREADY_POSTED";
+        public const string YearEndClosingNothingToClose = "YEAR_END_CLOSING_NOTHING_TO_CLOSE";
+        public const string YearEndClosingOutdated = "YEAR_END_CLOSING_OUTDATED";
+        public const string YearEndClosingNotEditable = "YEAR_END_CLOSING_NOT_EDITABLE";
+        public const string YearEndClosingReversalDate = "YEAR_END_CLOSING_REVERSAL_DATE";
+    }
+
+    /// <summary>
+    /// ZH-B-MSG (API-DOC F-33): rechazos de negocio de la Carga Inicial (cierre, contabilización y
+    /// reverso del asiento de apertura, preflight por lote) que viajan como
+    /// <c>Result.ValidationFailure(msg, code)</c>. Valores = contrato público histórico.
+    /// </summary>
+    public static class InitialLoad
+    {
+        public const string Closed = "INITIAL_LOAD_CLOSED";
+        public const string CloseBlocked = "INITIAL_LOAD_CLOSE_BLOCKED";
+        public const string OpeningSourceChanged = "OPENING_SOURCE_CHANGED";
+        public const string OpeningDateMissing = "OPENING_DATE_MISSING";
+        public const string OpeningDateMismatch = "OPENING_DATE_MISMATCH";
+        public const string OpeningAccountingNotApplicable = "OPENING_ACCOUNTING_NOT_APPLICABLE";
+        public const string OpeningAsiRuleHasFixedLines = "OPENING_ASI_RULE_HAS_FIXED_LINES";
+        public const string OpeningControlRuleMissing = "OPENING_CONTROL_RULE_MISSING";
+        public const string OpeningBridgeAmbiguous = "OPENING_BRIDGE_AMBIGUOUS";
+        public const string OpeningControlAccountBlocked = "OPENING_CONTROL_ACCOUNT_BLOCKED";
+        public const string OpeningBridgeNotCleared = "OPENING_BRIDGE_NOT_CLEARED";
+        public const string OpeningAsiNotCurrent = "OPENING_ASI_NOT_CURRENT";
+        public const string OpeningAsiNotPosted = "OPENING_ASI_NOT_POSTED";
+        public const string OpeningAsiJournalMismatch = "OPENING_ASI_JOURNAL_MISMATCH";
+
+        // Preflight de contabilización por lote (IL-7B).
+        public const string BatchNotAccountable = "BATCH_NOT_ACCOUNTABLE";
+        public const string BatchNotCompleted = "BATCH_NOT_COMPLETED";
+        public const string AlreadyPosted = "ALREADY_POSTED";
+        public const string SourceEmpty = "SOURCE_EMPTY";
+        public const string SourceCostMissing = "SOURCE_COST_MISSING";
+        public const string AmountNotPositive = "AMOUNT_NOT_POSITIVE";
+    }
+
     /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — anulación ante el SRI de retenciones autorizadas.</summary>
     public static class Retentions
     {

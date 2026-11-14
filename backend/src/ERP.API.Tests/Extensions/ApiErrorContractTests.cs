@@ -95,6 +95,46 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Communications.SourceNotFound] = 422,
         [ApiResponseCodes.Communications.SourceNotEligible] = 422,
         [ApiResponseCodes.Communications.AttachmentUnavailable] = 422,
+        // ZH-B-MSG (API-DOC F-10/F-33): rechazos de Contabilidad y Carga Inicial (ValidationFailure) → 422.
+        [ApiResponseCodes.Accounting.PeriodNotOpen] = 422,
+        [ApiResponseCodes.Accounting.ManualFutureDate] = 422,
+        [ApiResponseCodes.Accounting.NotEnabled] = 422,
+        // Excepción técnica al publicar un asiento manual: error interno, no validación.
+        [ApiResponseCodes.Accounting.ManualPostInternal] = 500,
+        [ApiResponseCodes.Accounting.OpeningReversalRequiresCorrectionFlow] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearPeriodsIncomplete] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearLastPeriodNotOpen] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearPreviousPeriodsOpen] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearNotEnded] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearAccountingIncomplete] = 422,
+        [ApiResponseCodes.Accounting.FiscalYearDraftEntries] = 422,
+        [ApiResponseCodes.Accounting.YearEndResultAccountInvalid] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingDraftExists] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingAlreadyPosted] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingNothingToClose] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingOutdated] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingNotEditable] = 422,
+        [ApiResponseCodes.Accounting.YearEndClosingReversalDate] = 422,
+        [ApiResponseCodes.InitialLoad.Closed] = 422,
+        [ApiResponseCodes.InitialLoad.CloseBlocked] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningSourceChanged] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningDateMissing] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningDateMismatch] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningAccountingNotApplicable] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningAsiRuleHasFixedLines] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningControlRuleMissing] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningBridgeAmbiguous] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningControlAccountBlocked] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningBridgeNotCleared] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningAsiNotCurrent] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningAsiNotPosted] = 422,
+        [ApiResponseCodes.InitialLoad.OpeningAsiJournalMismatch] = 422,
+        [ApiResponseCodes.InitialLoad.BatchNotAccountable] = 422,
+        [ApiResponseCodes.InitialLoad.BatchNotCompleted] = 422,
+        [ApiResponseCodes.InitialLoad.AlreadyPosted] = 422,
+        [ApiResponseCodes.InitialLoad.SourceEmpty] = 422,
+        [ApiResponseCodes.InitialLoad.SourceCostMissing] = 422,
+        [ApiResponseCodes.InitialLoad.AmountNotPositive] = 422,
     };
 
     private static readonly string[] SuccessCodes =
@@ -312,6 +352,7 @@ public sealed class ApiErrorContractTests
                             or ApiResponseCodes.Access.PermissionsInvalidationUnavailable
                             or ApiResponseCodes.Access.PermissionsInvalidationIncomplete
                             or ApiResponseCodes.Auth.LoginThrottleUnavailable
+                            or ApiResponseCodes.Accounting.ManualPostInternal
                         ),
                     code
                 );

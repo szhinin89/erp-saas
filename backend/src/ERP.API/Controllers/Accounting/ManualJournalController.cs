@@ -21,8 +21,8 @@ public sealed class ManualJournalController(IMediator mediator) : ControllerBase
     /// </remarks>
     /// <param name="command">Fecha contable, concepto, referencia opcional, líneas y clave de idempotencia.</param>
     /// <response code="201">Borrador creado (o el ya existente para la misma clave de idempotencia).</response>
-    /// <response code="400">El período de la fecha contable no está abierto (<c>PERIOD_NOT_OPEN</c>).</response>
-    /// <response code="422">Campos inválidos, cuenta inexistente en la empresa o regla de dominio del asiento incumplida.</response>
+    /// <response code="400">Solicitud inválida sin código de negocio propio.</response>
+    /// <response code="422">Período de la fecha contable inexistente o no abierto (<c>PERIOD_NOT_OPEN</c>), campos inválidos, cuenta inexistente en la empresa o regla de dominio del asiento incumplida.</response>
     [HttpPost]
     [Authorize(Policy = "perm:" + AccountingPermissions.ManualCreate)]
     [ProducesResponseType(typeof(ApiResponse<ManualJournalResultDto>), StatusCodes.Status201Created)]
@@ -40,10 +40,10 @@ public sealed class ManualJournalController(IMediator mediator) : ControllerBase
     /// <param name="id">Id del asiento manual; debe coincidir con <c>command.id</c>.</param>
     /// <param name="command">Id, versión esperada, fecha contable, concepto, referencia y líneas.</param>
     /// <response code="200">Borrador actualizado.</response>
-    /// <response code="400">El id de la ruta no coincide con el del cuerpo, el período no está abierto o es un asiento de cierre anual.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo.</response>
     /// <response code="404">El asiento manual no existe en la empresa activa.</response>
     /// <response code="409">La versión enviada no es la actual: el asiento cambió, recargar antes de continuar.</response>
-    /// <response code="422">El asiento ya no está en borrador, cuenta inexistente o regla de dominio incumplida.</response>
+    /// <response code="422">Período no abierto (<c>PERIOD_NOT_OPEN</c>), asiento de cierre anual no editable (<c>YEAR_END_CLOSING_NOT_EDITABLE</c>), el asiento ya no está en borrador, cuenta inexistente o regla de dominio incumplida.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "perm:" + AccountingPermissions.ManualEdit)]
     [ProducesResponseType(typeof(ApiResponse<ManualJournalResultDto>), StatusCodes.Status200OK)]
@@ -61,15 +61,15 @@ public sealed class ManualJournalController(IMediator mediator) : ControllerBase
     /// un período abierto y que las cuentas sean contabilizables; reserva el número de asiento y pasa a <c>Posted</c>.
     /// Es idempotente por (asiento, <c>idempotencyKey</c>): cada intento queda registrado y repetir la misma clave con
     /// la misma versión devuelve el resultado original, también si fue un fallo; la misma clave con otra versión
-    /// responde 409. Para un asiento de cierre anual se revalidan las precondiciones del cierre bajo el bloqueo del ejercicio.
+    /// responde 409. Un fallo técnico inesperado al publicar responde 500 con <c>MANUAL_POST_INTERNAL</c>: el intento queda registrado y repetir la misma clave devuelve el mismo resultado; revise el intento antes de usar otra clave. Para un asiento de cierre anual se revalidan las precondiciones del cierre bajo el bloqueo del ejercicio.
     /// </remarks>
     /// <param name="id">Id del asiento manual; debe coincidir con <c>command.id</c>.</param>
     /// <param name="command">Id, versión esperada y clave de idempotencia.</param>
     /// <response code="200">Asiento publicado (o resultado de un intento previo con la misma clave).</response>
-    /// <response code="400">Id de ruta distinto del cuerpo, fecha futura (<c>MANUAL_FUTURE_DATE</c>), Contabilidad no habilitada (<c>ACCOUNTING_NOT_ENABLED</c>), período inexistente o no abierto (<c>PERIOD_NOT_OPEN</c>), cierre anual desactualizado (<c>YEAR_END_CLOSING_OUTDATED</c>), fallo interno de publicación (<c>MANUAL_POST_INTERNAL</c>) o repetición de un intento fallido.</response>
+    /// <response code="400">Id de ruta distinto del cuerpo o repetición de un intento fallido sin código catalogado.</response>
     /// <response code="404">El asiento manual no existe en la empresa activa.</response>
     /// <response code="409">La versión no es la actual, o la clave de idempotencia pertenece a otra versión.</response>
-    /// <response code="422">El asiento no está en borrador o incumple una regla de dominio para contabilizarse.</response>
+    /// <response code="422">Fecha futura (<c>MANUAL_FUTURE_DATE</c>), Contabilidad no habilitada (<c>ACCOUNTING_NOT_ENABLED</c>), período inexistente o no abierto (<c>PERIOD_NOT_OPEN</c>), cierre anual desactualizado (<c>YEAR_END_CLOSING_OUTDATED</c>), el asiento no está en borrador o incumple una regla de dominio para contabilizarse.</response>
     [HttpPost("{id:guid}/post")]
     [Authorize(Policy = "perm:" + AccountingPermissions.ManualPost)]
     [ProducesResponseType(typeof(ApiResponse<ManualJournalResultDto>), StatusCodes.Status200OK)]
@@ -89,10 +89,10 @@ public sealed class ManualJournalController(IMediator mediator) : ControllerBase
     /// <param name="id">Id del asiento manual; debe coincidir con <c>command.id</c>.</param>
     /// <param name="command">Id, versión esperada y motivo obligatorio.</param>
     /// <response code="200">Borrador descartado.</response>
-    /// <response code="400">Id de ruta distinto del cuerpo o período no abierto (<c>PERIOD_NOT_OPEN</c>).</response>
+    /// <response code="400">Id de ruta distinto del cuerpo.</response>
     /// <response code="404">El asiento manual no existe en la empresa activa.</response>
     /// <response code="409">La versión enviada no es la actual.</response>
-    /// <response code="422">El asiento ya no está en borrador, motivo vacío o excedido.</response>
+    /// <response code="422">Período no abierto (<c>PERIOD_NOT_OPEN</c>), el asiento ya no está en borrador, motivo vacío o excedido.</response>
     [HttpPost("{id:guid}/discard")]
     [Authorize(Policy = "perm:" + AccountingPermissions.ManualDiscard)]
     [ProducesResponseType(typeof(ApiResponse<ManualJournalResultDto>), StatusCodes.Status200OK)]
@@ -114,9 +114,9 @@ public sealed class ManualJournalController(IMediator mediator) : ControllerBase
     /// <param name="id">Id del asiento manual contabilizado; debe coincidir con <c>command.id</c>.</param>
     /// <param name="command">Id, fecha efectiva del reverso y motivo obligatorio.</param>
     /// <response code="200">Asiento de reverso (nuevo o ya existente).</response>
-    /// <response code="400">Id de ruta distinto del cuerpo, período no abierto (<c>PERIOD_NOT_OPEN</c>) o fecha inválida para el cierre anual (<c>YEAR_END_CLOSING_REVERSAL_DATE</c>).</response>
+    /// <response code="400">Id de ruta distinto del cuerpo.</response>
     /// <response code="404">El asiento manual no existe en la empresa activa.</response>
-    /// <response code="422">El asiento no está contabilizado, motivo vacío o excedido, o regla de dominio incumplida.</response>
+    /// <response code="422">Período no abierto (<c>PERIOD_NOT_OPEN</c>), fecha inválida para el cierre anual (<c>YEAR_END_CLOSING_REVERSAL_DATE</c>), el asiento no está contabilizado, motivo vacío o excedido, o regla de dominio incumplida.</response>
     [HttpPost("{id:guid}/reverse")]
     [Authorize(Policy = "perm:" + AccountingPermissions.ManualReverse)]
     [ProducesResponseType(typeof(ApiResponse<ManualJournalResultDto>), StatusCodes.Status200OK)]

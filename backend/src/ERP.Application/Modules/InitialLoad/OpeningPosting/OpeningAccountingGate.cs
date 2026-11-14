@@ -17,7 +17,7 @@ public sealed class OpeningAccountingGate(
     IOpeningBalanceConstraintsReader openingBalance,
     IOperationalContext ctx)
 {
-    public const string NotApplicableCode = "OPENING_ACCOUNTING_NOT_APPLICABLE";
+    public const string NotApplicableCode = ApiResponseCodes.InitialLoad.OpeningAccountingNotApplicable;
 
     public const string NotApplicableMessage =
         "Contabilidad no aplica en la fecha de apertura de la empresa (modo Deshabilitado): "

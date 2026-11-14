@@ -70,9 +70,9 @@ public sealed class ReverseOpeningJournalEntryCommandValidator
 public sealed partial class ReverseOpeningJournalEntryCommandHandler
     : IRequestHandler<ReverseOpeningJournalEntryCommand, Result<OpeningJournalEntryReversalDto>>
 {
-    public const string NotCurrentCode = "OPENING_ASI_NOT_CURRENT";
-    public const string NotPostedCode = "OPENING_ASI_NOT_POSTED";
-    public const string JournalMismatchCode = "OPENING_ASI_JOURNAL_MISMATCH";
+    public const string NotCurrentCode = ApiResponseCodes.InitialLoad.OpeningAsiNotCurrent;
+    public const string NotPostedCode = ApiResponseCodes.InitialLoad.OpeningAsiNotPosted;
+    public const string JournalMismatchCode = ApiResponseCodes.InitialLoad.OpeningAsiJournalMismatch;
     private const string InternalErrorMessage = "Error interno del sistema.";
 
     private readonly IOperationalContext _ctx;

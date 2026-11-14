@@ -331,10 +331,176 @@ public static class MessageCatalog
             "Electronic document is authorized; source cancellation requires SRI annulment.",
             ApiErrorCategory.Validation
         ),
+
+        // ZH-B-MSG (API-DOC F-10 / F-33): rechazos de Contabilidad y Carga Inicial creados con
+        // Result.ValidationFailure(msg, code). Antes caían en el fallback (400, «Ocurrió un error
+        // inesperado»); ahora son Validation → 422 con mensaje propio. El detalle específico sigue
+        // viajando en data.errors.
+        [ApiResponseCodes.Accounting.PeriodNotOpen] = Rejection(
+            "No existe un período contable abierto para la fecha indicada.",
+            "No open accounting period for the accounting date."
+        ),
+        [ApiResponseCodes.Accounting.ManualFutureDate] = Rejection(
+            "La fecha contable no puede ser futura.",
+            "Manual journal accounting date is in the future."
+        ),
+        [ApiResponseCodes.Accounting.NotEnabled] = Rejection(
+            "Contabilidad no está habilitada en la fecha indicada.",
+            "Accounting is not enabled on the accounting date."
+        ),
+        // Origen: excepción técnica inesperada (flush/commit) al publicar un asiento manual; no es una regla
+        // de negocio recuperable. Va como error interno (500, detalle oculto) con su mensaje propio; el código
+        // se conserva porque queda persistido en el intento y se reproduce en los reintentos idempotentes.
+        [ApiResponseCodes.Accounting.ManualPostInternal] = new(
+            ApiSeverity.Error,
+            "No se pudo completar la publicación. Consulte el intento antes de volver a publicar.",
+            "Manual journal publication failed with an unexpected technical error; the attempt was recorded.",
+            ApiErrorCategory.InternalError
+        ),
+        [ApiResponseCodes.Accounting.OpeningReversalRequiresCorrectionFlow] = Rejection(
+            "El asiento de apertura de la Carga inicial no puede reversarse por este flujo; use la corrección de apertura.",
+            "Opening balance journal entries cannot be reversed through the generic reversal."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearPeriodsIncomplete] = Rejection(
+            "El ejercicio no tiene períodos que cubran todo el año.",
+            "Fiscal year periods do not cover the whole year."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearLastPeriodNotOpen] = Rejection(
+            "El último período del ejercicio no está abierto: el cierre anual ya no puede registrarse.",
+            "Last period of the fiscal year is not open."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearPreviousPeriodsOpen] = Rejection(
+            "Cierre primero los períodos anteriores del ejercicio.",
+            "Previous periods of the fiscal year are still open."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearNotEnded] = Rejection(
+            "El ejercicio aún no ha terminado: el cierre anual se genera a partir del día siguiente a su fin.",
+            "Fiscal year has not ended according to the company date."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearAccountingIncomplete] = Rejection(
+            "El ejercicio tiene información contable incompleta. Resuelva los pendientes antes del cierre anual.",
+            "Fiscal year accounting is incomplete."
+        ),
+        [ApiResponseCodes.Accounting.FiscalYearDraftEntries] = Rejection(
+            "El último período del ejercicio tiene asientos sin publicar: publíquelos o descártelos antes del cierre anual.",
+            "Last period has draft or non-final journal entries."
+        ),
+        [ApiResponseCodes.Accounting.YearEndResultAccountInvalid] = Rejection(
+            "La cuenta de Resultado del ejercicio debe existir, estar activa, admitir movimientos y ser de Patrimonio.",
+            "Year-end result account is missing or invalid."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingDraftExists] = Rejection(
+            "Ya existe un asiento de cierre anual en borrador: publíquelo o descártelo.",
+            "A year-end closing draft already exists."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingAlreadyPosted] = Rejection(
+            "El resultado del ejercicio ya fue cerrado con un asiento contabilizado.",
+            "Year-end closing entry already posted."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingNothingToClose] = Rejection(
+            "Las cuentas de resultados del ejercicio no tienen saldo: no hay resultado que cerrar.",
+            "Nominal accounts have no balance; nothing to close."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingOutdated] = Rejection(
+            "El asiento de cierre anual quedó desactualizado: descártelo y vuelva a generarlo.",
+            "Year-end closing entry is outdated relative to current balances."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingNotEditable] = Rejection(
+            "El asiento de cierre anual se calcula desde Períodos y no se edita: descártelo y vuelva a generarlo.",
+            "Year-end closing entries are computed and not editable."
+        ),
+        [ApiResponseCodes.Accounting.YearEndClosingReversalDate] = Rejection(
+            "La fecha de reverso del asiento de cierre anual no es válida.",
+            "Invalid reversal date for a year-end closing entry."
+        ),
+        [ApiResponseCodes.InitialLoad.Closed] = Rejection(
+            "La Carga Inicial está cerrada: ya no se pueden modificar los saldos de apertura.",
+            "Initial load is closed; opening balances are immutable."
+        ),
+        [ApiResponseCodes.InitialLoad.CloseBlocked] = Rejection(
+            "No se puede cerrar la Carga Inicial: hay bloqueos pendientes. Revise el detalle indicado.",
+            "Initial load closing is blocked by pending reconciliation items."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningSourceChanged] = Rejection(
+            "El monto o la fecha del lote ya no coinciden con los datos confirmados.",
+            "Opening posting source changed after it was registered."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningDateMissing] = Rejection(
+            "La empresa no tiene definida su fecha de apertura de saldos.",
+            "Company opening balance date is not defined."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningDateMismatch] = Rejection(
+            "El corte del lote no coincide con la fecha de apertura de la empresa.",
+            "Batch cutoff date differs from the company opening balance date."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningAccountingNotApplicable] = Rejection(
+            "Contabilidad no aplica en la fecha de apertura de la empresa: la apertura no genera asientos.",
+            "Accounting is not applicable on the opening date."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningAsiRuleHasFixedLines] = Rejection(
+            "La regla de contabilización del asiento de apertura no admite líneas fijas.",
+            "Opening journal posting rule has fixed lines."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningControlRuleMissing] = Rejection(
+            "Falta la regla de contabilización de la cuenta de control de la apertura.",
+            "Opening control account posting rule is missing."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningBridgeAmbiguous] = Rejection(
+            "La cuenta puente de la apertura es ambigua: revise la configuración contable.",
+            "Opening bridge account resolution is ambiguous."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningControlAccountBlocked] = Rejection(
+            "Una cuenta de control de la apertura no admite movimientos. Revise el detalle indicado.",
+            "Opening control account is not postable."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningBridgeNotCleared] = Rejection(
+            "La cuenta puente de la apertura no quedaría en cero. Revise las líneas del asiento.",
+            "Opening bridge account would not clear to zero."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningAsiNotCurrent] = Rejection(
+            "El asiento de apertura indicado no es el vigente.",
+            "Opening journal entry is not the current one."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningAsiNotPosted] = Rejection(
+            "El asiento de apertura aún no está contabilizado.",
+            "Opening journal entry is not posted."
+        ),
+        [ApiResponseCodes.InitialLoad.OpeningAsiJournalMismatch] = Rejection(
+            "El asiento indicado no corresponde a la publicación de apertura.",
+            "Journal entry does not match the opening posting."
+        ),
+        [ApiResponseCodes.InitialLoad.BatchNotAccountable] = Rejection(
+            "Este tipo de carga inicial no genera asiento de apertura.",
+            "Import type does not generate an opening journal entry."
+        ),
+        [ApiResponseCodes.InitialLoad.BatchNotCompleted] = Rejection(
+            "Solo un lote confirmado por completo se contabiliza.",
+            "Only a fully confirmed batch can be posted."
+        ),
+        [ApiResponseCodes.InitialLoad.AlreadyPosted] = Rejection(
+            "La apertura del lote ya está contabilizada.",
+            "Batch opening is already posted."
+        ),
+        [ApiResponseCodes.InitialLoad.SourceEmpty] = Rejection(
+            "El lote no tiene saldos confirmados que contabilizar.",
+            "Batch has no confirmed balances to post."
+        ),
+        [ApiResponseCodes.InitialLoad.SourceCostMissing] = Rejection(
+            "Hay movimientos de inventario inicial sin costo total.",
+            "Initial stock movements without total cost."
+        ),
+        [ApiResponseCodes.InitialLoad.AmountNotPositive] = Rejection(
+            "El monto de apertura del lote debe ser mayor a cero.",
+            "Opening amount must be greater than zero."
+        ),
     };
 
+    /// <summary>Rechazo de negocio con categoría Validation (422), mismo contrato que el resto de <c>ValidationFailure</c> catalogados.</summary>
+    private static CatalogMessage Rejection(string user, string dev) =>
+        new(ApiSeverity.Error, user, dev, ApiErrorCategory.Validation);
+
     // Código no catalogado (deuda ADR-027 Fase 1: códigos de módulo aún como literales, p. ej.
-    // SKU_DUPLICATE, PERIOD_NOT_OPEN): BusinessRule → 400, el mismo status que siempre recibió.
+    // SKU_DUPLICATE; Contabilidad/Carga Inicial ya catalogados, F-10/F-33): BusinessRule → 400, el mismo status que siempre recibió.
     private static readonly CatalogMessage Fallback = new(
         ApiSeverity.Error,
         "Ocurrió un error inesperado.",

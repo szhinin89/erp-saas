@@ -95,12 +95,12 @@ public sealed class PublishOpeningJournalEntryCommandValidator
 public sealed partial class PublishOpeningJournalEntryCommandHandler
     : IRequestHandler<PublishOpeningJournalEntryCommand, Result<OpeningJournalEntryPostingDto>>
 {
-    public const string OpeningDateMissingCode = "OPENING_DATE_MISSING";
-    public const string RuleHasFixedLinesCode = "OPENING_ASI_RULE_HAS_FIXED_LINES";
-    public const string ControlRuleMissingCode = "OPENING_CONTROL_RULE_MISSING";
-    public const string BridgeAmbiguousCode = "OPENING_BRIDGE_AMBIGUOUS";
-    public const string ControlAccountBlockedCode = "OPENING_CONTROL_ACCOUNT_BLOCKED";
-    public const string BridgeNotClearedCode = "OPENING_BRIDGE_NOT_CLEARED";
+    public const string OpeningDateMissingCode = ApiResponseCodes.InitialLoad.OpeningDateMissing;
+    public const string RuleHasFixedLinesCode = ApiResponseCodes.InitialLoad.OpeningAsiRuleHasFixedLines;
+    public const string ControlRuleMissingCode = ApiResponseCodes.InitialLoad.OpeningControlRuleMissing;
+    public const string BridgeAmbiguousCode = ApiResponseCodes.InitialLoad.OpeningBridgeAmbiguous;
+    public const string ControlAccountBlockedCode = ApiResponseCodes.InitialLoad.OpeningControlAccountBlocked;
+    public const string BridgeNotClearedCode = ApiResponseCodes.InitialLoad.OpeningBridgeNotCleared;
     private const string InternalErrorMessage = "Error interno del sistema.";
 
     private static readonly (string FactType, string Label, AccountNature ControlSide)[] ControlFacts =

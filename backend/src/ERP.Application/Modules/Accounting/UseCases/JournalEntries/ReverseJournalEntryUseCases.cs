@@ -37,7 +37,7 @@ public sealed class ReverseJournalEntryCommandValidator
 public sealed class ReverseJournalEntryCommandHandler
     : IRequestHandler<ReverseJournalEntryCommand, Result<JournalEntryDto>>
 {
-    public const string OpeningReversalNotAllowedCode = "OPENING_REVERSAL_REQUIRES_CORRECTION_FLOW";
+    public const string OpeningReversalNotAllowedCode = ApiResponseCodes.Accounting.OpeningReversalRequiresCorrectionFlow;
 
     private readonly IJournalEntryRepository _journalEntryRepository;
     private readonly IAccountingPeriodRepository _accountingPeriodRepository;

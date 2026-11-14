@@ -75,3 +75,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   excepción específica a ADR-ERP-002): BUG REAL F-02, `PUT /api/integration/v1/companies/{id}/activate` ya no fuerza
   `IsActive=true`; solo transiciona `OperationalStatus` y conserva la habilitación administrativa previa. Alcance y
   evidencia en [STATUS](../../STATUS.md). Bloque independiente de C1 y C2.
+- API-DOC-B-MSG (PUBLICADO, pendiente resultado del CI; aprobado por el propietario 2026-11-13; Contabilidad e
+  Initial Load siguen CLOSED, solo clasificación y mensajes): BUG REAL F-10/F-33, los códigos de validación de
+  Contabilidad (asientos manuales, cierre anual) y Carga Inicial (cierre, apertura, preflight) pasan de 400 a 422 con
+  mensaje catalogado, conservando los valores de `code`; `MANUAL_POST_INTERNAL` (excepción técnica) es error interno 500. Alcance, impacto HTTP/OpenAPI y residuo en
+  [STATUS](../../STATUS.md). Bloque independiente de los demás hallazgos.

@@ -183,8 +183,8 @@ public sealed class ManualJournalHandler(
                 if (prior is not null) return Replay(prior, cmd.Version);
                 const string message = "No se pudo completar la publicación. Consulte el intento antes de volver a publicar.";
                 await manual.AddAttemptAsync(ManualJournalAttempt.Create(entry, user.UserId, cmd.IdempotencyKey,
-                    cmd.Version, false, "MANUAL_POST_INTERNAL", message), ct);
-                return Result<ManualJournalResultDto>.ValidationFailure(message, "MANUAL_POST_INTERNAL");
+                    cmd.Version, false, ApiResponseCodes.Accounting.ManualPostInternal, message), ct);
+                return Result<ManualJournalResultDto>.Failure(message, ApiResponseCodes.Accounting.ManualPostInternal);
             }, ct, captureBusinessErrors: false);
         }
     }
@@ -233,12 +233,12 @@ public sealed class ManualJournalHandler(
     private async Task<Result<ManualJournalResultDto>> PublishAsync(JournalEntry entry, CancellationToken ct)
     {
         if (entry.EntryDate > await clock.TodayAsync(company.CompanyId, tenant.TenantId, ct))
-            return Result<ManualJournalResultDto>.ValidationFailure("La fecha contable no puede ser futura.", "MANUAL_FUTURE_DATE");
+            return Result<ManualJournalResultDto>.ValidationFailure("La fecha contable no puede ser futura.", ApiResponseCodes.Accounting.ManualFutureDate);
         if (await new AccountingOperationalDecision(policies).ResolveAsync(tenant.TenantId, company.CompanyId, entry.EntryDate, ct)
             != AccountingApplicability.Applicable)
-            return Result<ManualJournalResultDto>.ValidationFailure("Accounting debe estar Enabled en la fecha contable.", "ACCOUNTING_NOT_ENABLED");
+            return Result<ManualJournalResultDto>.ValidationFailure("Accounting debe estar Enabled en la fecha contable.", ApiResponseCodes.Accounting.NotEnabled);
         var period = await periods.FindContainingDateAsync(tenant.TenantId, company.CompanyId, entry.EntryDate, ct);
-        if (period is null) return Result<ManualJournalResultDto>.ValidationFailure("No existe período para la fecha contable.", "PERIOD_NOT_OPEN");
+        if (period is null) return Result<ManualJournalResultDto>.ValidationFailure("No existe período para la fecha contable.", ApiResponseCodes.Accounting.PeriodNotOpen);
         var gate = new PostingPeriodGuard().Ensure(period);
         if (!gate.IsSuccess) return Failure(gate);
         if (entry.IsFiscalYearClosing)

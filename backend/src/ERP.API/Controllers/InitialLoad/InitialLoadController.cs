@@ -55,8 +55,8 @@ public sealed class InitialLoadController : ControllerBase
     /// </remarks>
     /// <param name="command">Tipo de importación, etiqueta opcional y bandera de creación automática de catálogos.</param>
     /// <response code="201">Lote creado en estado <c>Draft</c>.</response>
-    /// <response code="400">La Carga Inicial ya está cerrada y el tipo es de saldos (<c>INITIAL_LOAD_CLOSED</c>).</response>
-    /// <response code="422">Tipo de importación fuera del enum o sin procesador disponible, o etiqueta de más de 200 caracteres.</response>
+    /// <response code="400">Falla inesperada sin código de negocio propio.</response>
+    /// <response code="422">La Carga Inicial ya está cerrada y el tipo es de saldos (<c>INITIAL_LOAD_CLOSED</c>), tipo de importación fuera del enum o sin procesador disponible, o etiqueta de más de 200 caracteres.</response>
     [HttpPost("batches")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
     [ProducesResponseType(
@@ -79,9 +79,9 @@ public sealed class InitialLoadController : ControllerBase
     /// <param name="id">Id del lote de importación.</param>
     /// <param name="file">Archivo <c>.xlsx</c> (multipart/form-data, campo <c>file</c>).</param>
     /// <response code="200">Archivo adjuntado; devuelve el lote actualizado.</response>
-    /// <response code="400">No se envió archivo (o está vacío), o la Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>).</response>
+    /// <response code="400">No se envió archivo (o está vacío).</response>
     /// <response code="404">El lote no existe en la empresa activa.</response>
-    /// <response code="422">Archivo no <c>.xlsx</c>, vacío o mayor de 10 MB; no se pudo guardar el archivo; o el estado del lote no admite adjuntos.</response>
+    /// <response code="422">La Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>); archivo no <c>.xlsx</c>, vacío o mayor de 10 MB; no se pudo guardar el archivo; o el estado del lote no admite adjuntos.</response>
     [HttpPost("batches/{id:guid}/upload")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
     [Consumes("multipart/form-data")]
@@ -108,9 +108,9 @@ public sealed class InitialLoadController : ControllerBase
     /// </remarks>
     /// <param name="id">Id del lote de importación.</param>
     /// <response code="200">Validación terminada (<c>Validated</c>); devuelve el lote con sus contadores.</response>
-    /// <response code="400">La Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>) o falló la lectura de ítems (error inesperado).</response>
+    /// <response code="400">Falló la lectura de ítems (error inesperado).</response>
     /// <response code="404">El lote no existe en la empresa activa.</response>
-    /// <response code="422">Estado del lote no válido, sin archivo, archivo no disponible o ilegible, sin procesador, o alcance del staging no válido.</response>
+    /// <response code="422">La Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>); estado del lote no válido, sin archivo, archivo no disponible o ilegible, sin procesador, o alcance del staging no válido.</response>
     [HttpPost("batches/{id:guid}/validate")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<ImportBatchDto>), StatusCodes.Status200OK)]
@@ -160,9 +160,9 @@ public sealed class InitialLoadController : ControllerBase
     /// </remarks>
     /// <param name="id">Id del lote de importación.</param>
     /// <response code="200">Lote confirmado; devuelve estado y filas importadas.</response>
-    /// <response code="400">La Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>), o falló la confirmación de forma inesperada.</response>
+    /// <response code="400">Falló la confirmación de forma inesperada.</response>
     /// <response code="404">El lote no existe en la empresa activa.</response>
-    /// <response code="422">El lote no está validado, tiene errores en filas o incumple una regla de negocio al importar.</response>
+    /// <response code="422">La Carga Inicial está cerrada para un lote de saldos (<c>INITIAL_LOAD_CLOSED</c>); el lote no está validado, tiene errores en filas o incumple una regla de negocio al importar.</response>
     [HttpPost("batches/{id:guid}/confirm")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
     [ProducesResponseType(
@@ -188,8 +188,9 @@ public sealed class InitialLoadController : ControllerBase
     /// </remarks>
     /// <param name="id">Id del lote de importación a contabilizar.</param>
     /// <response code="200">Asiento de apertura contabilizado (o ya contabilizado: <c>alreadyPosted</c>).</response>
-    /// <response code="400">Rechazo contable con código propio: Carga Inicial cerrada (<c>INITIAL_LOAD_CLOSED</c>), política contable, <c>OPENING_SOURCE_CHANGED</c>, falla del motor de contabilización, error inesperado.</response>
+    /// <response code="400">Rechazo contable sin código catalogado: política contable (p. ej. modo contable no configurado), falla del motor de contabilización o error inesperado.</response>
     /// <response code="404">El lote no existe en la empresa activa (<c>BATCH_NOT_FOUND</c>).</response>
+    /// <response code="422">Rechazo de negocio con código propio: Carga Inicial cerrada (<c>INITIAL_LOAD_CLOSED</c>), <c>OPENING_SOURCE_CHANGED</c> o precondición del lote (<c>OPENING_DATE_MISSING</c>, <c>OPENING_DATE_MISMATCH</c>, <c>OPENING_ACCOUNTING_NOT_APPLICABLE</c>, <c>BATCH_NOT_ACCOUNTABLE</c>, <c>BATCH_NOT_COMPLETED</c>, <c>ALREADY_POSTED</c>, <c>SOURCE_EMPTY</c>, <c>SOURCE_COST_MISSING</c>, <c>AMOUNT_NOT_POSITIVE</c>).</response>
     [HttpPost("batches/{id:guid}/opening-posting")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
@@ -199,6 +200,7 @@ public sealed class InitialLoadController : ControllerBase
     )]
     [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> PostOpeningBalance(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new PostOpeningBalanceCommand(id), ct));
 
@@ -216,8 +218,8 @@ public sealed class InitialLoadController : ControllerBase
     /// </remarks>
     /// <param name="command">Líneas Debe/Haber del asiento de apertura.</param>
     /// <response code="200">Asiento de apertura publicado (o ya publicado: <c>alreadyPosted</c>).</response>
-    /// <response code="400">Rechazo contable con código propio (<c>OPENING_DATE_MISSING</c>, <c>OPENING_BRIDGE_NOT_CLEARED</c>, <c>OPENING_CONTROL_*</c>, Carga Inicial cerrada, política contable, falla del motor, error inesperado).</response>
-    /// <response code="422">Cuerpo inválido: número de líneas, cuenta ausente, montos o descripción fuera de regla.</response>
+    /// <response code="400">Rechazo contable sin código catalogado: política contable (p. ej. modo contable no configurado), falla del motor o error inesperado.</response>
+    /// <response code="422">Rechazo de negocio con código propio (<c>OPENING_DATE_MISSING</c>, <c>OPENING_BRIDGE_NOT_CLEARED</c>, <c>OPENING_CONTROL_RULE_MISSING</c>, <c>OPENING_CONTROL_ACCOUNT_BLOCKED</c>, <c>OPENING_ASI_RULE_HAS_FIXED_LINES</c>, <c>OPENING_BRIDGE_AMBIGUOUS</c>, <c>OPENING_ACCOUNTING_NOT_APPLICABLE</c>, <c>INITIAL_LOAD_CLOSED</c>) o cuerpo inválido: número de líneas, cuenta ausente, montos o descripción fuera de regla.</response>
     [HttpPost("opening-journal-entry")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
@@ -245,9 +247,9 @@ public sealed class InitialLoadController : ControllerBase
     /// <param name="postingId">Id de la versión publicada del asiento de apertura.</param>
     /// <param name="request">Motivo del reverso.</param>
     /// <response code="200">Asiento de apertura reversado.</response>
-    /// <response code="400">Rechazo contable con código propio: <c>OPENING_ASI_NOT_CURRENT</c>, <c>OPENING_ASI_NOT_POSTED</c>, <c>OPENING_ASI_JOURNAL_MISMATCH</c>, período cerrado, Carga Inicial cerrada, error inesperado.</response>
+    /// <response code="400">Error inesperado sin código de negocio propio.</response>
     /// <response code="404">La versión del asiento de apertura no existe en la empresa activa.</response>
-    /// <response code="422">Motivo vacío o de más caracteres de los permitidos.</response>
+    /// <response code="422">Rechazo de negocio con código propio (<c>OPENING_ASI_NOT_CURRENT</c>, <c>OPENING_ASI_NOT_POSTED</c>, <c>OPENING_ASI_JOURNAL_MISMATCH</c>, <c>PERIOD_NOT_OPEN</c>, <c>INITIAL_LOAD_CLOSED</c>) o motivo vacío o de más caracteres de los permitidos.</response>
     [HttpPost("opening-journal-entry/{postingId:guid}/reverse")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Delete}")]
@@ -301,14 +303,16 @@ public sealed class InitialLoadController : ControllerBase
     /// apertura.
     /// </remarks>
     /// <response code="200">Carga Inicial cerrada (o ya cerrada: <c>alreadyClosed</c>).</response>
-    /// <response code="400">Hay bloqueos (<c>INITIAL_LOAD_CLOSE_BLOCKED</c>) o falló la conciliación previa al cierre.</response>
+    /// <response code="400">Falló la conciliación previa al cierre (error inesperado).</response>
     /// <response code="404">La empresa no existe.</response>
+    /// <response code="422">Hay bloqueos pendientes que impiden el cierre (<c>INITIAL_LOAD_CLOSE_BLOCKED</c>).</response>
     [HttpPost("close")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<InitialLoadClosureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CloseInitialLoad(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new CloseInitialLoadCommand(), ct));
 

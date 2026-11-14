@@ -16,7 +16,7 @@ internal sealed class PostingPeriodGuard
         }
         catch (DomainRuleViolationException ex)
         {
-            return Result<AccountingPeriod>.ValidationFailure(ex.Message, "PERIOD_NOT_OPEN");
+            return Result<AccountingPeriod>.ValidationFailure(ex.Message, ApiResponseCodes.Accounting.PeriodNotOpen);
         }
     }
 }
