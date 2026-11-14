@@ -101,7 +101,7 @@ jobs:
           & (Join-Path $installDir 'dotnet') --version
           if ($LASTEXITCODE -ne 0) { throw 'Installed SDK cannot resolve global.json' }
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('backend/src/**/*.csproj') }}
