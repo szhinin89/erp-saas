@@ -53,7 +53,7 @@ sobre asignaciones **activas**: **`Unconfigured`** (cero activas: catálogo comp
 activas y al menos una con subcategoría activa de nivel Subcategoría) y **`RestrictedEmpty`** (hay activas
 pero ninguna disponible: no se permite ninguna selección nueva; nunca abre el catálogo).
 
-- API `api/v1/master/business-partners/{bpId}/expense-subcategories`: `GET` (`masterdata.businesspartners.view` o `expenses.documents.create` o `expenses.documents.update`, evaluados por el autorizador runtime en el caso de uso)
+- API `api/v1/master/business-partners/{bpId}/expense-subcategories`: `GET` (`masterdata.businesspartners.view` o `expenses.documents.create` o `expenses.documents.update`, evaluados por el autorizador runtime en el caso de uso; sin ninguno → 403)
   devuelve modo, asignaciones y subcategorías disponibles y, **solo con `…configure-company`**, `catalog` (subcategorías activas de la empresa: id, código, nombre, categoría y tipo, sin cuentas; `null` para quien solo consulta y en la respuesta del `PUT`); `PUT` (`…configure-company`) fija el conjunto de
   forma atómica: crea, **reactiva el mismo registro** y retira con baja lógica; `[]` retira todas (vuelve a
   `Unconfigured`); sin DELETE físico; cada alta, retiro y reactivación genera su registro de auditoría.

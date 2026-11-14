@@ -1,11 +1,9 @@
 # EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ Subcategorías de Gastos
 
-**Estado: FASE 1 (esquema + backend + validación en Gastos) confirmada (`72a9afc3d`); FASE 2 (ficha del proveedor) confirmada (`f99332051`);
-FASE 3 (formulario de Gastos) IMPLEMENTADA, pendiente del gate del propietario (2026-11-14). Fase 4 (cierre) no iniciada.** Lo implementado y probado vive en la SSOT
-[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación. Lo implementado en el
-formulario de Gastos queda registrado en la SSOT y en STATUS. Al implementarse y
-probarse, su comportamiento se documenta en la SSOT [Gastos](../architecture/expenses.md) (§ 6 lo registra
-como pendiente solo lo a?n no operativo). Estado y gates: [STATUS](../../STATUS.md). Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
+**Estado: IMPLEMENTADO (fases 1–3 publicadas: `72a9afc3d`, `f99332051`, `f4a0bc483`); cierre documental (fase 4) en gate del
+propietario (2026-11-14). D4 sigue pendiente.** El comportamiento implementado y probado vive en la SSOT
+[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación, no una segunda especificación.
+Estado y gates: [STATUS](../../STATUS.md). Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
 
 ## Objetivo y alcance
 
@@ -197,11 +195,11 @@ FROZEN de ADR-022.
   podrá usar cualquier subcategoría y envía `PUT []`; i18n es/en. Visible con `…view`, editable con `…configure-company`;
   i18n es/en con paridad. El `GET` incluye `catalog` (candidatas activas, sin cuentas) solo con `…configure-company`; la sección no consulta el catálogo de Gastos. `MasterDataSuppliersPage.tsx` está bajo techo de ADR-047 (811): el montaje no puede
   aumentarlo (regla 6); verificar con `architecture:check`.
-- *Gastos:* hook `useSupplierExpenseSubcategoryScope` por `header.supplierId` (manual y XML comparten camino).
-  Filtra el árbol del `ExpenseSubcategorySelector` (oculta Tipo/Categoría sin permitidas). Si la lectura falla
+- *Gastos:* hook `useExpenseSupplierScope` por `header.supplierId` (manual y XML comparten camino).
+  Filtra el árbol que recibe el `ExpenseSubcategorySelector` (oculta Tipo/Categoría sin permitidas). Si la lectura falla
   (403/red) el formulario **no** cae al catálogo completo: muestra el error, porque el backend rechazaría igual.
 - *Reutilización:* `ExpenseSubcategorySelector`, `SupplierSearchSelect`/`supplierPickerFacade`, `ZHField/ZhSelect/
-  ZHBtn`, `businessPartnerService`/facade (método nuevo). Nuevo solo la sección y el hook.
+  ZHBtn`, `businessPartnerService`/facade (método nuevo) y `supplierExpenseSubcategoryLookupFacade` (lectura para otros módulos). Nuevo solo la sección, el hook y su modelo puro.
 
 **Cambio de proveedor (D3):**
 
@@ -243,15 +241,14 @@ requiere autorización expresa.
   borrador histórico, XML, permisos solo lectura, fallo de lectura; `tsc -b`, ESLint, i18n, design-system,
   `architecture:check`, guardrail oficial.
 
-## Fases de implementación (cada una requiere autorización y gate del propietario)
+## Fases de implementación (ejecutadas)
 
-1. **Backend + esquema:** entidad, EF, baseline (bloques descritos), repositorio, política, casos de uso,
-   controlador, eventos y auditoría ADR-022 (entidad, tabla, handler) y pruebas. Recreación de BD solo tras D4.
-2. **Validación en Gastos:** `ExpenseDraftRules` + pruebas.
-3. **Ficha del proveedor:** sección, servicio/facade, i18n.
-4. **Formulario de Gastos:** hook, filtro, autoselección, cambio de proveedor, XML.
-5. **Cierre documental:** actualizar [expenses.md](../architecture/expenses.md) (mover lo implementado desde § 6),
-   STATUS y FEATURES; retirar este diseño de «pendiente».
+1. **Esquema, backend y validación en Gastos** (`72a9afc3d`): entidad, EF, baseline, repositorio, política, casos de uso,
+   controlador, eventos y auditoría ADR-022, `ExpenseDraftRules` y pruebas. Recreación de BD solo tras D4 (no ejecutada).
+2. **Ficha del proveedor** (`f99332051`): sección, servicio/facade, i18n y `catalog` en el `GET` (solo `configure-company`).
+3. **Formulario de Gastos** (`f4a0bc483`): hook, filtro, autoselección, cambio de proveedor, XML y autorización de lectura del `GET`.
+4. **Cierre documental** (este cambio): comportamiento en [expenses.md](../architecture/expenses.md), estado en STATUS; este diseño
+   queda como justificación. Corrección CI-1196 (`e8c067146`) registrada en STATUS y en [Seguridad](../architecture/security.md#refresh-rotation).
 
 ## Criterios de aceptación
 
@@ -260,6 +257,8 @@ históricos; `RestrictedEmpty` nunca abre el catálogo; ninguna pérdida silenci
 invisible e inmodificable desde B (probado); sin DELETE físico, `PUT []` devuelve `Unconfigured` y reactivación sin duplicados; historial auditado de altas, bajas y reactivaciones; baseline única con
 las dos tablas y sin migraciones nuevas; ningún permiso ni contrato existente cambia; guardrails y pruebas focales PASS
 y gate del propietario PASS.
+
+Resultado: cumplidos en las fases 1–3 con las pruebas registradas en STATUS; el gate del propietario de la fase 4 sigue pendiente.
 
 ## Riesgos
 

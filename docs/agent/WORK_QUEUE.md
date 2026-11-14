@@ -53,9 +53,5 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
 - CI-1169 (PUBLICADO `7be7d3a5d`, CI #1170 SUCCESS): gate del propietario no acreditado; no CLOSED. Evidencia en [STATUS](../../STATUS.md).
 - Incidencia Redis #1171: intento 1 FAILURE, intento 2 SUCCESS sobre el mismo SHA, confirmados por API; causa pendiente de diagnóstico independiente. Detalle en [STATUS](../../STATUS.md).
-- CI-1196 (corregido y confirmado localmente, sin push): rotación concurrente de refresh con PostgreSQL real;
-  pendiente el push autorizado por el propietario. Independiente de Gastos; evidencia en [STATUS](../../STATUS.md#ci-1196--refresh-concurrente--corregido-y-confirmado-localmente-2026-11-14).
-- EXPENSE-SUPPLIER-SUBCATEGORIES-01 (FASES 1 `72a9afc3d` y 2 `f99332051` confirmadas; FASE 3 formulario de Gastos `f4a0bc483`
-  confirmada; sin push): solo queda el cierre documental (fase 4), que requiere autorización tras el gate. D4 (recrear la BD local con la baseline nueva) sigue pendiente de autorización expresa. Evidencia en
-  [STATUS](../../STATUS.md); diseño en [el diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
+- EXPENSE-SUPPLIER-SUBCATEGORIES-01 (fases 1–3 publicadas: `72a9afc3d`, `f99332051`, `f4a0bc483`; cierre documental en gate del propietario): CI #1197 SUCCESS. Pendiente solo D4 (recrear la BD local con la baseline nueva) sigue pendiente de autorización expresa. Evidencia en [STATUS](../../STATUS.md); diseño en [el diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
 - EXPENSE-UI-02 (cierre técnico `00bdef910`, CI #1193 SUCCESS): confirmar aceptación visual del propietario antes de declarar cierre funcional; no autoriza cambios. Evidencia en [STATUS](../../STATUS.md).
