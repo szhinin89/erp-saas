@@ -1,6 +1,68 @@
 # Project Status
 
-## EXPENSE-BACKEND-01 — Gastos: tipo de documento (U4) y dependencia de `accounting.view` — PUBLICADO, pendiente de validación CI (aprobado por el propietario 2026-11-14)
+## Conciliación GitHub Actions — 2026-11-14
+
+API de GitHub consultada directamente: workflow `ci.yml`, `head_sha`, estado
+`completed` y conclusión. Al iniciar: árbol limpio; `main`, `origin/main` y HEAD
+remoto consultado por API coinciden en `00bdef9109aa4e1e14bbe245821208ba24eb6e3e`.
+Cada fila acredita su SHA específico; no convierte fallos anteriores en éxitos.
+
+| Entrega | CI confirmado | SHA específico |
+|---|---|---|
+| CI-1169, fix UTF-16 | [#1170 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43315648217) | `7be7d3a5df02bdee221dca692355b993b602de2d` |
+| OpenAPI Fase 2D | [#1176 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43432125954) | `a7dc4e05e1ced0c3fe7ee4c84583d73b2285df4f` |
+| Conciliación OpenAPI | [#1177 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43459349094) | `1f1897b0832cd16f249f791cdde6088f0c37bc1f` |
+| API-DOC-F35-L1 | [#1178 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43468865592) | `25578cf0202eb41ab9e9a8d3868571ff5be2777c` |
+| API-DOC-F14-L2 | [#1179 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43472868076) | `01fd562bc8d986d73e87bbb31a58e937674611c8` |
+| API-DOC-F09-L3C1 | [#1180 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43484239523) | `9b2c02f75dca6bc9d447165c618a4a5dca47b0b3` |
+| API-DOC-F01-L3C2 | [#1181 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43498273732) | `cba7e44d47ce16651db062cdf023d6e3a1575f80` |
+| API-DOC-F02-L3C3 | [#1182 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43506570164) | `93f422ecbacf1e4631be34156463aabd900fa335` |
+| SEC-SUSP-01 | [#1183 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43521709858) | `36a3a174e50d3aa08fe26b035d028ccaaa6d7d60` |
+| SEC-SUSP-02b | [#1184 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43524490439) | `690c1feb58668419d5d3f134b389b091c0c493d4` |
+| API-DOC-B-MSG | [#1185 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43534240255) | `5018af172232e3cc7e08beb32544fdeb6bc06bc8` |
+| API-DOC-B-SALES | [#1186 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43536949530) | `3619fc990afbd42b326fbb865a91fa5fea9fee12` |
+| API-DOC-B-BP | [#1187 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43540169760) | `76df485dfc9695d108e365a8ce8d921eb393079d` |
+| PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 | [#1188 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43541996738) | `b00fca45d28b2e1c6c4524398034d27e990cbf2e` |
+| SEC-A01-INFRA-01 | [#1189 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43544821520) | `eb997328cea538cdec3d8d7de324cc699ab9ff6f` |
+| Listados compartidos/i18n Gastos | [#1190 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43549112680) | `1d1099036c7553a1acf2ee8c1e615185589484d5` |
+| EXPENSE-UX-01 | [#1191 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43552516292) | `dafdd7bdcacac8c7486e46b0f293eda8b3aec61c` |
+| EXPENSE-BACKEND-01 | [#1192 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43555901050) | `66b271f0d7b0cd6c5a984db9d9c877a110e30ddb` |
+| EXPENSE-UI-02 Gastos/XML | [#1193 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/43597020621) | `00bdef9109aa4e1e14bbe245821208ba24eb6e3e` |
+
+CI aprobado, aceptación del propietario, cierre funcional y preparación productiva
+son estados distintos. Las entregas con aceptación ya registrada y CI aprobado salen
+de WORK_QUEUE; F-01 y CI-1169 conservan su gate del propietario pendiente. B2 backend
+sigue no autorizado, fuera de la cola activa y visible en EXPENSE-UX-01. Ninguna fila
+acredita despliegue ni preparación para producción.
+
+Incidencias históricas conservadas: #1166 (`4f0db58f9`), #1168 (`775ff09b1`),
+#1169 (`c198fd3dc`), #1173 (`802b1f671`) y #1174 (`a8c8ee184`) concluyeron `failure`.
+#1170 solo acredita el fix UTF-16. La API confirma #1171
+(`494fc895338f2df6a2aa08596b8c742dc6614dc9`, run `43324454747`): intento 1
+`failure` en `backend / Backend (infrastructure-06)` (job `131554614942`) y `CI gate`;
+intento 2 `success`. Se concilian ambos resultados sin borrar el fallo original.
+La causa Redis sigue pendiente de investigación independiente.
+
+Los registros antiguos «sin commit» o «pendiente Git/CI» fuera de estas entregas
+(imágenes de Ítems, UIUX, RESP-01 y evidencias históricas) requieren aún trazar su
+commit específico y aceptación; no se cierran con un CI posterior ni se reabren por
+esta conciliación. Se conserva explícitamente esa limitación de verificación.
+
+## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
+
+Publicado en `00bdef9109aa4e1e14bbe245821208ba24eb6e3e`: aviso compacto persistente
+de diferencias con el XML y advertencia tras ingresar importes, sin repetirla por
+cada render; origen XML visible, ayudas contextuales, traducciones y disposición
+responsive del formulario. Alcance comprobado en el diff publicado; se conserva el
+bloqueo de guardado por diferencias y las reglas fiscales y contables existentes.
+
+CI #1193: 20 jobs `success`, incluido `CI gate`; `publish` omitido. Cierre técnico
+acreditado. La aceptación visual del propietario no consta en STATUS; confirmarla
+antes de declarar cierre funcional. El CI no acredita ejecución del E2E responsive
+(no aparece como job), despliegue ni preparación productiva. No se repiten suites
+para esta conciliación.
+
+## EXPENSE-BACKEND-01 — Gastos: tipo de documento (U4) y dependencia de `accounting.view` — PUBLICADO, CI #1192 SUCCESS (aprobado por el propietario 2026-11-14)
 
 Bloque focalizado aprobado por el propietario (U4 + EXPENSE-ACCOUNTING-VIEW-01). Sin tocar contabilidad, retenciones, SRI, cuentas por pagar ni la autorización de `GET /accounting/accounts`.
 
@@ -35,13 +97,13 @@ Publicado en `dafdd7bdcacac8c7486e46b0f293eda8b3aec61c`; CI #1191 (`dafdd7bdc`) 
 
 Validación (focalizada, sin suite completa): módulo `expenses` 143/143 antes del ajuste de mensaje; tras él, `expenses/pages` 59/59 (incluye 3 pruebas nuevas del mensaje); `tsc -b`, `npm run build`, ESLint (0 errores), guardrail oficial (`-SkipFrontendChunk`), integridad grandfather y `architecture:i18n/precision/design-system/css` PASS. Sin regenerar Dashboard. Las pruebas `FinanceCollectionsReadPermissionReproTests` y `CompanyStateBypassAuditReproTests` siguen sin seguimiento.
 
-## API-DOC-B-MSG — F-10 y F-33 (códigos de Contabilidad y Carga Inicial fuera de MessageCatalog) — PUBLICADO, pendiente resultado del CI (aprobado por el propietario 2026-11-13)
+## API-DOC-B-MSG — F-10 y F-33 (códigos de Contabilidad y Carga Inicial fuera de MessageCatalog) — PUBLICADO, CI #1185 SUCCESS (aprobado por el propietario 2026-11-13)
 
 Autorización del propietario: catalogar los códigos de validación de Accounting, ManualJournal e InitialLoad de F-10/F-33 más el preflight de apertura; sin reglas globales ni cambios en otros módulos. Cierre de Contabilidad e Initial Load sin reapertura funcional: solo clasificación y mensajes.
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-10, F-33 | BUG REAL (misma causa) | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | El status HTTP sale solo de la categoría de `MessageCatalog`; un código no catalogado cae en el fallback BusinessRule (400, «Ocurrió un error inesperado.» / «Unmapped response code.») aunque se cree con `Result.ValidationFailure` (documentado 422). Se declaran `ApiResponseCodes.Accounting` y `ApiResponseCodes.InitialLoad` (38 códigos, **mismos valores de `code`**): 37 se catalogan como Validation → 422 con mensaje propio y `MANUAL_POST_INTERNAL` como InternalError → 500 (ver abajo); los códigos del dominio apuntan a esas constantes. Sin cambio de `Result`, `ApiErrorStatus`, `ResponseFactory`, handlers ni rutas. Antes: `AccountingInitialLoadValidationCodesTests` 76 de 78 casos fallaban (400 y mensaje genérico); después 78/78. |
+| F-10, F-33 | BUG REAL (misma causa) | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1185 SUCCESS** | El status HTTP sale solo de la categoría de `MessageCatalog`; un código no catalogado cae en el fallback BusinessRule (400, «Ocurrió un error inesperado.» / «Unmapped response code.») aunque se cree con `Result.ValidationFailure` (documentado 422). Se declaran `ApiResponseCodes.Accounting` y `ApiResponseCodes.InitialLoad` (38 códigos, **mismos valores de `code`**): 37 se catalogan como Validation → 422 con mensaje propio y `MANUAL_POST_INTERNAL` como InternalError → 500 (ver abajo); los códigos del dominio apuntan a esas constantes. Sin cambio de `Result`, `ApiErrorStatus`, `ResponseFactory`, handlers ni rutas. Antes: `AccountingInitialLoadValidationCodesTests` 76 de 78 casos fallaban (400 y mensaje genérico); después 78/78. |
 
 Códigos (Contabilidad): `PERIOD_NOT_OPEN`, `MANUAL_FUTURE_DATE`, `ACCOUNTING_NOT_ENABLED`, `OPENING_REVERSAL_REQUIRES_CORRECTION_FLOW`, `FISCAL_YEAR_*` (6) y `YEAR_END_*` (7). Carga Inicial: `INITIAL_LOAD_CLOSED`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_*` (11) y preflight (`BATCH_NOT_ACCOUNTABLE`, `BATCH_NOT_COMPLETED`, `ALREADY_POSTED`, `SOURCE_EMPTY`, `SOURCE_COST_MISSING`, `AMOUNT_NOT_POSITIVE`).
 
@@ -53,18 +115,17 @@ Validación (focalizada, sin suite completa): `ERP.API.Tests` OpenAPI/contrato/M
 
 Residuo, fuera de alcance y sin tocar: `ACCOUNTING_MODE_NOT_CONFIGURED`, `POSTING_FAILED` y los demás códigos del motor/continuidad contable (compartidos con otros módulos) y los códigos literales de otros módulos siguen en 400. El resto de F-01 a F-52 conserva su estado.
 
-## SEC-SUSP — Empresa suspendida o deshabilitada — SEC-SUSP-01 PUBLICADO, pendiente validación CI (2026-11-13)
+## SEC-SUSP — Empresa suspendida o deshabilitada — SEC-SUSP-01 PUBLICADO, CI #1183 SUCCESS (2026-11-13)
 
 Auditoría posterior a F-02. Decisiones del propietario y excepción FROZEN limitada en
 [ADR-048](docs/decisions/ADR-048-company-suspension-automatic-processes.md) (Accepted) y
-[frozen-infrastructure.md](docs/architecture/frozen-infrastructure.md). **Publicado; pendiente de validación CI (no
-validado en CI).**
+[frozen-infrastructure.md](docs/architecture/frozen-infrastructure.md). **Publicado; SEC-SUSP-01 CI #1183 SUCCESS; SEC-SUSP-02b CI #1184 SUCCESS.**
 
 | ID | Estado | Evidencia |
 |---|---|---|
-| SEC-SUSP-01 | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente validación CI** | Antes (reproducido con PostgreSQL desechable y dobles): el job de reintentos procesaba 3/3 comprobantes (Failed, Signed, Received) de empresas suspendida y deshabilitada y el claim reclamaba sus correos. Ahora: la transmisión nueva (Draft, Failed, DeadLetter desde ellos, retransmisión corregida) se bloquea sin escrituras ni DeadLetter con `ELECTRONIC_DOCUMENT_EMISSION_DISABLED`; Signed/Received se siguen consultando; el correo de empresas pausadas queda Pending sin intento ni `retry_count`; System, PendingSetup y operativas sin cambios; la suspensión concurrente espera al reclamo abierto (FOR SHARE). Pruebas: `ElectronicDocumentIssuerCompanyPauseTests` 15/15 (sin el gate fallan 8), `CompanyPauseAutomaticProcessingPostgreSqlTests` 15/15, `CompanyPauseBackgroundJobsTests` 3/3, descubrimiento de retenciones y reclamo guardado real (`PurchaseRetentionConfirmIntegrationTests.SEC_SUSP_01_*`) 7/7, retransmisión corregida R12 (`ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.SEC_SUSP_01_*`) 3/3; sin el gate fallan 6 de estas 10. |
+| SEC-SUSP-01 | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1183 SUCCESS** | Antes (reproducido con PostgreSQL desechable y dobles): el job de reintentos procesaba 3/3 comprobantes (Failed, Signed, Received) de empresas suspendida y deshabilitada y el claim reclamaba sus correos. Ahora: la transmisión nueva (Draft, Failed, DeadLetter desde ellos, retransmisión corregida) se bloquea sin escrituras ni DeadLetter con `ELECTRONIC_DOCUMENT_EMISSION_DISABLED`; Signed/Received se siguen consultando; el correo de empresas pausadas queda Pending sin intento ni `retry_count`; System, PendingSetup y operativas sin cambios; la suspensión concurrente espera al reclamo abierto (FOR SHARE). Pruebas: `ElectronicDocumentIssuerCompanyPauseTests` 15/15 (sin el gate fallan 8), `CompanyPauseAutomaticProcessingPostgreSqlTests` 15/15, `CompanyPauseBackgroundJobsTests` 3/3, descubrimiento de retenciones y reclamo guardado real (`PurchaseRetentionConfirmIntegrationTests.SEC_SUSP_01_*`) 7/7, retransmisión corregida R12 (`ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.SEC_SUSP_01_*`) 3/3; sin el gate fallan 6 de estas 10. |
 | SEC-SUSP-02 | KEEP la emisión de sesión para empresas suspendidas | SwitchCompany, Refresh, Reauthenticate y OperateCompany emiten sesión (200) para una suspendida; con ese token el guard responde 403 a `companies/profile`. Deshabilitada: 400/401. La interfaz espera ese flujo. |
-| SEC-SUSP-02b | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente validación CI** | Antes (PostgreSQL desechable): `RefreshTokenHandler` rotaba el token y recién después validaba usuario, tenant, empresa y membresía; un rechazo legítimo (empresa deshabilitada, usuario o membresía inactivos → 401) dejaba el anterior revocado y un sucesor activo que el cliente nunca recibía (tokens 1→2, activos 1→1), y el reintento con el token viejo podía revocar la familia como "reutilización". Ahora: el handler lee el token sin rotar (`ValidateWithoutRotatingAsync`), resuelve y valida el estado (`ResolveSessionAsync`, sin escrituras) y solo entonces rota; si rechaza, el token queda intacto. Un token inexistente, revocado o vencido sigue por `ValidateAndRotateAsync` (detección de reutilización, auditoría, rate limit y concurrencia sin cambios). El rechazo previo por estado ya no consume cuota de rate limit (el límite se aplica solo al rotar); las demás políticas de autenticación no cambian. Sin cambios de contrato, permisos ni `RefreshTokenService`/repositorio; suspendida y PendingSetup siguen refrescando (200). Pruebas: 11 de integración PostgreSQL (`RefreshTokenNoOrphanSuccessorTests`; antes 4 fallaban, ahora 11/11), +6 unitarias de handler; Auth Application 319/319 y refresh/cookie API 63/63; architecture:check y guardrail OK. Retirada la excepción C-03 de `RefreshTokenHandler` (`Handle`=47; ver [ADR-046](docs/decisions/ADR-046-historical-handler-size-debt.md)). |
+| SEC-SUSP-02b | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1184 SUCCESS** | Antes (PostgreSQL desechable): `RefreshTokenHandler` rotaba el token y recién después validaba usuario, tenant, empresa y membresía; un rechazo legítimo (empresa deshabilitada, usuario o membresía inactivos → 401) dejaba el anterior revocado y un sucesor activo que el cliente nunca recibía (tokens 1→2, activos 1→1), y el reintento con el token viejo podía revocar la familia como "reutilización". Ahora: el handler lee el token sin rotar (`ValidateWithoutRotatingAsync`), resuelve y valida el estado (`ResolveSessionAsync`, sin escrituras) y solo entonces rota; si rechaza, el token queda intacto. Un token inexistente, revocado o vencido sigue por `ValidateAndRotateAsync` (detección de reutilización, auditoría, rate limit y concurrencia sin cambios). El rechazo previo por estado ya no consume cuota de rate limit (el límite se aplica solo al rotar); las demás políticas de autenticación no cambian. Sin cambios de contrato, permisos ni `RefreshTokenService`/repositorio; suspendida y PendingSetup siguen refrescando (200). Pruebas: 11 de integración PostgreSQL (`RefreshTokenNoOrphanSuccessorTests`; antes 4 fallaban, ahora 11/11), +6 unitarias de handler; Auth Application 319/319 y refresh/cookie API 63/63; architecture:check y guardrail OK. Retirada la excepción C-03 de `RefreshTokenHandler` (`Handle`=47; ver [ADR-046](docs/decisions/ADR-046-historical-handler-size-debt.md)). |
 
 Deuda y límites conocidos: la recuperación de ventas sigue create-only (crea Draft que quedan pausados); el único camino sin
 lock de fila en la comprobación es un origen sin guard registrado (API genérica de ElectronicDocuments), documentado en
@@ -81,13 +142,13 @@ Las tres regresiones nuevas fallaron antes del fix; después pasan las 30 prueba
 917 totales, 307 XML, 316 de atributos y 294 efectivas tanto en LF como en CRLF. Guardrail PowerShell
 completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cambios de controllers,
 límites, baseline, grandfather ni funcionalidad por esta corrección.
-Sin staging, commit ni push; no CLOSED.
+Publicado en `7be7d3a5df02bdee221dca692355b993b602de2d`, CI #1170 SUCCESS; pendiente gate del propietario, no CLOSED.
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fases 2B y 2D implementadas; pendiente el CI verde del commit final)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — PUBLICADO, CI #1176/#1177 SUCCESS; hallazgos independientes abiertos
 
-**No está CLOSED:** pendiente el CI verde del commit final de la Fase 2D (ejemplos y cierre documental mínimo). Solo metadatos y pruebas: sin cambios de rutas, métodos, permisos, DTO, validadores ni lógica.
+**Gate CI satisfecho:** Fase 2D #1176 SUCCESS y cierre documental #1177 SUCCESS, cada uno sobre su SHA (tabla de conciliación). Aprobación técnica de Fase 2D ya registrada; no cierra hallazgos funcionales ni incidencias independientes. Solo metadatos y pruebas: sin cambios de rutas, métodos, permisos, DTO, validadores ni lógica.
 
-- **Fase 2A — infraestructura central** (`4f0db58f9`, pendiente confirmar CI): filtros en `ERP.API/Swagger/`
+- **Fase 2A — infraestructura central** (`4f0db58f9`, CI #1166 FAILURE; no acreditado por otro SHA): filtros en `ERP.API/Swagger/`
   (seguridad por operación con `security: [{}]` en las 11 operaciones públicas, sección «Autorización» y
   `x-required-permissions` derivados de las políticas, 401/403/422/429/500 comunes solo donde el pipeline los
   garantiza, `ProblemDetails` inferido sustituido por el envelope, `operationId` `{Controller}_{Action}`, ids de
@@ -121,7 +182,7 @@ Sin staging, commit ni push; no CLOSED.
   los tipos de medio declarados en el atributo; no se altera ese atributo (cambiaría la negociación de los errores
   JSON de la misma acción). El snapshot de Companies se actualiza por la documentación de `CompaniesController` y
   `CompanyProfileController` (solo metadatos).
-- **CI #1171 (Fase 2B-3, `494fc8953`) — FAILURE, pendiente de diagnóstico independiente:** falló una prueba de
+- **CI #1171 (Fase 2B-3, `494fc8953`) — intento 1 FAILURE, intento 2 SUCCESS; causa pendiente de diagnóstico independiente:** ambos intentos confirmados por API sobre el mismo SHA. En el primero falló una prueba de
   conexión y reinicio de Redis en `infrastructure-06`. El paquete 2B-3 solo cambia metadatos Swagger, pruebas de
   contrato OpenAPI y el snapshot de Companies; no toca Redis ni sus pruebas. No se clasifica todavía como defecto
   funcional confirmado ni se modifica Redis dentro de API-DOC-V1.
@@ -185,7 +246,7 @@ Sin staging, commit ni push; no CLOSED.
     conteo del informe 2C, no del contrato.
   - **Deuda contractual prioritaria (fuera de API-DOC-V1):** los esquemas de entrada casi no declaran `required`
     (1 de 188) ni describen propiedades (26 de 869); la obligatoriedad vive en los validadores FluentValidation.
-    F-35 sigue como candidato prioritario a investigación funcional independiente. F-01 a F-52 sin cambios.
+    F-35 resuelto posteriormente en L1 (#1178 SUCCESS); los demás hallazgos conservan su estado individual.
   - **Snapshots:** solo `companies-openapi.json` (descripción de los dos logos) y `stock-openapi.json` (ejemplo del ajuste)
     cambian, y únicamente con metadato documental.
   - **Evidencia puntual, no restricción permanente:** al implementar la fase se comparó el documento contra el de
@@ -195,7 +256,7 @@ Sin staging, commit ni push; no CLOSED.
   - **`vatCode: "0"` del ejemplo de ventas verificado:** `SriVatRateConfiguration` lo siembra («0% IVA», 0.00, activo,
     sin fin de vigencia; migración base) y `SriTaxResolver.GetVatRateWithNameAsync`, usado por Ventas y Compras, resuelve
     por `Code` activo; el validador solo exige que no esté vacío.
-  - **Pendiente para CLOSED:** CI verde del commit final.
+  - **Gate CI final satisfecho:** #1176/#1177 SUCCESS; ver alcance y pendientes en la conciliación.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
 
@@ -205,7 +266,7 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | ID | Ubicación | Hallazgo |
 |---|---|---|
 | API-DOC-F-01 | `IntegrationCompanyCreateRequest.BrandingJson` → `CreateIntegrationCompanyHandler` | Se entrega al parámetro `website` de `CreateManagedCompanyAsync`; posible cableado de posición incorrecto. |
-| API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. **BUG REAL corregido y publicado en L3/C3 (`Activate` ya no toca `IsActive`), pendiente validación CI.** |
+| API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. **BUG REAL corregido y publicado en L3/C3 (`Activate` ya no toca `IsActive`), CI #1182 SUCCESS.** |
 | API-DOC-F-03 | `GET /api/v1/finance/collections/receivable/{id}` | Exige el permiso `ReverseCollection`, no uno de lectura. |
 | API-DOC-F-04 | `SupplierCredit` frente a `FinancePayments.RegisterCollection` | Un conflicto de idempotencia sale como 422 (`ValidationFailure`) en SupplierCredit y como 409 (`Conflict`) en cobros; criterio no uniforme. |
 | API-DOC-F-05 | `PaymentMethods` | Código duplicado responde 422 (no 409); `SetAccount` tiene un 404 inalcanzable (el validador rechaza antes con 422); `Update` exige el id en ruta y cuerpo (400 si difieren). |
@@ -220,8 +281,8 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-14 | `ManualJournalController.Create` (reintento idempotente) | Devuelve siempre `Draft`, versión 1 y sin número, aunque el asiento ya se haya editado o publicado. |
 | API-DOC-F-15 | `ManualJournalController.Reverse` | La respuesta describe el asiento de reverso, no el original. |
 | API-DOC-F-16 | `ManualJournalController` | No declara `[Produces("application/json")]`, a diferencia del resto de controladores. |
-| API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. **Resuelto y publicado en B-SALES (paginación BUG REAL corregida; `status` KEEP), pendiente validación CI.** |
-| API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. **BUG REAL corregido y publicado en B-SALES, pendiente validación CI.** |
+| API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. **Resuelto y publicado en B-SALES (paginación BUG REAL corregida; `status` KEEP), CI #1186 SUCCESS.** |
+| API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. **BUG REAL corregido y publicado en B-SALES, CI #1186 SUCCESS.** |
 | API-DOC-F-19 | `SalesController.ApplyGlobalDiscount` / `CancelInvoice` | Sus 400 salen de `ArgumentException` mapeada por `ExceptionMiddleware`, no de una validación explícita. |
 | API-DOC-F-20 | `SalesController.AuthorizeInvoice` | Tiene lector de reintentos ante conflictos de concurrencia; el código HTTP final de un conflicto no resuelto no está verificado (no se declaró 409). |
 | API-DOC-F-21 | `AccessProfiles` (`UpdateProfile`, `UpsertProfilePermissions`, `GetProfilePermissions`, `CreateProfile`) | «Perfil no encontrado» responde 400 (`Failure` sin código) en tres endpoints, mientras `GetProfilePermissionAudit` responde 404; «nombre vacío» en `CreateProfile` responde 400 sin validador, el resto de entradas inválidas responde 422. |
@@ -254,7 +315,7 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-48 | `StockAdjustments.UpdateAdjustment`, `InventoryAdjustmentReasons.Update` | Con id de ruta distinto al del cuerpo devuelven `BadRequest()` sin cuerpo ni envelope (mismo patrón que F-07); el resto de los `Update` revisados usa `ApiBadRequest`. |
 | API-DOC-F-49 | `Items.ResolveItem` | Usa `ToOkOrNotFound`, pero si ningún ítem coincide el handler responde 200 con `data` nulo (no 404). |
 | API-DOC-F-50 | `Warehouses.GetAll` | Lee `activeStatus`, `onlyActive`, `search` y `sucursalId` directamente de la cadena de consulta: no figuran como parámetros del contrato; `sucursalId` es el único nombre de parámetro en español de la API revisada. |
-| API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. **Resuelto en B-BP como KEEP por decisión explícita del propietario (2026-11-13): sin verificación ni bloqueo nuevo; publicado, pendiente validación CI de la prueba de caracterización.** |
+| API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. **Resuelto en B-BP como KEEP por decisión explícita del propietario (2026-11-13): sin verificación ni bloqueo nuevo; publicado, CI #1187 SUCCESS para la prueba de caracterización.** |
 | API-DOC-F-52 | `Public.GetDeploymentInfo` | Devuelve un objeto anónimo sin DTO: el esquema 2xx es `ApiResponse<object>` y los campos se describen solo en `remarks`. |
 
 ### Revisión de F-01 a F-52 contra el contrato publicado (pendiente de revisión del propietario; API-DOC-V1 no está CLOSED)
@@ -269,11 +330,11 @@ documental aprobada en la Fase 2D (cinco respuestas `ApiResponse<object>`, sin c
 | Clasificación | Estado | Hallazgos |
 |---|---|---|
 | Defecto Swagger | Corregido | F-07, F-16, F-45, F-46, F-47, F-48, F-50 |
-| Problema funcional | Pendiente (F-02: BUG REAL corregido y publicado, pendiente validación CI; ver L3/C3) | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
+| Problema funcional | Pendiente (F-02: BUG REAL corregido y publicado, CI #1182 SUCCESS; ver L3/C3) | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
 | Deuda técnica | Pendiente | F-04, F-05, F-06, F-08, F-11, F-12, F-13, F-15, F-19, F-21, F-22, F-23, F-25, F-26, F-27, F-28, F-29, F-36, F-37, F-38, F-39, F-40, F-42, F-43, F-44 |
 | Deuda técnica | Aceptado | F-52 |
 | Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32 |
-| KEEP (decisión del propietario) | Documentado y publicado, pendiente validación CI (B-BP) | F-51 |
+| KEEP (decisión del propietario) | Documentado y publicado, CI #1187 SUCCESS (B-BP) | F-51 |
 
 Los 52 identificadores aparecen exactamente una vez (7 + 15 + 25 + 1 + 4). Residuos que **no** se cierran con la
 corrección documental: F-07 y F-48 conservan el `BadRequest()` sin envelope y F-47 el `BadRequest("ID mismatch.")` y el
@@ -290,7 +351,7 @@ permanece CLOSED (sin reapertura general). L0 reprodujo el defecto con el handle
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-35 | BUG REAL | Corregido y publicado (gate del propietario aprobado 2026-11-13); **pendiente resultado del CI** | `UpdateExpenseCategoryNodeCommand.IsDeductible`/`RequiresInvoice` pasan a `bool?` (`null` por omisión); el handler usa `cmd.X ?? node.X`. Sin cambio de request, controlador, DTO, endpoints, validadores, esquema ni snapshots. `ExpenseCategoryTaxFlagsPreservationTests` (14 casos, PostgreSQL real, grupo `infrastructure-03`): 14/14 después. Focales: `ExpenseCategoryUseCasesTests` 11/11, `ExpenseCategoriesControllerTests` 12/12, `ExpenseCategoryNodeTests` 4/4. |
+| F-35 | BUG REAL | Corregido y publicado (gate del propietario aprobado 2026-11-13); **CI #1178 SUCCESS** | `UpdateExpenseCategoryNodeCommand.IsDeductible`/`RequiresInvoice` pasan a `bool?` (`null` por omisión); el handler usa `cmd.X ?? node.X`. Sin cambio de request, controlador, DTO, endpoints, validadores, esquema ni snapshots. `ExpenseCategoryTaxFlagsPreservationTests` (14 casos, PostgreSQL real, grupo `infrastructure-03`): 14/14 después. Focales: `ExpenseCategoryUseCasesTests` 11/11, `ExpenseCategoriesControllerTests` 12/12, `ExpenseCategoryNodeTests` 4/4. |
 
 Fuera de alcance, sin cambio: la API no permite fijar los indicadores (`Create` y `Update` no los reciben; los `false`
 solo vienen del seed), lo que sería `FALTA` y requiere decisión propia. Los nodos que un PUT anterior ya haya
@@ -306,7 +367,7 @@ funcionalidades ni reglas de contabilización. Antes de la corrección, 2 de 6 c
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-14 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | `ManualJournalHandler.Handle(CreateManualJournalCommand)` devuelve `Ok(existing)` (estado, versión y número reales del asiento hallado por `FindByKeyAsync`, ya acotado por tenant y empresa) en lugar de `Draft`/1/`null` fijos. Sin cambio de DTO, controlador ni contrato HTTP; el reintento no crea, contabiliza ni modifica. `ManualJournalIdempotentCreateReplayTests` (6 casos, PostgreSQL real, grupo `infrastructure-03`): 6/6 después; `AccountingManual08Tests` 5/5 y `AccountingManual08PermissionTests` 1/1 siguen en verde. |
+| F-14 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1179 SUCCESS** | `ManualJournalHandler.Handle(CreateManualJournalCommand)` devuelve `Ok(existing)` (estado, versión y número reales del asiento hallado por `FindByKeyAsync`, ya acotado por tenant y empresa) en lugar de `Draft`/1/`null` fijos. Sin cambio de DTO, controlador ni contrato HTTP; el reintento no crea, contabiliza ni modifica. `ManualJournalIdempotentCreateReplayTests` (6 casos, PostgreSQL real, grupo `infrastructure-03`): 6/6 después; `AccountingManual08Tests` 5/5 y `AccountingManual08PermissionTests` 1/1 siguen en verde. |
 
 Casos cubiertos: reintento sin cambios, tras editar, tras publicar (número real, sin recontabilizar), sin duplicados ni
 auditoría/intentos/secuencias adicionales, aislamiento entre empresas del mismo tenant y creaciones concurrentes con la
@@ -320,7 +381,7 @@ solo F-09. C2 (F-01) y C3 (F-02) están aprobados conceptualmente y se ejecutan 
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-09 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente resultado del CI** | `POST /api/integration/v1/companies` aceptaba cualquier `taxId` y `NormalizeOfficial` lo rellenaba con ceros o lo truncaba (vacío → `0000000000000`; `1790012345` → `1790012345000`). Ahora `CreateIntegrationCompanyCommandValidator` exige `RucValidator.EsRucValido` o `TMP-EC-` + 8 hexadecimales, sin espacios iniciales ni finales (lo validado es lo persistido; no se recorta); otro valor responde **422** antes de aprovisionar. Sin cambio de `RucValidator`, DTO, rutas ni dominio (el relleno de `Company.CreateManaged` queda como defensa). Antes: 7 de 10 casos HTTP fallaban (RUC inválido devolvía 201 y creaba la empresa). Después: `IntegrationTaxIdValidationTests` 30/30 y `IntegrationCompanyTaxIdHttpTests` 12/12 (HTTP + PostgreSQL real; 422 sin empresa creada, 201 válido y provisional, 409 duplicado conservado). |
+| F-09 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1180 SUCCESS** | `POST /api/integration/v1/companies` aceptaba cualquier `taxId` y `NormalizeOfficial` lo rellenaba con ceros o lo truncaba (vacío → `0000000000000`; `1790012345` → `1790012345000`). Ahora `CreateIntegrationCompanyCommandValidator` exige `RucValidator.EsRucValido` o `TMP-EC-` + 8 hexadecimales, sin espacios iniciales ni finales (lo validado es lo persistido; no se recorta); otro valor responde **422** antes de aprovisionar. Sin cambio de `RucValidator`, DTO, rutas ni dominio (el relleno de `Company.CreateManaged` queda como defensa). Antes: 7 de 10 casos HTTP fallaban (RUC inválido devolvía 201 y creaba la empresa). Después: `IntegrationTaxIdValidationTests` 30/30 y `IntegrationCompanyTaxIdHttpTests` 12/12 (HTTP + PostgreSQL real; 422 sin empresa creada, 201 válido y provisional, 409 duplicado conservado). |
 
 Contrato: nuevo `422` documentado en `POST /companies` (remarks y `ProducesResponseType`); `OpenApiContractTests` declara
 ahora `201` + `409`/`422`. Riesgo de datos históricos: pueden existir empresas creadas por esta ruta con un RUC ya
@@ -337,7 +398,7 @@ solo F-01; sin nuevas funciones de branding ni cambio estructural de v1.
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-01 | BUG REAL | Corregido localmente; **pendiente revisión del propietario y CI** | `CreateIntegrationCompanyHandler` pasaba `request.BrandingJson` en la posición de `website` de `CreateManagedCompanyAsync`. Se elimina ese argumento (sin otro destino de persistencia) y `CreateIntegrationCompanyCommandValidator` rechaza un `brandingJson` no vacío ni solo espacios con **422** (`request.BrandingJson`), independiente de la validación del RUC (F-09). `brandingJson` se conserva en v1 pero no se admite su uso hasta definir su contrato. Antes: 9 de 15 casos de Application y 5 de 11 HTTP fallaban (el branding se guardaba o se rechazaba mal). Después: `IntegrationBrandingJsonTests` 15/15 y `IntegrationCompanyBrandingJsonHttpTests` 11/11 (HTTP + PostgreSQL real; 422 sin empresa creada, `Company.Website` nulo, 201 y 409 conservados); F-09 sigue en 30/30 y 12/12. |
+| F-01 | BUG REAL | Publicado; **CI #1181 SUCCESS; pendiente gate del propietario** | `CreateIntegrationCompanyHandler` pasaba `request.BrandingJson` en la posición de `website` de `CreateManagedCompanyAsync`. Se elimina ese argumento (sin otro destino de persistencia) y `CreateIntegrationCompanyCommandValidator` rechaza un `brandingJson` no vacío ni solo espacios con **422** (`request.BrandingJson`), independiente de la validación del RUC (F-09). `brandingJson` se conserva en v1 pero no se admite su uso hasta definir su contrato. Antes: 9 de 15 casos de Application y 5 de 11 HTTP fallaban (el branding se guardaba o se rechazaba mal). Después: `IntegrationBrandingJsonTests` 15/15 y `IntegrationCompanyBrandingJsonHttpTests` 11/11 (HTTP + PostgreSQL real; 422 sin empresa creada, `Company.Website` nulo, 201 y 409 conservados); F-09 sigue en 30/30 y 12/12. |
 
 Contrato: el `422` de `POST /companies` (ya declarado por C1) añade `brandingJson` no vacío; remarks del endpoint y
 comentario de `Platform.Contracts.CompanyProvisionRequest` actualizados. Riesgo de datos históricos: pueden existir
@@ -352,7 +413,7 @@ solo F-02; sin reabrir Integración ni modificar `Suspend`, DTO, rutas, permisos
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-02 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **pendiente validación CI** | `ActivateIntegrationCompanyHandler` ejecutaba `company.IsActive = true` tras `MarkOperational()`, de modo que `PUT /api/integration/v1/companies/{id}/activate` habilitaba administrativamente una empresa deshabilitada por otra vía. Se elimina solo esa asignación: `Activate` transiciona `OperationalStatus` a `Operational` y conserva el `IsActive` previo. Antes: 3 de 6 casos de Infrastructure (PostgreSQL real) y 1 de 3 HTTP fallaban (empresa deshabilitada devolvía `isActive=true`). Después: `IntegrationCompanyActivationIsActiveTests` 6/6 (Testcontainers) e `IntegrationCompanyActivationHttpTests` 3/3 (HTTP + PostgreSQL real). |
+| F-02 | BUG REAL | Corregido y publicado (revisión del propietario aprobada 2026-11-13); **CI #1182 SUCCESS** | `ActivateIntegrationCompanyHandler` ejecutaba `company.IsActive = true` tras `MarkOperational()`, de modo que `PUT /api/integration/v1/companies/{id}/activate` habilitaba administrativamente una empresa deshabilitada por otra vía. Se elimina solo esa asignación: `Activate` transiciona `OperationalStatus` a `Operational` y conserva el `IsActive` previo. Antes: 3 de 6 casos de Infrastructure (PostgreSQL real) y 1 de 3 HTTP fallaban (empresa deshabilitada devolvía `isActive=true`). Después: `IntegrationCompanyActivationIsActiveTests` 6/6 (Testcontainers) e `IntegrationCompanyActivationHttpTests` 3/3 (HTTP + PostgreSQL real). |
 
 Cobertura: `Suspend` conserva `IsActive` y el guard bloquea por `OperationalStatus`; `Activate` conserva `true` y `false`;
 una empresa deshabilitada sigue sin acceso operativo tras activar; una suspendida sigue bloqueada hasta activarse;
@@ -366,12 +427,12 @@ que dependiera de que `activate` habilitara la empresa deberá habilitarla por l
 
 Autorización del propietario 2026-11-13 para diagnosticar, corregir y probar F-17 y F-18 en un único bloque, sin ampliar
 el alcance. Ventas conserva sus restricciones CLOSED: no cambian estados, reglas fiscales, permisos ni lógica de
-autorización. Estado: **publicado (revisión del propietario aprobada 2026-11-13), pendiente validación CI.**
+autorización. Estado: **publicado (revisión del propietario aprobada 2026-11-13), CI #1186 SUCCESS.**
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-18 | BUG REAL | Corregido y publicado (pendiente validación CI) | `AuthorizeSalesInvoiceHandler` devolvía «Esta factura ya fue autorizada.» para cualquier estado distinto de `Draft`; como `Authorized` retorna antes (idempotente), el único estado alcanzable era `Cancelled`. Ahora responde «Esta factura está anulada y no puede autorizarse.» (y «Solo se pueden autorizar facturas en borrador.» como fallback). La operación sigue rechazada con 422 `VALIDATION_ERROR`. Antes: `Autorizar_factura_anulada_se_rechaza_con_mensaje_de_anulada` fallaba con el mensaje antiguo. Después: `AuthorizeSalesInvoiceCancelledMessageTests` 2/2 y `AuthorizeSalesInvoiceHandlerTests` sin regresiones (61/61 en total con ambas clases). |
-| F-17 | BUG REAL (paginación); KEEP (`status`) | Corregido y publicado (pendiente validación CI) | Reproducido en PostgreSQL real (Testcontainers) sobre `SalesReceivableRepository` y `SalesReturnRepository`: `pageNumber ≤ 0` → `OFFSET must not be negative` y `pageSize < 0` → `LIMIT must not be negative`, ambos como error de servidor; `pageSize = 0` devuelve página vacía sin error. Corrección mínima: `GetReceivablesListQueryValidator` y `GetSalesReturnListQueryValidator` (`pageNumber ≥ 1`, `pageSize` 1–100, mismo criterio que el listado de asientos); fuera de rango responde 422 `VALIDATION_ERROR` mediante `ValidationBehavior`. Después: `SalesListPaginationValidatorTests` (límites 1/25/50/100 válidos; 0, -1, -5 y 101 rechazados; el pipeline corta antes del handler). **`status` desconocido: comportamiento intencional vigente, sin cambio de código.** En `SalesReceivables` se compara literalmente con el estado persistido y devuelve la página vacía; en `SalesReturn` se ignora y no filtra. Cambiarlo alteraría el contrato público (200 → 4xx) y el frontend solo envía valores válidos. |
+| F-18 | BUG REAL | Corregido y publicado (CI #1186 SUCCESS) | `AuthorizeSalesInvoiceHandler` devolvía «Esta factura ya fue autorizada.» para cualquier estado distinto de `Draft`; como `Authorized` retorna antes (idempotente), el único estado alcanzable era `Cancelled`. Ahora responde «Esta factura está anulada y no puede autorizarse.» (y «Solo se pueden autorizar facturas en borrador.» como fallback). La operación sigue rechazada con 422 `VALIDATION_ERROR`. Antes: `Autorizar_factura_anulada_se_rechaza_con_mensaje_de_anulada` fallaba con el mensaje antiguo. Después: `AuthorizeSalesInvoiceCancelledMessageTests` 2/2 y `AuthorizeSalesInvoiceHandlerTests` sin regresiones (61/61 en total con ambas clases). |
+| F-17 | BUG REAL (paginación); KEEP (`status`) | Corregido y publicado (CI #1186 SUCCESS) | Reproducido en PostgreSQL real (Testcontainers) sobre `SalesReceivableRepository` y `SalesReturnRepository`: `pageNumber ≤ 0` → `OFFSET must not be negative` y `pageSize < 0` → `LIMIT must not be negative`, ambos como error de servidor; `pageSize = 0` devuelve página vacía sin error. Corrección mínima: `GetReceivablesListQueryValidator` y `GetSalesReturnListQueryValidator` (`pageNumber ≥ 1`, `pageSize` 1–100, mismo criterio que el listado de asientos); fuera de rango responde 422 `VALIDATION_ERROR` mediante `ValidationBehavior`. Después: `SalesListPaginationValidatorTests` (límites 1/25/50/100 válidos; 0, -1, -5 y 101 rechazados; el pipeline corta antes del handler). **`status` desconocido: comportamiento intencional vigente, sin cambio de código.** En `SalesReceivables` se compara literalmente con el estado persistido y devuelve la página vacía; en `SalesReturn` se ignora y no filtra. Cambiarlo alteraría el contrato público (200 → 4xx) y el frontend solo envía valores válidos. |
 
 Impacto API: los rangos fuera de 1–100 / ≥ 1 pasan de error de servidor a 422; los valores válidos no cambian. Los
 remarks y la respuesta 422 se documentaron en `SalesReceivablesController.GetList` y `SalesReturnController.GetList`
@@ -390,7 +451,7 @@ por decisión explícita, sin cambios funcionales para V1.** No se registra como
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-51 | KEEP (decisión explícita del propietario) | **Documentado y publicado**; pendiente validación CI de la nueva prueba | `DeactivateBusinessPartnerHandler` → `BusinessPartner.Deactivate` solo rechaza un tercero de sistema (`EnsureEditable`) o ya inactivo; no consulta roles ni documentos. Comprobado en PostgreSQL real (Testcontainers) con un tercero con roles `Customer` y `Supplier` activos, una factura en borrador y una cuenta por cobrar pendiente: la desactivación tiene éxito, `IsActive=false`, los dos roles siguen activos y factura y cuenta por cobrar quedan intactas (`BusinessPartnerDeactivationPostgreSqlTests`, caracterización del comportamiento vigente, asignada a `infrastructure-03`). ADR-BP-14 (`docs/archive/BUSINESS_PARTNER_REWRITE_EXECUTION_PLAN.md`) trata solo la revocación de un rol con documentos activos y la difiere como TODO; no define bloqueo para desactivar un tercero. |
+| F-51 | KEEP (decisión explícita del propietario) | **Documentado y publicado**; CI #1187 SUCCESS | `DeactivateBusinessPartnerHandler` → `BusinessPartner.Deactivate` solo rechaza un tercero de sistema (`EnsureEditable`) o ya inactivo; no consulta roles ni documentos. Comprobado en PostgreSQL real (Testcontainers) con un tercero con roles `Customer` y `Supplier` activos, una factura en borrador y una cuenta por cobrar pendiente: la desactivación tiene éxito, `IsActive=false`, los dos roles siguen activos y factura y cuenta por cobrar quedan intactas (`BusinessPartnerDeactivationPostgreSqlTests`, caracterización del comportamiento vigente, asignada a `infrastructure-03`). ADR-BP-14 (`docs/archive/BUSINESS_PARTNER_REWRITE_EXECUTION_PLAN.md`) trata solo la revocación de un rol con documentos activos y la difiere como TODO; no define bloqueo para desactivar un tercero. |
 
 Comportamiento V1 vigente y decidido:
 
@@ -975,7 +1036,7 @@ Riesgos residuales:
 - Facturas con proveedor inactivo pasan de «Pendientes de proveedor» a «Por procesar» (siguen en
   «Solo requieren atención»).
 
-### PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 — Rol Proveedor inactivo al guardar una compra — PUBLICADO (2026-11-13), pendiente de validación CI
+### PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 — Rol Proveedor inactivo al guardar una compra — PUBLICADO (2026-11-13), CI #1188 SUCCESS
 
 Hallazgo de la revisión de H4. BUG REAL reproducido: `CreatePurchaseDraftHandler` y
 `UpdatePurchaseDraftHandler` rechazaban un socio inactivo, pero ninguno comprobaba
@@ -2974,7 +3035,7 @@ Cierre documental publicado en `9cb872adac3cd82992c52ba76387c69b969cb3e5`;
 No acredita despliegue ni ERP V1 listo para producción.
 
 **SEC-A01-INFRA-01 (2026-11-13) — código y configuración preparados, sin desplegar** (aprobado por el
-propietario; publicado, pendiente de validación CI). Hallazgo: solo se procesaba `X-Forwarded-For`; con TLS terminado
+propietario; publicado, CI #1189 SUCCESS). Hallazgo: solo se procesaba `X-Forwarded-For`; con TLS terminado
 en el proxy, `Request.IsHttps` quedaba falso (cookie de refresh sin `Secure`, `UseHttpsRedirection`
 sobre HTTP interno). `TrustedProxyForwardedHeaders` ahora procesa `X-Forwarded-For` **y**
 `X-Forwarded-Proto` solo desde `KnownProxies`/`KnownNetworks` explícitos (`ForwardLimit=1`, sin
