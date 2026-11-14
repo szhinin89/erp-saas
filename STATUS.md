@@ -68,7 +68,7 @@ arreglo y la Fase 3 de subcategorías) **SUCCESS** (confirmado en Actions por AP
 
 ## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASES 1–3 PUBLICADAS; cierre documental (fase 4) en gate (2026-11-14)
 
-[Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; D4 no aplicó: no se recreó ninguna base de datos).
+[Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; D4 completada, ver abajo).
 Comportamiento vigente en la SSOT [Gastos](docs/architecture/expenses.md); este registro solo lleva estado, gates y evidencia.
 
 | Fase | Commit (en `origin/main`) | CI | Alcance |
@@ -98,8 +98,26 @@ Validación (focalizada, sin suite completa ni Dashboard):
   199/199 y guardrail oficial PASS (techos ADR-047 sin aumentar). Sin E2E de aplicación.
 - Una corrida amplia previa de la clase de contratos mostró 7 `Contratos_representativos…` ajenos que pasan aislados.
 
-Pendiente: D4 (recrear la BD local con la baseline nueva) solo con autorización expresa; una base creada con la
-baseline anterior no tiene las dos tablas hasta recrearla. `FEATURES.md` no se actualiza: la capacidad extiende Gastos/Proveedores sin
+**D4 — COMPLETADA (2026-11-14):** `erp_zh_dev` (PostgreSQL 16.14, contenedor `postgreszh`, puerto 5435) fue recreada por el propietario y
+auditada en solo lectura. Historial de migraciones: única `20261101012214_InitialProductionBaseline`, sin incrementales. Resultado:
+**esquema correcto, sin diferencias críticas ni importantes**.
+- Modelo: `has-pending-model-changes` limpio. Comparación estática del script SQL de EF contra `pg_dump -s`: 219 tablas esperadas presentes
+  (más `install_data_scripts`, creada en ejecución por `InstallDataBootstrapService`, y las 12 de Hangfire, ajenas al modelo EF); columnas
+  (tipo, nulabilidad, defaults) sin diferencias; 276 FK, 47 CHECK, índices y el `EXCLUDE` coinciden (solo difiere el formato del texto).
+- Objetos SQL raw: los 11 de [DATABASE](docs/DATABASE.md#objetos-raw-sql-fuera-del-modelo-ef) existen (3 funciones con cuerpo igual al de la
+  baseline, 6 triggers, `pg_trgm`/`btree_gist`, índices, `ck_items_nature`, `ex_accounting_periods_company_no_overlap`, `background_job_progress`).
+- Tablas nuevas: `master_supplier_expense_subcategories` (3 FK `RESTRICT`, único sin filtro por `is_active`: baja lógica y reactivación) y
+  `supplier_expense_subcategory_audit` (sin FK, como las demás `*_audit`) coinciden con su configuración EF; vacías.
+- Pruebas focalizadas **34/34 PASS** (`RawSqlDatabaseObjectsSurviveMigrationSquashTests` 2/2; `RawSqlDatabaseObjectsBaselineIntegrationTests` +
+  `SupplierExpenseSubcategoriesPostgreSqlTests` 32/32, con su propia base de prueba).
+- Observación menor, sin impacto funcional: los cuerpos de las 3 funciones plpgsql contienen `\r` porque el working tree Windows
+  (`core.autocrlf=true`) tiene las migraciones en CRLF, aunque el índice git está en LF; la lógica es idéntica.
+- Limitaciones: la comparación fue estática (no se pudo crear una base de referencia recién migrada; el sistema denegó el `CREATE DATABASE`).
+  Los CHECK se compararon por nombre y conteo (equivalencia de texto revisada solo en los impresos); los datos sembrados `HasData` se
+  comprobaron por presencia, no fila a fila; el aislamiento tenant/empresa no se verificó a nivel de datos. Sin suite completa, sin E2E.
+  `erp_zh_test` está desactualizada (otro historial) y no se usó como referencia.
+
+`FEATURES.md` no se actualiza: la capacidad extiende Gastos/Proveedores sin
 añadir fila de catálogo (un cambio del catálogo exige conciliar el registro del Dashboard, que no se regenera aquí).
 
 ## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
