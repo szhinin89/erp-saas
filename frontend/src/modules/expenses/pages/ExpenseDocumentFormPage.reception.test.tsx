@@ -34,7 +34,7 @@ vi.mock("../api/expenseCategoryService", () => ({
     { id: "subcategory", isActive: true, accountingAccountId: "account", accountingAccountCode: "5.1.1", accountingAccountName: "Servicios" },
   ] }] }] },
 }));
-vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 vi.mock("../components/ExpenseRetentionSection", () => ({ ExpenseRetentionSection: () => null }));
 vi.mock("../components/ExpenseDocumentLinesEditor", () => ({
   ExpenseDocumentLinesEditor: ({ lines, onChange }: {
@@ -69,7 +69,8 @@ it("loads the server header and sends the reception identity when saving", async
   expect(mocks.preview).toHaveBeenCalledWith("reception-1");
   expect(screen.getByText(source.supplierTaxId)).toBeTruthy();
   expect((screen.getByLabelText(/^Emisión/) as HTMLInputElement).value).toBe(source.issueDate);
-  expect(screen.getByText(/Factura recibida/).textContent).toContain("115.00");
+  // EXPENSE-UI-02: el resumen permanente "Comprobante recibido…" ya no existe.
+  expect(screen.queryByText(/Comprobante recibido/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Completar detalle" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar borrador" }));
   await waitFor(() => expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({

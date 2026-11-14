@@ -6,12 +6,16 @@ import { useNoticeDisclosure } from "./useNoticeDisclosure";
 interface ZHCompactNoticeProps {
   notice: NoticeVM;
   className?: string;
+  /** Opt-in: popover con posicionamiento anclado (arriba/abajo según espacio, clamp al viewport).
+   * Necesario cuando el aviso vive junto al borde inferior (p. ej. una barra sticky). Sin la prop
+   * los consumidores existentes no cambian. */
+  anchored?: boolean;
 }
 
 /** Aviso compacto de línea/campo: badge + popover con el detalle completo. Reemplaza texto largo
  * repetido (p. ej. `.pdl-cost-alert` por línea) sin ocultar el motivo — el popover siempre
  * muestra `detail` íntegro cuando existe. */
-export function ZHCompactNotice({ notice, className }: ZHCompactNoticeProps) {
+export function ZHCompactNotice({ notice, className, anchored }: ZHCompactNoticeProps) {
   const { open, pinned, triggerRef, titleId, openByHover, toggleByClick, close } =
     useNoticeDisclosure(notice.intent);
 
@@ -34,6 +38,7 @@ export function ZHCompactNotice({ notice, className }: ZHCompactNoticeProps) {
         title={notice.label}
         severity={notice.severity}
         closeOnMouseLeave={!pinned}
+        anchored={anchored}
       >
         {notice.detail && <p className="zh-notice-popover__detail">{notice.detail}</p>}
       </ZHNoticePopover>

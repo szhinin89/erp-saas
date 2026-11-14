@@ -71,6 +71,18 @@
   min-height: 0;
 }
 
+/* ── Opt-in: página con elementos `position: sticky` (resumen de importes, barras de acción) ──
+   `.shell-content-frame__scroll` es `overflow: auto`, pero el frame tenant crece con el contenido
+   (min-height 100vh, sin altura fija): ese contenedor nunca se desplaza y, al ser el ancestro de
+   scroll de cualquier `sticky`, lo deja inerte — el scroll real es el de la ventana. Una página que
+   declara `.shell-sticky-context` en cualquier descendiente hace que el contenedor deje de ser
+   ancestro de scroll (`overflow-x: clip` sigue recortando el desborde horizontal sin crear scroll),
+   y su `sticky` se ancla a la ventana. Sin la clase ninguna otra pantalla cambia. */
+.shell-content-frame--tenant .shell-content-frame__scroll:has(.shell-sticky-context) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 .shell-fill-viewport {
   flex: 1;
   min-height: 0;

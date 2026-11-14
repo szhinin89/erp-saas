@@ -255,4 +255,28 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short: "Estado técnico de Recepción y Autorización en el ambiente vigente de la empresa, calculado con las comunicaciones recientes. No indica si un comprobante fue autorizado.",
     long: "«Sin verificar» significa que aún no hay comunicaciones suficientes para evaluar el servicio; no significa que esté caído. El estado de cada comprobante se consulta en Documentos.",
   },
+  [HELP_KEYS.EXPENSES_DOCUMENT_DATA]: {
+    i18nPrefix: "help.expenses.documentData",
+    title: "Datos del comprobante",
+    short: "Datos de la factura o comprobante que entregó el proveedor.",
+    long: "Los datos marcados «Del XML» provienen del comprobante electrónico recibido; puede corregirlos si es necesario. El resto lo completa usted.",
+  },
+  [HELP_KEYS.EXPENSES_DOCUMENT_CONCEPTS]: {
+    i18nPrefix: "help.expenses.concepts",
+    title: "Conceptos del gasto",
+    short: "Cada concepto se asigna a una categoría de gasto.",
+    long: "La categoría elegida define la cuenta contable donde se registra el gasto. «Categoría por asignar» indica un concepto que aún no tiene categoría.",
+  },
+  [HELP_KEYS.EXPENSES_TAX_SUPPORT]: {
+    i18nPrefix: "help.expenses.taxSupport",
+    title: "Sustento tributario",
+    short: "Código del SRI que indica cómo sustenta este gasto el crédito tributario o el costo.",
+    long: "Si lo deja vacío, se usa el código configurado para el proveedor, cuando exista.",
+  },
+  [HELP_KEYS.EXPENSES_RETENTION_EVALUATION]: {
+    i18nPrefix: "help.expenses.retentionEvaluation",
+    title: "Evaluación de retención",
+    short: "Indica si este gasto está sujeto a retención de IVA o de Renta con la configuración actual.",
+    long: "Depende de la empresa, del proveedor y de los códigos de retención configurados. Si aplica, puede generar la retención al confirmar el gasto.",
+  },
 };

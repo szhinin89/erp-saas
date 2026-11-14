@@ -1,4 +1,3 @@
-import { formatDecimalDisplay } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { purchaseReceptionExpenseFacade, type ExpenseReceptionDraft } from "../../purchases/facades/purchaseReceptionExpenseFacade";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -40,13 +39,10 @@ import {
   type ExpenseDocumentHeaderErrors,
   type ExpenseDocumentHeaderState,
 } from "../components/ExpenseDocumentHeader";
-import {
-  type ExpenseDraftLineState,
-  type ExpenseLineFieldErrors,
-} from "../components/ExpenseDocumentLinesEditor";
-import { ExpenseDocumentLinesEditor } from "../components/ExpenseDocumentLinesEditor";
+import { ExpenseDocumentLinesEditor, type ExpenseDraftLineState, type ExpenseLineFieldErrors } from "../components/ExpenseDocumentLinesEditor";
 import { ExpenseDocumentStatusBadge } from "../components/ExpenseDocumentStatusBadge";
 import { ExpenseDocumentTotals } from "../components/ExpenseDocumentTotals";
+import { ExpenseReceptionMismatchNotice } from "../components/ExpenseReceptionMismatch";
 import { ExpenseRetentionSection } from "../components/ExpenseRetentionSection";
 import { SRI_ANNULMENT_REQUIRED_CODE } from "../../retentions/facades/retentionDocumentFacade";
 import {
@@ -75,6 +71,7 @@ import {
   isRetentionIntentComplete,
   type RetentionIntentFormState,
 } from "../utils/expenseRetentionModel";
+import { receptionXmlHeaderFields } from "../utils/expenseXmlOrigin";
 import "../styles/expense-documents.css";
 
 const PERMISSIONS = {
@@ -176,14 +173,12 @@ export function ExpenseDocumentFormPage() {
     () => calculateExpenseDocumentTotals(lines, vatRateByCode),
     [lines, vatRateByCode],
   );
-  // Presentación de textos compuestos (04E): semántica declarada, mismo resolver y motor.
-  const taxDecimals = usePrecisionDecimals("tax");
   const receptionMismatch = useMemo(() => {
     if (!reception) return null;
     const tolerance = 0.01;
     const diff = Number((totals.grandTotal - reception.total).toFixed(2));
     if (Math.abs(diff) <= tolerance) return null;
-    return { calculatedTotal: totals.grandTotal, receivedTotal: reception.total, diff };
+    return { calculatedTotal: totals.grandTotal, receivedTotal: reception.total, receivedVat: reception.vatAmount, diff };
   }, [reception, totals.grandTotal]);
   const canSave = isNew ? canCreate : canUpdate;
   const isDraft = document?.status ? document.status === "Draft" : true;
@@ -569,29 +564,9 @@ export function ExpenseDocumentFormPage() {
         />
       )}
 
-      <div className="exp-doc-form-layout">
+      <div className="exp-doc-form-layout shell-sticky-context">
         <div className="exp-doc-form-main">
           <ZHCard bodyClassName="exp-doc-card-body">
-            {reception && (
-              <p>
-                {t("expenses.form.reception.summary", {
-                  subtotal: formatDecimalDisplay(reception.subtotal, moneyDecimals),
-                  vat: formatDecimalDisplay(reception.vatAmount, taxDecimals),
-                  total: formatDecimalDisplay(reception.total, moneyDecimals),
-                })}
-              </p>
-            )}
-            {receptionMismatch && (
-              <ZHFormAlert
-                type="warning"
-                message={t("expenses.form.reception.mismatchTitle")}
-                detail={t("expenses.form.reception.mismatchDetail", {
-                  vat: formatDecimalDisplay(reception!.vatAmount, taxDecimals),
-                  received: formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals),
-                  calculated: formatDecimalDisplay(receptionMismatch.calculatedTotal, moneyDecimals),
-                })}
-              />
-            )}
             <ExpenseDocumentHeader
               key={document?.id ?? "new"}
               value={header}
@@ -601,6 +576,7 @@ export function ExpenseDocumentFormPage() {
               sriTaxSupports={sriTaxSupports}
               disabled={disabled || loading}
               errors={headerErrors}
+              xmlFields={receptionXmlHeaderFields(reception)}
               onChange={(patch) =>
                 setHeader((current) => ({ ...current, ...patch }))
               }
@@ -617,6 +593,7 @@ export function ExpenseDocumentFormPage() {
               vatRateByCode={vatRateByCode}
               disabled={disabled || loading || !catalogReady}
               errors={lineErrors}
+              fromXml={!!reception}
               onChange={setLines}
             />
           </ZHCard>
@@ -637,6 +614,7 @@ export function ExpenseDocumentFormPage() {
 
         <aside className="exp-doc-form-side">
           <ZHCard bodyClassName="exp-doc-card-body">
+            <ExpenseReceptionMismatchNotice mismatch={receptionMismatch} />
             <ExpenseDocumentTotals totals={totals} />
             <ZHFormActions
               onCancel={() => navigate("/expenses/documents")}

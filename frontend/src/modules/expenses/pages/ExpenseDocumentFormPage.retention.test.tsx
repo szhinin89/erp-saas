@@ -343,7 +343,7 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
         screen.getByText("No existe código de retención activo para esta operación."),
       ).toBeTruthy(),
     );
-    expect(screen.getByText("Falta código de retención activo")).toBeTruthy();
+    expect(screen.getByText("Falta configurar un código de retención")).toBeTruthy();
   });
 
   it("caso 5: permite capturar RetentionIntent cuando es elegible", async () => {
@@ -369,7 +369,7 @@ describe("ExpenseDocumentFormPage — sección de retención", () => {
     // retención — solo el mensaje informativo de que el servidor lo genera al confirmar.
     expect(
       screen.getByText(
-        "El número de retención se generará automáticamente al confirmar este documento.",
+        "El número de retención se asigna automáticamente al confirmar.",
       ),
     ).toBeTruthy();
     expect(screen.queryByText("Número de retención")).toBeNull();

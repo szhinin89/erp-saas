@@ -51,6 +51,11 @@ export const HELP_KEYS = {
   ELECTRONIC_DOCUMENTS_MONITOR_FOLLOW_UP: "electronicDocuments.monitor.followUp",
   ELECTRONIC_DOCUMENTS_MONITOR_ATTENTION: "electronicDocuments.monitor.attention",
   ELECTRONIC_DOCUMENTS_MONITOR_SRI_SERVICES: "electronicDocuments.monitor.sriServices",
+
+  EXPENSES_DOCUMENT_DATA: "expenses.document.data",
+  EXPENSES_DOCUMENT_CONCEPTS: "expenses.document.concepts",
+  EXPENSES_TAX_SUPPORT: "expenses.document.taxSupport",
+  EXPENSES_RETENTION_EVALUATION: "expenses.document.retentionEvaluation",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];

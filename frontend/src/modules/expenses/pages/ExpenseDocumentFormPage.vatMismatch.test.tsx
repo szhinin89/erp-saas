@@ -43,7 +43,8 @@ vi.mock("../api/expenseCategoryService", () => ({
     { id: "subcategory", isActive: true, accountingAccountId: "account", accountingAccountCode: "5.1.1", accountingAccountName: "Servicios" },
   ] }] }] },
 }));
-vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn() } }));
+const toast = vi.hoisted(() => ({ warning: vi.fn() }));
+vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn(), warning: toast.warning } }));
 vi.mock("../components/ExpenseRetentionSection", () => ({ ExpenseRetentionSection: () => null }));
 vi.mock("../components/ExpenseDocumentHeader", () => ({
   ExpenseDocumentHeader: ({ value }: { value: ExpenseDocumentHeaderState }) =>
@@ -88,7 +89,10 @@ it("blocks saving when the code 5% total (94.50) does not match the XML total (1
   await waitFor(() => expect(mocks.preview).toHaveBeenCalled());
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 5%" }));
 
-  await screen.findByText(/El total calculado no cuadra con el XML recibido/);
+  // EXPENSE-UI-02: indicador compacto persistente + un solo toast oficial; sin aviso grande.
+  await screen.findByRole("button", { name: "Total distinto al XML" });
+  expect(toast.warning).toHaveBeenCalledTimes(1);
+  expect(toast.warning).toHaveBeenCalledWith("El total no coincide con el XML.");
   const saveButton = screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement;
   expect(saveButton.disabled).toBe(true);
 
@@ -102,11 +106,48 @@ it("allows saving when the code 15% total (103.50) matches the XML total", async
   fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 15%" }));
 
   await waitFor(() => expect(
-    screen.queryByText(/El total calculado no cuadra con el XML recibido/),
+    screen.queryByRole("button", { name: "Total distinto al XML" }),
   ).toBeNull());
+  // Al abrir (conceptos sin completar) y al cuadrar no hay toast: nunca hubo importes distintos.
+  expect(toast.warning).not.toHaveBeenCalled();
   const saveButton = screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement;
   expect(saveButton.disabled).toBe(false);
 
   fireEvent.click(saveButton);
   await waitFor(() => expect(mocks.create).toHaveBeenCalled());
+});
+
+it("EXPENSE-UI-02: la diferencia se consulta, no repite el toast y se retira al cuadrar; reaparece con aviso nuevo", async () => {
+  show();
+  await waitFor(() => expect(mocks.preview).toHaveBeenCalled());
+  // Al abrir desde XML con conceptos sin completar: indicador visible, pero todavía sin toast.
+  await screen.findByRole("button", { name: "Total distinto al XML" });
+  expect(toast.warning).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 5%" }));
+  const badge = await screen.findByRole("button", { name: "Total distinto al XML" });
+  expect(toast.warning).toHaveBeenCalledTimes(1);
+
+  // Más ediciones con la diferencia vigente: el indicador persiste y el toast no se repite.
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 5%" }));
+  expect(screen.getByRole("button", { name: "Total distinto al XML" })).toBe(badge);
+  expect(toast.warning).toHaveBeenCalledTimes(1);
+
+  // Consulta de detalle: total XML, IVA XML y total calculado.
+  fireEvent.click(badge);
+  const detail = await screen.findByText(/Total XML recibido/);
+  expect(detail.textContent).toContain("103.50");
+  expect(detail.textContent).toContain("13.50");
+  expect(detail.textContent).toContain("94.50");
+
+  // Al cuadrar, el indicador desaparece solo y no hay aviso nuevo.
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 15%" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Total distinto al XML" })).toBeNull());
+  expect(toast.warning).toHaveBeenCalledTimes(1);
+
+  // Si la diferencia reaparece, es una aparición nueva → un aviso nuevo.
+  fireEvent.click(screen.getByRole("button", { name: "Seleccionar IVA 5%" }));
+  await screen.findByRole("button", { name: "Total distinto al XML" });
+  expect(toast.warning).toHaveBeenCalledTimes(2);
+  // La advertencia no añade bloqueos: el guardado sigue bloqueado SOLO por la regla previa.
+  expect((screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement).disabled).toBe(true);
 });

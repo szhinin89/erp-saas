@@ -56,15 +56,16 @@ describe("ExpenseDocumentLinesEditor — Descripción opcional (B1)", () => {
     const description = screen.getByLabelText(/^Descripción/) as HTMLInputElement;
     expect(description.required).toBe(false);
     expect(requiredMarker(description)).toBeNull();
-    expect(
-      screen.getByText("Opcional: si se deja vacía, se usa el nombre de la subcategoría."),
-    ).toBeTruthy();
+    // EXPENSE-UI-02: la explicación pasa de texto permanente a placeholder del campo.
+    expect(description.placeholder).toBe(
+      "Opcional: si se deja vacío se usa el nombre de la categoría",
+    );
   });
 
   it("los campos realmente obligatorios siguen marcados como tales", () => {
     renderEditor([makeLine()]);
 
-    for (const label of [/^Cantidad/, /^Valor unitario/, /^Código IVA/]) {
+    for (const label of [/^Cantidad/, /^Valor unitario/, /^IVA/]) {
       expect(requiredMarker(screen.getByLabelText(label))).not.toBeNull();
     }
   });
@@ -91,14 +92,11 @@ describe("ExpenseDocumentLinesEditor — errores por línea y campo (B2)", () =>
     expect(quantityOfFirstLine.getAttribute("aria-invalid")).not.toBe("true");
   });
 
-  it("un error de Descripción reemplaza a la ayuda opcional solo en esa línea", () => {
+  it("un error de Descripción se muestra en su campo", () => {
     renderEditor([makeLine({ key: "k1" })], {
       k1: { description: "La descripción excede 300 caracteres." },
     });
 
     expect(screen.getByText("La descripción excede 300 caracteres.")).toBeTruthy();
-    expect(
-      screen.queryByText("Opcional: si se deja vacía, se usa el nombre de la subcategoría."),
-    ).toBeNull();
   });
 });

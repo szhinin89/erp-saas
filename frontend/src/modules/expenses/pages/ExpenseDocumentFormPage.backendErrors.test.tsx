@@ -239,7 +239,7 @@ describe("ExpenseDocumentFormPage — cuenta destino sin accounting.view (EXPENS
     await waitFor(() => expect(screen.getByText("Proveedor Uno S.A.")).toBeTruthy());
 
     await waitFor(() =>
-      expect(screen.getByText("No hay subcategorías de gasto listas para usar.")).toBeTruthy(),
+      expect(screen.getByText("No hay categorías de gasto listas para usar.")).toBeTruthy(),
     );
     expect((screen.getByRole("button", { name: "Guardar borrador" }) as HTMLButtonElement).disabled).toBe(true);
   });
@@ -268,7 +268,7 @@ describe("ExpenseDocumentFormPage — errores del backend al guardar (B2)", () =
     );
 
     expect(vi.mocked(message.error)).toHaveBeenCalledWith(
-      "Línea 1: El descuento no puede superar el subtotal de la linea.",
+      "Concepto 1: El descuento no puede superar el subtotal de la linea.",
     );
   });
 

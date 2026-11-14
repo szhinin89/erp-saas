@@ -133,7 +133,7 @@ describe("ExpenseRetentionSection — sin número de retención manual", () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          "El número de retención se generará automáticamente al confirmar este documento.",
+          "El número de retención se asigna automáticamente al confirmar.",
         ),
       ).toBeTruthy(),
     );

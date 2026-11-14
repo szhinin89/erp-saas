@@ -1,3 +1,7 @@
+import { Badge } from "../../../components/PageShell";
+import { useState } from "react";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
@@ -42,7 +46,58 @@ interface Props {
   vatRateByCode: VatRateByCode;
   disabled?: boolean;
   errors?: ExpenseLineFieldErrors;
+  /**
+   * EXPENSE-UI-02 — el documento nace de un comprobante XML recibido: la clasificación contable de
+   * cada línea (subcategoría) no viene del XML y se marca como manual hasta que se elija.
+   * Solo presentación; no cambia la importación.
+   */
+  fromXml?: boolean;
   onChange: (lines: ExpenseDraftLineState[]) => void;
+}
+
+/**
+ * Observación opcional de la línea: plegada mientras esté vacía (compacta la altura) y abierta
+ * automáticamente cuando ya tiene texto, para no ocultar nunca un dato existente.
+ */
+function ExpenseLineNotes({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (notes: string) => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  if (!open && value.trim() === "") {
+    return (
+      <div className="exp-doc-line__notes-toggle">
+        <ZHBtn
+          type="button"
+          variant="ghost"
+          size="xs"
+          icon="add"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+        >
+          {t("expenses.form.field.lineNotesAdd")}
+        </ZHBtn>
+      </div>
+    );
+  }
+  return (
+    <ZHField label={t("expenses.form.field.lineNotes")} density="compact">
+      <ZhTextarea
+        density="compact"
+        value={value}
+        rows={1}
+        maxLength={300}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </ZHField>
+  );
 }
 
 export function ExpenseDocumentLinesEditor({
@@ -53,6 +108,7 @@ export function ExpenseDocumentLinesEditor({
   vatRateByCode,
   disabled,
   errors,
+  fromXml,
   onChange,
 }: Props) {
   const { t } = useI18n();
@@ -75,9 +131,9 @@ export function ExpenseDocumentLinesEditor({
   return (
     <section className="exp-doc-section" aria-label={t("expenses.form.lines.aria")}>
       <div className="exp-doc-section__heading exp-doc-section__heading--actions">
-        <div>
+        <div className="exp-doc-section__title-row">
           <h2>{t("expenses.form.lines.title")}</h2>
-          <p>{t("expenses.form.lines.subtitle")}</p>
+          <ZHFieldHelp helpKey={HELP_KEYS.EXPENSES_DOCUMENT_CONCEPTS} />
         </div>
         <ZHBtn
           type="button"
@@ -104,9 +160,45 @@ export function ExpenseDocumentLinesEditor({
           return (
             <div className="exp-doc-line" key={line.key}>
               <div className="exp-doc-line__top">
-                <span className="exp-doc-line__number">
-                  {t("expenses.form.lines.number", { number: index + 1 })}
-                </span>
+                <div className="exp-doc-line__title">
+                  <span className="exp-doc-line__number">
+                    {t("expenses.form.lines.number", { number: index + 1 })}
+                  </span>
+                  {fromXml && !line.expenseSubcategoryId && (
+                    <Badge
+                      label={t("expenses.form.origin.manual")}
+                      variant="orange"
+                      size="md"
+                    />
+                  )}
+                </div>
+                <div className="exp-doc-line__totals">
+                  <span>
+                    {t("expenses.form.lines.base")}{" "}
+                    <ZHMoneyValue
+                      value={lineTotals.taxableBase}
+                      precision="money"
+                      currencySymbol=""
+                    />
+                  </span>
+                  <span>
+                    {t("expenses.form.lines.vat")}{" "}
+                    <ZHMoneyValue
+                      value={lineTotals.vat}
+                      precision="tax"
+                      currencySymbol=""
+                    />
+                  </span>
+                  <span>
+                    {t("expenses.form.lines.total")}{" "}
+                    <ZHMoneyValue
+                      value={lineTotals.total}
+                      precision="money"
+                      currencySymbol=""
+                      emphasis="strong"
+                    />
+                  </span>
+                </div>
                 <ZHIconButton
                   icon="delete"
                   title={t("expenses.form.lines.remove")}
@@ -128,16 +220,16 @@ export function ExpenseDocumentLinesEditor({
                 }
               />
 
-              <div className="exp-doc-line__grid">
+              <div className="exp-doc-line__grid exp-doc-line__grid--item">
                 <ZHField
+                  className="exp-doc-line__description"
                   label={t("expenses.form.field.description")}
                   density="compact"
                   fieldError={lineErrors.description}
-                  hint={t("expenses.form.field.descriptionHint")}
-                  hintType="muted"
                 >
                   <ZhTextInput
                     density="compact"
+                    placeholder={t("expenses.form.field.descriptionPlaceholder")}
                     value={line.description}
                     disabled={disabled}
                     maxLength={300}
@@ -231,46 +323,11 @@ export function ExpenseDocumentLinesEditor({
                 </ZHField>
               </div>
 
-              <ZHField label={t("expenses.form.field.lineNotes")} density="compact">
-                <ZhTextarea
-                  density="compact"
-                  value={line.notes}
-                  rows={2}
-                  maxLength={300}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateLine(line.key, { notes: event.target.value })
-                  }
-                />
-              </ZHField>
-
-              <div className="exp-doc-line__totals">
-                <span>
-                  {t("expenses.form.lines.base")}{" "}
-                  <ZHMoneyValue
-                    value={lineTotals.taxableBase}
-                    precision="money"
-                    currencySymbol=""
-                  />
-                </span>
-                <span>
-                  {t("expenses.form.lines.vat")}{" "}
-                  <ZHMoneyValue
-                    value={lineTotals.vat}
-                    precision="tax"
-                    currencySymbol=""
-                  />
-                </span>
-                <span>
-                  {t("expenses.form.lines.total")}{" "}
-                  <ZHMoneyValue
-                    value={lineTotals.total}
-                    precision="money"
-                    currencySymbol=""
-                    emphasis="strong"
-                  />
-                </span>
-              </div>
+              <ExpenseLineNotes
+                value={line.notes}
+                disabled={disabled}
+                onChange={(notes) => updateLine(line.key, { notes })}
+              />
             </div>
           );
         })}

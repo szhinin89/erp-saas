@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ZHBtn, ZHField, ZHFormAlert, ZHGrid } from "../../../components/zh/ZHForm";
+import { Badge } from "../../../components/PageShell";
+import { ZHFieldHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
@@ -59,6 +62,10 @@ export function ExpenseRetentionSection({
   const [loadingRetentionDoc, setLoadingRetentionDoc] = useState(false);
 
   const [emissionPoints, setEmissionPoints] = useState<EmissionPointListItemDto[]>([]);
+  // Motivos: abiertos por defecto cuando NO aplica retención (son la explicación principal) y
+  // plegados cuando sí aplica; el usuario puede alternarlos en ambos casos.
+  const [reasonsToggled, setReasonsToggled] = useState<boolean | null>(null);
+  const reasonsId = useId();
 
   const isDraftDocument = !documentStatus || documentStatus === "Draft";
 
@@ -141,10 +148,13 @@ export function ExpenseRetentionSection({
   if (!expenseDocumentId) {
     return (
       <section className="exp-doc-section" aria-label={t("expenses.form.retention.title")}>
-        <div className="exp-doc-section__heading">
-          <h2>{t("expenses.form.retention.title")}</h2>
-          <p>{t("expenses.form.retention.saveFirst")}</p>
+        <div className="exp-doc-section__heading exp-doc-section__heading--actions">
+          <div className="exp-doc-section__title-row">
+            <h2>{t("expenses.form.retention.title")}</h2>
+            <ZHFieldHelp helpKey={HELP_KEYS.EXPENSES_RETENTION_EVALUATION} />
+          </div>
         </div>
+        <p className="exp-doc-retention-hint">{t("expenses.form.retention.saveFirst")}</p>
       </section>
     );
   }
@@ -180,6 +190,7 @@ export function ExpenseRetentionSection({
   }
 
   const canApply = !!eligibility?.isEligible;
+  const reasonsOpen = reasonsToggled ?? !canApply;
 
   const updateLine = (key: string, patch: Partial<RetentionIntentFormState["lines"][number]>) =>
     onChange({
@@ -191,9 +202,11 @@ export function ExpenseRetentionSection({
 
   return (
     <section className="exp-doc-section" aria-label={t("expenses.form.retention.title")}>
-      <div className="exp-doc-section__heading">
-        <h2>{t("expenses.form.retention.title")}</h2>
-        <p>{t("expenses.form.retention.subtitle")}</p>
+      <div className="exp-doc-section__heading exp-doc-section__heading--actions">
+        <div className="exp-doc-section__title-row">
+          <h2>{t("expenses.form.retention.title")}</h2>
+          <ZHFieldHelp helpKey={HELP_KEYS.EXPENSES_RETENTION_EVALUATION} />
+        </div>
       </div>
 
       {loadingEligibility && (
@@ -209,70 +222,99 @@ export function ExpenseRetentionSection({
       )}
 
       {eligibility && (
-        <div className="exp-doc-retention-status">
-          <EligibilityBadge
-            label={t("expenses.form.retention.vat")}
-            eligible={eligibility.canRetainVat}
-            candidates={eligibility.candidates.filter((c) => c.taxType === "IVA")}
-          />
-          <EligibilityBadge
-            label={t("expenses.form.retention.income")}
-            eligible={eligibility.canRetainIncome}
-            candidates={eligibility.candidates.filter((c) => c.taxType === "RENTA")}
-          />
-          {eligibility.isSupplierExempt && (
-            <span className="exp-doc-retention-flag">{t("expenses.form.retention.exempt")}</span>
+        <div className="exp-doc-retention-eval">
+          {eligibility.isEligible ? (
+            <div className="exp-doc-retention-eval__main">
+              <Badge
+                label={t("expenses.form.retention.status.eligible")}
+                variant="green"
+                size="md"
+              />
+              <span className="exp-doc-retention-hint">
+                {t("expenses.form.retention.status.eligibleDetail")}
+              </span>
+            </div>
+          ) : (
+            <ZHFormAlert
+              type="attention"
+              message={t("expenses.form.retention.notEligible")}
+              detail={t("expenses.form.retention.notEligibleDetail")}
+            />
           )}
-          {eligibility.missingRetentionCode && (
-            <span className="exp-doc-retention-flag">{t("expenses.form.retention.missingCode")}</span>
+
+          <div className="exp-doc-retention-status">
+            <EligibilityBadge
+              label={t("expenses.form.retention.vat")}
+              eligible={eligibility.canRetainVat}
+              candidates={eligibility.candidates.filter((c) => c.taxType === "IVA")}
+            />
+            <EligibilityBadge
+              label={t("expenses.form.retention.income")}
+              eligible={eligibility.canRetainIncome}
+              candidates={eligibility.candidates.filter((c) => c.taxType === "RENTA")}
+            />
+            {eligibility.isSupplierExempt && (
+              <span className="exp-doc-retention-flag">{t("expenses.form.retention.exempt")}</span>
+            )}
+            {eligibility.missingRetentionCode && (
+              <span className="exp-doc-retention-flag">{t("expenses.form.retention.missingCode")}</span>
+            )}
+          </div>
+
+          {eligibility.reasons.length > 0 && (
+            <>
+              <ZHBtn
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="exp-doc-retention-eval__toggle"
+                expanded={reasonsOpen}
+                aria-controls={reasonsId}
+                onClick={() => setReasonsToggled(!reasonsOpen)}
+              >
+                {reasonsOpen
+                  ? t("expenses.form.retention.reasonsHide")
+                  : t("expenses.form.retention.reasonsShow", { count: eligibility.reasons.length })}
+              </ZHBtn>
+              {reasonsOpen && (
+                <ul id={reasonsId} className="exp-doc-retention-reasons">
+                  {eligibility.reasons.map((reason, index) => (
+                    <li key={`${index}-${reason}`}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {eligibility && eligibility.reasons.length > 0 && (
-        <ul className="exp-doc-retention-reasons">
-          {eligibility.reasons.map((reason, index) => (
-            <li key={`${index}-${reason}`}>{reason}</li>
-          ))}
-        </ul>
-      )}
-
-      {eligibility && !eligibility.isEligible && (
-        <ZHFormAlert
-          type="attention"
-          message={t("expenses.form.retention.notEligible")}
-          detail={t("expenses.form.retention.notEligibleDetail")}
+      {/* EXPENSE-UI-02 — checkbox oficial con su propio <label class="zh-checkbox-label">: ya no
+          queda dentro de `.zh-field-control` (cuyo `input { width: 100% }` lo estiraba y partía el
+          texto en vertical) ni anida un <label> dentro del <label> de ZHField. */}
+      <div className="exp-doc-retention-apply">
+        <ZhCheckbox
+          checked={value.appliesRetention}
+          disabled={disabled || !canApply}
+          aria-label={t("expenses.form.retention.apply")}
+          label={t("expenses.form.retention.applyLabel")}
+          onChange={(event) => {
+            const checked = event.target.checked;
+            onChange({
+              appliesRetention: checked,
+              lines: checked && value.lines.length === 0 ? [newRetentionIntentLine()] : value.lines,
+            });
+          }}
         />
-      )}
-
-      <ZHField
-        label={t("expenses.form.retention.apply")}
-        density="compact"
-        hint={!canApply ? t("expenses.form.retention.applyHint") : undefined}
-      >
-        <label className="exp-doc-retention-toggle">
-          <ZhCheckbox
-            checked={value.appliesRetention}
-            disabled={disabled || !canApply}
-            aria-label={t("expenses.form.retention.apply")}
-            onChange={(event) => {
-              const checked = event.target.checked;
-              onChange({
-                appliesRetention: checked,
-                lines: checked && value.lines.length === 0 ? [newRetentionIntentLine()] : value.lines,
-              });
-            }}
-          />
-          <span>{t("expenses.form.retention.applyLabel")}</span>
-        </label>
-      </ZHField>
+        {!canApply && (
+          <p className="zh-field-hint zh-field-hint--muted">
+            {t("expenses.form.retention.applyHint")}
+          </p>
+        )}
+      </div>
 
       {value.appliesRetention && canApply && (
         <>
-          <ZHFormAlert
-            type="success"
-            message={t("expenses.form.retention.autoNumber")}
-          />
+          <p className="exp-doc-retention-hint">{t("expenses.form.retention.autoNumber")}</p>
 
           {!canReadEmissionPoints && (
             <ZHFormAlert

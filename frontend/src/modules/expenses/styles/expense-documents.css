@@ -29,8 +29,8 @@
 
 .exp-doc-form-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: var(--space-4);
   align-items: start;
 }
 
@@ -48,13 +48,39 @@
 .exp-doc-card-body,
 .exp-doc-section,
 .exp-doc-lines {
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
+/* EXPENSE-UI-02 — el resumen de importes y las acciones acompañan al formulario mientras se editan
+   los conceptos. El scroll real es `.shell-content-frame__scroll` (LayoutFrame): ningún ancestro
+   entre el aside y ese contenedor define overflow, así que `sticky` se ancla a él. En ≤900px pasa a
+   barra inferior (ver media query). */
 .exp-doc-form-side {
   position: sticky;
-  top: var(--space-4);
-  gap: var(--space-4);
+  /* Deja libre la franja del toast global (`.zh-toast-container`: fixed, top: space-5; el aviso de
+     diferencia es de una línea, ~50px) para que un aviso transitorio no tape las filas del resumen.
+     En ≤900px el resumen va abajo. */
+  top: calc(var(--space-5) + var(--space-12) + var(--space-2));
+  gap: var(--space-3);
+}
+
+/* Control + ayuda contextual en una fila (la ayuda va después del control, ver cabecera). */
+.exp-doc-field-with-help {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exp-doc-field-with-help > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.exp-doc-section__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .exp-doc-section__heading,
@@ -65,8 +91,60 @@
   gap: var(--space-3);
 }
 
+.exp-doc-line__top {
+  align-items: center;
+}
+
 .exp-doc-section__heading--actions {
   align-items: center;
+}
+
+/* EXPENSE-UI-02 — grupos semánticos de la cabecera (fieldset sin marco propio del navegador). */
+.exp-doc-group {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.exp-doc-group__title {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-md-weight);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+/* Ocupa dos columnas SIN fijar la de inicio (`.zh-col-span-2` del DS fuerza `1 / span 2` y rompe
+   el flujo automático de la grilla); en una sola columna (<=560px) vuelve a una. */
+.exp-doc-span-2 {
+  grid-column: span 2;
+}
+
+.exp-doc-span-3 {
+  grid-column: span 3;
+}
+
+@media (max-width: 720px) {
+  .exp-doc-span-3 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 560px) {
+  .exp-doc-span-2,
+  .exp-doc-span-3 {
+    grid-column: auto;
+  }
+}
+
+/* Identificadores largos (autorización de 49 dígitos): mono tabular, sin cortar ni saltar de línea. */
+.exp-doc-code-input {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
 .exp-doc-section__heading h2 {
@@ -98,8 +176,14 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  padding: var(--space-4);
+  padding: var(--space-3);
   box-shadow: var(--shadow-xs);
+}
+
+.exp-doc-line__notes-toggle {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: calc(-1 * var(--space-1));
 }
 
 .exp-doc-line__number {
@@ -109,10 +193,23 @@
   letter-spacing: 0;
 }
 
+.exp-doc-line__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .exp-doc-line__grid {
   display: grid;
-  grid-template-columns: minmax(240px, 1.5fr) repeat(4, minmax(110px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+/* Línea de gasto: la descripción manda; cantidad, precio, descuento e IVA comparten el resto. */
+.exp-doc-line__grid--item {
+  grid-template-columns: minmax(0, 2fr) repeat(4, minmax(96px, 1fr));
 }
 
 .exp-doc-number-input {
@@ -121,11 +218,10 @@
 
 .exp-doc-line__totals {
   display: flex;
+  flex: 1;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-4);
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-3);
   color: var(--color-text-secondary);
   font-size: var(--text-label-md-size);
   letter-spacing: 0;
@@ -138,7 +234,17 @@
 }
 
 .exp-doc-totals {
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+.exp-doc-totals__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.exp-doc-totals__toggle {
+  display: none;
 }
 
 .exp-doc-total-row {
@@ -164,6 +270,23 @@
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--text-body-sm-size);
+}
+
+.exp-doc-retention-eval {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.exp-doc-retention-eval__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exp-doc-retention-eval__toggle {
+  align-self: flex-start;
 }
 
 .exp-doc-retention-status {
@@ -208,12 +331,20 @@
   line-height: var(--text-body-md-height);
 }
 
-.exp-doc-retention-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-primary);
-  font-size: var(--text-body-md-size);
+/* Checkbox "Generar retención…": control + texto en una sola línea (`.zh-checkbox-label`). */
+.exp-doc-retention-apply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.exp-doc-retention-apply .zh-checkbox-label {
+  align-self: flex-start;
+  padding: 0;
+}
+
+.exp-doc-retention-apply .zh-field-hint {
+  margin: 0;
 }
 
 .exp-doc-retention-summary {
@@ -254,29 +385,86 @@
   text-decoration: underline;
 }
 
-@media (max-width: 1120px) {
-  .exp-doc-form-layout {
-    grid-template-columns: 1fr;
+@media (max-width: 1280px) {
+  .exp-doc-line__grid--item {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .exp-doc-form-side {
-    position: static;
+  .exp-doc-line__description {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 900px) {
-  .exp-doc-subcategory,
-  .exp-doc-line__grid {
+  .exp-doc-line__grid,
+  .exp-doc-line__grid--item {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exp-doc-subcategory {
     grid-template-columns: 1fr;
+  }
+
+  /* Columna única como flex (no grid): el bloque contenedor de un elemento sticky es su celda de
+     grilla, que en su propia fila no deja margen para pegarse; en flex lo es el contenedor entero. */
+  .exp-doc-form-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  /* Móvil/tablet: el resumen y las acciones forman una barra inferior pegada al borde del área de
+     scroll (`bottom: 0`, sin `fixed`: ocupa su propio espacio al final del formulario, no tapa
+     campos). Solo el Total queda visible; el desglose se despliega hacia arriba. */
+  .exp-doc-form-side {
+    top: auto;
+    bottom: 0;
+    z-index: 2;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Barra compacta: Cancelar y Guardar borrador en una sola fila (el DS los apila a ≤440px). */
+  .exp-doc-form-side .zh-actions {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 0;
+    padding-top: var(--space-2);
+  }
+
+  .exp-doc-form-side .zh-actions .zh-btn {
+    flex: 1;
+    width: auto;
+  }
+
+  .exp-doc-totals__rows {
+    display: none;
+  }
+
+  .exp-doc-totals__rows--open {
+    display: flex;
+  }
+
+  .exp-doc-totals__toggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .exp-doc-total-row--grand {
+    justify-content: flex-start;
+    gap: var(--space-3);
   }
 }
 
 @media (max-width: 640px) {
   .exp-doc-section__heading,
-  .exp-doc-section__heading--actions,
-  .exp-doc-line__top {
+  .exp-doc-section__heading--actions {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .exp-doc-line__top {
+    flex-wrap: wrap;
   }
 
   .exp-doc-actions {
@@ -284,6 +472,13 @@
   }
 
   .exp-doc-line__totals {
+    flex-basis: 100%;
+    order: 3;
     justify-content: flex-start;
+  }
+
+  .exp-doc-line__grid,
+  .exp-doc-line__grid--item {
+    grid-template-columns: 1fr;
   }
 }

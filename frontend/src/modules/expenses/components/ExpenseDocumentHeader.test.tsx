@@ -53,6 +53,13 @@ const SRI_TAX_SUPPORTS: SriTaxSupportLookup[] = [
   { code: "02", name: "Costo o Gasto para declaración del IR" },
 ];
 
+// El label del campo incluye la ayuda contextual (ZHFieldHelp, mismo patrón que Empresa → Fiscal):
+// se toma el <select> entre los controles que comparten el texto de la etiqueta.
+const taxSupportSelect = () =>
+  screen
+    .getAllByLabelText(/^Sustento tributario/)
+    .find((el) => el.tagName === "SELECT") as HTMLSelectElement;
+
 function renderHeader(overrides: Partial<ExpenseDocumentHeaderState> = {}) {
   const onChange = vi.fn();
   renderUi(
@@ -69,16 +76,18 @@ function renderHeader(overrides: Partial<ExpenseDocumentHeaderState> = {}) {
   return { onChange };
 }
 
-describe("ExpenseDocumentHeader — Código sustento tributario", () => {
+describe("ExpenseDocumentHeader — Sustento tributario", () => {
   it("el campo aparece en el formulario con su label y su texto de ayuda", () => {
     renderHeader();
 
-    expect(screen.getByText("Código sustento tributario")).toBeTruthy();
+    expect(taxSupportSelect()).toBeTruthy();
+    // EXPENSE-UI-02: la instrucción ya no es un texto permanente; vive en la ayuda contextual.
+    expect(screen.getByRole("button", { name: "Sustento tributario" })).toBeTruthy();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Si se deja vacío, se usará el valor configurado para el proveedor cuando exista.",
       ),
-    ).toBeTruthy();
+    ).toBeNull();
   });
 
   it("el catálogo mostrado viene del servicio real (sriTaxSupports), nunca una lista hardcodeada", () => {
@@ -91,7 +100,7 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
   it("el usuario puede dejarlo vacío — el <select> soporta la opción sin especificar por defecto", () => {
     renderHeader({ taxSupportCode: "" });
 
-    const select = screen.getByLabelText(/^Código sustento tributario/) as HTMLSelectElement;
+    const select = taxSupportSelect() as HTMLSelectElement;
     expect(select.value).toBe("");
     expect(screen.getByText("— Sin especificar —")).toBeTruthy();
   });
@@ -99,7 +108,7 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
   it("notifica el código elegido vía onChange cuando el usuario selecciona uno", () => {
     const { onChange } = renderHeader();
 
-    fireEvent.change(screen.getByLabelText(/^Código sustento tributario/), {
+    fireEvent.change(taxSupportSelect(), {
       target: { value: "02" },
     });
 
@@ -109,7 +118,7 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
   it("muestra el código ya guardado del documento cuando se edita un gasto existente", () => {
     renderHeader({ taxSupportCode: "02" });
 
-    const select = screen.getByLabelText(/^Código sustento tributario/) as HTMLSelectElement;
+    const select = taxSupportSelect() as HTMLSelectElement;
     expect(select.value).toBe("02");
   });
 
@@ -127,7 +136,7 @@ describe("ExpenseDocumentHeader — Código sustento tributario", () => {
       />,
     );
 
-    const select = screen.getByLabelText(/^Código sustento tributario/) as HTMLSelectElement;
+    const select = taxSupportSelect() as HTMLSelectElement;
     const docType = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
     expect(docType.disabled).toBe(true);
     expect(docType.selectedOptions[0].textContent).toBe("01 - Factura");
