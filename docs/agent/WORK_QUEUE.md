@@ -84,3 +84,7 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   CLOSED): BUG REAL F-18, autorizar una factura anulada responde «anulada» en lugar de «ya fue autorizada»; BUG REAL
   F-17, `pageNumber`/`pageSize` fuera de rango en `SalesReceivables` y `SalesReturn` responden 422 en lugar de error
   de servidor (el `status` desconocido es KEEP documentado). Alcance y evidencia en [STATUS](../../STATUS.md).
+- API-DOC-B-BP (PUBLICADO, pendiente validación CI de la nueva prueba; decisión del propietario 2026-11-13, opción 1): F-51
+  queda KEEP por decisión explícita. Desactivar un tercero impide nuevas operaciones, conserva documentos, obligaciones
+  pendientes y roles, y no introduce bloqueo nuevo; sin cambio funcional para V1 y sin registrarse como BUG REAL.
+  Evidencia (prueba de caracterización en PostgreSQL real) en [STATUS](../../STATUS.md).

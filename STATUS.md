@@ -219,7 +219,7 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-48 | `StockAdjustments.UpdateAdjustment`, `InventoryAdjustmentReasons.Update` | Con id de ruta distinto al del cuerpo devuelven `BadRequest()` sin cuerpo ni envelope (mismo patrón que F-07); el resto de los `Update` revisados usa `ApiBadRequest`. |
 | API-DOC-F-49 | `Items.ResolveItem` | Usa `ToOkOrNotFound`, pero si ningún ítem coincide el handler responde 200 con `data` nulo (no 404). |
 | API-DOC-F-50 | `Warehouses.GetAll` | Lee `activeStatus`, `onlyActive`, `search` y `sucursalId` directamente de la cadena de consulta: no figuran como parámetros del contrato; `sucursalId` es el único nombre de parámetro en español de la API revisada. |
-| API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. |
+| API-DOC-F-51 | `BusinessPartners.Deactivate` frente a `BusinessPartnerRoles.RevokeRole` | Un comentario afirmaba que no se puede desactivar un tercero con roles activos y documentos en curso (ADR-BP-14) y otro decía que esa verificación llegará en «futuras versiones»; no se documentó la verificación por no estar comprobada. **Resuelto en B-BP como KEEP por decisión explícita del propietario (2026-11-13): sin verificación ni bloqueo nuevo; publicado, pendiente validación CI de la prueba de caracterización.** |
 | API-DOC-F-52 | `Public.GetDeploymentInfo` | Devuelve un objeto anónimo sin DTO: el esquema 2xx es `ApiResponse<object>` y los campos se describen solo en `remarks`. |
 
 ### Revisión de F-01 a F-52 contra el contrato publicado (pendiente de revisión del propietario; API-DOC-V1 no está CLOSED)
@@ -237,7 +237,8 @@ documental aprobada en la Fase 2D (cinco respuestas `ApiResponse<object>`, sin c
 | Problema funcional | Pendiente (F-02: BUG REAL corregido y publicado, pendiente validación CI; ver L3/C3) | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
 | Deuda técnica | Pendiente | F-04, F-05, F-06, F-08, F-11, F-12, F-13, F-15, F-19, F-21, F-22, F-23, F-25, F-26, F-27, F-28, F-29, F-36, F-37, F-38, F-39, F-40, F-42, F-43, F-44 |
 | Deuda técnica | Aceptado | F-52 |
-| Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32, F-51 |
+| Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32 |
+| KEEP (decisión del propietario) | Documentado y publicado, pendiente validación CI (B-BP) | F-51 |
 
 Los 52 identificadores aparecen exactamente una vez (7 + 15 + 25 + 1 + 4). Residuos que **no** se cierran con la
 corrección documental: F-07 y F-48 conservan el `BadRequest()` sin envelope y F-47 el `BadRequest("ID mismatch.")` y el
@@ -345,6 +346,32 @@ página ≥ 1. Nota: el techo 1–100 reutiliza el del Libro Diario; la fila API
 Diario, discrepancia documental previa que no se modifica aquí. Validación: pruebas focalizadas (222 de Application),
 `architecture:check` PASS (0 nuevas violaciones) y `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. No se
 ejecutaron suites globales ni se regeneró el Dashboard.
+
+### Resolución de hallazgos F-01 a F-52 — bloque B-BP (F-51, Terceros)
+
+Autorización del propietario 2026-11-13 para diagnosticar F-51. El diagnóstico no encontró BUG REAL: ninguna SSOT vigente
+define un bloqueo para desactivar un tercero. El propietario decidió la **opción 1** (2026-11-13): **F-51 queda `KEEP`
+por decisión explícita, sin cambios funcionales para V1.** No se registra como BUG REAL corregido.
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-51 | KEEP (decisión explícita del propietario) | **Documentado y publicado**; pendiente validación CI de la nueva prueba | `DeactivateBusinessPartnerHandler` → `BusinessPartner.Deactivate` solo rechaza un tercero de sistema (`EnsureEditable`) o ya inactivo; no consulta roles ni documentos. Comprobado en PostgreSQL real (Testcontainers) con un tercero con roles `Customer` y `Supplier` activos, una factura en borrador y una cuenta por cobrar pendiente: la desactivación tiene éxito, `IsActive=false`, los dos roles siguen activos y factura y cuenta por cobrar quedan intactas (`BusinessPartnerDeactivationPostgreSqlTests`, caracterización del comportamiento vigente, asignada a `infrastructure-03`). ADR-BP-14 (`docs/archive/BUSINESS_PARTNER_REWRITE_EXECUTION_PLAN.md`) trata solo la revocación de un rol con documentos activos y la difiere como TODO; no define bloqueo para desactivar un tercero. |
+
+Comportamiento V1 vigente y decidido:
+
+- La desactivación impide nuevas operaciones según las reglas vigentes: `CreateSalesDraft`/`UpdateSalesDraft` y
+  `CreatePurchaseDraft`/`UpdatePurchaseDraft` rechazan clientes y proveedores inactivos («se encuentra inactivo»).
+- Los documentos existentes (borradores, autorizados, históricos) se conservan sin alteración.
+- Las obligaciones de cobro y pago pendientes pueden continuar por los flujos actualmente permitidos: `AuthorizeSalesInvoice`
+  y el registro de cobros y pagos no consultan el estado del tercero.
+- Los roles existentes no se revocan automáticamente al desactivar.
+- No se introduce bloqueo por documentos ni saldos pendientes. Cualquier cambio futuro de esta política requiere nueva
+  decisión y autorización del propietario; la prueba de caracterización debe cambiar junto con ella.
+
+Validación: prueba focalizada de PostgreSQL 1/1, `tools/ci/test_backend_tests.py` 17/17 (clase registrada en
+`infrastructure-03` de `tools/ci/backend-test-groups.json`), `architecture:check` PASS (0 nuevas violaciones) y
+`check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. No se ejecutaron suites globales ni se regeneró el Dashboard.
+**Pendiente:** CI verde del commit publicado.
 
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50
