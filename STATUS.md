@@ -1,5 +1,27 @@
 # Project Status
 
+## EXPENSE-UX-01 — Captura de gastos: correcciones UX del formulario — IMPLEMENTADO y probado, pendiente de publicación (aprobado por el propietario 2026-11-13)
+
+Solo frontend (más las claves i18n y la gobernanza ADR-047). Sin cambios de backend, permisos, rutas, contratos, cuentas por pagar, contabilidad ni emisión SRI; se mantiene **Guardar borrador → Confirmar**.
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| B1 | Corregido | «Descripción» ya no se marca obligatoria (el backend usa el nombre de la subcategoría si llega vacía); ayuda visible. |
+| B2 | Corregido (alcance frontend) | `lines[i].Campo` y los campos de cabecera del 422 se muestran en su campo (`expenseBackendErrors.ts`). Los errores de negocio del handler no traen línea: **se conserva el manejo general** (mensaje del servidor; reglas de línea sin propiedad como «Línea N: …»). **Ampliar el contrato de errores de línea del backend: no autorizado.** |
+| U3 | Corregido | Cambiar Tipo/Categoría conserva la subcategoría solo si sigue siendo válida; si no, queda vacía y se elige de forma explícita. |
+| U5 | Corregido | Formulario, cabecera, líneas, totales, estado y retención por `useI18n`: 161 claves `expenses.form.*` con paridad es/en (`architecture:i18n` PASS). |
+| U6 | Corregido | Origen visible de la condición de pago (proveedor, manual, registrada, la que usará el servidor); la resolución del backend no cambia. |
+| U7 | Corregido | El cálculo usa `decimal.js` half-up, equivalente a `ExpenseLine`. Antes divergían empates binarios (1 × 1.005 → 1.15 vs 1.16 en servidor; 1 × 1.015 → 1.01 vs 1.02). |
+| Mensaje de confirmación | Corregido | «Gasto confirmado correctamente. El registro contable se procesa automáticamente.» (es/en). No afirma que el asiento exista: la contabilización se despacha después del commit y puede quedar pendiente. Proceso contable sin cambios. |
+
+Gobernanza: `ExpenseRetentionSection.tsx` se reduce a 430 líneas extrayendo `ExpenseRetentionSummary.tsx`; se **retira su excepción** de `architecture-grandfather.json` y de [ADR-047](docs/decisions/ADR-047-historical-tsx-size-debt.md), y el techo de `ExpenseDocumentFormPage.tsx` baja de 692 a 683 (regla 6 del ADR). Aprobado por el propietario.
+
+Pendientes separados (fuera de este diff, sin implementar):
+- **U4** — aprobada la validación del tipo de documento con `ISriDocTypeCatalogResolver.IsActiveDocTypeAsync` (existe y activo, sin exigir modalidad electrónica, a diferencia de Compras). Pendiente de implementación backend focalizada.
+- **Dependencia de `accounting.view`** — `GET /accounting/accounts` exige ese permiso y su ausencia impide abrir el formulario de gastos. Corrección aprobada; pendiente de diseño mínimo e implementación.
+
+Validación (focalizada, sin suite completa): módulo `expenses` 143/143 antes del ajuste de mensaje; tras él, `expenses/pages` 59/59 (incluye 3 pruebas nuevas del mensaje); `tsc -b`, `npm run build`, ESLint (0 errores), guardrail oficial (`-SkipFrontendChunk`), integridad grandfather y `architecture:i18n/precision/design-system/css` PASS. Sin regenerar Dashboard. Las pruebas `FinanceCollectionsReadPermissionReproTests` y `CompanyStateBypassAuditReproTests` siguen sin seguimiento.
+
 ## API-DOC-B-MSG — F-10 y F-33 (códigos de Contabilidad y Carga Inicial fuera de MessageCatalog) — PUBLICADO, pendiente resultado del CI (aprobado por el propietario 2026-11-13)
 
 Autorización del propietario: catalogar los códigos de validación de Accounting, ManualJournal e InitialLoad de F-10/F-33 más el preflight de apertura; sin reglas globales ni cambios en otros módulos. Cierre de Contabilidad e Initial Load sin reapertura funcional: solo clasificación y mensajes.

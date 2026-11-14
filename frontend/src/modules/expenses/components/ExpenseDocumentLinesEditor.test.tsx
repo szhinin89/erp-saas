@@ -1,12 +1,25 @@
 // @vitest-environment jsdom
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  type RenderOptions,
+} from "@testing-library/react";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
+import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseDocumentLinesEditor } from "./ExpenseDocumentLinesEditor";
 import type { ExpenseDraftLineState } from "./ExpenseDocumentLinesEditor";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
+
+// F-03: los componentes del formulario de gastos leen sus textos de i18n.
+const render = (ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: I18nProvider, ...options });
 
 afterEach(cleanup);
 
@@ -88,7 +101,7 @@ describe("ExpenseDocumentLinesEditor — Codigo IVA selector", () => {
       />,
     );
 
-    expect(screen.getByText(/20 - Codigo IVA no vigente/)).toBeDefined();
+    expect(screen.getByText(/20 - Código IVA no vigente/)).toBeDefined();
   });
 });
 

@@ -6,6 +6,7 @@ import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
+import { useI18n } from "../../../i18n/i18n";
 import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import type { SriVatRateLookup } from "../../items/facades/sriLookupFacade";
 import type { ExpenseCategoryTreeNodeDto } from "../api/expenseCategoryService";
@@ -54,6 +55,7 @@ export function ExpenseDocumentLinesEditor({
   errors,
   onChange,
 }: Props) {
+  const { t } = useI18n();
   // Escalas de una línea nueva (04G): mismas semánticas que sus inputs.
   const draftScales: ExpenseDraftLineScales = {
     unitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
@@ -71,11 +73,11 @@ export function ExpenseDocumentLinesEditor({
   };
 
   return (
-    <section className="exp-doc-section" aria-label="Lineas del gasto">
+    <section className="exp-doc-section" aria-label={t("expenses.form.lines.aria")}>
       <div className="exp-doc-section__heading exp-doc-section__heading--actions">
         <div>
-          <h2>Detalle</h2>
-          <p>Seleccione una subcategoria para asignar la cuenta contable destino.</p>
+          <h2>{t("expenses.form.lines.title")}</h2>
+          <p>{t("expenses.form.lines.subtitle")}</p>
         </div>
         <ZHBtn
           type="button"
@@ -87,7 +89,7 @@ export function ExpenseDocumentLinesEditor({
           <span className="material-symbols-outlined" aria-hidden="true">
             add
           </span>
-          Agregar linea
+          {t("expenses.form.lines.add")}
         </ZHBtn>
       </div>
 
@@ -102,11 +104,13 @@ export function ExpenseDocumentLinesEditor({
           return (
             <div className="exp-doc-line" key={line.key}>
               <div className="exp-doc-line__top">
-                <span className="exp-doc-line__number">Linea {index + 1}</span>
+                <span className="exp-doc-line__number">
+                  {t("expenses.form.lines.number", { number: index + 1 })}
+                </span>
                 <ZHIconButton
                   icon="delete"
-                  title="Quitar linea"
-                  ariaLabel={`Quitar linea ${index + 1}`}
+                  title={t("expenses.form.lines.remove")}
+                  ariaLabel={t("expenses.form.lines.removeAria", { number: index + 1 })}
                   variant="ghost"
                   disabled={disabled || lines.length === 1}
                   onClick={() => removeLine(line.key)}
@@ -126,10 +130,11 @@ export function ExpenseDocumentLinesEditor({
 
               <div className="exp-doc-line__grid">
                 <ZHField
-                  label="Descripcion"
-                  required
+                  label={t("expenses.form.field.description")}
                   density="compact"
                   fieldError={lineErrors.description}
+                  hint={t("expenses.form.field.descriptionHint")}
+                  hintType="muted"
                 >
                   <ZhTextInput
                     density="compact"
@@ -143,7 +148,7 @@ export function ExpenseDocumentLinesEditor({
                 </ZHField>
 
                 <ZHField
-                  label="Cantidad"
+                  label={t("expenses.form.field.quantity")}
                   required
                   density="compact"
                   fieldError={lineErrors.quantity}
@@ -162,7 +167,7 @@ export function ExpenseDocumentLinesEditor({
                 </ZHField>
 
                 <ZHField
-                  label="Valor unitario"
+                  label={t("expenses.form.field.unitPrice")}
                   required
                   density="compact"
                   fieldError={lineErrors.unitPrice}
@@ -181,7 +186,7 @@ export function ExpenseDocumentLinesEditor({
                 </ZHField>
 
                 <ZHField
-                  label="Descuento"
+                  label={t("expenses.form.field.discount")}
                   density="compact"
                   fieldError={lineErrors.discountValue}
                 >
@@ -199,7 +204,7 @@ export function ExpenseDocumentLinesEditor({
                 </ZHField>
 
                 <ZHField
-                  label="Codigo IVA"
+                  label={t("expenses.form.field.vatCode")}
                   required
                   density="compact"
                   fieldError={lineErrors.vatCode}
@@ -219,14 +224,14 @@ export function ExpenseDocumentLinesEditor({
                     ))}
                     {currentCode && !hasCurrentCodeInCatalog && (
                       <option value={currentCode}>
-                        {currentCode} - Codigo IVA no vigente (verificar)
+                        {t("expenses.form.field.vatCodeNotCurrent", { code: currentCode })}
                       </option>
                     )}
                   </ZhSelect>
                 </ZHField>
               </div>
 
-              <ZHField label="Observacion de linea" density="compact">
+              <ZHField label={t("expenses.form.field.lineNotes")} density="compact">
                 <ZhTextarea
                   density="compact"
                   value={line.notes}
@@ -241,7 +246,7 @@ export function ExpenseDocumentLinesEditor({
 
               <div className="exp-doc-line__totals">
                 <span>
-                  Base{" "}
+                  {t("expenses.form.lines.base")}{" "}
                   <ZHMoneyValue
                     value={lineTotals.taxableBase}
                     precision="money"
@@ -249,7 +254,7 @@ export function ExpenseDocumentLinesEditor({
                   />
                 </span>
                 <span>
-                  IVA{" "}
+                  {t("expenses.form.lines.vat")}{" "}
                   <ZHMoneyValue
                     value={lineTotals.vat}
                     precision="tax"
@@ -257,7 +262,7 @@ export function ExpenseDocumentLinesEditor({
                   />
                 </span>
                 <span>
-                  Total{" "}
+                  {t("expenses.form.lines.total")}{" "}
                   <ZHMoneyValue
                     value={lineTotals.total}
                     precision="money"

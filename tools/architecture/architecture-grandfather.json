@@ -83,12 +83,6 @@
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
     {
-      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
-      "maxLines": 503,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
       "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
       "maxLines": 514,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
@@ -96,7 +90,7 @@
     },
     {
       "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
-      "maxLines": 692,
+      "maxLines": 683,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },

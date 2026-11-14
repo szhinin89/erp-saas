@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render as rtlRender, type RenderOptions } from "@testing-library/react";
 import { ExpenseDocumentTotals } from "./ExpenseDocumentTotals";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
+import { I18nProvider } from "../../../i18n/i18n";
+
+// F-03: los componentes del formulario de gastos leen sus textos de i18n.
+const render = (ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: I18nProvider, ...options });
 
 /**
  * ZH-DESIGN-SYSTEM-PRECISION-04E — los totales del gasto declaran semántica (`precision="money"`,

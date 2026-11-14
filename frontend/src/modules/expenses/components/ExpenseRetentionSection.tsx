@@ -5,9 +5,8 @@ import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
-import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { useI18n } from "../../../i18n/i18n";
 import {
   emissionPointLookupFacade,
   type EmissionPointListItemDto,
@@ -15,28 +14,12 @@ import {
 import {
   expenseDocumentService,
   type ExpenseStatus,
-  type RetentionEligibilityCandidate,
   type RetentionEligibilityResult,
 } from "../api/expenseDocumentService";
-import {
-  RetentionAnnulmentPanel,
-  RetentionElectronicStatusBadge,
-  RetentionSriServiceHealth,
-  type RetentionDocumentDto,
-} from "../../retentions/facades/retentionDocumentFacade";
+import type { RetentionDocumentDto } from "../../retentions/facades/retentionDocumentFacade";
+import { EligibilityBadge, RetentionDocumentSummary } from "./ExpenseRetentionSummary";
 import { newRetentionIntentLine, type RetentionIntentFormState } from "../utils/expenseRetentionModel";
 import { ZhCheckbox } from "../../../components/zh/inputs";
-
-const RETENTION_STATUS_LABEL: Record<string, string> = {
-  Draft: "Borrador",
-  Issued: "Emitida",
-  Cancelled: "Anulada",
-};
-
-const TAX_TYPE_LABEL: Record<string, string> = {
-  Vat: "IVA",
-  Income: "Renta",
-};
 
 interface Props {
   /** `null` mientras el gasto no tiene id todavía (borrador nuevo sin guardar). */
@@ -62,16 +45,17 @@ export function ExpenseRetentionSection({
   onEligibilityChange,
   onAnnulmentChanged,
 }: Props) {
+  const { t } = useI18n();
   const { has } = usePermissionsUi();
   const canOperateAnnulment = has("expenses.documents.cancel");
   const canReadEmissionPoints = has("settings.emission-points.view");
 
   const [eligibility, setEligibility] = useState<RetentionEligibilityResult | null>(null);
-  const [eligibilityError, setEligibilityError] = useState<string | null>(null);
+  const [eligibilityError, setEligibilityError] = useState(false);
   const [loadingEligibility, setLoadingEligibility] = useState(false);
 
   const [retentionDoc, setRetentionDoc] = useState<RetentionDocumentDto | null>(null);
-  const [retentionDocError, setRetentionDocError] = useState<string | null>(null);
+  const [retentionDocError, setRetentionDocError] = useState(false);
   const [loadingRetentionDoc, setLoadingRetentionDoc] = useState(false);
 
   const [emissionPoints, setEmissionPoints] = useState<EmissionPointListItemDto[]>([]);
@@ -87,7 +71,7 @@ export function ExpenseRetentionSection({
     }
     let cancelled = false;
     setLoadingEligibility(true);
-    setEligibilityError(null);
+    setEligibilityError(false);
     expenseDocumentService
       .getRetentionEligibility(expenseDocumentId)
       .then((result) => {
@@ -99,7 +83,7 @@ export function ExpenseRetentionSection({
         if (cancelled) return;
         setEligibility(null);
         onEligibilityChange(null);
-        setEligibilityError("No se pudo evaluar la elegibilidad de retención de este gasto.");
+        setEligibilityError(true);
       })
       .finally(() => {
         if (!cancelled) setLoadingEligibility(false);
@@ -118,7 +102,7 @@ export function ExpenseRetentionSection({
     }
     let cancelled = false;
     setLoadingRetentionDoc(true);
-    setRetentionDocError(null);
+    setRetentionDocError(false);
     expenseDocumentService
       .getExpenseRetention(expenseDocumentId)
       .then((result) => {
@@ -126,7 +110,7 @@ export function ExpenseRetentionSection({
       })
       .catch(() => {
         if (!cancelled) {
-          setRetentionDocError("No se pudo consultar la retención asociada a este gasto.");
+          setRetentionDocError(true);
         }
       })
       .finally(() => {
@@ -156,10 +140,10 @@ export function ExpenseRetentionSection({
 
   if (!expenseDocumentId) {
     return (
-      <section className="exp-doc-section" aria-label="Retención">
+      <section className="exp-doc-section" aria-label={t("expenses.form.retention.title")}>
         <div className="exp-doc-section__heading">
-          <h2>Retención</h2>
-          <p>Guarde el borrador del gasto para evaluar si aplica retención.</p>
+          <h2>{t("expenses.form.retention.title")}</h2>
+          <p>{t("expenses.form.retention.saveFirst")}</p>
         </div>
       </section>
     );
@@ -167,16 +151,22 @@ export function ExpenseRetentionSection({
 
   if (!isDraftDocument) {
     return (
-      <section className="exp-doc-section" aria-label="Retención">
+      <section className="exp-doc-section" aria-label={t("expenses.form.retention.title")}>
         <div className="exp-doc-section__heading">
-          <h2>Retención</h2>
+          <h2>{t("expenses.form.retention.title")}</h2>
         </div>
-        {loadingRetentionDoc && <p className="exp-doc-retention-hint">Consultando retención asociada...</p>}
+        {loadingRetentionDoc && (
+          <p className="exp-doc-retention-hint">{t("expenses.form.retention.loadingDoc")}</p>
+        )}
         {retentionDocError && (
-          <ZHFormAlert type="error" message="No se pudo consultar la retención asociada" detail={retentionDocError} />
+          <ZHFormAlert
+            type="error"
+            message={t("expenses.form.retention.docErrorTitle")}
+            detail={t("expenses.form.retention.docErrorDetail")}
+          />
         )}
         {!loadingRetentionDoc && !retentionDocError && !retentionDoc && (
-          <ZHFormAlert type="neutral" message="Sin retención asociada." />
+          <ZHFormAlert type="neutral" message={t("expenses.form.retention.none")} />
         )}
         {retentionDoc && (
           <RetentionDocumentSummary
@@ -200,35 +190,41 @@ export function ExpenseRetentionSection({
     onChange({ lines: value.lines.filter((line) => line.key !== key) });
 
   return (
-    <section className="exp-doc-section" aria-label="Retención">
+    <section className="exp-doc-section" aria-label={t("expenses.form.retention.title")}>
       <div className="exp-doc-section__heading">
-        <h2>Retención</h2>
-        <p>Evaluación tributaria del proveedor y la empresa actual para este gasto.</p>
+        <h2>{t("expenses.form.retention.title")}</h2>
+        <p>{t("expenses.form.retention.subtitle")}</p>
       </div>
 
-      {loadingEligibility && <p className="exp-doc-retention-hint">Evaluando elegibilidad de retención...</p>}
+      {loadingEligibility && (
+        <p className="exp-doc-retention-hint">{t("expenses.form.retention.loadingEligibility")}</p>
+      )}
 
       {eligibilityError && (
-        <ZHFormAlert type="error" message="No se pudo evaluar la retención" detail={eligibilityError} />
+        <ZHFormAlert
+          type="error"
+          message={t("expenses.form.retention.eligibilityErrorTitle")}
+          detail={t("expenses.form.retention.eligibilityErrorDetail")}
+        />
       )}
 
       {eligibility && (
         <div className="exp-doc-retention-status">
           <EligibilityBadge
-            label="IVA"
+            label={t("expenses.form.retention.vat")}
             eligible={eligibility.canRetainVat}
             candidates={eligibility.candidates.filter((c) => c.taxType === "IVA")}
           />
           <EligibilityBadge
-            label="Renta"
+            label={t("expenses.form.retention.income")}
             eligible={eligibility.canRetainIncome}
             candidates={eligibility.candidates.filter((c) => c.taxType === "RENTA")}
           />
           {eligibility.isSupplierExempt && (
-            <span className="exp-doc-retention-flag">Proveedor exento</span>
+            <span className="exp-doc-retention-flag">{t("expenses.form.retention.exempt")}</span>
           )}
           {eligibility.missingRetentionCode && (
-            <span className="exp-doc-retention-flag">Falta código de retención activo</span>
+            <span className="exp-doc-retention-flag">{t("expenses.form.retention.missingCode")}</span>
           )}
         </div>
       )}
@@ -244,25 +240,21 @@ export function ExpenseRetentionSection({
       {eligibility && !eligibility.isEligible && (
         <ZHFormAlert
           type="attention"
-          message="Este gasto no es elegible para retención con la configuración actual."
-          detail="Revise los motivos anteriores — la empresa, el proveedor o el catálogo de códigos de retención."
+          message={t("expenses.form.retention.notEligible")}
+          detail={t("expenses.form.retention.notEligibleDetail")}
         />
       )}
 
       <ZHField
-        label="Aplicar retención a este gasto"
+        label={t("expenses.form.retention.apply")}
         density="compact"
-        hint={
-          !canApply
-            ? "Disponible solo cuando la elegibilidad es positiva para IVA o Renta."
-            : undefined
-        }
+        hint={!canApply ? t("expenses.form.retention.applyHint") : undefined}
       >
         <label className="exp-doc-retention-toggle">
           <ZhCheckbox
             checked={value.appliesRetention}
             disabled={disabled || !canApply}
-            aria-label="Aplicar retención a este gasto"
+            aria-label={t("expenses.form.retention.apply")}
             onChange={(event) => {
               const checked = event.target.checked;
               onChange({
@@ -271,7 +263,7 @@ export function ExpenseRetentionSection({
               });
             }}
           />
-          <span>Generar retención al confirmar este gasto</span>
+          <span>{t("expenses.form.retention.applyLabel")}</span>
         </label>
       </ZHField>
 
@@ -279,25 +271,25 @@ export function ExpenseRetentionSection({
         <>
           <ZHFormAlert
             type="success"
-            message="El número de retención se generará automáticamente al confirmar este documento."
+            message={t("expenses.form.retention.autoNumber")}
           />
 
           {!canReadEmissionPoints && (
             <ZHFormAlert
               type="warning"
-              message="Sin permiso para leer puntos de emisión."
-              detail="La selección de punto de emisión requiere settings.emission-points.view."
+              message={t("expenses.form.retention.noEmissionPermission")}
+              detail={t("expenses.form.retention.noEmissionPermissionDetail")}
             />
           )}
 
           <ZHGrid cols={2}>
-            <ZHField label="Punto de emisión" required>
+            <ZHField label={t("expenses.form.retention.emissionPoint")} required>
               <ZhSelect
                 value={value.emissionPointId}
                 disabled={disabled || !canReadEmissionPoints}
                 onChange={(event) => onChange({ emissionPointId: event.target.value })}
               >
-                <option value="">Seleccione...</option>
+                <option value="">{t("expenses.form.subcategory.select")}</option>
                 {emissionPoints.map((point) => (
                   <option key={point.id} value={point.id}>
                     {point.establishmentCode}-{point.code} {point.name ? `- ${point.name}` : ""}
@@ -306,7 +298,7 @@ export function ExpenseRetentionSection({
               </ZhSelect>
             </ZHField>
 
-            <ZHField label="Fecha de emisión" required>
+            <ZHField label={t("expenses.form.retention.issueDate")} required>
               <ZhDateInput
                 value={value.issueDate}
                 disabled={disabled}
@@ -317,11 +309,8 @@ export function ExpenseRetentionSection({
 
           <div className="exp-doc-section__heading exp-doc-section__heading--actions">
             <div>
-              <h3>Líneas de retención</h3>
-              <p>
-                Código y porcentaje los revalida el servidor contra el catálogo SRI — no se
-                sugieren valores por defecto.
-              </p>
+              <h3>{t("expenses.form.retention.linesTitle")}</h3>
+              <p>{t("expenses.form.retention.linesHint")}</p>
             </div>
             <ZHBtn
               type="button"
@@ -333,7 +322,7 @@ export function ExpenseRetentionSection({
               <span className="material-symbols-outlined" aria-hidden="true">
                 add
               </span>
-              Agregar línea
+              {t("expenses.form.retention.addLine")}
             </ZHBtn>
           </div>
 
@@ -341,11 +330,13 @@ export function ExpenseRetentionSection({
             {value.lines.map((line, index) => (
               <div className="exp-doc-line" key={line.key}>
                 <div className="exp-doc-line__top">
-                  <span className="exp-doc-line__number">Línea {index + 1}</span>
+                  <span className="exp-doc-line__number">
+                    {t("expenses.form.retention.line", { number: index + 1 })}
+                  </span>
                   <ZHIconButton
                     icon="delete"
-                    title="Quitar línea"
-                    ariaLabel={`Quitar línea de retención ${index + 1}`}
+                    title={t("expenses.form.retention.removeLine")}
+                    ariaLabel={t("expenses.form.retention.removeLineAria", { number: index + 1 })}
                     variant="ghost"
                     disabled={disabled}
                     onClick={() => removeLine(line.key)}
@@ -353,7 +344,7 @@ export function ExpenseRetentionSection({
                 </div>
 
                 <div className="exp-doc-line__grid">
-                  <ZHField label="Impuesto" required density="compact">
+                  <ZHField label={t("expenses.form.retention.tax")} required density="compact">
                     <ZhSelect
                       density="compact"
                       value={line.taxType}
@@ -365,26 +356,26 @@ export function ExpenseRetentionSection({
                       }
                     >
                       <option value="Vat" disabled={!eligibility?.canRetainVat}>
-                        {TAX_TYPE_LABEL.Vat}
+                        {t("expenses.form.retention.vat")}
                       </option>
                       <option value="Income" disabled={!eligibility?.canRetainIncome}>
-                        {TAX_TYPE_LABEL.Income}
+                        {t("expenses.form.retention.income")}
                       </option>
                     </ZhSelect>
                   </ZHField>
 
-                  <ZHField label="Código de retención" required density="compact">
+                  <ZHField label={t("expenses.form.retention.code")} required density="compact">
                     <ZhTextInput
                       density="compact"
                       value={line.retentionCode}
                       maxLength={10}
                       disabled={disabled}
-                      placeholder="Ej. 303"
+                      placeholder={t("expenses.form.retention.codePlaceholder")}
                       onChange={(event) => updateLine(line.key, { retentionCode: event.target.value })}
                     />
                   </ZHField>
 
-                  <ZHField label="Base" required density="compact">
+                  <ZHField label={t("expenses.form.retention.base")} required density="compact">
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
@@ -395,7 +386,7 @@ export function ExpenseRetentionSection({
                     />
                   </ZHField>
 
-                  <ZHField label="% Retención" required density="compact">
+                  <ZHField label={t("expenses.form.retention.rate")} required density="compact">
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
@@ -406,7 +397,7 @@ export function ExpenseRetentionSection({
                     />
                   </ZHField>
 
-                  <ZHField label="Valor retenido" required density="compact">
+                  <ZHField label={t("expenses.form.retention.retained")} required density="compact">
                     <ZhDecimalInput
                       density="compact"
                       positiveOnly
@@ -418,7 +409,7 @@ export function ExpenseRetentionSection({
                   </ZHField>
                 </div>
 
-                <ZHField label="Descripción" density="compact">
+                <ZHField label={t("expenses.form.retention.description")} density="compact">
                   <ZhTextInput
                     density="compact"
                     value={line.description}
@@ -433,111 +424,6 @@ export function ExpenseRetentionSection({
         </>
       )}
     </section>
-  );
-}
-
-function EligibilityBadge({
-  label,
-  eligible,
-  candidates,
-}: {
-  label: string;
-  eligible: boolean;
-  candidates: RetentionEligibilityCandidate[];
-}) {
-  return (
-    <span
-      className={`exp-doc-retention-badge ${eligible ? "exp-doc-retention-badge--yes" : "exp-doc-retention-badge--no"}`}
-    >
-      {label}: {eligible ? "Aplica" : "No aplica"}
-      {eligible && candidates.length > 0
-        ? ` (${candidates.map((c) => c.retentionCode).join(", ")})`
-        : ""}
-    </span>
-  );
-}
-
-function RetentionDocumentSummary({
-  retention,
-  canOperateAnnulment,
-  onAnnulmentChanged,
-}: {
-  retention: RetentionDocumentDto;
-  canOperateAnnulment: boolean;
-  onAnnulmentChanged: () => void;
-}) {
-  return (
-    <div className="exp-doc-retention-summary">
-      <ZHGrid cols={4}>
-        <div>
-          <span className="exp-doc-retention-summary__label">Número</span>
-          <p>{retention.retentionNumber ?? "—"}</p>
-        </div>
-        <div>
-          <span className="exp-doc-retention-summary__label">Fecha de emisión</span>
-          <p>{retention.issueDate ? formatDate(retention.issueDate) : "—"}</p>
-        </div>
-        <div>
-          <span className="exp-doc-retention-summary__label">Estado</span>
-          <p>{RETENTION_STATUS_LABEL[retention.status] ?? retention.status}</p>
-        </div>
-        <div>
-          <span className="exp-doc-retention-summary__label">Estado electrónico</span>
-          <p>
-            <RetentionElectronicStatusBadge status={retention.electronicStatus} />
-          </p>
-          <RetentionSriServiceHealth status={retention.electronicStatus} />
-        </div>
-      </ZHGrid>
-
-      <div className="exp-doc-retention-summary__total">
-        <span>Total retenido</span>
-        <ZHMoneyValue value={retention.totalRetained} precision="money" emphasis="grand" />
-      </div>
-
-      {retention.lines.length > 0 && (
-        <div className="exp-doc-lines">
-          {retention.lines.map((line) => (
-            <div className="exp-doc-line" key={line.id}>
-              <div className="exp-doc-line__top">
-                <span className="exp-doc-line__number">
-                  {TAX_TYPE_LABEL[line.taxType] ?? line.taxType} — {line.retentionCode}
-                </span>
-              </div>
-              <div className="exp-doc-line__totals">
-                <span>
-                  Base <ZHMoneyValue value={line.baseAmount} precision="money" currencySymbol="" />
-                </span>
-                <span>{line.retentionRate}%</span>
-                <span>
-                  Retenido{" "}
-                  <ZHMoneyValue
-                    value={line.retainedAmount}
-                    precision="money"
-                    currencySymbol=""
-                    emphasis="strong"
-                  />
-                </span>
-              </div>
-              {line.description && <p className="exp-doc-retention-summary__label">{line.description}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {retention.annulment && (
-        <RetentionAnnulmentPanel
-          annulment={retention.annulment}
-          origin="expense"
-          canOperate={canOperateAnnulment}
-          onChanged={onAnnulmentChanged}
-        />
-      )}
-
-      {retention.cancelReason && (
-        <ZHFormAlert type="warning" message="Retención anulada" detail={retention.cancelReason} />
-      )}
-    </div>
   );
 }
 

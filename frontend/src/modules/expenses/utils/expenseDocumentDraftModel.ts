@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { formatDecimalDisplay, normalizeOptionalCode } from "../../../lib/sanitizers";
 import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
@@ -50,32 +51,43 @@ export function parseExpenseNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function roundMoney(value: number): number {
-  const decimals = getPrecisionPolicy().moneyDecimals;
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+// Mismo criterio fiscal que el backend (ExpenseLine: decimal exacto, redondeo AwayFromZero a
+// FiscalPrecision.TaxAmount = 2): Decimal con ROUND_HALF_UP. El redondeo con floats (`Math.round(x * 100)`)
+// diverge en empates binarios (p. ej. 1.005 -> 1.00 en JS vs 1.01 en el servidor).
+const ExpenseDecimal = Decimal.clone({ precision: 64 });
+
+function toDecimal(value: string): Decimal {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return new ExpenseDecimal(0);
+  try {
+    return new ExpenseDecimal(value.trim());
+  } catch {
+    return new ExpenseDecimal(parsed);
+  }
+}
+
+function roundDecimal(value: Decimal): Decimal {
+  return value.toDecimalPlaces(
+    getPrecisionPolicy().moneyDecimals,
+    ExpenseDecimal.ROUND_HALF_UP,
+  );
 }
 
 export function calculateExpenseLineTotals(
   line: ExpenseDraftLineState,
   vatRateByCode: VatRateByCode,
 ): ExpenseLineTotals {
-  const subtotal = roundMoney(
-    parseExpenseNumber(line.quantity) * parseExpenseNumber(line.unitPrice),
-  );
-  const discount = Math.min(
-    roundMoney(parseExpenseNumber(line.discountValue)),
-    subtotal,
-  );
-  const taxableBase = roundMoney(Math.max(0, subtotal - discount));
-  const vatRate = vatRateByCode.get(line.vatCode.trim()) ?? 0;
-  const vat = roundMoney((taxableBase * vatRate) / 100);
+  const subtotal = roundDecimal(toDecimal(line.quantity).mul(toDecimal(line.unitPrice)));
+  const discount = ExpenseDecimal.min(roundDecimal(toDecimal(line.discountValue)), subtotal);
+  const taxableBase = roundDecimal(ExpenseDecimal.max(0, subtotal.minus(discount)));
+  const vatRate = new ExpenseDecimal(vatRateByCode.get(line.vatCode.trim()) ?? 0);
+  const vat = roundDecimal(taxableBase.mul(vatRate).div(100));
   return {
-    subtotal,
-    discount,
-    taxableBase,
-    vat,
-    total: roundMoney(taxableBase + vat),
+    subtotal: subtotal.toNumber(),
+    discount: discount.toNumber(),
+    taxableBase: taxableBase.toNumber(),
+    vat: vat.toNumber(),
+    total: roundDecimal(taxableBase.plus(vat)).toNumber(),
   };
 }
 
@@ -83,17 +95,29 @@ export function calculateExpenseDocumentTotals(
   lines: ExpenseDraftLineState[],
   vatRateByCode: VatRateByCode,
 ) {
-  return lines.reduce(
+  // Igual que ExpenseDocument: suma de los importes ya redondeados por línea.
+  const sum = lines.reduce(
     (acc, line) => {
       const totals = calculateExpenseLineTotals(line, vatRateByCode);
-      acc.subtotal = roundMoney(acc.subtotal + totals.subtotal);
-      acc.totalDiscount = roundMoney(acc.totalDiscount + totals.discount);
-      acc.totalTax = roundMoney(acc.totalTax + totals.vat);
-      acc.grandTotal = roundMoney(acc.grandTotal + totals.total);
+      acc.subtotal = acc.subtotal.plus(totals.subtotal);
+      acc.totalDiscount = acc.totalDiscount.plus(totals.discount);
+      acc.totalTax = acc.totalTax.plus(totals.vat);
+      acc.grandTotal = acc.grandTotal.plus(totals.total);
       return acc;
     },
-    { subtotal: 0, totalDiscount: 0, totalTax: 0, grandTotal: 0 },
+    {
+      subtotal: new ExpenseDecimal(0),
+      totalDiscount: new ExpenseDecimal(0),
+      totalTax: new ExpenseDecimal(0),
+      grandTotal: new ExpenseDecimal(0),
+    },
   );
+  return {
+    subtotal: roundDecimal(sum.subtotal).toNumber(),
+    totalDiscount: roundDecimal(sum.totalDiscount).toNumber(),
+    totalTax: roundDecimal(sum.totalTax).toNumber(),
+    grandTotal: roundDecimal(sum.grandTotal).toNumber(),
+  };
 }
 
 export function findVatCodeForRate(

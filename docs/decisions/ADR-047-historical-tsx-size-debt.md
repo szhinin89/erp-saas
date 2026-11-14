@@ -72,9 +72,8 @@ módulo lo definen `STATUS.md`/`FEATURES.md` y este ADR no lo reclasifica.
 | `frontend/src/modules/caja/pages/CajaPage.tsx` | 886 | Página | caja |
 | `frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx` | 568 | Página | configuracion |
 | `frontend/src/modules/configuracion/empresa/sections/BrandingSettingsSection.tsx` | 585 | Componente | configuracion |
-| `frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx` | 503 | Componente | expenses |
 | `frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx` | 514 | Prueba | expenses |
-| `frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx` | 692 | Página | expenses |
+| `frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx` | 683 | Página | expenses |
 | `frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx` | 533 | Prueba | initialLoad |
 | `frontend/src/modules/inventory/kardex/pages/KardexPage.tsx` | 518 | Página | inventory |
 | `frontend/src/modules/items/catalog/wizard/TreeEditor.tsx` | 506 | Componente | items |

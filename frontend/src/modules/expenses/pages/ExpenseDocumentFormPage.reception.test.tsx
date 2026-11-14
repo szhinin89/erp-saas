@@ -62,13 +62,13 @@ afterEach(cleanup);
 
 it("loads the server header and sends the reception identity when saving", async () => {
   show();
-  await waitFor(() => expect((screen.getByLabelText(/^Numero/) as HTMLInputElement).value).toBe(source.documentNumber));
+  await waitFor(() => expect((screen.getByLabelText(/^Número/) as HTMLInputElement).value).toBe(source.documentNumber));
   const docType = screen.getByLabelText(/^Tipo de documento/) as HTMLSelectElement;
   expect(docType.value).toBe("01");
   expect(docType.selectedOptions[0].textContent).toBe("01 - Factura");
   expect(mocks.preview).toHaveBeenCalledWith("reception-1");
   expect(screen.getByText(source.supplierTaxId)).toBeTruthy();
-  expect((screen.getByLabelText(/^Emision/) as HTMLInputElement).value).toBe(source.issueDate);
+  expect((screen.getByLabelText(/^Emisión/) as HTMLInputElement).value).toBe(source.issueDate);
   expect(screen.getByText(/Factura recibida/).textContent).toContain("115.00");
   fireEvent.click(screen.getByRole("button", { name: "Completar detalle" }));
   fireEvent.click(screen.getByRole("button", { name: "Guardar borrador" }));

@@ -1,15 +1,28 @@
 // @vitest-environment jsdom
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+  type RenderOptions,
+} from "@testing-library/react";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
+import { I18nProvider } from "../../../i18n/i18n";
 import { ExpenseRetentionSection } from "./ExpenseRetentionSection";
 import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { expenseDocumentService } from "../api/expenseDocumentService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { emptyRetentionIntentState, newRetentionIntentLine } from "../utils/expenseRetentionModel";
 import type { RetentionEligibilityResult } from "../api/expenseDocumentService";
+
+// F-03: los componentes del formulario de gastos leen sus textos de i18n.
+const render = (ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
+  rtlRender(ui, { wrapper: I18nProvider, ...options });
 
 /**
  * RETENTIONS-UI-REMOVE-MANUAL-NUMBER-02F — pruebas de componente aisladas para

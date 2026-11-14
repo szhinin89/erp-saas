@@ -1,9 +1,11 @@
+import { useRef, useState } from "react";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { ZhDateTimeInput } from "../../../components/zh/inputs/ZhDateTimeInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
+import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerPurchaseSettingsFacade } from "../../masterData/facades/businessPartnerPurchaseSettingsFacade";
 import type { PaymentTermDto } from "../../masterData/facades/paymentTermLookupFacade";
 import type { SupplierPickerRow } from "../../masterData/facades/supplierPickerFacade";
@@ -45,6 +47,21 @@ interface Props {
   onSupplierChange: (supplier: SupplierPickerRow | null) => void;
 }
 
+/**
+ * EXPENSE-UX-01 (U6) — de dónde viene la condición de pago mostrada:
+ * `saved` = ya registrada en el documento (o aún no tocada en esta sesión), `supplier` = pre-llenada
+ * con el default del proveedor, `explicit` = elegida por el usuario. Es solo presentación: la
+ * resolución real (explícita → default del proveedor → exigir selección) sigue siendo del backend.
+ */
+type PaymentTermOrigin = "saved" | "supplier" | "explicit";
+
+/** Resultado de la consulta del default del proveedor seleccionado en esta sesión. */
+interface SupplierPaymentDefault {
+  supplierId: string;
+  termId: string | null;
+  failed: boolean;
+}
+
 export function ExpenseDocumentHeader({
   value,
   supplier,
@@ -56,59 +73,114 @@ export function ExpenseDocumentHeader({
   onChange,
   onSupplierChange,
 }: Props) {
+  const { t } = useI18n();
+  const [paymentTermOrigin, setPaymentTermOrigin] = useState<PaymentTermOrigin>("saved");
+  const [supplierDefault, setSupplierDefault] = useState<SupplierPaymentDefault | null>(null);
+  // Invalida consultas en vuelo si el proveedor cambia o el usuario elige la condición a mano.
+  const lookupSeq = useRef(0);
+
+  const termLabel = (termId: string) => {
+    const term = paymentTerms.find((item) => item.id === termId);
+    return term ? `${term.code} - ${term.summary}` : termId;
+  };
+
+  const handleSupplierChange = (next: SupplierPickerRow | null) => {
+    const seq = ++lookupSeq.current;
+    onSupplierChange(next);
+    // Un valor pre-llenado por el proveedor anterior nunca fue una elección del usuario: se vuelve
+    // a evaluar con el proveedor nuevo. Una condición elegida a mano o ya guardada se preserva.
+    const wasAutofilled = !!value.paymentTermId && paymentTermOrigin === "supplier";
+    const prefillPaymentTerm = !value.paymentTermId || wasAutofilled;
+    setSupplierDefault(null);
+    onChange({
+      supplierId: next?.id ?? "",
+      // RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo criterio: si el usuario ya
+      // escribió algo, se preserva; si no, se sugiere el default del proveedor (solo
+      // pre-llenado en el cliente — el backend vuelve a aplicar el mismo fallback si
+      // este campo llega vacío).
+      taxSupportCode: value.taxSupportCode || next?.supplierConfig?.defaultTaxSupportCode || "",
+    });
+    if (wasAutofilled && !next) onChange({ paymentTermId: "" });
+    // ADR-033: la condición de pago default de compras/gastos vive en
+    // CompanyBpPurchaseSettings (empresa activa) — SupplierRoleConfig ya no la tiene.
+    if (next && prefillPaymentTerm) {
+      businessPartnerPurchaseSettingsFacade
+        .getPurchaseSettings(next.id)
+        .then((settings) => {
+          if (seq !== lookupSeq.current) return;
+          const termId = settings.paymentTermId || null;
+          setSupplierDefault({ supplierId: next.id, termId, failed: false });
+          if (termId) {
+            onChange({ paymentTermId: termId });
+            setPaymentTermOrigin("supplier");
+          } else if (wasAutofilled) {
+            onChange({ paymentTermId: "" });
+          }
+        })
+        .catch(() => {
+          if (seq !== lookupSeq.current) return;
+          setSupplierDefault({ supplierId: next.id, termId: null, failed: true });
+          if (wasAutofilled) onChange({ paymentTermId: "" });
+        });
+    }
+  };
+
+  const paymentTermHint = ((): { text: string; type: "muted" | "warning" } | null => {
+    if (value.paymentTermId) {
+      if (paymentTermOrigin === "supplier")
+        return { text: t("expenses.form.paymentTerm.fromSupplier"), type: "muted" };
+      if (paymentTermOrigin === "explicit")
+        return { text: t("expenses.form.paymentTerm.explicit"), type: "muted" };
+      return { text: t("expenses.form.paymentTerm.saved"), type: "muted" };
+    }
+    if (!value.supplierId)
+      return { text: t("expenses.form.paymentTerm.awaitSupplier"), type: "muted" };
+    if (supplierDefault?.supplierId !== value.supplierId) return null;
+    if (supplierDefault.failed)
+      return { text: t("expenses.form.paymentTerm.lookupFailed"), type: "warning" };
+    if (supplierDefault.termId)
+      return {
+        text: t("expenses.form.paymentTerm.willUseSupplier", {
+          term: termLabel(supplierDefault.termId),
+        }),
+        type: "muted",
+      };
+    return { text: t("expenses.form.paymentTerm.supplierWithout"), type: "warning" };
+  })();
+
   return (
-    <section className="exp-doc-section" aria-label="Cabecera del gasto">
+    <section className="exp-doc-section" aria-label={t("expenses.form.header.aria")}>
       <div className="exp-doc-section__heading">
-        <h2>Cabecera</h2>
-        <p>Documento por proveedor, sin bodega ni datos de inventario.</p>
+        <h2>{t("expenses.form.header.title")}</h2>
+        <p>{t("expenses.form.header.subtitle")}</p>
       </div>
 
       <ZHGrid cols={3}>
-        <ZHField label="Proveedor" required fieldError={errors?.supplierId}>
+        <ZHField label={t("expenses.form.field.supplier")} required fieldError={errors?.supplierId}>
           {/* ZH-SUPPLIER-SEARCH-SINGLE-SOURCE-02 — buscador único de proveedores; en Gastos solo
               se ofrecen proveedores activos (mismo criterio que el selector propio anterior). */}
           <SupplierSearchSelect
             activeOnly
             value={supplier}
             disabled={disabled}
-            onChange={(next) => {
-              onSupplierChange(next);
-              const prefillPaymentTerm = !value.paymentTermId;
-              onChange({
-                supplierId: next?.id ?? "",
-                // RETENTIONS-EXPENSE-TAX-SUPPORT-UI-02H — mismo criterio: si el usuario ya
-                // escribió algo, se preserva; si no, se sugiere el default del proveedor (solo
-                // pre-llenado en el cliente — el backend vuelve a aplicar el mismo fallback si
-                // este campo llega vacío).
-                taxSupportCode:
-                  value.taxSupportCode || next?.supplierConfig?.defaultTaxSupportCode || "",
-              });
-              // ADR-033: la condición de pago default de compras/gastos vive en
-              // CompanyBpPurchaseSettings (empresa activa) — SupplierRoleConfig ya no la tiene.
-              if (next && prefillPaymentTerm) {
-                businessPartnerPurchaseSettingsFacade
-                  .getPurchaseSettings(next.id)
-                  .then((settings) => {
-                    if (settings.paymentTermId) {
-                      onChange({ paymentTermId: settings.paymentTermId });
-                    }
-                  })
-                  .catch(() => {});
-              }
-            }}
+            onChange={handleSupplierChange}
           />
         </ZHField>
 
-        <ZHField label="Tipo de documento" required fieldError={errors?.documentType}>
+        <ZHField
+          label={t("expenses.form.field.documentType")}
+          required
+          fieldError={errors?.documentType}
+        >
           <ZhSelect
             value={value.documentType}
             disabled={disabled}
             onChange={(event) => onChange({ documentType: event.target.value })}
           >
-            <option value="">Seleccione un tipo de documento</option>
+            <option value="">{t("expenses.form.field.documentTypeSelect")}</option>
             {value.documentType && !sriDocTypes.some((type) => type.code === value.documentType) && (
               <option value={value.documentType}>
-                {value.documentType} - Tipo de documento no encontrado en catálogo
+                {t("expenses.form.field.documentTypeUnknown", { code: value.documentType })}
               </option>
             )}
             {sriDocTypes.map((type) => (
@@ -119,7 +191,11 @@ export function ExpenseDocumentHeader({
           </ZhSelect>
         </ZHField>
 
-        <ZHField label="Numero" required fieldError={errors?.documentNumber}>
+        <ZHField
+          label={t("expenses.form.field.documentNumber")}
+          required
+          fieldError={errors?.documentNumber}
+        >
           <ZhTextInput
             value={value.documentNumber}
             maxLength={30}
@@ -128,7 +204,7 @@ export function ExpenseDocumentHeader({
           />
         </ZHField>
 
-        <ZHField label="Emision" required fieldError={errors?.issueDate}>
+        <ZHField label={t("expenses.form.field.issueDate")} required fieldError={errors?.issueDate}>
           <ZhDateInput
             value={value.issueDate}
             disabled={disabled}
@@ -136,7 +212,11 @@ export function ExpenseDocumentHeader({
           />
         </ZHField>
 
-        <ZHField label="Fecha contable" required fieldError={errors?.accountingDate}>
+        <ZHField
+          label={t("expenses.form.field.accountingDate")}
+          required
+          fieldError={errors?.accountingDate}
+        >
           <ZhDateInput
             value={value.accountingDate}
             disabled={disabled}
@@ -144,7 +224,7 @@ export function ExpenseDocumentHeader({
           />
         </ZHField>
 
-        <ZHField label="Vencimiento" fieldError={errors?.dueDate}>
+        <ZHField label={t("expenses.form.field.dueDate")} fieldError={errors?.dueDate}>
           <ZhDateInput
             value={value.dueDate}
             disabled={disabled}
@@ -152,13 +232,22 @@ export function ExpenseDocumentHeader({
           />
         </ZHField>
 
-        <ZHField label="Condicion de pago" fieldError={errors?.paymentTermId}>
+        <ZHField
+          label={t("expenses.form.field.paymentTerm")}
+          fieldError={errors?.paymentTermId}
+          hint={paymentTermHint?.text}
+          hintType={paymentTermHint?.type}
+        >
           <ZhSelect
             value={value.paymentTermId}
             disabled={disabled}
-            onChange={(event) => onChange({ paymentTermId: event.target.value })}
+            onChange={(event) => {
+              lookupSeq.current++;
+              if (event.target.value) setPaymentTermOrigin("explicit");
+              onChange({ paymentTermId: event.target.value });
+            }}
           >
-            <option value="">Usar condicion del proveedor</option>
+            <option value="">{t("expenses.form.paymentTerm.useSupplier")}</option>
             {paymentTerms
               .filter((term) => term.isActive || term.id === value.paymentTermId)
               .map((term) => (
@@ -169,7 +258,10 @@ export function ExpenseDocumentHeader({
           </ZhSelect>
         </ZHField>
 
-        <ZHField label="Autorizacion" fieldError={errors?.authorizationNumber}>
+        <ZHField
+          label={t("expenses.form.field.authorizationNumber")}
+          fieldError={errors?.authorizationNumber}
+        >
           <ZhTextInput
             value={value.authorizationNumber}
             maxLength={49}
@@ -180,7 +272,10 @@ export function ExpenseDocumentHeader({
           />
         </ZHField>
 
-        <ZHField label="Fecha autorizacion" fieldError={errors?.authorizationDate}>
+        <ZHField
+          label={t("expenses.form.field.authorizationDate")}
+          fieldError={errors?.authorizationDate}
+        >
           <ZhDateTimeInput
             value={value.authorizationDate}
             disabled={disabled}
@@ -192,16 +287,16 @@ export function ExpenseDocumentHeader({
             Compras (sriLookupFacade.taxSupportCodes → global.sri_tax_support), nunca una lista
             hardcodeada aquí. */}
         <ZHField
-          label="Código sustento tributario"
+          label={t("expenses.form.field.taxSupport")}
           fieldError={errors?.taxSupportCode}
-          hint="Si se deja vacío, se usará el valor configurado para el proveedor cuando exista."
+          hint={t("expenses.form.field.taxSupportHint")}
         >
           <ZhSelect
             value={value.taxSupportCode}
             disabled={disabled}
             onChange={(event) => onChange({ taxSupportCode: event.target.value })}
           >
-            <option value="">— Sin especificar —</option>
+            <option value="">{t("expenses.form.field.taxSupportNone")}</option>
             {sriTaxSupports.map((s) => (
               <option key={s.code} value={s.code}>
                 {s.code} — {s.name}
@@ -211,7 +306,7 @@ export function ExpenseDocumentHeader({
         </ZHField>
       </ZHGrid>
 
-      <ZHField label="Notas" fieldError={errors?.notes}>
+      <ZHField label={t("expenses.form.field.notes")} fieldError={errors?.notes}>
         <ZhTextarea
           value={value.notes}
           rows={3}

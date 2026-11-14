@@ -4,6 +4,15 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- EXPENSE-UX-01 (IMPLEMENTADO y probado, pendiente de publicación; aprobado por el propietario 2026-11-13): correcciones
+  frontend del formulario de gastos (B1, B2 en alcance frontend, U3, U5, U6, U7 y mensaje de confirmación), sin cambiar
+  Guardar borrador → Confirmar. Evidencia en [STATUS](../../STATUS.md).
+- EXPENSE-U4-DOCTYPE-01 (PENDING; backend focalizado): validar `DocumentType` de Gastos contra el catálogo SRI con
+  `IsActiveDocTypeAsync` (aprobado; no `IsActiveElectronicDocTypeAsync`). Separado de EXPENSE-UX-01.
+- EXPENSE-ACCOUNTING-VIEW-01 (PENDING; corrección aprobada, falta diseño mínimo): el formulario de gastos depende de
+  `accounting.view` (`GET /accounting/accounts`); sin ese permiso no abre. Separado de EXPENSE-UX-01.
+- B2 backend (NO AUTORIZADO): ampliar el contrato de errores de línea del backend; se conserva el manejo general de
+  errores sin identificación de línea.
 - SEC-SUSP-01 (PUBLICADO, pendiente validación CI; revisión del propietario aprobada 2026-11-13; autorizado con excepción
   limitada a ElectronicDocuments/SRI/Communications FROZEN, [ADR-048](../decisions/ADR-048-company-suspension-automatic-processes.md)):
   transmisiones SRI nuevas y entrega de correo pausadas para empresas suspendidas o deshabilitadas, sin detener

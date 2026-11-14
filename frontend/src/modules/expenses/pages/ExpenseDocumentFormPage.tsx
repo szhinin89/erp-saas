@@ -1,15 +1,7 @@
 import { formatDecimalDisplay } from "../../../lib/sanitizers";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { purchaseReceptionExpenseFacade, type ExpenseReceptionDraft } from "../../purchases/facades/purchaseReceptionExpenseFacade";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { NoAccessPage, PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
@@ -19,6 +11,7 @@ import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { todayIso, toDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
+import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import {
   formatApiRequestError,
@@ -57,6 +50,10 @@ import { ExpenseDocumentStatusBadge } from "../components/ExpenseDocumentStatusB
 import { ExpenseDocumentTotals } from "../components/ExpenseDocumentTotals";
 import { ExpenseRetentionSection } from "../components/ExpenseRetentionSection";
 import { SRI_ANNULMENT_REQUIRED_CODE } from "../../retentions/facades/retentionDocumentFacade";
+import {
+  hasMappedFieldErrors,
+  mapExpenseBackendErrors,
+} from "../utils/expenseBackendErrors";
 import {
   buildExpenseDraftPayload,
   calculateExpenseDocumentTotals,
@@ -104,6 +101,13 @@ const EMPTY_HEADER: ExpenseDocumentHeaderState = {
 };
 
 export function ExpenseDocumentFormPage() {
+  const { t } = useI18n();
+  // `load` no debe depender de `t`: cambiar de idioma no puede recargar el documento (perdería la
+  // edición en curso). Lee siempre el traductor vigente por referencia.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const { id } = useParams();
   const isNew = !id;
   const [searchParams] = useSearchParams();
@@ -258,7 +262,7 @@ export function ExpenseDocumentFormPage() {
     } catch (error) {
       setPageError(
         formatApiRequestError(error, {
-          generic: "No se pudo cargar el documento de gasto.",
+          generic: tRef.current("expenses.form.loadError"),
         }),
       );
     } finally {
@@ -270,8 +274,8 @@ export function ExpenseDocumentFormPage() {
     if (canView || isNew) void load();
   }, [canView, isNew, load]);
 
-  if (!canView && !isNew) return <NoAccessPage title="Gasto" />;
-  if (isNew && !canCreate) return <NoAccessPage title="Nuevo gasto" />;
+  if (!canView && !isNew) return <NoAccessPage title={t("expenses.form.noAccess.edit")} />;
+  if (isNew && !canCreate) return <NoAccessPage title={t("expenses.form.title.new")} />;
 
   const validate = (): boolean => {
     const nextHeader: ExpenseDocumentHeaderErrors = {};
@@ -280,16 +284,16 @@ export function ExpenseDocumentFormPage() {
       flattenExpenseSubcategories(tree).map((node) => [node.id, node]),
     );
 
-    if (!header.supplierId) nextHeader.supplierId = "Seleccione un proveedor.";
-    if (!header.issueDate) nextHeader.issueDate = "Ingrese la fecha de emision.";
+    if (!header.supplierId) nextHeader.supplierId = t("expenses.form.validation.supplier");
+    if (!header.issueDate) nextHeader.issueDate = t("expenses.form.validation.issueDate");
     if (!header.accountingDate)
-      nextHeader.accountingDate = "Ingrese la fecha contable.";
+      nextHeader.accountingDate = t("expenses.form.validation.accountingDate");
     if (!header.documentType.trim())
-      nextHeader.documentType = "Seleccione un tipo de documento.";
+      nextHeader.documentType = t("expenses.form.validation.documentType");
     if (!header.documentNumber.trim())
-      nextHeader.documentNumber = "Ingrese el numero de documento.";
+      nextHeader.documentNumber = t("expenses.form.validation.documentNumber");
     if (header.dueDate && header.issueDate && header.dueDate < header.issueDate)
-      nextHeader.dueDate = "El vencimiento no puede ser anterior a la emision.";
+      nextHeader.dueDate = t("expenses.form.validation.dueDate");
 
     lines.forEach((line) => {
       const errors: Partial<Record<keyof ExpenseDraftLineState, string>> = {};
@@ -297,30 +301,29 @@ export function ExpenseDocumentFormPage() {
       const subtotal =
         parseExpenseNumber(line.quantity) * parseExpenseNumber(line.unitPrice);
       if (!line.expenseSubcategoryId) {
-        errors.expenseSubcategoryId = "Seleccione una subcategoria.";
+        errors.expenseSubcategoryId = t("expenses.form.validation.line.subcategory");
       } else if (
         !subcategory?.isActive ||
         !subcategory.accountingAccountId ||
         !accountsById.has(subcategory.accountingAccountId)
       ) {
-        errors.expenseSubcategoryId =
-          "La subcategoria debe estar activa y tener cuenta contable.";
+        errors.expenseSubcategoryId = t("expenses.form.validation.line.subcategoryInvalid");
       }
       if (parseExpenseNumber(line.quantity) <= 0)
-        errors.quantity = "La cantidad debe ser mayor a cero.";
+        errors.quantity = t("expenses.form.validation.line.quantity");
       if (parseExpenseNumber(line.unitPrice) < 0)
-        errors.unitPrice = "El valor unitario no puede ser negativo.";
+        errors.unitPrice = t("expenses.form.validation.line.unitPrice");
       if (parseExpenseNumber(line.discountValue) < 0)
-        errors.discountValue = "El descuento no puede ser negativo.";
+        errors.discountValue = t("expenses.form.validation.line.discountNegative");
       if (parseExpenseNumber(line.discountValue) > subtotal)
-        errors.discountValue = "El descuento no puede superar el subtotal.";
-      if (!line.vatCode.trim()) errors.vatCode = "Seleccione el codigo IVA.";
+        errors.discountValue = t("expenses.form.validation.line.discountExceeds");
+      if (!line.vatCode.trim()) errors.vatCode = t("expenses.form.validation.line.vatCode");
       if (Object.keys(errors).length > 0) nextLines[line.key] = errors;
     });
 
     if (lines.length === 0) {
       const line = newExpenseDraftLine(draftScales);
-      nextLines[line.key] = { expenseSubcategoryId: "Debe incluir al menos una linea." };
+      nextLines[line.key] = { expenseSubcategoryId: t("expenses.form.validation.noLines") };
       setLines([line]);
     }
 
@@ -336,11 +339,9 @@ export function ExpenseDocumentFormPage() {
   const handleSave = async () => {
     if (!validate()) {
       if (receptionMismatch) {
-        message.error(
-          "El total calculado no cuadra con el total del XML recibido. Corrija cantidad, valor unitario o código IVA antes de guardar.",
-        );
+        message.error(t("expenses.form.message.mismatchBlocked"));
       } else {
-        message.error("Revise los datos requeridos del borrador.");
+        message.error(t("expenses.form.message.reviewRequired"));
       }
       return;
     }
@@ -359,7 +360,7 @@ export function ExpenseDocumentFormPage() {
       const saved = isNew
         ? await expenseDocumentService.create(payload)
         : await expenseDocumentService.update(id!, payload);
-      message.success("Borrador de gasto guardado correctamente.");
+      message.success(t("expenses.form.message.saved"));
       if (isNew) {
         navigate(`/expenses/documents/${saved.id}`, { replace: true });
       } else {
@@ -369,12 +370,31 @@ export function ExpenseDocumentFormPage() {
         setLines(documentToLines(saved, draftScales));
       }
     } catch (error) {
-      mapBackendErrors(error, setHeaderErrors);
-      message.error(
-        formatApiRequestError(error, {
-          generic: "No se pudo guardar el borrador de gasto.",
-        }),
-      );
+      // EXPENSE-UX-01 (B2): los errores de campo/línea del 422 se muestran donde corresponden; lo que
+      // no se puede asociar (errores de negocio del handler, sin línea) sale como mensaje general.
+      const validation = parseValidationErrors(error);
+      const mapped = validation
+        ? mapExpenseBackendErrors(
+            validation,
+            lines.map((line) => line.key),
+            (number, text) => t("expenses.form.message.linePrefix", { number, message: text }),
+          )
+        : null;
+      if (mapped) {
+        setHeaderErrors(mapped.header);
+        setLineErrors(mapped.lines);
+      }
+      if (mapped && mapped.unmapped.length > 0) {
+        message.error(mapped.unmapped[0]);
+      } else if (mapped && hasMappedFieldErrors(mapped)) {
+        message.error(t("expenses.form.message.reviewMarkedFields"));
+      } else {
+        message.error(
+          formatApiRequestError(error, {
+            generic: t("expenses.form.message.saveError"),
+          }),
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -388,20 +408,18 @@ export function ExpenseDocumentFormPage() {
     // backend sigue revalidando siempre (fail-closed real), esto solo evita una llamada que ya
     // se sabe que va a fallar.
     if (isRetentionIntentBlockedByEligibility(retention, retentionEligibility)) {
-      message.error(
-        "Este gasto no es elegible para retención con la configuración actual. Revise los motivos mostrados en la sección Retención.",
-      );
+      message.error(t("expenses.form.message.retentionBlocked"));
       return;
     }
     if (retention.appliesRetention && !isRetentionIntentComplete(retention)) {
-      message.error("Complete los datos de la retención (punto de emisión, número, fecha y líneas) antes de confirmar.");
+      message.error(t("expenses.form.message.retentionIncomplete"));
       return;
     }
 
     setConfirming(true);
     try {
       await expenseDocumentService.confirm(id, buildRetentionIntentRequest(retention));
-      message.success("Gasto confirmado. Se genero el asiento contable.");
+      message.success(t("expenses.form.message.confirmed"));
       setConfirmModalOpen(false);
       // EXPENSES-CONFIRM-FRONTEND-08: recargar desde API (no solo aplicar la respuesta del
       // confirm) para reflejar exactamente lo que el backend persistio, incluyendo el snapshot
@@ -410,7 +428,7 @@ export function ExpenseDocumentFormPage() {
     } catch (error) {
       message.error(
         formatApiRequestError(error, {
-          generic: "No se pudo confirmar el gasto.",
+          generic: t("expenses.form.message.confirmError"),
         }),
       );
     } finally {
@@ -437,12 +455,10 @@ export function ExpenseDocumentFormPage() {
       const result = await expenseDocumentService.cancel(id, reason, requestSriAnnulment);
       closeCancelModal();
       if (result.status === "Cancelled") {
-        message.success("Gasto anulado correctamente.");
+        message.success(t("expenses.form.message.cancelled"));
       } else {
         // La solicitud de anulación ante el SRI NO anula el gasto: sigue vigente hasta el ANULADO.
-        message.success(
-          "Se registró la solicitud de anulación ante el SRI. El gasto sigue vigente hasta que el SRI confirme ANULADO.",
-        );
+        message.success(t("expenses.form.message.sriAnnulmentRequested"));
       }
       // Mismo criterio que handleConfirm (EXPENSES-CONFIRM-FRONTEND-08): recargar desde API
       // para reflejar exactamente lo que el backend persistio (reverso contable/CxP incluidos).
@@ -454,7 +470,7 @@ export function ExpenseDocumentFormPage() {
       } else {
         message.error(
           formatApiRequestError(error, {
-            generic: "No se pudo anular el gasto.",
+            generic: t("expenses.form.message.cancelError"),
           }),
         );
       }
@@ -466,7 +482,7 @@ export function ExpenseDocumentFormPage() {
   const handleCancel = async () => {
     if (isNew || !id) return;
     if (!cancelReason.trim()) {
-      setCancelReasonError("Indique el motivo de la anulación.");
+      setCancelReasonError(t("expenses.form.message.cancelReasonRequired"));
       return;
     }
     setCancelReasonError(undefined);
@@ -481,9 +497,9 @@ export function ExpenseDocumentFormPage() {
 
   return (
     <PageShell
-      kicker="Gastos"
-      title={isNew ? "Nuevo gasto" : "Editar gasto"}
-      subtitle="Borrador por proveedor, con detalle por subcategoria de gasto."
+      kicker={t("app.nav.group.expenses")}
+      title={isNew ? t("expenses.form.title.new") : t("expenses.form.title.edit")}
+      subtitle={t("expenses.form.subtitle")}
       action={
         <div className="exp-doc-actions">
           {document && <ExpenseDocumentStatusBadge status={document.status} />}
@@ -497,7 +513,7 @@ export function ExpenseDocumentFormPage() {
               <span className="material-symbols-outlined" aria-hidden="true">
                 task_alt
               </span>
-              Confirmar gasto
+              {t("expenses.form.action.confirm")}
             </ZHBtn>
           )}
           {canShowCancelButton && (
@@ -510,7 +526,7 @@ export function ExpenseDocumentFormPage() {
               <span className="material-symbols-outlined" aria-hidden="true">
                 cancel
               </span>
-              Anular gasto
+              {t("expenses.form.action.cancel")}
             </ZHBtn>
           )}
           <ZHBtn
@@ -521,7 +537,7 @@ export function ExpenseDocumentFormPage() {
             <span className="material-symbols-outlined" aria-hidden="true">
               arrow_back
             </span>
-            Volver
+            {t("common.back")}
           </ZHBtn>
         </div>
       }
@@ -529,7 +545,7 @@ export function ExpenseDocumentFormPage() {
       {pageError && (
         <ZHPageNotice
           variant="error"
-          message="No se pudo preparar la pantalla"
+          message={t("expenses.form.pageError")}
           detail={pageError}
         />
       )}
@@ -537,24 +553,24 @@ export function ExpenseDocumentFormPage() {
       {!canReadCatalog && (
         <ZHFormAlert
           type="warning"
-          message="Sin permiso para leer las categorías de gastos."
-          detail="La seleccion de subcategorias requiere expenses.catalog.view."
+          message={t("expenses.form.alert.noCatalogPermission")}
+          detail={t("expenses.form.alert.noCatalogPermissionDetail")}
         />
       )}
 
       {canReadCatalog && !catalogReady && !loading && (
         <ZHFormAlert
           type="attention"
-          message="No hay subcategorias de gasto listas para usar."
-          detail="Configure al menos una subcategoria activa con cuenta contable destino."
+          message={t("expenses.form.alert.noSubcategories")}
+          detail={t("expenses.form.alert.noSubcategoriesDetail")}
         />
       )}
 
       {!isDraft && (
         <ZHFormAlert
           type="neutral"
-          message="Este documento ya no esta en borrador."
-          detail="La edicion se habilita solo para gastos en estado Draft."
+          message={t("expenses.form.alert.notDraft")}
+          detail={t("expenses.form.alert.notDraftDetail")}
         />
       )}
 
@@ -563,19 +579,26 @@ export function ExpenseDocumentFormPage() {
           <ZHCard bodyClassName="exp-doc-card-body">
             {reception && (
               <p>
-                Factura recibida: subtotal {formatDecimalDisplay(reception.subtotal, moneyDecimals)}, IVA{" "}
-                {formatDecimalDisplay(reception.vatAmount, taxDecimals)}, total {formatDecimalDisplay(reception.total, moneyDecimals)}.
-                Complete el detalle y seleccione la subcategoría de cada gasto.
+                {t("expenses.form.reception.summary", {
+                  subtotal: formatDecimalDisplay(reception.subtotal, moneyDecimals),
+                  vat: formatDecimalDisplay(reception.vatAmount, taxDecimals),
+                  total: formatDecimalDisplay(reception.total, moneyDecimals),
+                })}
               </p>
             )}
             {receptionMismatch && (
               <ZHFormAlert
                 type="warning"
-                message="El total calculado no cuadra con el XML recibido."
-                detail={`IVA XML recibido: ${formatDecimalDisplay(reception!.vatAmount, taxDecimals)} — Total XML recibido: ${formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals)} — Total calculado en pantalla: ${formatDecimalDisplay(receptionMismatch.calculatedTotal, moneyDecimals)}. Revise cantidad, valor unitario y código IVA de cada línea antes de guardar.`}
+                message={t("expenses.form.reception.mismatchTitle")}
+                detail={t("expenses.form.reception.mismatchDetail", {
+                  vat: formatDecimalDisplay(reception!.vatAmount, taxDecimals),
+                  received: formatDecimalDisplay(receptionMismatch.receivedTotal, moneyDecimals),
+                  calculated: formatDecimalDisplay(receptionMismatch.calculatedTotal, moneyDecimals),
+                })}
               />
             )}
             <ExpenseDocumentHeader
+              key={document?.id ?? "new"}
               value={header}
               supplier={supplier}
               paymentTerms={paymentTerms}
@@ -625,12 +648,12 @@ export function ExpenseDocumentFormPage() {
               onSave={handleSave}
               hideDraft
               disableSave={disabled || loading || !catalogReady || !!receptionMismatch}
-              labels={{ save: saving ? "Guardando..." : "Guardar borrador" }}
+              labels={{ save: saving ? t("expenses.form.action.saving") : t("common.saveDraft") }}
               buttonSize="md"
             />
             {!catalogReady && canReadCatalog && (
               <Link className="exp-doc-catalog-link" to="/expenses/categories">
-                Abrir categorías de gastos
+                {t("expenses.form.action.openCategories")}
               </Link>
             )}
           </ZHCard>
@@ -640,9 +663,11 @@ export function ExpenseDocumentFormPage() {
       <ZHConfirmModal
         open={confirmModalOpen}
         variant="warning"
-        title="Confirmar gasto"
-        message="Al confirmar, el gasto generara asiento contable y ya no podra editarse."
-        confirmLabel={confirming ? "Confirmando..." : "Confirmar gasto"}
+        title={t("expenses.form.confirmModal.title")}
+        message={t("expenses.form.confirmModal.message")}
+        confirmLabel={
+          confirming ? t("expenses.form.confirmModal.confirming") : t("expenses.form.action.confirm")
+        }
         onCancel={() => setConfirmModalOpen(false)}
         onConfirm={handleConfirm}
       />
@@ -650,30 +675,26 @@ export function ExpenseDocumentFormPage() {
       <ZHConfirmModal
         open={cancelModalOpen}
         variant="danger"
-        title="Anular gasto"
+        title={t("expenses.form.cancelModal.title")}
         message={
           <>
-            <p className="zh-confirm-message">
-              Se reversará el asiento contable generado al confirmar y, si existe, se anulará la
-              cuenta por pagar asociada (no permitido si ya tiene pagos aplicados). Si el gasto
-              tiene una retención emitida, también se anulará: una retención anulada no puede
-              volver a emitirse. Si la retención ya fue autorizada por el SRI, primero debe
-              anularse ante el SRI.
-            </p>
-            <ZHField label="Motivo de anulación" required error={cancelReasonError}>
+            <p className="zh-confirm-message">{t("expenses.form.cancelModal.message")}</p>
+            <ZHField label={t("expenses.form.cancelModal.reason")} required error={cancelReasonError}>
               <ZhTextarea
                 rows={3}
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 maxLength={500}
                 aria-required="true"
-                aria-label="Motivo de anulación"
+                aria-label={t("expenses.form.cancelModal.reason")}
               />
             </ZHField>
           </>
         }
-        confirmLabel={cancelling ? "Anulando..." : "Sí, anular"}
-        cancelLabel="Cancelar"
+        confirmLabel={
+          cancelling ? t("expenses.form.cancelModal.confirming") : t("expenses.form.cancelModal.confirm")
+        }
+        cancelLabel={t("common.cancel")}
         onCancel={closeCancelModal}
         onConfirm={handleCancel}
       />
@@ -682,48 +703,17 @@ export function ExpenseDocumentFormPage() {
       <ZHConfirmModal
         open={sriAnnulmentReason !== null}
         variant="warning"
-        title="La retención ya fue autorizada por el SRI"
-        message="La retención ya fue autorizada por el SRI y debe anularse primero ante el SRI. Se registrará la solicitud con el motivo indicado; el gasto seguirá vigente (no se anula, no se revierte la cuenta por pagar ni la contabilidad) hasta que el SRI informe ANULADO (el ERP lo verifica automáticamente en el SRI)."
-        confirmLabel={cancelling ? "Registrando..." : "Iniciar proceso de anulación"}
-        cancelLabel="Cancelar"
+        title={t("expenses.form.sriModal.title")}
+        message={t("expenses.form.sriModal.message")}
+        confirmLabel={
+          cancelling ? t("expenses.form.sriModal.confirming") : t("expenses.form.sriModal.confirm")
+        }
+        cancelLabel={t("common.cancel")}
         onCancel={() => setSriAnnulmentReason(null)}
         onConfirm={() => void handleStartSriAnnulment()}
       />
     </PageShell>
   );
-}
-
-function mapBackendErrors(
-  error: unknown,
-  setHeaderErrors: Dispatch<SetStateAction<ExpenseDocumentHeaderErrors>>,
-) {
-  const validation = parseValidationErrors(error);
-  if (!validation) return;
-  const next: ExpenseDocumentHeaderErrors = {};
-  const map: Record<string, keyof ExpenseDocumentHeaderState> = {
-    supplierId: "supplierId",
-    SupplierId: "supplierId",
-    issueDate: "issueDate",
-    IssueDate: "issueDate",
-    accountingDate: "accountingDate",
-    AccountingDate: "accountingDate",
-    documentType: "documentType",
-    DocumentType: "documentType",
-    documentNumber: "documentNumber",
-    DocumentNumber: "documentNumber",
-    paymentTermId: "paymentTermId",
-    PaymentTermId: "paymentTermId",
-    dueDate: "dueDate",
-    DueDate: "dueDate",
-    taxSupportCode: "taxSupportCode",
-    TaxSupportCode: "taxSupportCode",
-  };
-  Object.entries(validation).forEach(([field, messages]) => {
-    const target = map[field];
-    const first = messages[0];
-    if (target && first) next[target] = first;
-  });
-  setHeaderErrors(next);
 }
 
 export default ExpenseDocumentFormPage;
