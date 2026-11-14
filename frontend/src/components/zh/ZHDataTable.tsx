@@ -21,6 +21,10 @@ interface ZHDataTableProps<T> {
   onRowClick?: (row: T) => void;
   loading?: boolean;
   emptyMessage?: string;
+  /** Variante enriquecida del estado vacío (icono material-symbols, explicación, acción). */
+  emptyIcon?: string;
+  emptyDescription?: React.ReactNode;
+  emptyAction?: React.ReactNode;
   /** Paginación integrada — se omite el footer si no se provee. */
   page?: number;
   pageSize?: number;
@@ -78,6 +82,9 @@ export function ZHDataTable<T>({
   onRowClick,
   loading,
   emptyMessage,
+  emptyIcon,
+  emptyDescription,
+  emptyAction,
   page,
   pageSize,
   onPageChange,
@@ -96,7 +103,12 @@ export function ZHDataTable<T>({
   if (rows.length === 0)
     return (
       <div className="pg-pad-40">
-        <EmptyState message={emptyMessage ?? "Sin resultados."} />
+        <EmptyState
+          message={emptyMessage ?? "Sin resultados."}
+          icon={emptyIcon}
+          description={emptyDescription}
+          action={emptyAction}
+        />
       </div>
     );
 

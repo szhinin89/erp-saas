@@ -1964,6 +1964,21 @@ select.zh-input--compact {
   margin-bottom: var(--space-3);
 }
 
+/* Toolbar dentro de .table-card: el body de la card no tiene padding (la tabla va a ras),
+   por lo que la barra necesita su propio respiro para no quedar pegada al borde. */
+.table-card .zh-page-toolbar {
+  padding: var(--density-card-padding) var(--density-card-padding) 0;
+  margin-bottom: 0;
+}
+.table-card .zh-page-toolbar > .zh-filterbar--plain {
+  flex: 1 1 auto;
+}
+/* Estado vacío/carga de ZHDataTable dentro de una table-card: el wrapper legacy de 40px
+   sumado al bloque punteado dejaba un hueco desproporcionado. */
+.table-card .table-card-body > .pg-pad-40 {
+  padding: var(--space-4) var(--density-card-padding) var(--density-card-padding);
+}
+
 /* Page shell focus */
 .page-shell button:focus-visible,
 .page-shell a:focus-visible,
@@ -2067,6 +2082,34 @@ select.zh-input--compact {
   font-size: var(--font-size-base);
   border-radius: var(--radius-lg);
   border: var(--border-width) dashed var(--color-border);
+}
+/* Variante enriquecida (icono + título + explicación + acción): compacta y centrada. */
+.empty-state--rich {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+}
+.empty-state__icon {
+  line-height: 1;
+  color: var(--color-primary);
+}
+.empty-state__title {
+  margin: 0;
+  font-size: var(--text-title-sm-size);
+  font-weight: var(--text-title-sm-weight);
+  color: var(--color-text-primary);
+}
+.empty-state__description {
+  margin: 0;
+  max-width: 44ch;
+  font-size: var(--font-size-sm);
+  line-height: var(--text-body-md-height);
+  color: var(--color-text-secondary);
+}
+.empty-state__action {
+  margin-top: var(--space-2);
 }
 .error-state {
   padding: 14px var(--space-5);
@@ -2323,7 +2366,8 @@ select.zh-input--compact {
 /* Variante sin chrome (ZHFilterBar `plain`): los filtros ya viven dentro de una card/listado,
    solo se conserva el wrap horizontal y la separación con la tabla. */
 .zh-filterbar--plain {
-  align-items: normal;
+  /* flex-end: campos con label y botones de acción comparten la línea base inferior. */
+  align-items: flex-end;
   padding: 0;
   background: none;
   border: 0;

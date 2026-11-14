@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
+import { ensureLocaleLoaded, storageKey } from "../../../i18n/dictionaries";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { expenseDocumentService } from "../api/expenseDocumentService";
 import { message } from "../../../lib/messages";
@@ -65,7 +66,13 @@ const LIST_ITEM = {
 };
 
 describe("ExpenseDocumentsPage", () => {
+  beforeAll(async () => {
+    await ensureLocaleLoaded("es");
+    await ensureLocaleLoaded("en");
+  });
+
   beforeEach(() => {
+    localStorage.removeItem(storageKey);
     vi.clearAllMocks();
     vi.mocked(usePermissionsUi).mockReturnValue({
       has: (key: string) => key === "expenses.documents.view",
@@ -90,6 +97,90 @@ describe("ExpenseDocumentsPage", () => {
 
     expect(await screen.findByText("001-001-000000123")).toBeTruthy();
     expect(expenseDocumentService.list).toHaveBeenCalledTimes(1);
+  });
+
+  it("sin documentos muestra estado vacío con explicación y una sola acción Nuevo gasto (encabezado)", async () => {
+    vi.mocked(usePermissionsUi).mockReturnValue({
+      has: () => true,
+      canShow: () => true,
+      isAdminRole: false,
+    });
+    vi.mocked(expenseDocumentService.list).mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 25,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("No hay documentos de gasto registrados.")).toBeTruthy();
+    expect(screen.getByText(/Registra facturas y comprobantes/)).toBeTruthy();
+    // La acción primaria vive solo en el encabezado: el estado vacío no la duplica.
+    expect(screen.getAllByRole("link", { name: /Nuevo gasto/ })).toHaveLength(1);
+  });
+
+  it("sin documentos y sin permiso de creación no muestra Nuevo gasto", async () => {
+    vi.mocked(expenseDocumentService.list).mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 25,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("No hay documentos de gasto registrados.")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Nuevo gasto/ })).toBeNull();
+  });
+
+  it("renderiza textos de la página en español por defecto", async () => {
+    vi.mocked(expenseDocumentService.list).mockResolvedValue({
+      items: [LIST_ITEM],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Documentos de gastos")).toBeTruthy();
+    expect(screen.getByText("Buscar")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Proveedor o número...")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Actualizar/ })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Emisión" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Líneas" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Anulado" })).toBeTruthy();
+  });
+
+  it("renderiza textos de la página en inglés cuando el idioma guardado es en", async () => {
+    localStorage.setItem(storageKey, "en");
+    vi.mocked(expenseDocumentService.list).mockResolvedValue({
+      items: [LIST_ITEM],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Expense Documents")).toBeTruthy();
+    expect(screen.getByText("Search")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Supplier or number...")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Refresh/ })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Issue date" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Status" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Cancelled" })).toBeTruthy();
+    expect(screen.queryByText("Documentos de gastos")).toBeNull();
+  });
+
+  it("muestra el error de carga traducido en inglés sin respuesta del backend", async () => {
+    localStorage.setItem(storageKey, "en");
+    vi.mocked(expenseDocumentService.list).mockRejectedValue({ isAxiosError: true, response: { status: 500, data: {} } });
+
+    renderPage();
+
+    expect(await screen.findByText(/Could not load expense documents/)).toBeTruthy();
   });
 
   it("no se queda en loading y muestra un mensaje claro si el backend rechaza por BRANCH_SCOPE_FORBIDDEN", async () => {

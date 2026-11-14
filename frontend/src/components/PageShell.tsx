@@ -60,8 +60,39 @@ export function TableCard({
   );
 }
 
-export function EmptyState({ message }: { message: string }) {
-  return <div className="empty-state">{message}</div>;
+/**
+ * Estado vacío del DS. Solo `message` conserva el render histórico; `icon` (nombre de
+ * material-symbols), `description` y `action` activan la variante enriquecida (`--rich`).
+ */
+export function EmptyState({
+  message,
+  icon,
+  description,
+  action,
+}: {
+  message: string;
+  icon?: string;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  if (!icon && !description && !action) {
+    return <div className="empty-state">{message}</div>;
+  }
+  return (
+    <div className="empty-state empty-state--rich">
+      {icon ? (
+        <span
+          className="material-symbols-outlined zh-icon-xl empty-state__icon"
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+      ) : null}
+      <p className="empty-state__title">{message}</p>
+      {description ? <p className="empty-state__description">{description}</p> : null}
+      {action ? <div className="empty-state__action">{action}</div> : null}
+    </div>
+  );
 }
 
 export function ErrorState({ message }: { message: string }) {
