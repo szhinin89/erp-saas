@@ -15,6 +15,12 @@ import type { ExpenseDraftLineState } from "../components/ExpenseDocumentLinesEd
  */
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), create: vi.fn() }));
+vi.mock("../../masterData/facades/supplierExpenseSubcategoryLookupFacade", () => ({
+  supplierExpenseSubcategoryLookupFacade: {
+    get: vi.fn().mockResolvedValue({ mode: "Unconfigured", items: [], availableSubcategoryIds: [] }),
+  },
+}));
+
 vi.mock("../../purchases/facades/purchaseReceptionExpenseFacade", () => ({
   purchaseReceptionExpenseFacade: { prepareExpenseDraft: mocks.preview },
 }));

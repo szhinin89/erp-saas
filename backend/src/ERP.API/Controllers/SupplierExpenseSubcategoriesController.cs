@@ -37,18 +37,20 @@ public sealed class SupplierExpenseSubcategoriesController : ControllerBase
     /// <remarks>
     /// Devuelve el modo (<c>Unconfigured</c>, <c>Restricted</c> o <c>RestrictedEmpty</c>), las asignaciones activas e
     /// inactivas con sus nombres y las subcategorías disponibles, calculados por el servidor en la empresa activa. No
-    /// incluye cuentas contables.
+    /// incluye cuentas contables. <c>catalog</c> (candidatas) solo se entrega con <c>masterdata.businesspartners.configure-company</c>.
+    /// El acceso a la lectura (ficha del proveedor o captura de gastos) lo decide el caso de uso con el autorizador oficial.
     /// </remarks>
     /// <param name="bpId">Id del tercero (Business Partner).</param>
     /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
     /// <response code="200">Modo y subcategorías del proveedor.</response>
+    /// <response code="403">El usuario no tiene permiso para consultar la configuración.</response>
     /// <response code="404">El recurso indicado no existe o no es visible para la empresa activa.</response>
     [HttpGet]
-    [Authorize(Policy = $"perm:{MasterDataPermissions.BusinessPartnersView}")]
     [ProducesResponseType(
         typeof(ApiResponse<SupplierExpenseSubcategoriesDto>),
         StatusCodes.Status200OK
     )]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExpenseSubcategories(
         [FromRoute] Guid bpId,

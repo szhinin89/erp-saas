@@ -72,6 +72,8 @@ import {
   type RetentionIntentFormState,
 } from "../utils/expenseRetentionModel";
 import { receptionXmlHeaderFields } from "../utils/expenseXmlOrigin";
+import { lineScopeIssue } from "../utils/expenseSupplierScopeModel";
+import { useExpenseSupplierScope } from "../hooks/useExpenseSupplierScope";
 import "../styles/expense-documents.css";
 
 const PERMISSIONS = {
@@ -264,6 +266,15 @@ export function ExpenseDocumentFormPage() {
     if (canView || isNew) void load();
   }, [canView, isNew, load]);
 
+  // EXPENSE-SUPPLIER-SUBCATEGORIES-01: subcategorías permitidas del proveedor (manual y XML).
+  const supplierScope = useExpenseSupplierScope({
+    supplierId: header.supplierId,
+    enabled: isDraft && canSave && canReadCatalog,
+    supplierChanged: !!document && header.supplierId !== document.supplierId,
+    lines,
+    setLines,
+  });
+
   if (!canView && !isNew) return <NoAccessPage title={t("expenses.form.noAccess.edit")} />;
   if (isNew && !canCreate) return <NoAccessPage title={t("expenses.form.title.new")} />;
 
@@ -292,6 +303,8 @@ export function ExpenseDocumentFormPage() {
         parseExpenseNumber(line.quantity) * parseExpenseNumber(line.unitPrice);
       if (!line.expenseSubcategoryId) {
         errors.expenseSubcategoryId = t("expenses.form.validation.line.subcategory");
+      } else if (lineScopeIssue(line, supplierScope.scope, supplierScope.supplierChanged) === "blocked") {
+        errors.expenseSubcategoryId = t("expenses.form.validation.line.subcategoryNotAllowed");
       } else if (
         !subcategory?.isActive ||
         !subcategory.accountingAccountId ||
@@ -497,7 +510,7 @@ export function ExpenseDocumentFormPage() {
             <ZHBtn
               type="button"
               variant="primary"
-              disabled={confirming}
+              disabled={confirming || supplierScope.blocked}
               onClick={() => setConfirmModalOpen(true)}
             >
               <span className="material-symbols-outlined" aria-hidden="true">
@@ -594,6 +607,7 @@ export function ExpenseDocumentFormPage() {
               disabled={disabled || loading || !catalogReady}
               errors={lineErrors}
               fromXml={!!reception}
+              supplierScope={supplierScope}
               onChange={setLines}
             />
           </ZHCard>
@@ -620,7 +634,7 @@ export function ExpenseDocumentFormPage() {
               onCancel={() => navigate("/expenses/documents")}
               onSave={handleSave}
               hideDraft
-              disableSave={disabled || loading || !catalogReady || !!receptionMismatch}
+              disableSave={disabled || loading || !catalogReady || !!receptionMismatch || supplierScope.blocked || supplierScope.pending}
               labels={{ save: saving ? t("expenses.form.action.saving") : t("common.saveDraft") }}
               buttonSize="md"
             />

@@ -20,6 +20,12 @@ import {
   type ExpenseDraftLineScales,
   type VatRateByCode,
 } from "../utils/expenseDocumentDraftModel";
+import {
+  filterExpenseTreeByScope,
+  lineScopeIssue,
+  type ExpenseSupplierScope,
+} from "../utils/expenseSupplierScopeModel";
+import { ZHFormAlert } from "../../../components/zh/ZHForm";
 import { ExpenseSubcategorySelector } from "./ExpenseSubcategorySelector";
 
 export interface ExpenseDraftLineState {
@@ -31,6 +37,8 @@ export interface ExpenseDraftLineState {
   discountValue: string;
   vatCode: string;
   notes: string;
+  /** Subcategoría guardada en el borrador al cargarlo/guardarlo (ausente en líneas nuevas). */
+  persistedSubcategoryId?: string;
 }
 
 export type ExpenseLineFieldErrors = Record<
@@ -52,6 +60,15 @@ interface Props {
    * Solo presentación; no cambia la importación.
    */
   fromXml?: boolean;
+  /**
+   * EXPENSE-SUPPLIER-SUBCATEGORIES-01 — subcategorías permitidas del proveedor (modo calculado por el
+   * servidor), aviso de limpieza y si el proveedor cambió respecto al borrador guardado.
+   */
+  supplierScope?: {
+    scope: ExpenseSupplierScope;
+    notice: string | null;
+    supplierChanged: boolean;
+  };
   onChange: (lines: ExpenseDraftLineState[]) => void;
 }
 
@@ -109,9 +126,14 @@ export function ExpenseDocumentLinesEditor({
   disabled,
   errors,
   fromXml,
+  supplierScope,
   onChange,
 }: Props) {
   const { t } = useI18n();
+  const scope: ExpenseSupplierScope = supplierScope?.scope ?? { status: "none" };
+  const supplierChanged = supplierScope?.supplierChanged ?? false;
+  // Mientras se lee la configuración (o si falla) no se ofrece el catálogo completo: el backend rechazaría igual.
+  const scopePending = scope.status === "loading" || scope.status === "error";
   // Escalas de una línea nueva (04G): mismas semánticas que sus inputs.
   const draftScales: ExpenseDraftLineScales = {
     unitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
@@ -140,7 +162,15 @@ export function ExpenseDocumentLinesEditor({
           variant="secondary"
           size="sm"
           disabled={disabled}
-          onClick={() => onChange([...lines, newExpenseDraftLine(draftScales)])}
+          onClick={() =>
+            onChange([
+              ...lines,
+              {
+                ...newExpenseDraftLine(draftScales),
+                expenseSubcategoryId: scope.status === "ready" ? (scope.singleId ?? "") : "",
+              },
+            ])
+          }
         >
           <span className="material-symbols-outlined" aria-hidden="true">
             add
@@ -149,10 +179,31 @@ export function ExpenseDocumentLinesEditor({
         </ZHBtn>
       </div>
 
+      {scope.status === "loading" && (
+        <ZHFormAlert type="info" message={t("expenses.form.supplierScope.loading")} />
+      )}
+      {scope.status === "error" && (
+        <ZHFormAlert
+          type="error"
+          message={t("expenses.form.supplierScope.error")}
+          detail={scope.message}
+        />
+      )}
+      {scope.status === "ready" && scope.mode === "RestrictedEmpty" && (
+        <ZHFormAlert type="warning" message={t("expenses.form.supplierScope.restrictedEmpty")} />
+      )}
+      {supplierScope?.notice && <ZHFormAlert type="attention" message={supplierScope.notice} />}
+
       <div className="exp-doc-lines">
         {lines.map((line, index) => {
           const lineTotals = calculateExpenseLineTotals(line, vatRateByCode);
-          const lineErrors = errors?.[line.key] ?? {};
+          const scopeIssue = lineScopeIssue(line, scope, supplierChanged);
+          const lineErrors = {
+            ...(scopeIssue === "blocked"
+              ? { expenseSubcategoryId: t("expenses.form.validation.line.subcategoryNotAllowed") }
+              : {}),
+            ...(errors?.[line.key] ?? {}),
+          };
           const currentCode = line.vatCode.trim();
           const hasCurrentCodeInCatalog = vatRates.some(
             (rate) => rate.code === currentCode,
@@ -210,15 +261,19 @@ export function ExpenseDocumentLinesEditor({
               </div>
 
               <ExpenseSubcategorySelector
-                tree={tree}
+                tree={filterExpenseTreeByScope(tree, scope, line.expenseSubcategoryId)}
                 accountsById={accountsById}
                 value={line.expenseSubcategoryId}
-                disabled={disabled}
+                disabled={disabled || scopePending}
                 error={lineErrors.expenseSubcategoryId}
                 onChange={(expenseSubcategoryId) =>
                   updateLine(line.key, { expenseSubcategoryId })
                 }
               />
+
+              {scopeIssue === "saved" && (
+                <ZHFormAlert type="attention" message={t("expenses.form.supplierScope.savedNotAllowed")} />
+              )}
 
               <div className="exp-doc-line__grid exp-doc-line__grid--item">
                 <ZHField

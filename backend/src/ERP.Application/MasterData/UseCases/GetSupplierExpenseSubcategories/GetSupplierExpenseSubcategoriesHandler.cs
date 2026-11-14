@@ -28,6 +28,27 @@ public sealed class GetSupplierExpenseSubcategoriesHandler
         _authorizer = authorizer;
     }
 
+    /// <summary>
+    /// Quién puede LEER la configuración: la ficha del proveedor (<c>masterdata.businesspartners.view</c>) y
+    /// quien captura gastos (<c>expenses.documents.create|update</c>), porque el formulario necesita las
+    /// restricciones para ofrecer solo subcategorías permitidas. No hay políticas OR en el controller: se
+    /// decide aquí con el autorizador oficial. El catálogo candidato sigue siendo solo de <c>configure-company</c>.
+    /// </summary>
+    private static readonly string[] ReadPermissions =
+    [
+        MasterDataPermissions.BusinessPartnersView,
+        ExpensePermissions.DocumentsCreate,
+        ExpensePermissions.DocumentsUpdate,
+    ];
+
+    private async Task<bool> CanReadAsync(CancellationToken cancellationToken)
+    {
+        foreach (var permission in ReadPermissions)
+            if (await _authorizer.IsAuthorizedAsync(permission, _ctx.UserId, _ctx.Role, cancellationToken))
+                return true;
+        return false;
+    }
+
     public async Task<Result<SupplierExpenseSubcategoriesDto>> Handle(
         GetSupplierExpenseSubcategoriesQuery query,
         CancellationToken cancellationToken
@@ -36,6 +57,11 @@ public sealed class GetSupplierExpenseSubcategoriesHandler
         if (!_ctx.HasCompany)
             return Result<SupplierExpenseSubcategoriesDto>.ValidationFailure(
                 "Contexto de empresa no establecido."
+            );
+
+        if (!await CanReadAsync(cancellationToken))
+            return Result<SupplierExpenseSubcategoriesDto>.Forbidden(
+                "No tienes permiso para consultar las subcategorías de gasto del proveedor."
             );
 
         var bp = await _bpRepo.GetByIdAsync(query.BusinessPartnerId, cancellationToken);

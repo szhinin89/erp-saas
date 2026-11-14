@@ -144,9 +144,10 @@ public sealed class SupplierExpenseSubcategoriesPostgreSqlTests : IAsyncLifetime
     private static IRuntimePermissionAuthorizer Authorizer(bool canConfigure)
     {
         var m = new Mock<IRuntimePermissionAuthorizer>();
-        m.Setup(a => a.IsAuthorizedAsync(MasterDataPermissions.BusinessPartnersConfigureCompany,
-                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(canConfigure);
+        m.Setup(a => a.IsAuthorizedAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string key, Guid _, string _, CancellationToken _) =>
+                key == MasterDataPermissions.BusinessPartnersView
+                || (canConfigure && key == MasterDataPermissions.BusinessPartnersConfigureCompany));
         return m.Object;
     }
 

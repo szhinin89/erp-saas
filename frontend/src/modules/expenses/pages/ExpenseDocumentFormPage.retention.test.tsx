@@ -1,12 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AxiosError, AxiosHeaders } from "axios";
 import { I18nProvider } from "../../../i18n/i18n";
@@ -32,6 +26,8 @@ import type { RetentionDocumentDto } from "../../retentions/facades/retentionDoc
  */
 
 const routeParams: { id?: string } = { id: "exp-1" };
+
+vi.mock("../../masterData/facades/supplierExpenseSubcategoryLookupFacade", () => ({ supplierExpenseSubcategoryLookupFacade: { get: async () => ({ mode: "Unconfigured", items: [], availableSubcategoryIds: [] }) } }));
 
 vi.mock("react-router-dom", async () => {
   const actual =

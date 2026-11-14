@@ -25,6 +25,12 @@ const ES_MESSAGE =
 const EN_MESSAGE =
   "Expense confirmed successfully. The accounting record is processed automatically.";
 
+vi.mock("../../masterData/facades/supplierExpenseSubcategoryLookupFacade", () => ({
+  supplierExpenseSubcategoryLookupFacade: {
+    get: vi.fn().mockResolvedValue({ mode: "Unconfigured", items: [], availableSubcategoryIds: [] }),
+  },
+}));
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return { ...actual, useNavigate: () => vi.fn(), useParams: () => ({ id: "exp-1" }) };

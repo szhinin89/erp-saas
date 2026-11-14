@@ -121,8 +121,8 @@ public sealed class SupplierExpenseSubcategoriesTests
 
     // ── GET: catálogo candidato solo para quien configura ────────────────────
 
-    private static async Task<(SupplierExpenseSubcategoriesDto Dto, Mock<ISupplierExpenseSubcategoryRepository> Repo)>
-        GetAsync(bool canConfigure)
+    private static async Task<Result<SupplierExpenseSubcategoriesDto>> GetResultAsync(
+        string[] granted, Mock<ISupplierExpenseSubcategoryRepository>? repoOut = null)
     {
         var repo = new Mock<ISupplierExpenseSubcategoryRepository>();
         repo.Setup(r => r.GetByBusinessPartnerAsync(Supplier, It.IsAny<CancellationToken>()))
@@ -143,14 +143,62 @@ public sealed class SupplierExpenseSubcategoriesTests
         ctx.SetupGet(c => c.Role).Returns("Member");
         ctx.SetupGet(c => c.HasCompany).Returns(true);
         var auth = new Mock<IRuntimePermissionAuthorizer>();
-        auth.Setup(a => a.IsAuthorizedAsync(MasterDataPermissions.BusinessPartnersConfigureCompany, User, "Member",
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(canConfigure);
+        auth.Setup(a => a.IsAuthorizedAsync(It.IsAny<string>(), User, "Member", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string key, Guid _, string _, CancellationToken _) => granted.Contains(key));
 
         var result = await new GetSupplierExpenseSubcategoriesHandler(repo.Object, partners.Object, ctx.Object, auth.Object)
             .Handle(new GetSupplierExpenseSubcategoriesQuery(Supplier), CancellationToken.None);
+        lastRepo = repo;
+        return result;
+    }
+
+    private static Mock<ISupplierExpenseSubcategoryRepository>? lastRepo;
+
+    private static async Task<(SupplierExpenseSubcategoriesDto Dto, Mock<ISupplierExpenseSubcategoryRepository> Repo)>
+        GetAsync(bool canConfigure)
+    {
+        var result = await GetResultAsync(canConfigure
+            ? [MasterDataPermissions.BusinessPartnersView, MasterDataPermissions.BusinessPartnersConfigureCompany]
+            : [MasterDataPermissions.BusinessPartnersView]);
         result.IsSuccess.Should().BeTrue(because: result.Error);
-        return (result.Value!, repo);
+        return (result.Value!, lastRepo!);
+    }
+
+    [Theory]
+    [InlineData(MasterDataPermissions.BusinessPartnersView)]
+    [InlineData(ExpensePermissions.DocumentsCreate)]
+    [InlineData(ExpensePermissions.DocumentsUpdate)]
+    public async Task Get_lo_pueden_leer_la_ficha_del_proveedor_y_la_captura_de_gastos_pero_sin_catalogo(string permission)
+    {
+        var result = await GetResultAsync([permission]);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        result.Value!.Catalog.Should().BeNull("el catálogo candidato es solo de configure-company");
+        lastRepo!.Verify(r => r.GetActiveSubcategoryCatalogAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(ExpensePermissions.DocumentsView)]
+    [InlineData(ExpensePermissions.DocumentsConfirm)]
+    [InlineData(ExpensePermissions.DocumentsCancel)]
+    [InlineData(ExpensePermissions.CatalogView)]
+    [InlineData(MasterDataPermissions.BusinessPartnersCreate)]
+    public async Task Get_sin_ningun_permiso_de_lectura_es_Forbidden_y_no_consulta_datos(string unrelated)
+    {
+        var result = await GetResultAsync([unrelated]);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("FORBIDDEN");
+        lastRepo!.Verify(r => r.GetByBusinessPartnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        lastRepo.Verify(r => r.GetActiveSubcategoryCatalogAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Get_el_permiso_de_gastos_no_otorga_el_catalogo_aunque_el_usuario_capture_gastos()
+    {
+        var result = await GetResultAsync([ExpensePermissions.DocumentsCreate, ExpensePermissions.DocumentsUpdate]);
+
+        result.Value!.Catalog.Should().BeNull();
     }
 
     [Fact]

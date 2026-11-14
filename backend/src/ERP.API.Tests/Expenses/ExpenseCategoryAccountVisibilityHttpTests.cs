@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Kernel.Permissions;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -39,6 +41,11 @@ public sealed class ExpenseCategoryAccountVisibilityFixture : IAsyncLifetime
     public Guid CompanyId { get; private set; }
     public Guid BranchId { get; private set; }
     public Guid LinkedAccountId { get; private set; }
+    public Guid SupplierId { get; private set; }
+    public Guid SubcategoryId { get; private set; }
+    public Guid ExpenseUpdateUserId { get; private set; }
+    public Guid SupplierViewUserId { get; private set; }
+    public Guid SupplierConfigureUserId { get; private set; }
 
     /// <summary>Gastos: catálogo y documentos, sin ningún permiso contable.</summary>
     public Guid ExpenseUserId { get; private set; }
@@ -90,6 +97,7 @@ public sealed class ExpenseCategoryAccountVisibilityFixture : IAsyncLifetime
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
         TenantId = tenant.Id;
+        _baseFactory.MutableTenant.TenantId = TenantId;
 
         var company = Company.CreateManaged(TenantId, "1790000000001", "Gastos S.A.", createdBy: _adminId);
         db.Companies.Add(company);
@@ -121,9 +129,22 @@ public sealed class ExpenseCategoryAccountVisibilityFixture : IAsyncLifetime
         var category = ExpenseCategoryNode.CreateCategory(TenantId, CompanyId, type, "OFF", "Oficina", _adminId);
         db.ExpenseCategoryNodes.Add(category);
         await db.SaveChangesAsync();
-        db.ExpenseCategoryNodes.Add(ExpenseCategoryNode.CreateSubcategory(
-            TenantId, CompanyId, category, "PAP", "Papeleria", linked.Id, _adminId));
+        var subcategory = ExpenseCategoryNode.CreateSubcategory(
+            TenantId, CompanyId, category, "PAP", "Papeleria", linked.Id, _adminId);
+        db.ExpenseCategoryNodes.Add(subcategory);
         await db.SaveChangesAsync();
+        SubcategoryId = subcategory.Id;
+        var supplier = BusinessPartner.Create(TenantId, "04", "1790016919001", null, "Proveedor", _adminId);
+        db.BusinessPartners.Add(supplier);
+        await db.SaveChangesAsync();
+        SupplierId = supplier.Id;
+        // El alta auditada requiere el mismo contexto de empresa que una petición real.
+        using (JobExecutionContext.Begin(TenantId, CompanyId))
+        {
+            db.SupplierExpenseSubcategories.Add(SupplierExpenseSubcategory.Create(
+                TenantId, CompanyId, SupplierId, SubcategoryId, _adminId));
+            await db.SaveChangesAsync();
+        }
 
         ExpenseUserId = await CreateUserAsync(
             db, "Gastos sin contabilidad",
@@ -131,6 +152,10 @@ public sealed class ExpenseCategoryAccountVisibilityFixture : IAsyncLifetime
             ExpensePermissions.DocumentsCreate);
         AccountantUserId = await CreateUserAsync(db, "Solo contabilidad", AccountingPermissions.View);
         NoPermissionsUserId = await CreateUserAsync(db, "Sin permisos");
+        ExpenseUpdateUserId = await CreateUserAsync(db, "Editar gastos", ExpensePermissions.DocumentsUpdate);
+        SupplierViewUserId = await CreateUserAsync(db, "Consultar proveedores", MasterDataPermissions.BusinessPartnersView);
+        SupplierConfigureUserId = await CreateUserAsync(db, "Configurar proveedores",
+            MasterDataPermissions.BusinessPartnersView, MasterDataPermissions.BusinessPartnersConfigureCompany);
     }
 
     private async Task<Guid> CreateUserAsync(ErpDbContext db, string profileName, params string[] permissions)
@@ -237,6 +262,66 @@ public sealed class ExpenseCategoryAccountVisibilityHttpTests
 
         categories.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         accounts.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, true)]
+    public async Task Supplier_scope_uses_existing_read_permissions_and_reserves_catalog_for_configuration(int profile, bool hasCatalog)
+    {
+        var userId = profile switch
+        {
+            0 => _f.ExpenseUserId,
+            1 => _f.ExpenseUpdateUserId,
+            2 => _f.SupplierViewUserId,
+            _ => _f.SupplierConfigureUserId,
+        };
+        using var client = _f.CreateClientFor(userId);
+        using var response = await client.GetAsync($"/api/v1/master/business-partners/{_f.SupplierId}/expense-subcategories");
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, body);
+        using var json = JsonDocument.Parse(body);
+        var data = json.RootElement.GetProperty("data");
+        data.GetProperty("mode").GetString().Should().Be("Restricted");
+        data.GetProperty("availableSubcategoryIds").EnumerateArray().Select(x => x.GetGuid())
+            .Should().Equal(_f.SubcategoryId);
+        var catalogPresent = data.TryGetProperty("catalog", out var catalog) && catalog.ValueKind != JsonValueKind.Null;
+        catalogPresent.Should().Be(hasCatalog);
+        if (hasCatalog)
+            catalog.GetArrayLength().Should().Be(1);
+        else
+        {
+            using var write = await client.PutAsJsonAsync(
+                $"/api/v1/master/business-partners/{_f.SupplierId}/expense-subcategories",
+                new { expenseSubcategoryIds = Array.Empty<Guid>() });
+            write.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Supplier_scope_rejects_profiles_without_read_permissions(bool accountant)
+    {
+        using var client = _f.CreateClientFor(accountant ? _f.AccountantUserId : _f.NoPermissionsUserId);
+        using var response = await client.GetAsync($"/api/v1/master/business-partners/{_f.SupplierId}/expense-subcategories");
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await response.Content.ReadAsStringAsync()).Should().NotContain("Papeleria");
+    }
+
+    [Fact]
+    public async Task Supplier_scope_still_requires_session_and_company_membership()
+    {
+        using var client = _f.CreateClientFor(_f.ExpenseUserId);
+        client.DefaultRequestHeaders.Remove("X-Company-Id");
+        client.DefaultRequestHeaders.Add("X-Company-Id", Guid.NewGuid().ToString());
+        using var foreignCompany = await client.GetAsync($"/api/v1/master/business-partners/{_f.SupplierId}/expense-subcategories");
+        foreignCompany.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        client.DefaultRequestHeaders.Authorization = null;
+        using var anonymous = await client.GetAsync($"/api/v1/master/business-partners/{_f.SupplierId}/expense-subcategories");
+        anonymous.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private static IEnumerable<JsonElement> FindNodes(JsonElement array)

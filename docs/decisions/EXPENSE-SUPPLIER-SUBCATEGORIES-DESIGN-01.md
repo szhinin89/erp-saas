@@ -1,11 +1,11 @@
 # EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ Subcategorías de Gastos
 
-**Estado: FASE 1 (esquema + backend + validación en Gastos) confirmada (`72a9afc3d`); FASE 2 (ficha del proveedor)
-IMPLEMENTADA, pendiente del gate del propietario (2026-11-14). Fases 3–4 (formulario de Gastos, cierre) no iniciadas.** Lo implementado y probado vive en la SSOT
-[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación. Lo descrito para el
-formulario de Gastos sigue siendo diseño, sin código. Al implementarse y
+**Estado: FASE 1 (esquema + backend + validación en Gastos) confirmada (`72a9afc3d`); FASE 2 (ficha del proveedor) confirmada (`f99332051`);
+FASE 3 (formulario de Gastos) IMPLEMENTADA, pendiente del gate del propietario (2026-11-14). Fase 4 (cierre) no iniciada.** Lo implementado y probado vive en la SSOT
+[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación. Lo implementado en el
+formulario de Gastos queda registrado en la SSOT y en STATUS. Al implementarse y
 probarse, su comportamiento se documenta en la SSOT [Gastos](../architecture/expenses.md) (§ 6 lo registra
-como pendiente). Estado y gates: [STATUS](../../STATUS.md). Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
+como pendiente solo lo a?n no operativo). Estado y gates: [STATUS](../../STATUS.md). Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
 
 ## Objetivo y alcance
 
@@ -179,7 +179,7 @@ Rechazo: 422 con mensaje general («La subcategoría 'X' no está permitida para
 `RestrictedEmpty`: «El proveedor tiene subcategorías asignadas pero ninguna está disponible.»). El contrato de error
 por línea no se amplía (B2 de EXPENSE-UX-01 no autorizado); el frontend evita el rechazo y marca la línea
 antes de enviar. `Unconfigured` no restringe. El backend lee la configuración con su repositorio: no exige
-`masterdata.*` al usuario de Gastos. Cuidar el techo de tamaño de handlers (ADR-046): la lógica va en
+`masterdata.*` al usuario de Gastos. El `GET` que usa el formulario acepta `masterdata.businesspartners.view` **o** `expenses.documents.create`/`update` (decisión en el caso de uso con el autorizador oficial; `catalog` sigue siendo solo de `configure-company`). Cuidar el techo de tamaño de handlers (ADR-046): la lógica va en
 `ExpenseDraftRules`/política, no en los handlers.
 
 **Auditoría (D9, ADR-022):** Entity Audit sobre la asignación: `SupplierExpenseSubcategory` levanta

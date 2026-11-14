@@ -207,6 +207,7 @@ export function documentToLines(
         discountValue: formatDecimalDisplay(line.discountAmount, scales.moneyDecimals),
         vatCode: line.vatCode,
         notes: line.notes ?? "",
+        persistedSubcategoryId: line.expenseSubcategoryId,
       }))
     : [newExpenseDraftLine(scales)];
 }

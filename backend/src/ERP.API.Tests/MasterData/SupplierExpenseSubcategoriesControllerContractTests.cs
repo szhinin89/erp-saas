@@ -25,15 +25,27 @@ public sealed class SupplierExpenseSubcategoriesControllerContractTests
             .Should().Contain(a => a.Policy == "Session");
     }
 
-    [Theory]
-    [InlineData(nameof(SupplierExpenseSubcategoriesController.GetExpenseSubcategories), typeof(HttpGetAttribute), MasterDataPermissions.BusinessPartnersView)]
-    [InlineData(nameof(SupplierExpenseSubcategoriesController.SetExpenseSubcategories), typeof(HttpPutAttribute), MasterDataPermissions.BusinessPartnersConfigureCompany)]
-    public void Cada_accion_exige_el_permiso_existente_que_le_corresponde(string action, Type verb, string permission)
+    [Fact]
+    public void Escritura_exige_configure_company_existente()
     {
-        var method = Controller.GetMethod(action)!;
-        method.GetCustomAttributes(verb, true).Should().ContainSingle();
+        var method = Controller.GetMethod(nameof(SupplierExpenseSubcategoriesController.SetExpenseSubcategories))!;
+        method.GetCustomAttributes(typeof(HttpPutAttribute), true).Should().ContainSingle();
         method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
-            .Should().Contain(a => a.Policy == $"perm:{permission}");
+            .Should().Contain(a => a.Policy == $"perm:{MasterDataPermissions.BusinessPartnersConfigureCompany}");
+    }
+
+    [Fact]
+    public void Lectura_no_fija_un_permiso_unico_en_el_controller_porque_no_hay_politicas_OR()
+    {
+        // Ficha del proveedor (businesspartners.view) y captura de gastos (expenses.documents.create|update)
+        // pueden leer; la decisión vive en el caso de uso con el autorizador oficial (ver
+        // SupplierExpenseSubcategoriesTests). Aquí solo se fija que no quede un perm: único que la bloquee.
+        var method = Controller.GetMethod(nameof(SupplierExpenseSubcategoriesController.GetExpenseSubcategories))!;
+        method.GetCustomAttributes(typeof(HttpGetAttribute), true).Should().ContainSingle();
+        method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Should().NotContain(a => a.Policy != null && a.Policy.StartsWith("perm:"));
+        Controller.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Should().Contain(a => a.Policy == "Session", "la sesión sigue siendo obligatoria");
     }
 
     [Fact]

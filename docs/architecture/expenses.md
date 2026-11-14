@@ -53,7 +53,7 @@ sobre asignaciones **activas**: **`Unconfigured`** (cero activas: catálogo comp
 activas y al menos una con subcategoría activa de nivel Subcategoría) y **`RestrictedEmpty`** (hay activas
 pero ninguna disponible: no se permite ninguna selección nueva; nunca abre el catálogo).
 
-- API `api/v1/master/business-partners/{bpId}/expense-subcategories`: `GET` (`masterdata.businesspartners.view`)
+- API `api/v1/master/business-partners/{bpId}/expense-subcategories`: `GET` (`masterdata.businesspartners.view` o `expenses.documents.create` o `expenses.documents.update`, evaluados por el autorizador runtime en el caso de uso)
   devuelve modo, asignaciones y subcategorías disponibles y, **solo con `…configure-company`**, `catalog` (subcategorías activas de la empresa: id, código, nombre, categoría y tipo, sin cuentas; `null` para quien solo consulta y en la respuesta del `PUT`); `PUT` (`…configure-company`) fija el conjunto de
   forma atómica: crea, **reactiva el mismo registro** y retira con baja lógica; `[]` retira todas (vuelve a
   `Unconfigured`); sin DELETE físico; cada alta, retiro y reactivación genera su registro de auditoría.
@@ -61,7 +61,7 @@ pero ninguna disponible: no se permite ninguna selección nueva; nunca abre el c
   exigen subcategorías permitidas; editar con el mismo proveedor conserva las ya persistidas del borrador y solo
   valida lo nuevo; **confirmar un borrador existente no revalida** (422 «La subcategoría 'X' no está permitida
   para el proveedor.» / «…ninguna está disponible.»). Anular y consultar no se ven afectados.
-- Interfaz: la ficha del proveedor la administra (§ 5); el formulario de Gastos aún no la usa (ver § 6).
+- Interfaz: la ficha del proveedor la administra y el formulario de Gastos la aplica (§ 5).
 
 ## 4. Permisos
 
@@ -84,9 +84,19 @@ guardar con todo desmarcado piden confirmación y envían `PUT []`. Lectura con 
 edición con `…configure-company`. Los candidatos salen del `catalog` del propio `GET` (autorizado en servidor), por lo que
 no depende de `expenses.catalog.view`; sin `catalog` la sección queda en solo lectura. No se calcula nada en el cliente.
 
+**Formulario de documentos — subcategorías permitidas.** Al elegir proveedor (manual o desde XML) `useExpenseSupplierScope` lee el
+`GET` de §3 para la empresa activa (se relee al cambiar de proveedor o de empresa; basta `expenses.documents.create`/`update`, no exige `masterdata.*`; solo con
+borrador editable y `expenses.catalog.view`) y el selector en cascada muestra: `Unconfigured` todo el catálogo; `Restricted`
+solo las autorizadas (sin Tipo/Categoría vacíos); `RestrictedEmpty` aviso y ninguna selección nueva. Una sola permitida se
+autoselecciona en líneas nuevas o vacías. Abrir un borrador nunca modifica sus líneas. Al cambiar de proveedor se limpian con
+aviso las selecciones **nuevas** incompatibles; una línea **guardada** incompatible se conserva visible y marcada y bloquea
+guardar y confirmar hasta elegir una permitida. Con el mismo proveedor, una guardada fuera del conjunto se conserva con aviso y el
+borrador puede guardarse y confirmarse (D7; el backend preserva lo persistido). Si la lectura falla no se ofrece el catálogo
+completo: aviso y guardar bloqueado (confirmar un borrador ya guardado no depende de la lectura). Una lectura fallida
+tras cambiar de empresa tampoco reutiliza la configuración anterior; el resultado debe corresponder a la sesión de
+empresa vigente. El backend revalida siempre.
+
 ## 6. Pendiente (no operativo)
 
-Uso de las subcategorías por proveedor en el formulario de Gastos (filtro, autoselección, XML): **diseño, sin
-implementar** — [diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
 Adjuntos, reportes operativos, filtros, exportación y aprobación: planificación en
 [ROADMAP](../ROADMAP.md#etapa-1--completar-erp-core).

@@ -48,9 +48,9 @@ Los registros antiguos «sin commit» o «pendiente Git/CI» fuera de estas entr
 commit específico y aceptación; no se cierran con un CI posterior ni se reabren por
 esta conciliación. Se conserva explícitamente esa limitación de verificación.
 
-## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASE 1 CONFIRMADA (`72a9afc3d`, local) y FASE 2 (ficha del proveedor) IMPLEMENTADA sin commit (2026-11-14), pendiente gate del propietario
+## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASES 1 (`72a9afc3d`) y 2 (`f99332051`) CONFIRMADAS (locales) y FASE 3 (formulario de Gastos) IMPLEMENTADA sin commit (2026-11-14), pendiente gate del propietario
 
-Fase 1 confirmada localmente sin push; Fase 2 sin commit ni push. [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; solo D4 no
+Fases 1 y 2 confirmadas (CI de la 1: #1195 SUCCESS); Fase 3 sin commit ni push. [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; solo D4 no
 aplicó: no se recreó ninguna base de datos). Comportamiento vigente en la SSOT [Gastos](docs/architecture/expenses.md).
 
 | Ítem | Estado |
@@ -59,7 +59,8 @@ aplicó: no se recreó ninguna base de datos). Comportamiento vigente en la SSOT
 | Backend | `SupplierExpenseSubcategory` (+ eventos y auditoría ADR-022), repositorio, política única de modos (`Unconfigured`/`Restricted`/`RestrictedEmpty`), `GET`/`PUT` `api/v1/master/business-partners/{bpId}/expense-subcategories` (permisos `…view`/`…configure-company` existentes), reemplazo atómico con baja lógica y reactivación del mismo registro, `[]` = sin configuración. |
 | Gastos | `ExpenseDraftRules` valida en crear, crear-confirmado y editar (preserva lo ya persistido con el mismo proveedor); confirmar borrador existente no revalida (D7). Sin cambios de DTO, rutas ni permisos de Gastos. |
 | Fase 2 — ficha del proveedor | `SupplierExpenseSubcategoriesSection` (`masterData/components`), montada tras las retenciones en el modal de configuración: lista Tipo › Categoría › Subcategoría tomadas del `catalog` del `GET` (ampliación aditiva: solo con `…configure-company`, sin cuentas; sin dependencia de `expenses.catalog.view`), guarda con `PUT`, modo y avisos del servidor, «Quitar restricción» con `message.confirm` → `PUT []` (guardar con todo desmarcado equivale a lo mismo). Lectura con `…view`; edición con `…configure-company`; sin `catalog` queda en solo lectura. i18n es/en. Backend: `GET` ampliado con `catalog` (repositorio `GetActiveSubcategoryCatalogAsync`, `IRuntimePermissionAuthorizer`); `PUT`, modos, permisos, baseline y Gastos intactos. |
-| Sin hacer | Formulario de Gastos (fase 3: hook, filtro, autoselección, XML) y cierre documental (fase 4): no iniciados. |
+| Fase 3 — formulario de Gastos | `useExpenseSupplierScope` (hook en `expenses/hooks`) lee el `GET` existente por proveedor y empresa activa (vía `supplierExpenseSubcategoryLookupFacade`, solo lectura) y `expenseSupplierScopeModel` lo aplica: `Unconfigured` catálogo completo; `Restricted` solo las autorizadas (sin tipos/categorías vacíos); `RestrictedEmpty` aviso y sin selección nueva; una sola permitida se autoselecciona en líneas nuevas y vacías; manual y XML comparten el camino. Abrir un borrador no modifica sus líneas; al cambiar de proveedor se limpian con aviso las selecciones nuevas incompatibles, y la línea guardada incompatible se conserva visible, marcada, y bloquea guardar y confirmar; con el mismo proveedor se conserva con aviso y puede guardarse y confirmarse (D7). Si la lectura falla no cae al catálogo completo: avisa y bloquea guardar (confirmar un borrador ya guardado sigue permitido). Sin cambios de backend, DTO, permisos, contabilización, baseline ni migraciones. |
+| Sin hacer | Cierre documental (fase 4: mover lo restante del diseño a la SSOT y FEATURES). |
 
 Validación (focalizada, sin suite completa ni Dashboard): `ERP.Domain.Tests` 4/4; `ERP.Application.Tests` Gastos + nueva 132/132
 (incluye 109 previos de Gastos); `ERP.Infrastructure.Tests` PostgreSQL real 10/10 (reemplazo, reactivación sin duplicar, modos,
@@ -69,7 +70,25 @@ BusinessPartner terminó con el host de pruebas bloqueado y 7 fallos de `Contrat
 cifras 2xx era de esta entrega y se corrigió); `ERP.Architecture.Tests` 145/145; `architecture:check` (`run-all`) 0 violaciones nuevas;
 guardrail oficial `-SkipFrontendChunk` OK; handler size OK; `tools/ci/test_backend_tests.py` 17/17 (clase nueva registrada en
 `infrastructure-03`).
-Fase 2 (frontend, focalizada): `SupplierExpenseSubcategoriesSection.test.tsx` 9/9 (permisos, guardado, `PUT []` con confirmación y cancelación, `RestrictedEmpty`, solo lectura, errores); `masterData` + `expenses` + `i18n` 41 archivos / 418 pruebas PASS; `tsc -b` limpio; `architecture:check` 199/199 ; guardrail oficial OK (`MasterDataSuppliersPage.tsx` 807 ≤ techo 811 sin aumentarlo); eslint sin errores; paridad i18n PASS. Backend de la ampliación: `ERP.Application.Tests` (`SupplierExpenseSubcategories*`) 11/11; PostgreSQL real 11/11 (catálogo solo con permiso, solo la empresa activa, `PUT` sin catálogo); contrato del controlador 4/4; `ERP.Architecture.Tests` 145/145. No se ejecutó E2E ni suite completa.
+Fase 2 (frontend, focalizada): `SupplierExpenseSubcategoriesSection.test.tsx` 9/9 (permisos, guardado, `PUT []` con confirmación y cancelación, `RestrictedEmpty`, solo lectura, errores); `masterData` + `expenses` + `i18n` 41 archivos / 418 pruebas PASS; `tsc -b` limpio; `architecture:check` 199/199 ; guardrail oficial OK (`MasterDataSuppliersPage.tsx` 807 ≤ techo 811 sin aumentarlo); eslint sin errores; paridad i18n PASS. Backend de la ampliación: `ERP.Application.Tests` (`SupplierExpenseSubcategories*`) 11/11; PostgreSQL real 11/11 (catálogo solo con permiso, solo la empresa activa, `PUT` sin catálogo); contrato del controlador 4/4; `ERP.Architecture.Tests` 145/145.
+Fase 3 (frontend, focalizada): `ExpenseDocumentFormPage.supplierScope.test.tsx` 12/12 (tres modos, autoselección en líneas nuevas, cambio de proveedor con limpieza y aviso, borrador existente intacto con aviso y guardado permitido, proveedor cambiado que bloquea guardar y confirmar, recepción XML, error del servidor, cambio de empresa, sin `expenses.catalog.view`) y `expenseSupplierScopeModel.test.ts` 6/6; módulos `expenses` + `masterData` + `i18n` PASS (sin regresiones en Gastos: 166 pruebas previas de `expenses`); `tsc -b` limpio; `architecture:check` 199/199; guardrail oficial OK (`ExpenseDocumentFormPage.tsx` 669 ≤ techo 678; ceilings de ADR-047 sin aumentar). No se ejecutó E2E ni suite completa.
+
+Ajustes previos al commit de la Fase 3 — A (autorización): el `GET` de subcategorías por proveedor acepta `masterdata.businesspartners.view` **o** `expenses.documents.create`/`update` (decisión en `GetSupplierExpenseSubcategoriesHandler` con `IRuntimePermissionAuthorizer`, sin políticas OR ni permisos nuevos; sin ninguno → 403, sin leer datos); `catalog` sigue exclusivo de `configure-company` (capturar gastos no lo otorga); sin cuentas contables; aislamiento tenant/empresa intacto. Pruebas: Application `SupplierExpenseSubcategories*` 20/20 (permisos que leen, permisos ajenos → Forbidden sin consultar, catálogo solo con configure), contrato del controlador (escritura exige `configure-company`; lectura sin `perm:` único y con sesión), PostgreSQL real 11/11, `ERP.API.Tests` OpenAPI + contrato 118/118 (sin cambio de inventario), `ERP.Architecture.Tests` 145/145.
+
+Revisi?n de Fase 3 (2026-11-14): BUG REAL reproducido por prueba antes del fix: una lectura fallida tras
+cambiar de empresa reutilizaba el alcance previo. El hook prioriza el error y exige la versi?n de sesi?n
+de empresa vigente. Frontend focalizado: 43 archivos / 436 pruebas unitarias y 6 visuales Chromium PASS.
+TypeScript (`tsc --noEmit` y `tsc -b`), build, ESLint (0 errores; 39 advertencias), ratchet 199/199
+(0 violaciones nuevas) y guardrail PowerShell PASS. Sin E2E de aplicaci?n ni suite completa.
+Lectura de proveedor: Application 20/20; PostgreSQL 11/11; HTTP real con autorizador runtime y contrato
+16/16 (crear/editar Gastos y consultar proveedores leen la restricci?n; solo configurar recibe el cat?logo;
+los dem?s perfiles reciben 403, escritura de Gastos denegada, sesi?n obligatoria y empresa ajena rechazada).
+El intento amplio de OpenAPI se interrumpi? tras un timeout Npgsql en el arranque de su fixture
+(`FirstRunOwnershipCoordinator`), antes de evaluar el contrato: no acredita PASS de esa clase completa.
+El intento focalizado (4 contratos) tampoco alcanz? las aserciones: primero timeout del daemon Docker;
+el reintento lleg? a PostgreSQL y volvi? a fallar en el arranque con timeout Npgsql. Se detuvo la ejecuci?n
+restante; OpenAPI queda pendiente del gate del propietario sin el timeout de arranque del fixture.
+No se modificaron timeouts, infraestructura First Run ni expectativas para forzar el paso.
 
 ## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
 

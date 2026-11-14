@@ -24,6 +24,12 @@ import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
  * campo y la línea correspondientes; lo que no se puede asociar sigue saliendo como mensaje general.
  */
 
+vi.mock("../../masterData/facades/supplierExpenseSubcategoryLookupFacade", () => ({
+  supplierExpenseSubcategoryLookupFacade: {
+    get: vi.fn().mockResolvedValue({ mode: "Unconfigured", items: [], availableSubcategoryIds: [] }),
+  },
+}));
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return { ...actual, useNavigate: () => vi.fn(), useParams: () => ({ id: "exp-1" }) };
