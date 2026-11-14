@@ -84,6 +84,18 @@ public sealed class SupplierExpenseSubcategoryRepository : ISupplierExpenseSubca
             .ToList();
     }
 
+    public async Task<IReadOnlyList<ExpenseSubcategoryInfo>> GetActiveSubcategoryCatalogAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        var ids = await _db
+            .ExpenseCategoryNodes.AsNoTracking()
+            .Where(n => n.Level == ExpenseCategoryNodeLevel.Subcategory && n.IsActive)
+            .Select(n => n.Id)
+            .ToListAsync(cancellationToken);
+        return await GetSubcategoryInfosAsync(ids, cancellationToken);
+    }
+
     public async Task AddAsync(
         SupplierExpenseSubcategory assignment,
         CancellationToken cancellationToken = default

@@ -1,9 +1,9 @@
 # EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ Subcategorías de Gastos
 
-**Estado: FASE 1 (esquema + backend + validación en Gastos) IMPLEMENTADA, pendiente del gate del propietario
-(2026-11-14). Fases 2–4 (interfaz) no iniciadas.** Lo implementado y probado vive en la SSOT
-[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación. Lo descrito para la
-interfaz sigue siendo diseño, sin código. Al implementarse y
+**Estado: FASE 1 (esquema + backend + validación en Gastos) confirmada (`72a9afc3d`); FASE 2 (ficha del proveedor)
+IMPLEMENTADA, pendiente del gate del propietario (2026-11-14). Fases 3–4 (formulario de Gastos, cierre) no iniciadas.** Lo implementado y probado vive en la SSOT
+[Gastos](../architecture/expenses.md); este documento conserva el diseño y la justificación. Lo descrito para el
+formulario de Gastos sigue siendo diseño, sin código. Al implementarse y
 probarse, su comportamiento se documenta en la SSOT [Gastos](../architecture/expenses.md) (§ 6 lo registra
 como pendiente). Estado y gates: [STATUS](../../STATUS.md). Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
 
@@ -195,7 +195,7 @@ FROZEN de ADR-022.
   Subcategoría con componentes `ZH*`, muestra el modo y ofrece **«Quitar restricción»** (visible solo con
   asignaciones activas y permiso de edición): pide confirmación con `message.confirm`, advierte que el proveedor
   podrá usar cualquier subcategoría y envía `PUT []`; i18n es/en. Visible con `…view`, editable con `…configure-company`;
-  i18n es/en con paridad. `MasterDataSuppliersPage.tsx` está bajo techo de ADR-047 (811): el montaje no puede
+  i18n es/en con paridad. El `GET` incluye `catalog` (candidatas activas, sin cuentas) solo con `…configure-company`; la sección no consulta el catálogo de Gastos. `MasterDataSuppliersPage.tsx` está bajo techo de ADR-047 (811): el montaje no puede
   aumentarlo (regla 6); verificar con `architecture:check`.
 - *Gastos:* hook `useSupplierExpenseSubcategoryScope` por `header.supplierId` (manual y XML comparten camino).
   Filtra el árbol del `ExpenseSubcategorySelector` (oculta Tipo/Categoría sin permitidas). Si la lectura falla

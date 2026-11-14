@@ -20,6 +20,17 @@ public sealed record SupplierExpenseSubcategoryItemDto(
 );
 
 /// <summary>
+/// Subcategoría activa del catálogo de gastos candidata a asignarse (sin cuenta contable).
+/// </summary>
+public sealed record SupplierExpenseCatalogItemDto(
+    Guid ExpenseSubcategoryId,
+    string Code,
+    string Name,
+    string CategoryName,
+    string TypeName
+);
+
+/// <summary>
 /// <see cref="Mode"/> ∈ {Unconfigured, Restricted, RestrictedEmpty} y
 /// <see cref="AvailableSubcategoryIds"/> los calcula el servidor (regla única); el frontend no los
 /// recalcula. <see cref="Items"/> incluye asignaciones activas e inactivas.
@@ -27,9 +38,26 @@ public sealed record SupplierExpenseSubcategoryItemDto(
 public sealed record SupplierExpenseSubcategoriesDto(
     string Mode,
     IReadOnlyList<SupplierExpenseSubcategoryItemDto> Items,
-    IReadOnlyList<Guid> AvailableSubcategoryIds
+    IReadOnlyList<Guid> AvailableSubcategoryIds,
+    IReadOnlyList<SupplierExpenseCatalogItemDto>? Catalog = null
 )
 {
+    /// <summary>
+    /// Candidatas para la configuración: solo el GET las devuelve y únicamente a quien tiene
+    /// <c>masterdata.businesspartners.configure-company</c>; <c>null</c> en cualquier otro caso (incluido el PUT).
+    /// </summary>
+    public SupplierExpenseSubcategoriesDto WithCatalog(IReadOnlyList<ExpenseSubcategoryInfo> catalog) =>
+        this with
+        {
+            Catalog = catalog
+                .Where(c => c.IsActive && c.IsSubcategory)
+                .OrderBy(c => c.TypeName, StringComparer.Ordinal)
+                .ThenBy(c => c.CategoryName, StringComparer.Ordinal)
+                .ThenBy(c => c.Code, StringComparer.Ordinal)
+                .Select(c => new SupplierExpenseCatalogItemDto(c.Id, c.Code, c.Name, c.CategoryName, c.TypeName))
+                .ToList(),
+        };
+
     public static SupplierExpenseSubcategoriesDto Build(
         IReadOnlyList<SupplierExpenseSubcategory> assignments,
         IReadOnlyList<ExpenseSubcategoryInfo> infos

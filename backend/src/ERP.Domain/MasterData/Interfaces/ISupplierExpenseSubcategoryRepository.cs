@@ -25,6 +25,14 @@ public interface ISupplierExpenseSubcategoryRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Subcategorías activas (nivel Subcategoría) del catálogo de gastos de la empresa activa, con el
+    /// nombre de su categoría y tipo y sin cuenta contable. Candidatas para configurar el proveedor.
+    /// </summary>
+    Task<IReadOnlyList<ExpenseSubcategoryInfo>> GetActiveSubcategoryCatalogAsync(
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(
         SupplierExpenseSubcategory assignment,
         CancellationToken cancellationToken = default

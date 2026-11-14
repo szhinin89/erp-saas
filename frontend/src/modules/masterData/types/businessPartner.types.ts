@@ -427,3 +427,44 @@ export type SupplierPickerRow = {
   hasSupplierRole: boolean;
   supplierConfig: SupplierRoleConfigDto | null;
 };
+
+/**
+ * EXPENSE-SUPPLIER-SUBCATEGORIES-01 — subcategorías de gasto permitidas por proveedor y empresa.
+ * `mode` y `availableSubcategoryIds` los calcula el servidor (regla única); no se recalculan en UI.
+ */
+export type SupplierExpenseSubcategoryMode =
+  | "Unconfigured"
+  | "Restricted"
+  | "RestrictedEmpty";
+
+export type SupplierExpenseSubcategoryItemDto = {
+  expenseSubcategoryId: string;
+  code: string;
+  name: string;
+  categoryName: string;
+  typeName: string;
+  isActive: boolean; // estado de la asignación
+  isSubcategoryActive: boolean; // estado del nodo en el catálogo de gastos
+};
+
+/** Subcategoría activa del catálogo de gastos candidata a asignarse (sin cuentas contables). */
+export type SupplierExpenseCatalogItemDto = {
+  expenseSubcategoryId: string;
+  code: string;
+  name: string;
+  categoryName: string;
+  typeName: string;
+};
+
+export type SupplierExpenseSubcategoriesDto = {
+  mode: SupplierExpenseSubcategoryMode;
+  items: SupplierExpenseSubcategoryItemDto[];
+  availableSubcategoryIds: string[];
+  /** Solo en el GET y solo con `…configure-company`; `null`/ausente en cualquier otro caso (incluido el PUT). */
+  catalog?: SupplierExpenseCatalogItemDto[] | null;
+};
+
+/** PUT /api/v1/master/business-partners/{bpId}/expense-subcategories — conjunto deseado (`[]` quita la restricción) */
+export type SetSupplierExpenseSubcategoriesBody = {
+  expenseSubcategoryIds: string[];
+};

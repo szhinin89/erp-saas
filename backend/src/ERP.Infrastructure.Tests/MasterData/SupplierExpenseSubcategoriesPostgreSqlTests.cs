@@ -1,10 +1,12 @@
 using ERP.Application;
+using ERP.Application.Access.Authorization;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.Services;
 using ERP.Application.MasterData.UseCases.GetSupplierExpenseSubcategories;
 using ERP.Application.MasterData.UseCases.SetSupplierExpenseSubcategories;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -139,6 +141,15 @@ public sealed class SupplierExpenseSubcategoriesPostgreSqlTests : IAsyncLifetime
         return m.Object;
     }
 
+    private static IRuntimePermissionAuthorizer Authorizer(bool canConfigure)
+    {
+        var m = new Mock<IRuntimePermissionAuthorizer>();
+        m.Setup(a => a.IsAuthorizedAsync(MasterDataPermissions.BusinessPartnersConfigureCompany,
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(canConfigure);
+        return m.Object;
+    }
+
     private async Task<Result<SupplierExpenseSubcategoriesDto>> SetAsync(Guid company, params Guid[] ids)
     {
         _activeCompany = company;
@@ -150,13 +161,14 @@ public sealed class SupplierExpenseSubcategoriesPostgreSqlTests : IAsyncLifetime
         return await handler.Handle(new SetSupplierExpenseSubcategoriesCommand(_supplier, ids), CancellationToken.None);
     }
 
-    private async Task<Result<SupplierExpenseSubcategoriesDto>> GetAsync(Guid company)
+    private async Task<Result<SupplierExpenseSubcategoriesDto>> GetAsync(Guid company, bool canConfigure = false)
     {
         _activeCompany = company;
         await using var scope = _sp.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var handler = new GetSupplierExpenseSubcategoriesHandler(
-            new SupplierExpenseSubcategoryRepository(db), new BusinessPartnerRepository(db), Ctx(company));
+            new SupplierExpenseSubcategoryRepository(db), new BusinessPartnerRepository(db), Ctx(company),
+            Authorizer(canConfigure));
         return await handler.Handle(new GetSupplierExpenseSubcategoriesQuery(_supplier), CancellationToken.None);
     }
 
@@ -174,6 +186,23 @@ public sealed class SupplierExpenseSubcategoriesPostgreSqlTests : IAsyncLifetime
         await using var scope = _sp.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         return await read(db);
+    }
+
+    [Fact]
+    public async Task Catalog_solo_se_entrega_a_quien_configura_y_es_de_la_empresa_activa_sin_cuentas()
+    {
+        (await GetAsync(_companyA)).Value!.Catalog.Should().BeNull("solo-lectura no recibe el catálogo");
+
+        var withCatalog = (await GetAsync(_companyA, canConfigure: true)).Value!.Catalog!;
+        withCatalog.Select(c => c.ExpenseSubcategoryId).Should().BeEquivalentTo([_sub1, _sub2, _sub3],
+            "solo subcategorías activas de la empresa A: ni la de B ni la categoría");
+        withCatalog.Should().OnlyContain(c => c.TypeName == "Tipo A" && c.CategoryName == "Categoría A");
+
+        var inB = (await GetAsync(_companyB, canConfigure: true)).Value!.Catalog!;
+        inB.Select(c => c.ExpenseSubcategoryId).Should().BeEquivalentTo([_subOfB]);
+
+        // El PUT conserva su contrato: no devuelve el catálogo ni siquiera a quien configura.
+        (await SetAsync(_companyA, _sub1)).Value!.Catalog.Should().BeNull();
     }
 
     [Fact]

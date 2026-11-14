@@ -1,8 +1,11 @@
+using ERP.Application.Access.Authorization;
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.Services;
+using ERP.Application.MasterData.UseCases.GetSupplierExpenseSubcategories;
 using ERP.Application.MasterData.UseCases.SetSupplierExpenseSubcategories;
 using ERP.Application.Common.Persistence;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -114,6 +117,60 @@ public sealed class SupplierExpenseSubcategoriesTests
         IsValid(Supplier,
             Enumerable.Range(0, SetSupplierExpenseSubcategoriesValidator.MaxSubcategories + 1)
                 .Select(_ => Guid.NewGuid()).ToList()).Should().BeFalse();
+    }
+
+    // ── GET: catálogo candidato solo para quien configura ────────────────────
+
+    private static async Task<(SupplierExpenseSubcategoriesDto Dto, Mock<ISupplierExpenseSubcategoryRepository> Repo)>
+        GetAsync(bool canConfigure)
+    {
+        var repo = new Mock<ISupplierExpenseSubcategoryRepository>();
+        repo.Setup(r => r.GetByBusinessPartnerAsync(Supplier, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        repo.Setup(r => r.GetSubcategoryInfosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        repo.Setup(r => r.GetActiveSubcategoryCatalogAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([
+                Info(Guid.NewGuid()),
+                Info(Guid.NewGuid(), active: false),
+                Info(Guid.NewGuid(), isSub: false),
+            ]);
+        var bp = BusinessPartner.Create(Tenant, "04", "1790016919001", null, "Prov S.A.", User);
+        var partners = new Mock<IBusinessPartnerRepository>();
+        partners.Setup(r => r.GetByIdAsync(Supplier, It.IsAny<CancellationToken>())).ReturnsAsync(bp);
+        var ctx = new Mock<IOperationalContext>();
+        ctx.SetupGet(c => c.UserId).Returns(User);
+        ctx.SetupGet(c => c.Role).Returns("Member");
+        ctx.SetupGet(c => c.HasCompany).Returns(true);
+        var auth = new Mock<IRuntimePermissionAuthorizer>();
+        auth.Setup(a => a.IsAuthorizedAsync(MasterDataPermissions.BusinessPartnersConfigureCompany, User, "Member",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(canConfigure);
+
+        var result = await new GetSupplierExpenseSubcategoriesHandler(repo.Object, partners.Object, ctx.Object, auth.Object)
+            .Handle(new GetSupplierExpenseSubcategoriesQuery(Supplier), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        return (result.Value!, repo);
+    }
+
+    [Fact]
+    public async Task Get_sin_configure_company_no_devuelve_catalogo_ni_lo_consulta()
+    {
+        var (dto, repo) = await GetAsync(canConfigure: false);
+
+        dto.Catalog.Should().BeNull();
+        dto.Mode.Should().Be("Unconfigured");
+        repo.Verify(r => r.GetActiveSubcategoryCatalogAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Get_con_configure_company_devuelve_solo_subcategorias_activas_sin_cuentas()
+    {
+        var (dto, _) = await GetAsync(canConfigure: true);
+
+        dto.Catalog.Should().ContainSingle("se descartan el nodo inactivo y el que no es Subcategoría");
+        dto.Catalog![0].Should().BeEquivalentTo(new { CategoryName = "Cat", TypeName = "Tipo" },
+            o => o.ExcludingMissingMembers());
     }
 
     // ── Handler (reemplazo de conjunto) ──────────────────────────────────────

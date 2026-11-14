@@ -23,7 +23,9 @@ import type {
   CustomerConfigBody,
   SearchBusinessPartnersParams,
   SetRetentionDefaultStateBody,
+  SetSupplierExpenseSubcategoriesBody,
   SupplierConfigBody,
+  SupplierExpenseSubcategoriesDto,
   SupplierRetentionDefaultDto,
   UpdateBusinessPartnerBody,
   UpdateContactBody,
@@ -344,4 +346,18 @@ export const bpRetentionDefaultsService = {
       `${BASE}/${enc(bpId)}/retention-defaults/${enc(id)}`,
       body,
     ),
+};
+
+/** EXPENSE-SUPPLIER-SUBCATEGORIES-01 — subcategorías de gasto permitidas por proveedor y empresa activa. */
+export const bpExpenseSubcategoriesService = {
+  /** GET /{bpId}/expense-subcategories — modo, asignaciones y disponibles (calculados en servidor) */
+  get: (bpId: string): Promise<SupplierExpenseSubcategoriesDto> =>
+    apiGet<SupplierExpenseSubcategoriesDto>(`${BASE}/${enc(bpId)}/expense-subcategories`),
+
+  /** PUT /{bpId}/expense-subcategories — reemplazo atómico; `[]` retira todas (sin DELETE físico) */
+  set: (
+    bpId: string,
+    body: SetSupplierExpenseSubcategoriesBody,
+  ): Promise<SupplierExpenseSubcategoriesDto> =>
+    apiPut<SupplierExpenseSubcategoriesDto>(`${BASE}/${enc(bpId)}/expense-subcategories`, body),
 };

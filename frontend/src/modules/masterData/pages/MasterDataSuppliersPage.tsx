@@ -33,6 +33,7 @@ import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
 import { useSriTaxSupportCodes } from "../api/useSriTaxSupportCodes";
 import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
+import { SupplierExpenseSubcategoriesSection } from "../components/SupplierExpenseSubcategoriesSection";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
@@ -364,6 +365,7 @@ function SupplierConfigModal({
       <hr className="md-supplier-section-divider" />
 
       <SupplierRetentionDefaultsSection bpId={bpId} disabled={saving} />
+      <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
     </ZHModal>
   );
 }

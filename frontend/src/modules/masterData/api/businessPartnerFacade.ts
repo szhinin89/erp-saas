@@ -14,6 +14,7 @@
 
 import {
   bpContactService,
+  bpExpenseSubcategoriesService,
   bpLocationService,
   bpPurchaseSettingsService,
   bpRetentionDefaultsService,
@@ -41,6 +42,8 @@ import type {
   CustomerPickerRow,
   SearchBusinessPartnersParams,
   SetRetentionDefaultStateBody,
+  SetSupplierExpenseSubcategoriesBody,
+  SupplierExpenseSubcategoriesDto,
   SupplierConfigBody,
   SupplierPickerRow,
   SupplierRetentionDefaultDto,
@@ -258,6 +261,17 @@ export const businessPartnerFacade = {
     body: SetRetentionDefaultStateBody,
   ): Promise<SupplierRetentionDefaultDto> =>
     bpRetentionDefaultsService.setState(bpId, id, body),
+
+  // ── Subcategorías de gasto permitidas por proveedor (EXPENSE-SUPPLIER-SUBCATEGORIES-01) ──
+
+  getExpenseSubcategories: (bpId: string): Promise<SupplierExpenseSubcategoriesDto> =>
+    bpExpenseSubcategoriesService.get(bpId),
+
+  setExpenseSubcategories: (
+    bpId: string,
+    body: SetSupplierExpenseSubcategoriesBody,
+  ): Promise<SupplierExpenseSubcategoriesDto> =>
+    bpExpenseSubcategoriesService.set(bpId, body),
 };
 
 // ── Re-exports para compatibilidad con imports existentes ─────────────────────

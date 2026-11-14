@@ -54,15 +54,14 @@ activas y al menos una con subcategoría activa de nivel Subcategoría) y **`Res
 pero ninguna disponible: no se permite ninguna selección nueva; nunca abre el catálogo).
 
 - API `api/v1/master/business-partners/{bpId}/expense-subcategories`: `GET` (`masterdata.businesspartners.view`)
-  devuelve modo, asignaciones y subcategorías disponibles; `PUT` (`…configure-company`) fija el conjunto de
+  devuelve modo, asignaciones y subcategorías disponibles y, **solo con `…configure-company`**, `catalog` (subcategorías activas de la empresa: id, código, nombre, categoría y tipo, sin cuentas; `null` para quien solo consulta y en la respuesta del `PUT`); `PUT` (`…configure-company`) fija el conjunto de
   forma atómica: crea, **reactiva el mismo registro** y retira con baja lógica; `[]` retira todas (vuelve a
   `Unconfigured`); sin DELETE físico; cada alta, retiro y reactivación genera su registro de auditoría.
 - Validación en Gastos (`ExpenseDraftRules`): crear borrador, crear-confirmado y editar con cambio de proveedor
   exigen subcategorías permitidas; editar con el mismo proveedor conserva las ya persistidas del borrador y solo
   valida lo nuevo; **confirmar un borrador existente no revalida** (422 «La subcategoría 'X' no está permitida
   para el proveedor.» / «…ninguna está disponible.»). Anular y consultar no se ven afectados.
-- Aún sin interfaz: la ficha del proveedor y el formulario de Gastos no usan esta configuración
-  (ver § 6).
+- Interfaz: la ficha del proveedor la administra (§ 5); el formulario de Gastos aún no la usa (ver § 6).
 
 ## 4. Permisos
 
@@ -77,9 +76,17 @@ Permiso = quién puede; el estado del documento = en qué etapa está ([Segurida
 Al cambiar Tipo o Categoría, una subcategoría que deja de ser válida se limpia. El cálculo de líneas usa
 `decimal.js` half-up equivalente al backend.
 
+**Ficha del proveedor — subcategorías permitidas.** `SupplierExpenseSubcategoriesSection` (modal de configuración,
+tras las retenciones) usa solo el `GET`/`PUT` de §3. Muestra el modo que calcula el servidor y las subcategorías
+del `catalog` agrupadas Tipo › Categoría (las asignadas que dejaron de estar disponibles siguen visibles y
+marcadas). Guardar envía el conjunto elegido; **«Quitar restricción»** (visible solo con asignaciones activas) y
+guardar con todo desmarcado piden confirmación y envían `PUT []`. Lectura con `masterdata.businesspartners.view`;
+edición con `…configure-company`. Los candidatos salen del `catalog` del propio `GET` (autorizado en servidor), por lo que
+no depende de `expenses.catalog.view`; sin `catalog` la sección queda en solo lectura. No se calcula nada en el cliente.
+
 ## 6. Pendiente (no operativo)
 
-Interfaz de subcategorías por proveedor (ficha del proveedor, filtro y autoselección en el formulario, «Quitar
-restricción»): **diseño, sin implementar** — [diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
+Uso de las subcategorías por proveedor en el formulario de Gastos (filtro, autoselección, XML): **diseño, sin
+implementar** — [diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
 Adjuntos, reportes operativos, filtros, exportación y aprobación: planificación en
 [ROADMAP](../ROADMAP.md#etapa-1--completar-erp-core).

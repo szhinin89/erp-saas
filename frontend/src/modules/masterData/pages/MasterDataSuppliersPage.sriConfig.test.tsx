@@ -26,8 +26,11 @@ vi.mock("../api/businessPartnerFacade", () => ({
     getRetentionDefaults: vi.fn(),
     addRetentionDefault: vi.fn(),
     setRetentionDefaultState: vi.fn(),
+    getExpenseSubcategories: vi.fn(),
+    setExpenseSubcategories: vi.fn(),
   },
 }));
+
 
 vi.mock("../api/paymentTermService", () => ({
   paymentTermService: {
@@ -136,6 +139,11 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue({
+    mode: "Unconfigured",
+    items: [],
+    availableSubcategoryIds: [],
+  });
   vi.mocked(usePermissionsUi).mockReturnValue({
     canShow: () => true,
     has: () => true,
