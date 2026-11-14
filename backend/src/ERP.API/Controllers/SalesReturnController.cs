@@ -123,16 +123,19 @@ public sealed class SalesReturnController : ControllerBase
     /// <summary>Lista devoluciones de venta paginadas, con filtro opcional por texto y estado.</summary>
     /// <remarks>
     /// El filtro <c>status</c> acepta los nombres <c>Draft</c>, <c>Authorized</c> y <c>Cancelled</c> sin distinguir
-    /// mayúsculas; un valor desconocido se ignora y no filtra. No se validan los límites de paginación.
+    /// mayúsculas; un valor desconocido se ignora y no filtra (comportamiento intencional vigente).
+    /// <c>pageNumber</c> debe ser ≥ 1 y <c>pageSize</c> estar entre 1 y 100; fuera de rango responde 422 <c>VALIDATION_ERROR</c>.
     /// </remarks>
     /// <param name="search">Texto de búsqueda opcional.</param>
     /// <param name="status">Estado opcional: <c>Draft</c>, <c>Authorized</c> o <c>Cancelled</c>.</param>
     /// <param name="pageNumber">Página (base 1; por defecto 1).</param>
-    /// <param name="pageSize">Tamaño de página (por defecto 25).</param>
+    /// <param name="pageSize">Tamaño de página (1–100; por defecto 25).</param>
     /// <response code="200">Listado paginado.</response>
+    /// <response code="422">Paginación fuera de rango.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
     [ProducesResponseType(typeof(ApiResponse<SalesReturnListResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> GetList(
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,

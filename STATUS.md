@@ -185,8 +185,8 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-14 | `ManualJournalController.Create` (reintento idempotente) | Devuelve siempre `Draft`, versión 1 y sin número, aunque el asiento ya se haya editado o publicado. |
 | API-DOC-F-15 | `ManualJournalController.Reverse` | La respuesta describe el asiento de reverso, no el original. |
 | API-DOC-F-16 | `ManualJournalController` | No declara `[Produces("application/json")]`, a diferencia del resto de controladores. |
-| API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. |
-| API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. |
+| API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. **Resuelto y publicado en B-SALES (paginación BUG REAL corregida; `status` KEEP), pendiente validación CI.** |
+| API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. **BUG REAL corregido y publicado en B-SALES, pendiente validación CI.** |
 | API-DOC-F-19 | `SalesController.ApplyGlobalDiscount` / `CancelInvoice` | Sus 400 salen de `ArgumentException` mapeada por `ExceptionMiddleware`, no de una validación explícita. |
 | API-DOC-F-20 | `SalesController.AuthorizeInvoice` | Tiene lector de reintentos ante conflictos de concurrencia; el código HTTP final de un conflicto no resuelto no está verificado (no se declaró 409). |
 | API-DOC-F-21 | `AccessProfiles` (`UpdateProfile`, `UpsertProfilePermissions`, `GetProfilePermissions`, `CreateProfile`) | «Perfil no encontrado» responde 400 (`Failure` sin código) en tres endpoints, mientras `GetProfilePermissionAudit` responde 404; «nombre vacío» en `CreateProfile` responde 400 sin validador, el resto de entradas inválidas responde 422. |
@@ -325,6 +325,26 @@ ni esquema OpenAPI; solo se corrigieron los comentarios XML de `Activate` y `Sus
 empresas deshabilitadas que ya fueron reactivadas por este endpoint pueden haber quedado con `IsActive=true`; no se
 modifican datos ni se crean migraciones. Impacto sobre consumidores v1: ninguno conocido en el repositorio; un cliente
 que dependiera de que `activate` habilitara la empresa deberá habilitarla por la vía administrativa correspondiente.
+
+### Resolución de hallazgos F-01 a F-52 — bloque B-SALES (F-17, F-18, Ventas)
+
+Autorización del propietario 2026-11-13 para diagnosticar, corregir y probar F-17 y F-18 en un único bloque, sin ampliar
+el alcance. Ventas conserva sus restricciones CLOSED: no cambian estados, reglas fiscales, permisos ni lógica de
+autorización. Estado: **publicado (revisión del propietario aprobada 2026-11-13), pendiente validación CI.**
+
+| Hallazgo | Clasificación | Estado | Evidencia |
+|---|---|---|---|
+| F-18 | BUG REAL | Corregido y publicado (pendiente validación CI) | `AuthorizeSalesInvoiceHandler` devolvía «Esta factura ya fue autorizada.» para cualquier estado distinto de `Draft`; como `Authorized` retorna antes (idempotente), el único estado alcanzable era `Cancelled`. Ahora responde «Esta factura está anulada y no puede autorizarse.» (y «Solo se pueden autorizar facturas en borrador.» como fallback). La operación sigue rechazada con 422 `VALIDATION_ERROR`. Antes: `Autorizar_factura_anulada_se_rechaza_con_mensaje_de_anulada` fallaba con el mensaje antiguo. Después: `AuthorizeSalesInvoiceCancelledMessageTests` 2/2 y `AuthorizeSalesInvoiceHandlerTests` sin regresiones (61/61 en total con ambas clases). |
+| F-17 | BUG REAL (paginación); KEEP (`status`) | Corregido y publicado (pendiente validación CI) | Reproducido en PostgreSQL real (Testcontainers) sobre `SalesReceivableRepository` y `SalesReturnRepository`: `pageNumber ≤ 0` → `OFFSET must not be negative` y `pageSize < 0` → `LIMIT must not be negative`, ambos como error de servidor; `pageSize = 0` devuelve página vacía sin error. Corrección mínima: `GetReceivablesListQueryValidator` y `GetSalesReturnListQueryValidator` (`pageNumber ≥ 1`, `pageSize` 1–100, mismo criterio que el listado de asientos); fuera de rango responde 422 `VALIDATION_ERROR` mediante `ValidationBehavior`. Después: `SalesListPaginationValidatorTests` (límites 1/25/50/100 válidos; 0, -1, -5 y 101 rechazados; el pipeline corta antes del handler). **`status` desconocido: comportamiento intencional vigente, sin cambio de código.** En `SalesReceivables` se compara literalmente con el estado persistido y devuelve la página vacía; en `SalesReturn` se ignora y no filtra. Cambiarlo alteraría el contrato público (200 → 4xx) y el frontend solo envía valores válidos. |
+
+Impacto API: los rangos fuera de 1–100 / ≥ 1 pasan de error de servidor a 422; los valores válidos no cambian. Los
+remarks y la respuesta 422 se documentaron en `SalesReceivablesController.GetList` y `SalesReturnController.GetList`
+(XML docs); no existe snapshot OpenAPI de Ventas (solo `companies` y `stock`), por lo que no se regenera ninguno.
+Impacto frontend: ninguno; `receivableService.list` envía `pageSize` 50 y `salesReturnService.list` 25, siempre con
+página ≥ 1. Nota: el techo 1–100 reutiliza el del Libro Diario; la fila API-DOC-F-17 original citaba 1–200 para el Libro
+Diario, discrepancia documental previa que no se modifica aquí. Validación: pruebas focalizadas (222 de Application),
+`architecture:check` PASS (0 nuevas violaciones) y `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. No se
+ejecutaron suites globales ni se regeneró el Dashboard.
 
 Detalle de las correcciones: F-46 (faltaba el 401 con envelope en `login`, `global-login`, `complete-password-reset`,
   `refresh`, `reauthenticate` y `Setup.CreateInitialAdmin`; la seguridad sigue sin exigir Bearer), F-50

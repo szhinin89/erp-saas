@@ -6,6 +6,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.MasterData.Models;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
+using FluentValidation;
 using MediatR;
 
 namespace ERP.Application.Modules.Sales.UseCases;
@@ -71,6 +72,21 @@ public sealed record GetReceivablesListQuery(
     int PageNumber = 1,
     int PageSize = 25
 ) : IRequest<Result<ReceivablesListResponse>>, IBranchScopedRequest;
+
+
+/// <summary>
+/// API-DOC-F-17: rango de paginación válido (mismo criterio que el listado de asientos). Antes un
+/// <c>pageNumber &lt; 1</c> o <c>pageSize &lt; 0</c> llegaba a PostgreSQL como OFFSET/LIMIT negativo
+/// y respondía error de servidor; el frontend solo envía 25 o 50.
+/// </summary>
+public sealed class GetReceivablesListQueryValidator : AbstractValidator<GetReceivablesListQuery>
+{
+    public GetReceivablesListQueryValidator()
+    {
+        RuleFor(x => x.PageNumber).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
+    }
+}
 
 public sealed record ReceivablesListResponse(
     IReadOnlyList<SalesReceivableDto> Items,

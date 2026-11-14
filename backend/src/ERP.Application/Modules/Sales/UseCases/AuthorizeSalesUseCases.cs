@@ -180,8 +180,14 @@ public sealed class AuthorizeSalesInvoiceHandler
             return Result<SalesInvoiceDto>.Success(SalesMapper.ToDto(inv, existingDocument));
         }
 
+        // Authorized ya retornó arriba (idempotente); el único otro estado no-Draft es Cancelled.
+        // API-DOC-F-18: el mensaje debe describir el estado real, no «ya fue autorizada».
         if (inv.Status != Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft)
-            return Result<SalesInvoiceDto>.ValidationFailure("Esta factura ya fue autorizada.");
+            return Result<SalesInvoiceDto>.ValidationFailure(
+                inv.Status == SalesInvoiceStatus.Cancelled
+                    ? "Esta factura está anulada y no puede autorizarse."
+                    : "Solo se pueden autorizar facturas en borrador."
+            );
 
         if (!await SalesWarehouseGuard.AreValidAsync(inv.Lines.Select(l => l.WarehouseId),
                 tid, cid, inv.BranchId, _warehouseRepo, ct))

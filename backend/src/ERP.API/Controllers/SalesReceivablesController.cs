@@ -48,16 +48,19 @@ public sealed class SalesReceivablesController : ControllerBase
     /// <remarks>
     /// Exige sucursal activa autorizada. Filtro <c>status</c>: <c>pending</c> (no anulada y con saldo), <c>paid</c> (no
     /// anulada y saldo en cero) o cualquier otro valor, que se compara literalmente con el estado persistido (por
-    /// ejemplo <c>cancelled</c>). No se validan los límites de paginación.
+    /// ejemplo <c>cancelled</c>); un valor desconocido no coincide con ninguna fila y devuelve la página vacía.
+    /// <c>pageNumber</c> debe ser ≥ 1 y <c>pageSize</c> estar entre 1 y 100; fuera de rango responde 422 <c>VALIDATION_ERROR</c>.
     /// </remarks>
     /// <param name="search">Texto de búsqueda opcional.</param>
     /// <param name="status">Filtro de estado opcional (<c>pending</c>, <c>paid</c>, <c>cancelled</c>).</param>
     /// <param name="pageNumber">Página (base 1; por defecto 1).</param>
-    /// <param name="pageSize">Tamaño de página (por defecto 25).</param>
+    /// <param name="pageSize">Tamaño de página (1–100; por defecto 25).</param>
     /// <response code="200">Página de cuentas por cobrar con el total.</response>
+    /// <response code="422">Paginación fuera de rango.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
     [ProducesResponseType(typeof(ApiResponse<ReceivablesListResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> GetList(
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,

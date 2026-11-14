@@ -80,3 +80,7 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   Contabilidad (asientos manuales, cierre anual) y Carga Inicial (cierre, apertura, preflight) pasan de 400 a 422 con
   mensaje catalogado, conservando los valores de `code`; `MANUAL_POST_INTERNAL` (excepción técnica) es error interno 500. Alcance, impacto HTTP/OpenAPI y residuo en
   [STATUS](../../STATUS.md). Bloque independiente de los demás hallazgos.
+- API-DOC-B-SALES (PUBLICADO, pendiente validación CI; revisión del propietario aprobada 2026-11-13; Ventas sigue
+  CLOSED): BUG REAL F-18, autorizar una factura anulada responde «anulada» en lugar de «ya fue autorizada»; BUG REAL
+  F-17, `pageNumber`/`pageSize` fuera de rango en `SalesReceivables` y `SalesReturn` responden 422 en lugar de error
+  de servidor (el `status` desconocido es KEEP documentado). Alcance y evidencia en [STATUS](../../STATUS.md).
