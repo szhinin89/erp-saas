@@ -68,6 +68,25 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // EXPENSE-SUPPLIER-SUBCATEGORIES-01 (D1): documento nuevo → todas las líneas deben estar permitidas.
+    [Fact]
+    public async Task Crear_confirmado_rechaza_una_subcategoria_no_permitida_para_el_proveedor_sin_persistir()
+    {
+        var fx = new Fixture();
+        fx.SubcategoryPolicy = ERP.Application.Tests.TestSupport.SupplierExpenseSubcategoryTestDoubles
+            .Restricted(Guid.NewGuid());
+
+        var result = await fx.Handler.Handle(fx.ValidCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no está permitida para el proveedor");
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task Crear_confirmado_acepta_un_tipo_activo_no_electronico()
     {
@@ -374,6 +393,8 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<IBusinessPartnerRepository> Partners { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> Roles { get; } = new();
+        public Mock<ERP.Application.MasterData.Services.ISupplierExpenseSubcategoryPolicy> SubcategoryPolicy { get; set; } =
+            ERP.Application.Tests.TestSupport.SupplierExpenseSubcategoryTestDoubles.Unconfigured();
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IAccountsPayableService> Payables { get; } = new();
@@ -400,6 +421,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 Accounts.Object,
                 Partners.Object,
                 Roles.Object,
+                SubcategoryPolicy.Object,
                 PtResolver.Object,
                 Tax.Object,
                 DocTypes.Object,

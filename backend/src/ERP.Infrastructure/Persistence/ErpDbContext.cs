@@ -213,6 +213,10 @@ public class ErpDbContext : DbContext
         Set<CompanyBpPurchaseSettings>();
     public DbSet<SupplierRetentionDefault> SupplierRetentionDefaults =>
         Set<SupplierRetentionDefault>();
+    public DbSet<SupplierExpenseSubcategory> SupplierExpenseSubcategories =>
+        Set<SupplierExpenseSubcategory>();
+    public DbSet<SupplierExpenseSubcategoryAudit> SupplierExpenseSubcategoryAudits =>
+        Set<SupplierExpenseSubcategoryAudit>();
     public DbSet<BusinessPartnerLocation> BusinessPartnerLocations =>
         Set<BusinessPartnerLocation>();
     public DbSet<BusinessPartnerContact> BusinessPartnerContacts => Set<BusinessPartnerContact>();

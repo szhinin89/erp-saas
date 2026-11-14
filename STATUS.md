@@ -48,6 +48,27 @@ Los registros antiguos «sin commit» o «pendiente Git/CI» fuera de estas entr
 commit específico y aceptación; no se cierran con un CI posterior ni se reabren por
 esta conciliación. Se conserva explícitamente esa limitación de verificación.
 
+## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASE 1 IMPLEMENTADA (2026-11-14), pendiente gate del propietario
+
+Sin commit ni push. [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; solo D4 no
+aplicó: no se recreó ninguna base de datos). Comportamiento vigente en la SSOT [Gastos](docs/architecture/expenses.md).
+
+| Ítem | Estado |
+|---|---|
+| Baseline (`20261101012214_InitialProductionBaseline` + Designer + ModelSnapshot) | Dos tablas añadidas, solo adiciones: `master_supplier_expense_subcategories` y `supplier_expense_subcategory_audit`. Sin migraciones incrementales; `has-pending-model-changes` limpio. Una BD ya creada con la baseline anterior no recibe las tablas (recrear exige autorización del propietario, D4 pendiente). |
+| Backend | `SupplierExpenseSubcategory` (+ eventos y auditoría ADR-022), repositorio, política única de modos (`Unconfigured`/`Restricted`/`RestrictedEmpty`), `GET`/`PUT` `api/v1/master/business-partners/{bpId}/expense-subcategories` (permisos `…view`/`…configure-company` existentes), reemplazo atómico con baja lógica y reactivación del mismo registro, `[]` = sin configuración. |
+| Gastos | `ExpenseDraftRules` valida en crear, crear-confirmado y editar (preserva lo ya persistido con el mismo proveedor); confirmar borrador existente no revalida (D7). Sin cambios de DTO, rutas ni permisos de Gastos. |
+| Sin hacer | Interfaz (fases 2–4: ficha del proveedor, formulario de Gastos, «Quitar restricción»): no iniciada. |
+
+Validación (focalizada, sin suite completa ni Dashboard): `ERP.Domain.Tests` 4/4; `ERP.Application.Tests` Gastos + nueva 132/132
+(incluye 109 previos de Gastos); `ERP.Infrastructure.Tests` PostgreSQL real 10/10 (reemplazo, reactivación sin duplicar, modos,
+aislamiento A/B, subcategoría de otra empresa → 404, índice único, dos `PUT` concurrentes, auditoría Assigned/Disabled/Enabled);
+`ERP.API.Tests` OpenAPI + contrato del controlador 59/59 (inventario 520 operaciones; el run amplio con filtro de Gastos y
+BusinessPartner terminó con el host de pruebas bloqueado y 7 fallos de `Contratos_representativos…` ajenos que pasan aislados; el de
+cifras 2xx era de esta entrega y se corrigió); `ERP.Architecture.Tests` 145/145; `architecture:check` (`run-all`) 0 violaciones nuevas;
+guardrail oficial `-SkipFrontendChunk` OK; handler size OK; `tools/ci/test_backend_tests.py` 17/17 (clase nueva registrada en
+`infrastructure-03`). No se ejecutó el E2E ni el frontend (no hay cambios de interfaz).
+
 ## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
 
 Publicado en `00bdef9109aa4e1e14bbe245821208ba24eb6e3e`: aviso compacto persistente

@@ -101,6 +101,7 @@
         "ERP.Infrastructure.Tests.Expenses.ExpenseCategoryTaxFlagsPreservationTests",
         "ERP.Infrastructure.Tests.InitialLoad.ConfirmItemsAtomicPostgreSqlTests",
         "ERP.Infrastructure.Tests.MasterData.BusinessPartnerDeactivationPostgreSqlTests",
+        "ERP.Infrastructure.Tests.MasterData.SupplierExpenseSubcategoriesPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.UpdatePurchaseDraftAtomicityPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.AdminUserSessionIntegrationTests",
         "ERP.Infrastructure.Tests.Persistence.Configuration.PrecisionCapacityAlignmentMigrationTests",

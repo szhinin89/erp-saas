@@ -300,13 +300,13 @@ public sealed partial class OpenApiContractTests
     [Fact]
     public void Las_cifras_de_respuestas_2xx_concilian_por_respuesta_y_no_por_tipo_de_medio()
     {
-        // Una respuesta 2xx por operación (518). Las de datos tipados repiten el esquema en tres tipos de medio
+        // Una respuesta 2xx por operación (520). Las de datos tipados repiten el esquema en tres tipos de medio
         // (application/json, text/plain, text/json): contar por tipo de medio da más entradas que respuestas.
         var success = Operations()
             .SelectMany(o => o.Op["responses"]!.AsObject().Where(r => r.Key.StartsWith('2')).Select(r => (Id: o.Op["operationId"]!.GetValue<string>(), Response: r.Value!)))
             .ToList();
 
-        success.Should().HaveCount(518);
+        success.Should().HaveCount(520);
         success.Select(s => s.Id).Should().OnlyHaveUniqueItems("exactamente una respuesta 2xx por operación");
 
         var withoutEnvelope = success
@@ -316,7 +316,7 @@ public sealed partial class OpenApiContractTests
             .ToList();
 
         withoutEnvelope.Should().Equal(NonEnvelopeSuccess.Order(StringComparer.Ordinal));
-        (success.Count - withoutEnvelope.Count).Should().Be(510);
+        (success.Count - withoutEnvelope.Count).Should().Be(512);
         withoutEnvelope.Should().HaveCount(8);
     }
 

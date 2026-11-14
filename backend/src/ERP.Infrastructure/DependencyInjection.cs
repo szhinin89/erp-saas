@@ -228,6 +228,14 @@ public static class DependencyInjection
             SupplierRetentionDefaultRepository
         >();
         services.AddScoped<
+            ISupplierExpenseSubcategoryRepository,
+            SupplierExpenseSubcategoryRepository
+        >();
+        services.AddScoped<
+            ERP.Application.MasterData.Services.ISupplierExpenseSubcategoryPolicy,
+            ERP.Application.MasterData.Services.SupplierExpenseSubcategoryPolicy
+        >();
+        services.AddScoped<
             ERP.Application.MasterData.Services.IPaymentTermDefaultResolver,
             ERP.Application.MasterData.Services.PaymentTermDefaultResolver
         >();

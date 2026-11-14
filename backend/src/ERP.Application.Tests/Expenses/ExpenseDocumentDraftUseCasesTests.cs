@@ -2,6 +2,7 @@ using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
+using ERP.Application.Tests.TestSupport;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
@@ -731,6 +732,123 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         );
     }
 
+    // ── EXPENSE-SUPPLIER-SUBCATEGORIES-01 (D1/D7) — restricción por proveedor ───────────────────
+
+    private static ExpenseLine PersistedLine(Fixture fx, ExpenseDocument document) =>
+        ExpenseLine.Create(
+            document.Id,
+            TenantId,
+            fx.Subcategory.Id,
+            fx.Account.Id,
+            "Gasto",
+            1m,
+            10m,
+            "0",
+            0m,
+            "IVA 0%"
+        );
+
+    [Fact]
+    public async Task Create_con_proveedor_Restricted_rechaza_una_subcategoria_no_permitida_sin_persistir()
+    {
+        var fx = new Fixture();
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.Restricted(Guid.NewGuid());
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result
+            .Error.Should()
+            .Be($"La subcategoría '{fx.Subcategory.Name}' no está permitida para el proveedor.");
+        fx.Docs.Verify(
+            r => r.AddAsync(It.IsAny<ExpenseDocument>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Create_con_proveedor_Restricted_acepta_una_subcategoria_permitida()
+    {
+        var fx = new Fixture();
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.Restricted(fx.Subcategory.Id);
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+    }
+
+    [Fact]
+    public async Task Create_con_proveedor_RestrictedEmpty_rechaza_cualquier_subcategoria_nueva()
+    {
+        var fx = new Fixture();
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.RestrictedEmpty();
+
+        var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result
+            .Error.Should()
+            .Be("El proveedor tiene subcategorías asignadas pero ninguna está disponible.");
+    }
+
+    [Fact]
+    public async Task Update_con_el_mismo_proveedor_preserva_la_subcategoria_ya_persistida_aunque_no_este_permitida()
+    {
+        var fx = new Fixture();
+        var document = fx.ExistingDraftDocument();
+        document.ReplaceLines([PersistedLine(fx, document)], UserId);
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.Restricted(Guid.NewGuid());
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+    }
+
+    [Fact]
+    public async Task Update_con_el_mismo_proveedor_rechaza_una_subcategoria_nueva_no_permitida()
+    {
+        var fx = new Fixture();
+        var document = fx.ExistingDraftDocument(); // sin líneas persistidas: la subcategoría es nueva
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.Restricted(Guid.NewGuid());
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+    }
+
+    [Fact]
+    public async Task Update_con_cambio_de_proveedor_no_preserva_lo_persistido()
+    {
+        var fx = new Fixture();
+        var document = fx.ExistingDraftDocument();
+        document.ReplaceLines([PersistedLine(fx, document)], UserId);
+        SetPrivateProperty(document, nameof(ExpenseDocument.SupplierId), Guid.NewGuid());
+        fx.Docs.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        fx.SubcategoryPolicy = SupplierExpenseSubcategoryTestDoubles.Restricted(Guid.NewGuid());
+
+        var result = await fx.UpdateHandler.Handle(
+            fx.ValidUpdateCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no está permitida para el proveedor");
+    }
+
     private static void SetPrivateProperty<T>(object target, string propertyName, T value)
     {
         var property = target
@@ -748,6 +866,8 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         public Mock<IAccountRepository> Accounts { get; } = new();
         public Mock<IBusinessPartnerRepository> Partners { get; } = new();
         public Mock<IBusinessPartnerRoleRepository> Roles { get; } = new();
+        public Mock<ERP.Application.MasterData.Services.ISupplierExpenseSubcategoryPolicy> SubcategoryPolicy { get; set; } =
+            ERP.Application.Tests.TestSupport.SupplierExpenseSubcategoryTestDoubles.Unconfigured();
         public Mock<IPaymentTermDefaultResolver> PtResolver { get; } = new();
         public Mock<ISriTaxResolver> Tax { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
@@ -768,6 +888,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Accounts.Object,
                 Partners.Object,
                 Roles.Object,
+                SubcategoryPolicy.Object,
                 PtResolver.Object,
                 Tax.Object,
                 DocTypes.Object,
@@ -809,6 +930,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
                 Accounts.Object,
                 Partners.Object,
                 Roles.Object,
+                SubcategoryPolicy.Object,
                 PtResolver.Object,
                 Tax.Object,
                 DocTypes.Object,

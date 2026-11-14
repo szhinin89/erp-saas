@@ -2693,6 +2693,149 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("master_payment_terms", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.SupplierExpenseSubcategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ExpenseSubcategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expense_subcategory_id");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessPartnerId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("ExpenseSubcategoryId");
+
+                    b.HasIndex("TenantId", "CompanyId", "BusinessPartnerId", "ExpenseSubcategoryId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_bpes_company_bp_subcategory");
+
+                    b.HasIndex("TenantId", "CompanyId", "BusinessPartnerId", "IsActive")
+                        .HasDatabaseName("ix_bpes_company_bp_active");
+
+                    b.ToTable("master_supplier_expense_subcategories", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.SupplierExpenseSubcategoryAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<Guid>("ExpenseSubcategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expense_subcategory_id");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "BusinessPartnerId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_expense_subcategory_audit_bp_occurred_at");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_expense_subcategory_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_supplier_expense_subcategory_audit_user_occurred_at");
+
+                    b.ToTable("supplier_expense_subcategory_audit", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.SupplierRetentionDefault", b =>
                 {
                     b.Property<Guid>("Id")
@@ -20181,6 +20324,30 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_cbss_business_partner");
+                });
+
+            modelBuilder.Entity("ERP.Domain.MasterData.Entities.SupplierExpenseSubcategory", b =>
+                {
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessPartnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_bpes_business_partner");
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_bpes_company");
+
+                    b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", null)
+                        .WithMany()
+                        .HasForeignKey("ExpenseSubcategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_bpes_expense_subcategory");
                 });
 
             modelBuilder.Entity("ERP.Domain.MasterData.Entities.SupplierRetentionDefault", b =>

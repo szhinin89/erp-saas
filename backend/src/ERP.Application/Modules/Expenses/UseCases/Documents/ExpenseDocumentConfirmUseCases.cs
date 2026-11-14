@@ -7,6 +7,7 @@ using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
+using ERP.Application.MasterData.Services;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -411,6 +412,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
+    private readonly ISupplierExpenseSubcategoryPolicy _supplierSubcategories;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly ISriDocTypeCatalogResolver _docTypes;
@@ -431,6 +433,7 @@ public sealed class CreateConfirmedExpenseHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
+        ISupplierExpenseSubcategoryPolicy supplierSubcategories,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         ISriDocTypeCatalogResolver docTypes,
@@ -451,6 +454,7 @@ public sealed class CreateConfirmedExpenseHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
+        _supplierSubcategories = supplierSubcategories;
         _ptResolver = ptResolver;
         _tax = tax;
         _docTypes = docTypes;
@@ -574,6 +578,9 @@ public sealed class CreateConfirmedExpenseHandler
                 _company.CompanyId,
                 document.Id,
                 cmd.Lines,
+                _supplierSubcategories,
+                cmd.SupplierId,
+                null,
                 ct
             );
             if (lines.Error is not null)

@@ -1940,6 +1940,30 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "supplier_expense_subcategory_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    business_partner_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    expense_subcategory_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_supplier_expense_subcategory_audit", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "supplier_payment_sequences",
                 columns: table => new
                 {
@@ -3485,6 +3509,44 @@ namespace ERP.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_expense_category_nodes_expense_category_nodes_parent_id",
                         column: x => x.parent_id,
+                        principalTable: "expense_category_nodes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "master_supplier_expense_subcategories",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    business_partner_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    expense_subcategory_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_master_supplier_expense_subcategories", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_bpes_business_partner",
+                        column: x => x.business_partner_id,
+                        principalTable: "master_business_partners",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_bpes_company",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_bpes_expense_subcategory",
+                        column: x => x.expense_subcategory_id,
                         principalTable: "expense_category_nodes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
@@ -9035,6 +9097,32 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_bpes_company_bp_active",
+                table: "master_supplier_expense_subcategories",
+                columns: new[] { "tenant_id", "company_id", "business_partner_id", "is_active" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_master_supplier_expense_subcategories_business_partner_id",
+                table: "master_supplier_expense_subcategories",
+                column: "business_partner_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_master_supplier_expense_subcategories_company_id",
+                table: "master_supplier_expense_subcategories",
+                column: "company_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_master_supplier_expense_subcategories_expense_subcategory_id",
+                table: "master_supplier_expense_subcategories",
+                column: "expense_subcategory_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_bpes_company_bp_subcategory",
+                table: "master_supplier_expense_subcategories",
+                columns: new[] { "tenant_id", "company_id", "business_partner_id", "expense_subcategory_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_master_supplier_retention_defaults_business_partner_id",
                 table: "master_supplier_retention_defaults",
                 column: "business_partner_id");
@@ -10619,6 +10707,21 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
 
             migrationBuilder.CreateIndex(
+                name: "ix_supplier_expense_subcategory_audit_bp_occurred_at",
+                table: "supplier_expense_subcategory_audit",
+                columns: new[] { "tenant_id", "business_partner_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_supplier_expense_subcategory_audit_entity_occurred_at",
+                table: "supplier_expense_subcategory_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_supplier_expense_subcategory_audit_user_occurred_at",
+                table: "supplier_expense_subcategory_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_supplier_credit_movements_supplier_credit_id",
                 table: "supplier_credit_movements",
                 column: "supplier_credit_id");
@@ -11364,6 +11467,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "master_customer_segments");
 
             migrationBuilder.DropTable(
+                name: "master_supplier_expense_subcategories");
+
+            migrationBuilder.DropTable(
                 name: "master_supplier_retention_defaults");
 
             migrationBuilder.DropTable(
@@ -11555,6 +11661,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "supplier_credit_audit");
+
+            migrationBuilder.DropTable(
+                name: "supplier_expense_subcategory_audit");
 
             migrationBuilder.DropTable(
                 name: "supplier_credit_refund_transactions");

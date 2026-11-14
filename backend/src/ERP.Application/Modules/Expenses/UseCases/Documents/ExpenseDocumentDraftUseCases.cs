@@ -5,6 +5,7 @@ using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreateExpenseDraftFromReception;
 using ERP.Domain.Exceptions;
+using ERP.Application.MasterData.Services;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
@@ -190,6 +191,7 @@ public sealed class CreateExpenseDraftHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
+    private readonly ISupplierExpenseSubcategoryPolicy _supplierSubcategories;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly ISriDocTypeCatalogResolver _docTypes;
@@ -208,6 +210,7 @@ public sealed class CreateExpenseDraftHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
+        ISupplierExpenseSubcategoryPolicy supplierSubcategories,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         ISriDocTypeCatalogResolver docTypes,
@@ -226,6 +229,7 @@ public sealed class CreateExpenseDraftHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
+        _supplierSubcategories = supplierSubcategories;
         _ptResolver = ptResolver;
         _tax = tax;
         _docTypes = docTypes;
@@ -418,6 +422,9 @@ public sealed class CreateExpenseDraftHandler
                 _company.CompanyId,
                 document.Id,
                 cmd.Lines,
+                _supplierSubcategories,
+                cmd.SupplierId,
+                null,
                 ct
             );
             if (lines.Error is not null)
@@ -458,6 +465,7 @@ public sealed class UpdateExpenseDraftHandler
     private readonly IAccountRepository _accounts;
     private readonly IBusinessPartnerRepository _businessPartners;
     private readonly IBusinessPartnerRoleRepository _roles;
+    private readonly ISupplierExpenseSubcategoryPolicy _supplierSubcategories;
     private readonly ERP.Application.MasterData.Services.IPaymentTermDefaultResolver _ptResolver;
     private readonly ISriTaxResolver _tax;
     private readonly ISriDocTypeCatalogResolver _docTypes;
@@ -472,6 +480,7 @@ public sealed class UpdateExpenseDraftHandler
         IAccountRepository accounts,
         IBusinessPartnerRepository businessPartners,
         IBusinessPartnerRoleRepository roles,
+        ISupplierExpenseSubcategoryPolicy supplierSubcategories,
         ERP.Application.MasterData.Services.IPaymentTermDefaultResolver ptResolver,
         ISriTaxResolver tax,
         ISriDocTypeCatalogResolver docTypes,
@@ -486,6 +495,7 @@ public sealed class UpdateExpenseDraftHandler
         _accounts = accounts;
         _businessPartners = businessPartners;
         _roles = roles;
+        _supplierSubcategories = supplierSubcategories;
         _ptResolver = ptResolver;
         _tax = tax;
         _docTypes = docTypes;
@@ -560,6 +570,15 @@ public sealed class UpdateExpenseDraftHandler
         if (dueDate.Error is not null)
             return dueDate.Error.ToResult<ExpenseDocumentDetailDto>();
 
+        // EXPENSE-SUPPLIER-SUBCATEGORIES-01 (D1/D7): con el mismo proveedor se preservan las
+        // subcategorías ya persistidas del borrador (solo lo nuevo se valida contra la restricción);
+        // si el proveedor cambia no hay excepción: todas las líneas deben estar permitidas.
+        // Debe capturarse antes de UpdateDraft/ReplaceLines, que sobrescriben ambos datos.
+        IReadOnlySet<Guid>? preservedSubcategories =
+            document.SupplierId == cmd.SupplierId
+                ? document.Lines.Select(l => l.ExpenseSubcategoryId).ToHashSet()
+                : null;
+
         try
         {
             document.UpdateDraft(
@@ -590,6 +609,9 @@ public sealed class UpdateExpenseDraftHandler
                 _company.CompanyId,
                 document.Id,
                 cmd.Lines,
+                _supplierSubcategories,
+                cmd.SupplierId,
+                preservedSubcategories,
                 ct
             );
             if (lines.Error is not null)
@@ -811,12 +833,16 @@ internal static class ExpenseDraftRules
         Guid companyId,
         Guid documentId,
         IReadOnlyList<ExpenseDraftLineRequest> inputs,
+        ISupplierExpenseSubcategoryPolicy supplierSubcategories,
+        Guid supplierId,
+        IReadOnlySet<Guid>? preservedSubcategoryIds,
         CancellationToken ct
     )
     {
         if (inputs.Count == 0)
             return new LineResolution(null, Validation("Debe incluir al menos una linea."));
 
+        var scope = await supplierSubcategories.GetScopeAsync(supplierId, ct);
         var lines = new List<ExpenseLine>();
         foreach (var input in inputs)
         {
@@ -838,6 +864,19 @@ internal static class ExpenseDraftRules
                 return new LineResolution(
                     null,
                     Validation("Cada linea debe apuntar a una subcategoria de gasto.")
+                );
+            // EXPENSE-SUPPLIER-SUBCATEGORIES-01 (D1): el proveedor restringe las subcategorías de gasto
+            // permitidas. Sin asignaciones activas (Unconfigured) no restringe; con asignaciones activas
+            // sin ninguna disponible (RestrictedEmpty) no se admite ninguna selección nueva. Lo ya
+            // persistido de un borrador con el mismo proveedor se preserva (compatibilidad histórica).
+            if (!scope.Allows(category.Id) && preservedSubcategoryIds?.Contains(category.Id) != true)
+                return new LineResolution(
+                    null,
+                    Validation(
+                        scope.Mode == SupplierExpenseSubcategoryMode.RestrictedEmpty
+                            ? "El proveedor tiene subcategorías asignadas pero ninguna está disponible."
+                            : $"La subcategoría '{category.Name}' no está permitida para el proveedor."
+                    )
                 );
             // ACCOUNTING-CONTINUITY-01: la cuenta de la subcategoría es solo snapshot informativo,
             // no requisito operativo del gasto; Accounting la resuelve en cada intento contable.

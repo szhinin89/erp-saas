@@ -241,3 +241,9 @@ public sealed class SetRetentionDefaultStateRequest
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
 }
+
+/// <summary>EXPENSE-SUPPLIER-SUBCATEGORIES-01 — conjunto deseado de subcategorías de gasto del proveedor (puede ser vacío: quita la restricción).</summary>
+public sealed class SetSupplierExpenseSubcategoriesRequest
+{
+    public List<Guid> ExpenseSubcategoryIds { get; set; } = [];
+}

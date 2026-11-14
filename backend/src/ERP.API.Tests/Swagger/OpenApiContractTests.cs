@@ -492,7 +492,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "ItemVariants",
     ];
 
-    /// <summary>API-DOC-V1 / Fase 2B-5, lote C: Business Partners e Inventario (63).</summary>
+    /// <summary>API-DOC-V1 / Fase 2B-5, lote C: Business Partners e Inventario (65).</summary>
     private static readonly string[] Phase2B5LotC =
     [
         "BusinessPartners",
@@ -502,6 +502,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "CompanyBpPurchaseSettings",
         "CompanyBpSalesSettings",
         "SupplierRetentionDefaults",
+        "SupplierExpenseSubcategories",
         "Warehouses",
         "Stock",
         "StockAdjustments",
@@ -678,7 +679,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Las_229_operaciones_de_2B_5_estan_inventariadas()
+    public void Las_231_operaciones_de_2B_5_estan_inventariadas()
     {
         OperationsOf(Phase2B5LotD2).Should().HaveCount(20);
         OperationsOf(["ElectronicDocuments"]).Should().HaveCount(10);
@@ -687,11 +688,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         OperationsOf(["Ride"]).Should().HaveCount(3);
         OperationsOf([.. Phase2B5LotA, .. Phase2B5LotB, .. Phase2B5LotC, .. Phase2B5LotD1, .. Phase2B5LotD2])
             .Should()
-            .HaveCount(229);
+            .HaveCount(231);
 
         OperationsOf(Phase2B5LotA).Should().HaveCount(25);
         OperationsOf(Phase2B5LotB).Should().HaveCount(78);
-        OperationsOf(Phase2B5LotC).Should().HaveCount(63);
+        OperationsOf(Phase2B5LotC).Should().HaveCount(65);
         OperationsOf(Phase2B5LotD1).Should().HaveCount(43);
 
         var previous = OperationsOf(
@@ -709,11 +710,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     public void El_inventario_total_no_omite_ni_duplica_operaciones()
     {
         var all = Operations().ToList();
-        all.Should().HaveCount(518);
+        all.Should().HaveCount(520);
         all.Select(o => o.Op["operationId"]!.GetValue<string>()).Should().OnlyHaveUniqueItems();
         all.Select(o => $"{o.Method} {o.Path}").Should().OnlyHaveUniqueItems();
 
-        DocumentedOperations().Should().HaveCount(514);
+        DocumentedOperations().Should().HaveCount(516);
         OperationsOf(NotDocumentedControllers).Should().HaveCount(4);
 
         // Cada operación está documentada o figura en la lista explícita de excepciones: nada queda sin dueño.

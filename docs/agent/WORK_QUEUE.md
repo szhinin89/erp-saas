@@ -53,4 +53,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
 - CI-1169 (PUBLICADO `7be7d3a5d`, CI #1170 SUCCESS): gate del propietario no acreditado; no CLOSED. Evidencia en [STATUS](../../STATUS.md).
 - Incidencia Redis #1171: intento 1 FAILURE, intento 2 SUCCESS sobre el mismo SHA, confirmados por API; causa pendiente de diagnóstico independiente. Detalle en [STATUS](../../STATUS.md).
+- EXPENSE-SUPPLIER-SUBCATEGORIES-01 (FASE 1 IMPLEMENTADA: esquema, backend y validación en Gastos; pendiente gate del
+  propietario; sin commit): fases 2–4 (ficha del proveedor, formulario de Gastos, «Quitar restricción») no iniciadas y requieren
+  autorización tras el gate. D4 (recrear la BD local con la baseline nueva) sigue pendiente de autorización expresa. Evidencia en
+  [STATUS](../../STATUS.md); diseño en [el diseño](../decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md).
 - EXPENSE-UI-02 (cierre técnico `00bdef910`, CI #1193 SUCCESS): confirmar aceptación visual del propietario antes de declarar cierre funcional; no autoriza cambios. Evidencia en [STATUS](../../STATUS.md).
