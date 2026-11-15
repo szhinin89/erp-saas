@@ -368,14 +368,16 @@
 }
 
 /* SUPPLIER-CONFIG-MODAL-UX-01 — secciones del modal «Config SRI — Proveedor» (ZHModal size xl) */
-.md-supplier-config-grid {
+.md-supplier-config-grid,
+.md-bp-config-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
   gap: var(--space-4);
   align-items: start;
 }
 
-.md-supplier-config-section {
+.md-supplier-config-section,
+.md-bp-config-section {
   min-width: 0;
   padding: var(--space-4);
   border: 1px solid var(--color-border);
@@ -383,10 +385,13 @@
 }
 
 .md-supplier-config-section + .md-supplier-config-section,
-.md-supplier-config-grid + .md-supplier-config-section {
+.md-supplier-config-grid + .md-supplier-config-section,
+.md-bp-config-section + .md-bp-config-section,
+.md-bp-config-grid + .md-bp-config-section {
   margin-top: var(--space-4);
 }
 
+.md-bp-config-section h4,
 .md-supplier-purchase-default-section h4 {
   margin: 0 0 var(--space-3);
   font-size: var(--text-body-md-size);

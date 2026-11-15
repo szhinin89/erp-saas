@@ -234,6 +234,23 @@ describe("SupplierExpenseSubcategoriesSection", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("sin configure-company es solo lectura aunque el GET traiga catálogo: no hay ninguna vía de edición", async () => {
+    allow(true, false);
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    mount();
+    expect(
+      await screen.findByText(/Operativo › Servicios › AGUA — Agua/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByLabelText("Buscar subcategorías")).toBeNull();
+    expect(
+      businessPartnerFacade.setExpenseSubcategories,
+    ).not.toHaveBeenCalled();
+  });
+
   it("aunque el cliente crea poder configurar, sin catalog en la respuesta no ofrece edición", async () => {
     vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue({
       ...restricted,

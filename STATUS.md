@@ -1,10 +1,95 @@
 # Project Status
 
-## BP-CONSOLIDATION-01 — Business Partners, Etapa 1: extracción de componentes — IMPLEMENTADO local, pendiente gate del propietario (2026-11-14)
+## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 2 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapa 1 commit local `e0f1d338c`
+
+### Etapa 2 — ficha unificada (`/masterdata/business-partners/:id`)
+
+La ficha existente pasa a ser el centro único de administración de Proveedores y Clientes, **reutilizando**
+los componentes de la Etapa 1 (sin pantallas, formularios ni servicios paralelos). Solo frontend: sin
+backend, API, permisos, rutas, base de datos ni Dashboard. **Los listados de Clientes y Proveedores y sus
+modales no se tocan**; siguen funcionando hasta la Etapa 3 (retiro único de los accesos).
+
+- **Pestañas** (`ZHTabBar`, `bpDetailTabs.ts` como fuente única): Resumen, Datos generales, Proveedor
+  (solo con rol Supplier activo), Cliente (solo con rol Customer activo), Ubicaciones, Contactos y Roles.
+  `?tab=` permite enlaces profundos; una pestaña inexistente o de un rol no activo cae en Resumen y la URL
+  se normaliza (sin normalizar mientras la ficha carga). Al revocar un rol su pestaña desaparece.
+  Accesibilidad: `tablist` con nombre, `aria-controls`/`aria-labelledby` entre pestaña y `tabpanel`; las
+  pestañas visitadas permanecen montadas (ocultas) para conservar sus formularios. i18n es/en
+  (`masterdata.bp.detail.*`); los estilos reutilizan el diseño responsive del modal (`md-bp-config-*`).
+- **Datos generales:** con `businesspartners.update` reutiliza `MasterDataPartnerWizard` en modo `embedded`
+  para editar la identidad (mismo formulario, esquema y PUT que la edición del listado); sin permiso, los
+  mismos datos en solo lectura. En esta combinación nueva (`embedded` + edición) la identificación queda
+  bloqueada (el PUT no la modifica) y no se exige ni muestra «Tipo de Proveedor» (es de alta y se edita en
+  la pestaña Proveedor); los demás flujos del wizard no cambian.
+- **Proveedor:** `SupplierSriConfigForm`, `SupplierPurchaseDefaultSection`,
+  `SupplierRetentionDefaultsSection` y `SupplierExpenseSubcategoriesSection`, cada uno con su guardado
+  independiente. **Cliente:** `CustomerClassificationForm` y `CustomerSalesSettingsForm`.
+- **Permisos reales** (los de los controladores): `update` → identidad, configuración SRI, clasificación,
+  ubicaciones y contactos; `configure-company` → condición de compras, retenciones predeterminadas y
+  condición de ventas; `disable` → revocar rol y desactivar. Lo que el usuario puede consultar pero no
+  modificar se muestra en solo lectura (aviso, campos deshabilitados y sin acciones). Los componentes
+  reciben `readOnly` opcional (por defecto igual que antes), así que los modales no cambian.
+- **Empresa activa:** las secciones por empresa se remontan y la ficha se relee al cambiar de empresa.
+- **Cambios sin guardar (BP-NAV-GUARD-01, IMPLEMENTADO local):** `onDirtyChange` en los formularios de
+  cada sección y un único hook, `useUnsavedChangesGuard` (`hooks/`), con los mecanismos oficiales de React
+  Router: `useBlocker` + `message.confirm` + `beforeunload`. Para habilitar `useBlocker`, `App.tsx` migra de
+  `BrowserRouter` a `createBrowserRouter` + `RouterProvider` con una ruta comodín (`path="*"`) que renderiza
+  el árbol declarativo existente, movido sin cambios a `AppRoutes.tsx` (rutas, `ProtectedRoute`/guards,
+  layouts, `GlobalNavigatorRegistrar` y permisos intactos; sin rediseño de rutas). Cubre menú lateral,
+  Atrás/Adelante, enlaces internos, «Volver» y cualquier cambio sin guardar en las secciones de la ficha
+  (identidad, SRI, compras, clasificación y ventas); una sola confirmación por navegación bloqueada;
+  `?tab=` (misma ruta) nunca bloquea. «Volver» ya no confirma por su cuenta (lo hace el bloqueador).
+  Corrección asociada: cada guardado exitoso remonta el formulario con lo persistido (antes, si la relectura
+  devolvía los mismos valores, el formulario quedaba «sucio» y pedía confirmar sin motivo).
+  **Cierre de la protección (acciones voluntarias y eventos automáticos):** el mismo hook es la fuente
+  única de cambios pendientes (registro del módulo que leen el bloqueador, `beforeunload` y las acciones
+  voluntarias) y expone `useDiscardConfirmation()` / `releaseDiscardApproval()`. Antes de ejecutar se
+  consulta y, con cambios pendientes, se muestra la confirmación oficial una sola vez (clics repetidos,
+  router y acción comparten la misma): **cambio de empresa** (`CompanySwitcher`, antes de `switchCompany`),
+  **cerrar sesión** (`AppLayout`, antes de `logoutSession()`) y **volver al Admin Core** (`AppLayout`, antes
+  de `returnToGlobal()`). Cancelar no ejecuta nada y conserva empresa, sesión y formulario; confirmar deja una
+  aprobación que evita la segunda confirmación del router en la navegación siguiente y se libera al
+  terminar (éxito o fallo). Sin cambios pendientes el comportamiento no cambia.
+  **Eventos automáticos nunca se bloquean:** 401 tras refresh fallido (`fullLogout()` + `location.href`),
+  expiración, revocación y logout remoto dejan primero la sesión sin autenticar; con la sesión inactiva
+  ni `useBlocker` ni `beforeunload` intervienen (incluida la navegación a `/login` del `ProtectedRoute`),
+  no se restaura ninguna sesión y una confirmación que estuviera abierta queda sin efecto. La inactividad
+  solo muestra el overlay de bloqueo (no navega ni cierra la sesión).
+  **Casos no protegidos (deliberado, informados):** (1) «Salir» del overlay de bloqueo por inactividad
+  (`SessionLockOverlay`): es una pantalla de seguridad con el formulario oculto, no se apila una
+  confirmación sobre ella (ambos usan `z-index: 1000`; el usuario conserva «desbloquear» con su contraseña);
+  (2) cierres de sesión del shell AdminCore (`AdminCoreLayout`, `AdminCoreCompanyCreatePage`): ninguna
+  pantalla de ese shell registra cambios pendientes; (3) la confirmación que quedara abierta cuando termina
+  la sesión no se cierra sola (el servicio de mensajes no ofrece cierre programático): responderla no tiene
+  efecto. Las subcategorías de gasto solo guardan con su propio botón (no registran cambios pendientes).
+- **Subcategorías de gasto (permisos):** `SupplierExpenseSubcategoriesSection` conserva
+  `masterdata.businesspartners.configure-company` para modificar: solo es editable con
+  `canEdit && catalog !== null`; casillas, búsqueda, «Guardar subcategorías» y «Quitar restricción» (única
+  vía a `apply`/PUT) existen únicamente en ese caso; con solo `view` se muestra la lista de solo lectura. El
+  backend (sin cambios) exige el mismo permiso en el PUT y solo entrega `catalog` con él. La ficha no
+  evalúa otro permiso para esta sección. Regresiones añadidas (con `update` y sin `configure-company`, o
+  con catálogo presente pero sin el permiso: sin controles ni PUT; con el permiso: edita y guarda con su
+  PUT); verificadas con mutación (quitar `canEdit` las hace fallar).
+- **ADR-047:** `MasterDataBusinessPartnerDetailPage.tsx` 274 líneas; archivos nuevos ≤ 442; el wizard pasa
+  de 611 a 621 (techo vigente 647, sin cambios en `architecture-grandfather.json`).
+
+Validación (focalizada, sin suite completa): `src/modules/masterData` 278/278 en 3 corridas (incluye
+49 pruebas nuevas de la ficha, 17 de ellas de BP-NAV-GUARD-01; además 4 del `App` real con el router de datos en `src/App.router.test.tsx`: pestañas por rol, enlaces profundos, accesibilidad, solo lectura, cambio de empresa,
+cambios sin guardar, edición de identidad, configuración de Proveedor/Cliente y permisos), consumidor
+del wizard `CreateSupplierModal` 4/4, `tsc -b` PASS, ESLint 0 errores, `architecture:check` PASS
+(incluye i18n), `npm run build` OK y guardrail oficial `-SkipFrontendChunk` OK. Limitaciones: sin E2E
+ni verificación visual en navegador real (responsive comprobado por estructura: `ZHTabBar`
+desplazable y rejilla `auto-fit`); un RUC/cédula histórico inválido bloquea guardar la identidad,
+igual que en la edición del listado.
+Cierre de BP-NAV-GUARD-01: 19 pruebas más (hook 9, `CompanySwitcher` 4, `AppLayout` 6); bloque focal de
+guard + sesión + rutas + `App` real 119/119, `masterData` 278/278 ×3, `tsc -b`, `npm run build`,
+`architecture:check` y guardrail oficial `-SkipFrontendChunk` PASS.
+
+### Etapa 1 — extracción de componentes (commit local `e0f1d338c`, sin push)
 
 Preparación de la consolidación de Proveedores y Clientes: **solo extracciones sin cambio funcional**
 (`frontend/src/modules/masterData/`). Sin backend, API, permisos, base de datos, rutas, contratos ni
-Dashboard; los modales actuales se conservan. Sin staging, commit ni push.
+Dashboard; los modales actuales se conservan.
 
 - **Proveedores:** `SupplierSriConfigForm` (formulario SRI) y `SupplierRetentionDefaultsSection`
   (retenciones predeterminadas); se reutilizan `SupplierPurchaseDefaultSection` (sin cambios) y

@@ -12,11 +12,23 @@ import type { PaymentTermDto } from "../api/paymentTermService";
  * fetch/save propios — un fallo en uno no afecta al otro y cada uno muestra su propio error.
  * (Extraída de MasterDataSuppliersPage sin cambio de comportamiento; mismo guardado independiente.)
  */
-export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
+export function SupplierPurchaseDefaultSection({
+  bpId,
+  readOnly = false,
+  onDirtyChange,
+}: {
+  bpId: string;
+  /** Ficha sin permiso `configure-company`: selector deshabilitado y sin botón de guardado. */
+  readOnly?: boolean;
+  /** Avisa de cambios sin guardar (protección de la ficha). */
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
   const [paymentTermsList, setPaymentTermsList] = useState<PaymentTermDto[]>(
     [],
   );
   const [purchaseDefaultPtId, setPurchaseDefaultPtId] = useState("");
+  // Último valor persistido (carga o guardado): base para detectar cambios sin guardar.
+  const [persistedPtId, setPersistedPtId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +47,10 @@ export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
     businessPartnerFacade
       .getPurchaseSettings(bpId)
       .then((dto) => {
-        if (!cancelled) setPurchaseDefaultPtId(dto.paymentTermId ?? "");
+        if (!cancelled) {
+          setPurchaseDefaultPtId(dto.paymentTermId ?? "");
+          setPersistedPtId(dto.paymentTermId ?? "");
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled)
@@ -61,6 +76,7 @@ export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
       await businessPartnerFacade.upsertPurchaseSettings(bpId, {
         paymentTermId: purchaseDefaultPtId || null,
       });
+      setPersistedPtId(purchaseDefaultPtId);
       setSaved(true);
     } catch (err: unknown) {
       setError(
@@ -72,6 +88,9 @@ export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
       setSaving(false);
     }
   };
+
+  const dirty = !loading && purchaseDefaultPtId !== persistedPtId;
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   return (
     <div className="md-supplier-purchase-default-section">
@@ -87,7 +106,7 @@ export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
             setPurchaseDefaultPtId(e.target.value);
             setSaved(false);
           }}
-          disabled={loading || saving}
+          disabled={loading || saving || readOnly}
         >
           <option value="">
             — Sin default (exigir selección al crear documentos) —
@@ -101,19 +120,21 @@ export function SupplierPurchaseDefaultSection({ bpId }: { bpId: string }) {
             ))}
         </ZhSelect>
       </ZHField>
-      <ZHBtn
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={loading || saving}
-        onClick={() => void handleSave()}
-      >
-        {saving
-          ? "Guardando..."
-          : saved
-            ? "Guardado ✓"
-            : "Guardar condición de compras/gastos"}
-      </ZHBtn>
+      {!readOnly && (
+        <ZHBtn
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={loading || saving}
+          onClick={() => void handleSave()}
+        >
+          {saving
+            ? "Guardando..."
+            : saved
+              ? "Guardado ✓"
+              : "Guardar condición de compras/gastos"}
+        </ZHBtn>
+      )}
     </div>
   );
 }

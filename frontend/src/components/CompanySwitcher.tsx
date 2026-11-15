@@ -4,10 +4,15 @@ import "./CompanySwitcher.css";
 import { authService } from "../modules/auth/api/authService";
 import { syncCompanySelection } from "../modules/auth/syncCompanySelection";
 import { useAuthStore } from "../store/authStore";
+import {
+  releaseDiscardApproval,
+  useDiscardConfirmation,
+} from "../hooks/useUnsavedChangesGuard";
 import type { AccessibleCompany } from "../types/access";
 
 export function CompanySwitcher() {
   const navigate = useNavigate();
+  const confirmDiscard = useDiscardConfirmation();
   const user = useAuthStore((s) => s.user);
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
   const [switching, setSwitching] = useState(false);
@@ -39,6 +44,8 @@ export function CompanySwitcher() {
 
   const onChange = async (companyId: string) => {
     if (!companyId || companyId === user.companyId) return;
+    // Con cambios sin guardar se confirma ANTES de alterar la empresa activa; cancelar no cambia nada.
+    if (!(await confirmDiscard())) return;
     setSwitching(true);
     try {
       const session = await authService.switchCompany(companyId);
@@ -46,6 +53,7 @@ export function CompanySwitcher() {
       navigate("/dashboard", { replace: true });
     } finally {
       setSwitching(false);
+      releaseDiscardApproval();
     }
   };
 

@@ -23,10 +23,15 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01 Etapa 1 (IMPLEMENTADO local, pendiente gate del propietario; sin commit ni
-  push): extracción de componentes de Proveedores, Clientes y ficha compartida sin cambio funcional,
-  más la corrección de EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01 (CORREGIDO con prueba de
-  regresión). La Etapa 2 no está autorizada. Evidencia y archivos en [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01 (Etapa 1 commit local `e0f1d338c`, sin push; Etapa 2 ficha unificada
+  IMPLEMENTADA local, pendiente gate del propietario, sin commit ni push): pestañas por rol, `?tab=`,
+  permisos y solo lectura, reutilizando los componentes extraídos. Incluye la corrección de
+  EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01 (CORREGIDO con prueba de regresión). La Etapa 3
+  (retirar los accesos de los listados) no está autorizada. Evidencia en [STATUS](../../STATUS.md).
+- BP-NAV-GUARD-01 (IMPLEMENTADO local, pendiente gate del propietario, sin commit ni push): router de
+  datos en `App.tsx`; protección de cambios sin guardar de la ficha con `useBlocker` y consulta previa en el
+  cambio de empresa, el cierre de sesión y «Volver al Admin Core»; los eventos automáticos de seguridad no
+  se bloquean. Casos no protegidos y evidencia en [STATUS](../../STATUS.md).
 - Revisión de perfiles de acceso antes de desplegar (PENDING; riesgo residual de
   PURCHASES-RECEPTION-SECURITY-01, CLOSED con CI #1128 SUCCESS): perfiles con `purchases.view` sin
   `purchases.create`/`purchases.update` pierden acciones de recepción y conciliación. Consulta de

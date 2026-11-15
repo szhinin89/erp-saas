@@ -13,8 +13,12 @@ type Props = {
   error: string | null;
   /** Bandera compartida con el modal: bloquea el cierre mientras hay un guardado en curso. */
   submittingRef: MutableRefObject<boolean>;
-  /** Cancelar/cerrar manual (el modal lo protege mientras hay un guardado en curso). */
-  onClose: () => void;
+  /** Ficha sin permiso de edición: campo deshabilitado y sin acciones. */
+  readOnly?: boolean;
+  /** Cancelar/cerrar manual (el modal lo protege mientras hay un guardado en curso). Ausente en la ficha. */
+  onClose?: () => void;
+  /** Avisa de cambios sin guardar (protección de la ficha). */
+  onDirtyChange?: (dirty: boolean) => void;
   /** Cierre tras un guardado exitoso (sin la guarda de guardado en curso). */
   onSaved: () => void;
   onSave: (body: { paymentTermId: string | null }) => Promise<void>;
@@ -29,7 +33,9 @@ export function CustomerSalesSettingsForm({
   saving,
   error,
   submittingRef,
+  readOnly = false,
   onClose,
+  onDirtyChange,
   onSaved,
   onSave,
 }: Props) {
@@ -50,6 +56,8 @@ export function CustomerSalesSettingsForm({
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+  const dirty = paymentTermId !== (initialSettings?.paymentTermId ?? "");
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
   const invalidSelection = !!paymentTermId && !terms.some((pt) => pt.id === paymentTermId && pt.isActive);
   return (
     <form onSubmit={async (event) => {
@@ -70,13 +78,13 @@ export function CustomerSalesSettingsForm({
       {(error || formError) && <ZHPageNotice variant="error" message={error ?? formError!} />}
       {invalidSelection && !loading && <ZHPageNotice variant="warning" message="La condición configurada no está disponible. Seleccione una condición activa o quite el valor predeterminado." />}
       <ZHField label="Condición predeterminada para ventas" hint="Aplica a la empresa activa. Sin valor predeterminado, deberá seleccionar una condición al crear la venta.">
-        <ZhSelect aria-label="Condición predeterminada para ventas" value={paymentTermId} disabled={loading || saving || loadFailed} onChange={(event) => setPaymentTermId(event.target.value)}>
+        <ZhSelect aria-label="Condición predeterminada para ventas" value={paymentTermId} disabled={loading || saving || loadFailed || readOnly} onChange={(event) => setPaymentTermId(event.target.value)}>
           <option value="">Sin condición predeterminada</option>
           {invalidSelection && <option value={paymentTermId} disabled>Condición no disponible</option>}
           {terms.filter((pt) => pt.isActive).map((pt) => <option key={pt.id} value={pt.id}>{pt.code} — {pt.name} ({pt.summary})</option>)}
         </ZhSelect>
       </ZHField>
-      <ZHFormActions onCancel={onClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />
+      {!readOnly && <ZHFormActions onCancel={onClose} hideCancel={!onClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />}
     </form>
   );
 }

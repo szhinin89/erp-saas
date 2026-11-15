@@ -76,6 +76,8 @@ interface Props {
    * El wizard normal de MasterData (`MasterDataSuppliersPage`/`MasterDataCustomersPage`) no pasa
    * esta prop y sigue exactamente igual. */
   embedded?: boolean;
+  /** Avisa de cambios sin guardar (modo embebido de edición en la ficha). */
+  onDirtyChange?: (dirty: boolean) => void;
   /** Form association for actions owned by the enclosing ZHModal; presentation only. */
   modalFormId?: string;
   onSubmitCreate: (
@@ -126,6 +128,7 @@ export function MasterDataPartnerWizard({
   editingPartner,
   initialValues,
   embedded = false,
+  onDirtyChange,
   modalFormId,
   onSubmitCreate,
   onSubmitUpdate,
@@ -154,8 +157,10 @@ export function MasterDataPartnerWizard({
   const roleLabel = role === "customer" ? "Cliente" : "Proveedor";
   const roleLabelLower = role === "customer" ? "cliente" : "proveedor";
 
+  // Edición embebida (ficha): solo identidad; «Tipo de Proveedor» es de alta y se edita en la pestaña Proveedor.
+  const identityOnly = embedded && isEdit;
   const form = useForm<BusinessPartnerFormValues>({
-    resolver: zodResolver(businessPartnerSchema(role)),
+    resolver: zodResolver(businessPartnerSchema(identityOnly ? "customer" : role)),
     defaultValues: {
       identificationType:
         editingPartner?.identificationType ??
@@ -175,6 +180,9 @@ export function MasterDataPartnerWizard({
       refundProviderTypeCode: "",
     },
   });
+
+  const isDirty = form.formState.isDirty;
+  useEffect(() => onDirtyChange?.(isDirty), [isDirty, onDirtyChange]);
 
   useEffect(() => {
     if (!isEdit && !embedded) {
@@ -326,13 +334,16 @@ export function MasterDataPartnerWizard({
               saving={submitting}
               usage={role}
               modalLayout
+              identityLocked={identityOnly}
             />
-            <ZHPageNotice
-              variant="info"
-              message={role === "customer"
-                ? t("masterdata.wizard.finalNotice.customer", "Quedará disponible para ventas, facturación y cuentas por cobrar.")
-                : t("masterdata.wizard.finalNotice.supplier", "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.")}
-            />
+            {!identityOnly && (
+              <ZHPageNotice
+                variant="info"
+                message={role === "customer"
+                  ? t("masterdata.wizard.finalNotice.customer", "Quedará disponible para ventas, facturación y cuentas por cobrar.")
+                  : t("masterdata.wizard.finalNotice.supplier", "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.")}
+              />
+            )}
           </ZHGrid>
         </form>
       </FormProvider>

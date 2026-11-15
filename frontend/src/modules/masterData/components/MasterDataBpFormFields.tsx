@@ -15,6 +15,8 @@ type Props = {
   modalLayout?: boolean;
   section?: "identity" | "review";
   usage?: "customer" | "supplier";
+  /** Edición de un socio existente (ficha): identificación de solo lectura (el PUT no la modifica) y sin la configuración de alta del proveedor. */
+  identityLocked?: boolean;
 };
 
 export function MasterDataBpFormFields({
@@ -22,6 +24,7 @@ export function MasterDataBpFormFields({
   modalLayout = false,
   section = "identity",
   usage,
+  identityLocked = false,
 }: Props) {
   const {
     register,
@@ -100,7 +103,7 @@ export function MasterDataBpFormFields({
           >
             <ZhSelect
               {...register("identificationType")}
-              disabled={saving || loadingTypes}
+              disabled={saving || loadingTypes || identityLocked}
             >
               {loadingTypes ? (
                 <option value="">Cargando…</option>
@@ -122,7 +125,7 @@ export function MasterDataBpFormFields({
             <ZhTextInput
               className="zh-input mono"
               {...register("identificationNumber")}
-              disabled={saving}
+              disabled={saving || identityLocked}
             />
           </ZHField>
 
@@ -209,7 +212,7 @@ export function MasterDataBpFormFields({
         </ZHGrid>
       </div>
 
-      {usage === "supplier" && (
+      {usage === "supplier" && !identityLocked && (
         <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
           <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Configuración del proveedor</h4>
           <ZHGrid cols={2}>

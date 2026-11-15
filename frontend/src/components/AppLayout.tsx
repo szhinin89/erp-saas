@@ -16,10 +16,15 @@ import { useBranchGate } from "./useBranchGate";
 import { BranchSelectorModal } from "./BranchSelectorModal";
 import { authService } from "../modules/auth/api/authService";
 import { useAuthStore } from "../store/authStore";
+import {
+  releaseDiscardApproval,
+  useDiscardConfirmation,
+} from "../hooks/useUnsavedChangesGuard";
 import "./AppLayout.css";
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const confirmDiscard = useDiscardConfirmation();
 
   const {
     user,
@@ -36,11 +41,20 @@ export function AppLayout() {
   // protegidas (AppLayout se monta una sola vez, no por pantalla).
   useIdleTimeout();
 
+  // Acciones voluntarias que alteran la sesión: con cambios sin guardar se confirma ANTES de ejecutarlas
+  // (cancelar conserva sesión y formulario). Los cierres automáticos de sesión nunca pasan por aquí.
   const handleLogout = () => {
-    void logoutSession().finally(() => navigate("/login"));
+    void (async () => {
+      if (!(await confirmDiscard())) return;
+      void logoutSession().finally(() => {
+        navigate("/login");
+        releaseDiscardApproval();
+      });
+    })();
   };
 
   const handleReturnToGlobal = async () => {
+    if (!(await confirmDiscard())) return;
     try {
       const payload = await authService.returnToGlobal();
       login(payload);
@@ -48,6 +62,8 @@ export function AppLayout() {
     } catch {
       // Fallback documentado (Fase E): si /return falla, cerrar sesión y volver al login global.
       void logoutSession().finally(() => navigate("/admin-core/login"));
+    } finally {
+      releaseDiscardApproval();
     }
   };
 

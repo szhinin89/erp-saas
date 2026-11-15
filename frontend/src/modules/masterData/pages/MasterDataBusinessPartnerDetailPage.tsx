@@ -1,63 +1,71 @@
-import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { useI18n } from "../../../i18n/i18n";
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { message } from "../../../lib/messages";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { formatApiRequestError } from "../../lib/apiError";
+import { useAuthStore } from "../../../store/authStore";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
-import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
-import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
+import { BpSummarySection } from "../components/BpSummarySection";
+import { BpGeneralSection } from "../components/BpGeneralSection";
+import { BpSupplierSection } from "../components/BpSupplierSection";
+import { BpCustomerSection } from "../components/BpCustomerSection";
 import { BpLocationsSection } from "../components/BpLocationsSection";
 import { BpContactsSection } from "../components/BpContactsSection";
+import { BpRolesSection } from "../components/BpRolesSection";
+import {
+  availableBpTabs,
+  resolveBpTab,
+  type BpTabId,
+} from "../components/bpDetailTabs";
 import type {
   BusinessPartnerDetailDto,
-  BusinessPartnerRoleDto,
   BpLocationDto,
   BpContactDto,
 } from "../types/businessPartner.types";
 import "./masterdata-pages.css";
-import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const TAB_LABELS: Record<BpTabId, [key: string, fallback: string]> = {
+  summary: ["masterdata.bp.detail.tabs.summary", "Resumen"],
+  general: ["masterdata.bp.detail.tabs.general", "Datos generales"],
+  supplier: ["masterdata.bp.detail.tabs.supplier", "Proveedor"],
+  customer: ["masterdata.bp.detail.tabs.customer", "Cliente"],
+  locations: ["masterdata.bp.detail.tabs.locations", "Ubicaciones"],
+  contacts: ["masterdata.bp.detail.tabs.contacts", "Contactos"],
+  roles: ["masterdata.bp.detail.tabs.roles", "Roles"],
+};
 
-function Row({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div className="md-detail-row">
-      <span className="md-detail-label">{label}</span>
-      <span className="md-detail-value">
-        {value ?? <em className="md-detail-empty">—</em>}
-      </span>
-    </div>
-  );
-}
-
-// ── Main page ────────────────────────────────────────────────────────────────
-
-type TabId = "identity" | "roles" | "locations" | "contacts";
-
+/**
+ * Ficha unificada de Business Partner: centro único de administración de Proveedores y Clientes.
+ * Cada pestaña compone los componentes ya existentes (identidad = wizard embebido; Proveedor y
+ * Cliente = formularios de configuración; Ubicaciones/Contactos/Roles), con permisos y guardados
+ * independientes. `?tab=` permite enlaces profundos; una pestaña inexistente o de un rol no activo
+ * cae en Resumen. Las pestañas visitadas permanecen montadas para no perder cambios sin guardar.
+ */
 export function MasterDataBusinessPartnerDetailPage() {
   const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { canShow } = usePermissionsUi();
   const canUpdate = canShow("masterdata.businesspartners.update");
   const canDisable = canShow("masterdata.businesspartners.disable");
-  const { options: idTypes } = useSriIdTypes();
-  const { options: legalEntityTypes } = useLegalEntityTypes();
+  const canConfigure = canShow("masterdata.businesspartners.configure-company");
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
 
   const [bp, setBp] = useState<BusinessPartnerDetailDto | null>(null);
   const [locations, setLocations] = useState<BpLocationDto[]>([]);
   const [contacts, setContacts] = useState<BpContactDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("identity");
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [visited, setVisited] = useState<ReadonlySet<BpTabId>>(new Set());
+  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({});
 
   const reload = useCallback(
     async (showLoading = false) => {
@@ -82,54 +90,88 @@ export function MasterDataBusinessPartnerDetailPage() {
     [id],
   );
 
+  // También al cambiar de empresa: las secciones por empresa se remontan (clave) y la ficha se relee.
   useEffect(() => {
     void reload(true);
-  }, [reload]);
+  }, [reload, companySessionVersion]);
 
-  // ── Role revoke ────────────────────────────────────────────────────────────
+  const reloadQuiet = useCallback(() => reload(), [reload]);
 
-  const revokeRole = async (role: BusinessPartnerRoleDto) => {
-    if (!id || saving) return;
+  // ── Pestañas y enlaces profundos ───────────────────────────────────────────
 
-    const confirmed = await message.confirm({
-      title: `Revocar rol "${role.roleLabel}"`,
-      message: `El socio de negocio dejará de operar bajo el rol "${role.roleLabel}". El socio de negocio en sí no se elimina — solo deja de tener este rol activo.`,
-      variant: "danger",
-      confirmLabel: "Revocar rol",
-      cancelLabel: "Cancelar",
-    });
-    if (!confirmed) return;
+  const supplierRole = bp?.roles.find(
+    (r) => r.isActive && r.roleType === "Supplier",
+  );
+  const customerRole = bp?.roles.find(
+    (r) => r.isActive && r.roleType === "Customer",
+  );
+  const available = useMemo(
+    () =>
+      bp
+        ? availableBpTabs({
+            hasSupplier: Boolean(supplierRole),
+            hasCustomer: Boolean(customerRole),
+          })
+        : [],
+    [bp, supplierRole, customerRole],
+  );
+  const requestedTab = searchParams.get("tab");
+  const activeTab = resolveBpTab(requestedTab, available);
 
-    setSaving(true);
-    setActionError(null);
-    try {
-      await businessPartnerFacade.revokeRole(id, role.id);
-      await reload();
-      message.success(`Rol "${role.roleLabel}" revocado correctamente.`);
-    } catch (err) {
-      const errorMessage = formatApiRequestError(err, {
-        generic: "Error al revocar el rol.",
-      });
-      setActionError(errorMessage);
-      message.error(errorMessage);
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Con la ficha cargada, un `?tab=` inválido o de un rol no activo se normaliza a Resumen.
+  useEffect(() => {
+    if (bp && requestedTab !== null && requestedTab !== activeTab)
+      setSearchParams({ tab: activeTab }, { replace: true });
+  }, [bp, requestedTab, activeTab, setSearchParams]);
+
+  // Solo se registra una pestaña realmente disponible (antes de cargar no hay pestañas).
+  useEffect(() => {
+    if (!bp) return;
+    setVisited((prev) =>
+      prev.has(activeTab) ? prev : new Set(prev).add(activeTab),
+    );
+  }, [bp, activeTab]);
+
+  // ── Cambios sin guardar ────────────────────────────────────────────────────
+
+  const reportDirty = useCallback((key: string, dirty: boolean) => {
+    setDirtyMap((prev) => (prev[key] === dirty ? prev : { ...prev, [key]: dirty }));
+  }, []);
+  const hasUnsaved = Object.entries(dirtyMap).some(
+    ([key, dirty]) =>
+      dirty &&
+      !(key.startsWith("supplier") && !supplierRole) &&
+      !(key.startsWith("customer") && !customerRole),
+  );
+
+  // Bloquea la navegación a otra ruta (menú, Atrás/Adelante, «Volver») con la confirmación oficial,
+  // una sola vez por navegación; `?tab=` no cambia de ruta y nunca bloquea. Incluye `beforeunload`.
+  useUnsavedChangesGuard(hasUnsaved);
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
   const activeRoles = bp?.roles.filter((r) => r.isActive) ?? [];
-  const revokedRoles = bp?.roles.filter((r) => !r.isActive) ?? [];
   const activeLocs = locations.filter((l) => l.isActive);
   const activeCons = contacts.filter((c) => c.isActive);
+  const counts: Partial<Record<BpTabId, number>> = {
+    roles: activeRoles.length,
+    locations: activeLocs.length,
+    contacts: activeCons.length,
+  };
 
-  const TABS: { id: TabId; label: string; count?: number }[] = [
-    { id: "identity", label: "Identidad" },
-    { id: "roles", label: "Roles", count: activeRoles.length },
-    { id: "locations", label: "Ubicaciones", count: activeLocs.length },
-    { id: "contacts", label: "Contactos", count: activeCons.length },
-  ];
+  const renderPanel = (tabId: BpTabId, content: () => React.ReactNode) =>
+    available.includes(tabId) && (visited.has(tabId) || tabId === activeTab) ? (
+      <div
+        key={tabId}
+        role="tabpanel"
+        id={`bp-panel-${tabId}`}
+        aria-labelledby={`bp-tab-${tabId}`}
+        hidden={tabId !== activeTab}
+        className="prd-tab-content"
+      >
+        {content()}
+      </div>
+    ) : null;
 
   return (
     <ErpPageTemplate
@@ -158,157 +200,95 @@ export function MasterDataBusinessPartnerDetailPage() {
             ))}
           </div>
 
-          <ZHTabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          <ZHTabBar
+            ariaLabel={t("masterdata.bp.detail.tabs.aria", "Secciones de la ficha")}
+            idPrefix="bp-tab"
+            panelIdPrefix="bp-panel"
+            tabs={available.map((tabId) => ({
+              id: tabId,
+              label: t(TAB_LABELS[tabId][0], TAB_LABELS[tabId][1]),
+              count: counts[tabId],
+            }))}
+            activeTab={activeTab}
+            onChange={(tabId) => setSearchParams({ tab: tabId })}
+          />
 
-          {/* ── Identity ──────────────────────────────────────────── */}
-          {activeTab === "identity" && (
-            <section className="md-detail-section">
-              <Row
-                label="Tipo de identificación"
-                value={`${bp.identificationType} — ${getSriIdTypeName(bp.identificationType, idTypes)}`}
+          {renderPanel("summary", () => (
+            <BpSummarySection bp={bp} locations={locations} contacts={contacts} />
+          ))}
+          {renderPanel("general", () => (
+            <BpGeneralSection
+              bp={bp}
+              canUpdate={canUpdate}
+              onReload={reloadQuiet}
+              onDirtyChange={(d) => reportDirty("general", d)}
+            />
+          ))}
+          {supplierRole &&
+            renderPanel("supplier", () => (
+              <BpSupplierSection
+                key={`supplier-${companySessionVersion}`}
+                bpId={bp.id}
+                role={supplierRole}
+                canUpdate={canUpdate}
+                canConfigure={canConfigure}
+                onReload={reloadQuiet}
+                onDirtyChange={reportDirty}
               />
-              <Row label="Número" value={bp.identificationNumber} />
-              <Row
-  label="Tipo de entidad legal"
-  value={legalEntityTypes.find((x) => x.code === bp.legalEntityTypeCode)?.name ?? String(bp.legalEntityTypeCode)}
-/>
-              <Row label="Razón social" value={bp.legalName} />
-              <Row label="Nombre comercial" value={bp.tradeName} />
-              <Row label="País" value={bp.countryCode ?? "EC"} />
-              <Row label="Creado" value={formatDateTime(bp.createdAt)} />
-            </section>
-          )}
-
-          {/* ── Roles ─────────────────────────────────────────────── */}
-          {activeTab === "roles" && (
-            <section className="md-detail-section">
-              {bp.roles.length === 0 ? (
-                <p className="md-detail-empty-hint">
-                  Este BP no tiene roles asignados.
-                </p>
-              ) : (
-                <>
-                  {activeRoles.length > 0 && (
-                    <div className="md-roles-grid">
-                      {activeRoles.map((r) => (
-                        <div key={r.id} className="md-role-card">
-                          <div className="md-role-card__header">
-                            <Badge variant="success" label={r.roleLabel} />
-                            {canDisable && (
-                              <ZHBtn
-                                variant="ghost"
-                                size="sm"
-                                disabled={saving}
-                                onClick={() => void revokeRole(r)}
-                              >
-                                Revocar
-                              </ZHBtn>
-                            )}
-                          </div>
-                          {r.notes && (
-                            <p className="md-role-card__notes">{r.notes}</p>
-                          )}
-                          {r.customerConfig && (
-                            <div className="md-role-card__config md-role-card__config--crm">
-                              {r.customerConfig.customerCategory && (
-                                <small>
-                                  Categoría: {r.customerConfig.customerCategory}
-                                </small>
-                              )}
-                              {r.customerConfig.customerSegment && (
-                                <small>
-                                  Segmento: {r.customerConfig.customerSegment}
-                                </small>
-                              )}
-                              {r.customerConfig.salesZone && (
-                                <small>
-                                  Zona: {r.customerConfig.salesZone}
-                                </small>
-                              )}
-                              {r.customerConfig.creditRating && (
-                                <small>
-                                  Rating: {r.customerConfig.creditRating}
-                                </small>
-                              )}
-                              {r.customerConfig.loyaltyTier && (
-                                <small>
-                                  Fidelización: {r.customerConfig.loyaltyTier}
-                                </small>
-                              )}
-                            </div>
-                          )}
-                          {r.supplierConfig && (
-                            <div className="md-role-card__config">
-                              <small>
-                                Sustento:{" "}
-                                {r.supplierConfig.defaultTaxSupportCode ?? "—"}
-                              </small>
-                            </div>
-                          )}
-                          {r.carrierConfig?.transportAuthorizationNumber && (
-                            <div className="md-role-card__config">
-                              <small>
-                                Autorización:{" "}
-                                {r.carrierConfig.transportAuthorizationNumber}
-                              </small>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {revokedRoles.length > 0 && (
-                    <>
-                      <h4 className="md-detail-subheader">Roles revocados</h4>
-                      <div className="md-roles-grid md-roles-grid--inactive">
-                        {revokedRoles.map((r) => (
-                          <div
-                            key={r.id}
-                            className="md-role-card md-role-card--inactive"
-                          >
-                            <div className="md-role-card__header">
-                              <Badge variant="warning" label={r.roleLabel} />
-                              <Badge variant="warning" label="Revocado" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </section>
-          )}
-
-          {/* ── Locations / Contacts (secciones propias; permanecen montadas) ── */}
-          <BpLocationsSection
-            bpId={bp.id}
-            visible={activeTab === "locations"}
-            locations={locations}
-            canUpdate={canUpdate}
-            canDisable={canDisable}
-            saving={saving}
-            onSavingChange={setSaving}
-            actionError={actionError}
-            onActionError={setActionError}
-            onReload={reload}
-          />
-          <BpContactsSection
-            bpId={bp.id}
-            visible={activeTab === "contacts"}
-            contacts={contacts}
-            activeLocations={activeLocs}
-            canUpdate={canUpdate}
-            canDisable={canDisable}
-            saving={saving}
-            onSavingChange={setSaving}
-            actionError={actionError}
-            onActionError={setActionError}
-            onReload={reload}
-          />
+            ))}
+          {customerRole &&
+            renderPanel("customer", () => (
+              <BpCustomerSection
+                key={`customer-${companySessionVersion}`}
+                bpId={bp.id}
+                role={customerRole}
+                canUpdate={canUpdate}
+                canConfigure={canConfigure}
+                onReload={reloadQuiet}
+                onDirtyChange={reportDirty}
+              />
+            ))}
+          {renderPanel("locations", () => (
+            <BpLocationsSection
+              bpId={bp.id}
+              visible
+              locations={locations}
+              canUpdate={canUpdate}
+              canDisable={canDisable}
+              saving={saving}
+              onSavingChange={setSaving}
+              actionError={actionError}
+              onActionError={setActionError}
+              onReload={reloadQuiet}
+            />
+          ))}
+          {renderPanel("contacts", () => (
+            <BpContactsSection
+              bpId={bp.id}
+              visible
+              contacts={contacts}
+              activeLocations={activeLocs}
+              canUpdate={canUpdate}
+              canDisable={canDisable}
+              saving={saving}
+              onSavingChange={setSaving}
+              actionError={actionError}
+              onActionError={setActionError}
+              onReload={reloadQuiet}
+            />
+          ))}
+          {renderPanel("roles", () => (
+            <BpRolesSection
+              bp={bp}
+              canDisable={canDisable}
+              saving={saving}
+              onSavingChange={setSaving}
+              onActionError={setActionError}
+              onReload={reloadQuiet}
+            />
+          ))}
         </>
       )}
     </ErpPageTemplate>
   );
 }
-

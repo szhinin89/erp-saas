@@ -16,11 +16,15 @@ import type { SupplierRetentionDefaultDto } from "../types/businessPartner.types
 // (Extraída de MasterDataSuppliersPage sin cambio de comportamiento.)
 export function SupplierRetentionDefaultsSection({
   bpId,
-  disabled,
+  disabled: disabledProp,
+  readOnly = false,
 }: {
   bpId: string;
   disabled?: boolean;
+  /** Ficha sin permiso `configure-company`: lista sin controles de edición ni alta. */
+  readOnly?: boolean;
 }) {
+  const disabled = disabledProp || readOnly;
   const [rows, setRows] = useState<SupplierRetentionDefaultDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -210,50 +214,52 @@ export function SupplierRetentionDefaultsSection({
         </ul>
       )}
 
-      <ZHGrid cols={3}>
-        <ZHField label="Tipo de impuesto">
-          <ZhSelect
-            value={newTaxType}
-            onChange={(e) => {
-              setNewTaxType(e.target.value as "IVA" | "RENTA");
-              setNewCodeId("");
-            }}
-            disabled={disabled || adding}
-          >
-            <option value="IVA">IVA</option>
-            <option value="RENTA">Renta</option>
-          </ZhSelect>
-        </ZHField>
-        <ZHField label="Código de retención SRI">
-          <ZhSelect
-            value={newCodeId}
-            onChange={(e) => setNewCodeId(e.target.value)}
-            disabled={disabled || adding || loadingCatalog}
-          >
-            <option value="">— Seleccione —</option>
-            {loadingCatalog ? (
-              <option value="">Cargando…</option>
-            ) : (
-              availableCodes.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.code} — {o.name} ({o.percentage}%)
-                </option>
-              ))
-            )}
-          </ZhSelect>
-        </ZHField>
-        <div className="md-supplier-retention-add-btn">
-          <ZHBtn
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={disabled || adding || !newCodeId}
-            onClick={() => void handleAdd()}
-          >
-            {adding ? "Agregando..." : "Agregar retención"}
-          </ZHBtn>
-        </div>
-      </ZHGrid>
+      {!readOnly && (
+        <ZHGrid cols={3}>
+          <ZHField label="Tipo de impuesto">
+            <ZhSelect
+              value={newTaxType}
+              onChange={(e) => {
+                setNewTaxType(e.target.value as "IVA" | "RENTA");
+                setNewCodeId("");
+              }}
+              disabled={disabled || adding}
+            >
+              <option value="IVA">IVA</option>
+              <option value="RENTA">Renta</option>
+            </ZhSelect>
+          </ZHField>
+          <ZHField label="Código de retención SRI">
+            <ZhSelect
+              value={newCodeId}
+              onChange={(e) => setNewCodeId(e.target.value)}
+              disabled={disabled || adding || loadingCatalog}
+            >
+              <option value="">— Seleccione —</option>
+              {loadingCatalog ? (
+                <option value="">Cargando…</option>
+              ) : (
+                availableCodes.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.code} — {o.name} ({o.percentage}%)
+                  </option>
+                ))
+              )}
+            </ZhSelect>
+          </ZHField>
+          <div className="md-supplier-retention-add-btn">
+            <ZHBtn
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={disabled || adding || !newCodeId}
+              onClick={() => void handleAdd()}
+            >
+              {adding ? "Agregando..." : "Agregar retención"}
+            </ZHBtn>
+          </div>
+        </ZHGrid>
+      )}
     </div>
   );
 }

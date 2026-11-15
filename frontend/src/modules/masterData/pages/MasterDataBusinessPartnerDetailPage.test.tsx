@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { I18nProvider } from "../../../i18n/i18n";
-import { MasterDataBusinessPartnerDetailPage } from "./MasterDataBusinessPartnerDetailPage";
+import { screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
+import { renderBpDetail } from "./bpDetailTestRender";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
@@ -132,20 +130,7 @@ const ACTIVE_CONTACT = {
   createdAt: "2026-08-01T00:00:00Z",
 };
 
-function renderPage() {
-  return render(
-    <I18nProvider>
-      <MemoryRouter initialEntries={["/masterdata/business-partners/bp-1"]}>
-        <Routes>
-          <Route
-            path="/masterdata/business-partners/:id"
-            element={<MasterDataBusinessPartnerDetailPage />}
-          />
-        </Routes>
-      </MemoryRouter>
-    </I18nProvider>,
-  );
-}
+const renderPage = () => renderBpDetail();
 
 beforeEach(() => {
   vi.clearAllMocks();

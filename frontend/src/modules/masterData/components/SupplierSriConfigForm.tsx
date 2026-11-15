@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
   ZHField,
@@ -35,19 +35,25 @@ const ORPHAN_CODE_MESSAGE =
  * Formulario de Config SRI operativa del proveedor (S3-A: incluye método de pago + exención).
  * Extraído de MasterDataSuppliersPage sin cambio de comportamiento; el guardado sigue
  * delegado en `onSave` (reemplazo completo de la configuración SRI).
+ * Dentro de la ficha: `readOnly` (sin permiso de edición), `onClose` ausente (sin «Cerrar») y
+ * `onDirtyChange` para avisar de cambios sin guardar.
  */
 export function SupplierSriConfigForm({
   initialConfig,
   saving,
   error,
+  readOnly = false,
   onClose,
   onSave,
+  onDirtyChange,
 }: {
   initialConfig: SupplierRoleConfigDto | null;
   saving: boolean;
   error?: string | null;
-  onClose: () => void;
+  readOnly?: boolean;
+  onClose?: () => void;
   onSave: (body: SupplierConfigBody) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [taxSupportCode, setTaxSupportCode] = useState(
     initialConfig?.defaultTaxSupportCode ?? "",
@@ -74,6 +80,16 @@ export function SupplierSriConfigForm({
     loading: loadingTaxSupport,
     error: taxSupportFetchError,
   } = useSriTaxSupportCodes();
+
+  const busy = saving || readOnly;
+  const dirty =
+    taxSupportCode !== (initialConfig?.defaultTaxSupportCode ?? "") ||
+    paymentMethodCode !== (initialConfig?.defaultPaymentMethodCode ?? "") ||
+    refundProviderType !== (initialConfig?.refundProviderTypeCode ?? "") ||
+    isRetentionExempt !== (initialConfig?.isRetentionExempt ?? false) ||
+    isRequiredToKeepAccounting !==
+      (initialConfig?.isRequiredToKeepAccounting ?? false);
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const taxSupportOrphan = isOrphanCatalogValue(
     taxSupportCode,
@@ -106,7 +122,7 @@ export function SupplierSriConfigForm({
           <ZhSelect
             value={taxSupportCode}
             onChange={(e) => setTaxSupportCode(e.target.value)}
-            disabled={saving || loadingTaxSupport}
+            disabled={busy || loadingTaxSupport}
           >
             <option value="">— Sin definir —</option>
             {loadingTaxSupport ? (
@@ -134,7 +150,7 @@ export function SupplierSriConfigForm({
           <ZhSelect
             value={paymentMethodCode}
             onChange={(e) => setPaymentMethodCode(e.target.value)}
-            disabled={saving || loadingPaymentMethods}
+            disabled={busy || loadingPaymentMethods}
           >
             <option value="">— Sin preferencia —</option>
             {loadingPaymentMethods ? (
@@ -152,7 +168,7 @@ export function SupplierSriConfigForm({
           <ZhSelect
             value={refundProviderType}
             onChange={(e) => setRefundProviderType(e.target.value)}
-            disabled={saving}
+            disabled={busy}
           >
             <option value="">— Sin clasificar —</option>
             {supplierTypeOptions.map((o) => (
@@ -167,26 +183,29 @@ export function SupplierSriConfigForm({
           description="RISE / Microempresa / Sector publico"
           value={isRetentionExempt}
           onChange={setIsRetentionExempt}
-          disabled={saving}
+          disabled={busy}
         />
         <ZHToggle
           label="Obligado a llevar contabilidad"
           description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
           value={isRequiredToKeepAccounting}
           onChange={setIsRequiredToKeepAccounting}
-          disabled={saving}
+          disabled={busy}
         />
       </ZHGrid>
-      <ZHFormActions
-        onCancel={onClose}
-        hideDraft
-        saveButtonType="submit"
-        disableSave={saving}
-        labels={{
-          cancel: "Cerrar",
-          save: saving ? "Guardando..." : "Guardar",
-        }}
-      />
+      {!readOnly && (
+        <ZHFormActions
+          onCancel={onClose}
+          hideCancel={!onClose}
+          hideDraft
+          saveButtonType="submit"
+          disableSave={saving}
+          labels={{
+            cancel: "Cerrar",
+            save: saving ? "Guardando..." : "Guardar",
+          }}
+        />
+      )}
     </form>
   );
 }

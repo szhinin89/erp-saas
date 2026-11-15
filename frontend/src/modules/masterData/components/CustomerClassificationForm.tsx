@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
@@ -38,14 +38,21 @@ export function CustomerClassificationForm({
   initialConfig,
   saving,
   error,
+  readOnly = false,
   onClose,
   onSave,
+  onDirtyChange,
 }: {
   initialConfig: CustomerRoleConfigDto | null;
   saving: boolean;
   error?: string | null;
-  onClose: () => void;
+  /** Ficha sin permiso de edición: campos deshabilitados y sin acciones. */
+  readOnly?: boolean;
+  /** Ausente dentro de la ficha (sin «Cerrar»). */
+  onClose?: () => void;
   onSave: (body: CustomerConfigBody) => void;
+  /** Avisa de cambios sin guardar (protección de la ficha). */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [category, setCategory] = useState(initialConfig?.customerCategory ?? "");
   const [segment, setSegment] = useState(initialConfig?.customerSegment ?? "");
@@ -77,6 +84,16 @@ export function CustomerClassificationForm({
     classifications.loading;
   // No se guarda hasta tener catálogos cargados: el payload reemplaza la configuración completa.
   const saveBlocked = saving || catalogsLoading || Boolean(catalogsError);
+  const busy = saving || readOnly;
+  const dirty =
+    category !== (initialConfig?.customerCategory ?? "") ||
+    segment !== (initialConfig?.customerSegment ?? "") ||
+    zone !== (initialConfig?.salesZone ?? "") ||
+    rating !== (initialConfig?.creditRating ?? "") ||
+    loyalty !== (initialConfig?.loyaltyTier ?? "") ||
+    invoiceFormat !== (initialConfig?.preferredInvoiceFormat ?? "") ||
+    classification !== (initialConfig?.customerClassification ?? "");
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +118,7 @@ export function CustomerClassificationForm({
           <ZhSelect
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            disabled={saving || categories.loading}
+            disabled={busy || categories.loading}
           >
             <option value="">
               {categories.loading ? "Cargando…" : "— Sin asignar —"}
@@ -118,7 +135,7 @@ export function CustomerClassificationForm({
           <ZhSelect
             value={segment}
             onChange={(e) => setSegment(e.target.value)}
-            disabled={saving || segments.loading}
+            disabled={busy || segments.loading}
           >
             <option value="">
               {segments.loading ? "Cargando…" : "— Sin asignar —"}
@@ -138,14 +155,14 @@ export function CustomerClassificationForm({
             onChange={(e) => setZone(e.target.value)}
             placeholder="Norte, Sur, Centro…"
             maxLength={100}
-            disabled={saving}
+            disabled={busy}
           />
         </ZHField>
         <ZHField label="Rating crediticio">
           <ZhSelect
             value={rating}
             onChange={(e) => setRating(e.target.value)}
-            disabled={saving || creditRatings.loading}
+            disabled={busy || creditRatings.loading}
           >
             <option value="">
               {creditRatings.loading ? "Cargando…" : "— Sin calificar —"}
@@ -162,7 +179,7 @@ export function CustomerClassificationForm({
           <ZhSelect
             value={loyalty}
             onChange={(e) => setLoyalty(e.target.value)}
-            disabled={saving || loyaltyTiers.loading}
+            disabled={busy || loyaltyTiers.loading}
           >
             <option value="">{loyaltyTiers.loading ? "Cargando…" : "— Sin nivel —"}</option>
             <PersistedValueOption value={loyalty} loading={loyaltyTiers.loading} options={loyaltyTiers.options} />
@@ -177,7 +194,7 @@ export function CustomerClassificationForm({
           <ZhSelect
             value={invoiceFormat}
             onChange={(e) => setInvoiceFormat(e.target.value)}
-            disabled={saving || invoiceFormats.loading}
+            disabled={busy || invoiceFormats.loading}
           >
             <option value="">
               {invoiceFormats.loading ? "Cargando…" : "— Sin preferencia —"}
@@ -194,7 +211,7 @@ export function CustomerClassificationForm({
           <ZhSelect
             value={classification}
             onChange={(e) => setClassification(e.target.value)}
-            disabled={saving || classifications.loading}
+            disabled={busy || classifications.loading}
           >
             <option value="">
               {classifications.loading ? "Cargando…" : "— Sin clasificar —"}
@@ -208,16 +225,19 @@ export function CustomerClassificationForm({
           </ZhSelect>
         </ZHField>
       </ZHGrid>
-      <ZHFormActions
-        onCancel={onClose}
-        hideDraft
-        saveButtonType="submit"
-        disableSave={saveBlocked}
-        labels={{
-          cancel: "Cerrar",
-          save: saving ? "Guardando..." : "Guardar",
-        }}
-      />
+      {!readOnly && (
+        <ZHFormActions
+          onCancel={onClose}
+          hideCancel={!onClose}
+          hideDraft
+          saveButtonType="submit"
+          disableSave={saveBlocked}
+          labels={{
+            cancel: "Cerrar",
+            save: saving ? "Guardando..." : "Guardar",
+          }}
+        />
+      )}
     </form>
   );
 }
