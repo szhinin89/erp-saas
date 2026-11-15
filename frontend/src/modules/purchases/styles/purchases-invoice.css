@@ -18,10 +18,6 @@
    en la escala oficial de iconos. */
 .pf-icon--22 { font-size: 22px; }
 
-.pf-collapsible__chevron--open { transform: rotate(180deg); }
-.pf-collapsible__status {
-  margin-left: 8px;
-}
 
 .pdl-empty__icon {
   font-size: 22px;
@@ -1399,5 +1395,98 @@
     display: block;
     font-size: var(--text-label-sm-size);
     color: var(--color-text-secondary);
+  }
+}
+
+/* ── Nueva compra — Fase A (reapertura visual puntual de Compras V1) ─────────────────────────
+   Solo estilos locales de Compras: .pf-mini-card/.pf-collapsible/.pdl-search* de
+   erp-form-core.css son compartidos (Kardex, Condiciones de pago, Ventas) y no se tocan. */
+
+/* Tarjetas de cabecera: Proveedor | Documento (incluye Bodega destino) | Condiciones.
+   Tres tarjetas de contenido parejo; el grid base ya las estira a la misma altura. */
+.pf-header-cards-row--purchase {
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.pf-header-cards-row--purchase .pf-mini-card {
+  padding: var(--space-3) var(--space-4);
+}
+.pf-header-cards-row--purchase .pf-mini-card__title {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+/* Tablet (2 columnas en la base): Proveedor ocupa la fila completa y las otras dos se reparten
+   la siguiente — evita la tercera tarjeta sola a media fila con una columna vacía. */
+@media (max-width: 1100px) {
+  .pf-header-cards-row--purchase > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Información electrónica / Observaciones: dos disclosures oficiales (ZHBtn expanded) en una
+   franja; el panel abierto ocupa el ancho completo debajo. */
+.pf-extras {
+  margin-bottom: var(--space-3);
+}
+.pf-extras__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pf-extras__status {
+  margin-left: var(--space-2);
+}
+.pf-extras__panel {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/* Detalle de productos: título y contadores en la primera línea; buscador, filtro y acciones
+   en una barra de herramientas propia. */
+.pdl-topbar--split {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-3);
+}
+/* width: 100% es necesario: .pdl-toolbar es un ítem de una columna flex (.pdl-topbar--split) y,
+   con flex-wrap, su alto se reserva midiéndolo antes del estiramiento al ancho final; ahí el
+   buscador (flex-basis >= su max-content) fuerza una segunda línea y el alto queda en 84 px
+   (36 + gap + 36) aunque en el ancho final todo quepa en una línea. Con ancho explícito se mide
+   ya al ancho final y el ajuste de líneas en móvil se conserva. */
+.pdl-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+/* «Ver motivo» (PurchaseActionReason, raíz .zh-stack = columna flex): sin esto el botón se
+   estira al ancho de la columna del encabezado; así ocupa solo el de su contenido. */
+.pdl-topbar--split > .zh-stack {
+  align-items: flex-start;
+}
+.pdl-toolbar .pdl-search__wrap {
+  flex: 1 1 260px;
+  max-width: 480px;
+}
+.pdl-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+@media (max-width: 640px) {
+  .pdl-toolbar .pdl-search__wrap {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .pdl-toolbar__actions {
+    margin-left: 0;
+    width: 100%;
   }
 }

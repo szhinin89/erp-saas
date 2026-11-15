@@ -317,7 +317,7 @@ export function PurchasesPage() {
           <PurchaseFormFeedback ctx={ctx} />
 
           {/* ── SECTION 1: Header Cards ── */}
-          <div className="pf-header-cards-row">
+          <div className="pf-header-cards-row pf-header-cards-row--purchase">
             {/* Datos del Proveedor */}
             <div className="pf-mini-card" id="purchase-supplier" tabIndex={-1}>
               <h4 className="pf-mini-card__title">
@@ -474,6 +474,30 @@ export function PurchasesPage() {
                     />
                   </ZHField>
                 </div>
+                <ZHField
+                  density="compact"
+                  label={
+                    <>
+                      {t("purchases.logistics.destinationWarehouse", "Bodega destino")}
+                      <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_WAREHOUSE} />
+                    </>
+                  }
+                >
+                  <ZhSelect
+                    value={ctx.formWatch.globalWarehouseId}
+                    onChange={(e) => ctx.applyGlobalWarehouse(e.target.value)}
+                    disabled={ctx.fieldDisabled}
+                  >
+                    <option value="">
+                      {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
+                    </option>
+                    {ctx.warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.code ? `${w.code} — ${w.name}` : w.name}
+                      </option>
+                    ))}
+                  </ZhSelect>
+                </ZHField>
               </div>
             </div>
 
@@ -559,36 +583,49 @@ export function PurchasesPage() {
             </div>
           </div>
 
-          {/* ── Información Electrónica (colapsable) ── */}
-          <div className="pf-collapsible">
-            <button
-              type="button"
-              className="pf-collapsible__toggle"
-              onClick={() => ctx.setShowElectronic((v) => !v)}
-            >
-              <span
-                className="material-symbols-outlined zh-icon-lg"
+          {/* ── Información electrónica y observaciones: disclosures oficiales (ZHBtn expanded) ── */}
+          <div className="pf-extras">
+            <div className="pf-extras__bar">
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon="qr_code_2"
+                expanded={ctx.showElectronic}
+                aria-controls="purchase-electronic-panel"
+                onClick={() => ctx.setShowElectronic((v) => !v)}
               >
-                qr_code_2
-              </span>
-              <span>{t("purchases.electronic.title", "Información electrónica")}</span>
-              <span
-                className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showElectronic ? "pf-collapsible__chevron--open" : ""}`}
+                {t("purchases.electronic.title", "Información electrónica")}
+                {!ctx.showElectronic &&
+                  (ctx.formWatch.accessKey || ctx.formWatch.authorizationNumber) && (
+                    <Badge
+                      variant="info"
+                      label={t("purchases.electronic.hasData", "Con datos")}
+                      className="pf-extras__status"
+                    />
+                  )}
+              </ZHBtn>
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon="notes"
+                expanded={ctx.showNotes}
+                aria-controls="purchase-notes-panel"
+                onClick={() => ctx.setShowNotes((v) => !v)}
               >
-                expand_more
-              </span>
-              {!ctx.showElectronic &&
-                (ctx.formWatch.accessKey ||
-                  ctx.formWatch.authorizationNumber) && (
+                {t("purchases.notes.title", "Observaciones")}
+                {!ctx.showNotes && ctx.formWatch.notes && (
                   <Badge
                     variant="info"
-                    label={t("purchases.electronic.hasData", "Con datos")}
-                    className="pf-collapsible__status"
+                    label={t("purchases.notes.hasNotes", "Con notas")}
+                    className="pf-extras__status"
                   />
                 )}
-            </button>
+              </ZHBtn>
+            </div>
             {ctx.showElectronic && (
-              <div className="pf-collapsible__body">
+              <div id="purchase-electronic-panel" className="pf-extras__panel">
                 <div className="pf-mini-card__row pf-mini-card__row--3col">
                   <ZHField
                     density="compact"
@@ -638,73 +675,8 @@ export function PurchasesPage() {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="pf-header-cards-row pf-header-cards-row--mid">
-            <div className="pf-mini-card">
-              <h4 className="pf-mini-card__title">
-                <span className="material-symbols-outlined pf-mini-card__icon">
-                  inventory
-                </span>
-                {t("purchases.logistics.title", "Logística y totales")}
-              </h4>
-              <div className="pf-mini-card__body">
-                <ZHField
-                  density="compact"
-                  label={
-                    <>
-                      {t("purchases.logistics.destinationWarehouse", "Bodega destino")}
-                      <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_WAREHOUSE} />
-                    </>
-                  }
-                >
-                  <ZhSelect
-                    value={ctx.formWatch.globalWarehouseId}
-                    onChange={(e) => ctx.applyGlobalWarehouse(e.target.value)}
-                    disabled={ctx.fieldDisabled}
-                  >
-                    <option value="">
-                      {t("purchases.logistics.selectWarehouse", "— Seleccionar bodega —")}
-                    </option>
-                    {ctx.warehouses.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.code ? `${w.code} — ${w.name}` : w.name}
-                      </option>
-                    ))}
-                  </ZhSelect>
-                </ZHField>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Observaciones ── */}
-          <div className="pf-collapsible">
-            <button
-              type="button"
-              className="pf-collapsible__toggle"
-              onClick={() => ctx.setShowNotes((v) => !v)}
-            >
-              <span
-                className="material-symbols-outlined zh-icon-lg"
-              >
-                notes
-              </span>
-              <span>{t("purchases.notes.title", "Observaciones")}</span>
-              <span
-                className={`material-symbols-outlined pf-collapsible__chevron ${ctx.showNotes ? "pf-collapsible__chevron--open" : ""}`}
-              >
-                expand_more
-              </span>
-              {!ctx.showNotes && ctx.formWatch.notes && (
-                <Badge
-                  variant="info"
-                  label={t("purchases.notes.hasNotes", "Con notas")}
-                  className="pf-collapsible__status"
-                />
-              )}
-            </button>
             {ctx.showNotes && (
-              <div className="pf-collapsible__body">
+              <div id="purchase-notes-panel" className="pf-extras__panel">
                 <ZHField density="compact">
                   <ZhTextarea
                     {...ctx.register("notes")}
@@ -725,7 +697,7 @@ export function PurchasesPage() {
             <div>
               {/* ── Product Detail ── */}
               <div className="pdl-container">
-                <div className="pdl-topbar">
+                <div className="pdl-topbar pdl-topbar--split">
                   <h4 className="pdl-topbar__title">
                     <span
                       className="material-symbols-outlined pf-icon--22"
@@ -736,6 +708,7 @@ export function PurchasesPage() {
                     {ctx.xmlLinesSummary.total > 0 && <ZHDataValue variant="muted">{t("purchases.pendingProducts.summary.total", { count: ctx.xmlLinesSummary.total })}</ZHDataValue>}
                     {ctx.xmlLinesSummary.warnings > 0 && <Badge variant="warning" label={t("purchases.pendingProducts.summary.warnings", { count: ctx.xmlLinesSummary.warnings })} />}
                   </h4>
+                  <div className="pdl-toolbar">
                   <div className="pdl-search__wrap" ref={ctx.globalSearchRef}>
                     <div className="pdl-search__input-wrap">
                       <span className="material-symbols-outlined pdl-search__icon">
@@ -819,6 +792,7 @@ export function PurchasesPage() {
                       </option>
                     ))}
                   </ZhSelect>
+                    <div className="pdl-toolbar__actions">
                   <ZHBtn
                     type="button"
                     variant="secondary"
@@ -830,8 +804,6 @@ export function PurchasesPage() {
                     </span>
                     {t("purchases.distributeCost.trigger", "Distribuir flete/gasto")}
                   </ZHBtn>
-                  <PurchaseActionReason reason={ctx.distributeCostDisabledReason}
-                    action={t("purchases.distributeCost.trigger", "Distribuir flete/gasto")} />
                   {ctx.pendingProductSources.length > 0 && !ctx.fieldDisabled && (
                     <ZHBtn
                       type="button"
@@ -846,6 +818,10 @@ export function PurchasesPage() {
                       })}
                     </ZHBtn>
                   )}
+                    </div>
+                  </div>
+                  <PurchaseActionReason reason={ctx.distributeCostDisabledReason}
+                    action={t("purchases.distributeCost.trigger", "Distribuir flete/gasto")} />
                 </div>
 
                 {/* Line Cards */}

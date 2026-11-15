@@ -1,5 +1,50 @@
 # Project Status
 
+## PURCHASES-NEW-TAB-PHASE-A-01 — Compras V1: mejora visual de «Nueva compra» (Fase A) — COMMIT LOCAL, sin push; validación con API real PENDIENTE (2026-11-15)
+
+> **Reapertura puntual y solo visual de Compras V1**, autorizada por el propietario para la pantalla `/purchases`,
+> pestaña «Nueva compra». **No modifica el estado CLOSED de la funcionalidad de negocio de Compras**: sin cambios
+> de hooks, cálculos, impuestos, retenciones, validaciones, permisos, backend, API, BD ni migraciones. La Fase B
+> (barra de acciones sticky, total visible mientras se editan líneas, mover Guardar/Confirmar) **no** está
+> implementada ni autorizada.
+
+- **Alcance (frontend, `modules/purchases`):**
+  - Cabecera: se elimina la tarjeta «Logística y totales» (un solo campo en una fila 2fr/1fr con una columna
+    vacía). «Bodega destino» pasa a «Datos del documento» con el mismo valor, `applyGlobalWarehouse`,
+    `disabled` y ayuda contextual. Las tres tarjetas quedan balanceadas; a ≤ 1100 px «Datos del proveedor»
+    ocupa la fila completa y las otras dos se reparten la siguiente (sin tarjeta huérfana); ≤ 640 px, una
+    columna.
+  - «Información electrónica» y «Observaciones»: un solo par de disclosures con el patrón oficial `ZHBtn expanded`
+    (`aria-expanded`/`aria-controls`, paneles con id `purchase-electronic-panel` y `purchase-notes-panel`),
+    reemplazando el `<button>` local `pf-collapsible__toggle`. Se conservan campos e indicadores «Con datos» /
+    «Con notas».
+  - Detalle de productos: título y contadores en una línea y barra propia (buscador, filtro de tipo, acciones);
+    «Ver motivo» de «Distribuir flete/gasto» bajo la barra. Handlers, `disabled` y condiciones intactos.
+  - Estilos solo locales en `purchases-invoice.css` (modificadores `--purchase`, `.pf-extras*`, `.pdl-toolbar*`,
+    `.pdl-topbar--split`); `erp-form-core.css`, `ZH*` y otros módulos no se tocaron.
+- **Corrección de la barra de productos (hallazgos de la validación visual):** (1) la barra medía 84 px con
+  controles de 36 px: `.pdl-toolbar` (flex-wrap) es ítem de una columna flex y su alto se reservaba antes del
+  estiramiento al ancho final, produciendo dos líneas; se corrige con `width: 100%` (barra: 84 → 36 px a ≥ 650 px;
+  a ≤ 640 px conserva 3 filas / 132 px). (2) «Ver motivo» ocupaba todo el ancho (1368 px a 1440): la raíz
+  `.zh-stack` de `PurchaseActionReason` se estiraba; con `align-items: flex-start` mide 104 px. Detalle y medidas en
+  la evidencia.
+- **Componentes oficiales reutilizados:** `ZHBtn` (disclosure), `ZHField density="compact"`, `ZhSelect`,
+  `ZhTextInput`, `Badge`, `ZHFieldHelp`, `PurchaseActionReason`. Sin componentes nuevos ni librerías.
+- **Verificado:** Vitest focalizado 6 archivos / 51 pruebas (incluye `PurchasesPage.newTab.test.tsx`, 10 pruebas
+  nuevas de estructura, handlers, `disabled`, ids de foco y atributos de accesibilidad); `npx tsc -b` sin errores;
+  `npm run architecture:check` PASS (0 violaciones nuevas); `check-architecture-guardrails.ps1 -SkipFrontendChunk`
+  OK (`PurchasesPage.tsx` 2934 líneas ≤ techo ADR-047 de 3616); ESLint sin errores (1 aviso `max-lines`
+  preexistente). No se corrió la suite completa.
+- **Evidencia visual:** [`docs/evidence/purchases-new-tab-phase-a-fix-01/`](docs/evidence/purchases-new-tab-phase-a-fix-01/measurements.md)
+  (capturas antes/después y tabla de medidas; 1440 / 1024 / 768 / 390 px).
+- **Limitaciones — SIN VERIFICAR:** la validación visual se hizo con la página real y **API simulada con datos
+  ficticios** (Edge/Playwright), sin sesión ni credenciales. **No** se comprobó contra la API real, con sesión
+  autenticada ni con una compra desde XML real (ni «Resolver productos pendientes» visible). Los 4 anchos y los
+  estados vacío, proveedor con incidencias, borrador con productos, solo lectura y proveedor inactivo se
+  revisaron solo en ese entorno. Pendiente la revisión visual del propietario en la aplicación real.
+  Fuera de alcance, no corregido: las tarjetas de línea llegan al borde derecho a 1440 px (no se verificó si ya
+  ocurría antes).
+
 ## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — PUBLICADO en `origin/main` (`f4f04c272`); CI sin confirmar (2026-11-15)
 
 - **Alcance:** columna `short_name` (`varchar(20)`, NOT NULL) añadida al baseline inicial
