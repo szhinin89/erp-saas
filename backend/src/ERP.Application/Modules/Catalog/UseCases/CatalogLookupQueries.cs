@@ -43,7 +43,7 @@ public sealed record CatalogBarcodeTypeDto(string Code, string Name);
 
 public sealed record CatalogItemMarginStatusDto(string Code, string Label, string ColorToken);
 
-public sealed record SriIdTypeDto(string Code, string Name, short? Digits);
+public sealed record SriIdTypeDto(string Code, string Name, short? Digits, string ShortName);
 
 // ══════════════════════════════════════════════════════════════════════════
 // Queries — catálogos globales de solo lectura, sin scope de tenant/empresa
@@ -382,7 +382,7 @@ public sealed class GetSriIdTypesQueryHandler
     {
         var items = await _repo.GetSriIdTypesAsync(cancellationToken);
         return Result<IReadOnlyList<SriIdTypeDto>>.Success(
-            items.Select(t => new SriIdTypeDto(t.Code, t.Name, t.Digits)).ToList()
+            items.Select(t => new SriIdTypeDto(t.Code, t.Name, t.Digits, t.ShortName)).ToList()
         );
     }
 }
@@ -401,7 +401,7 @@ public sealed class GetSriIdTypesByUsageQueryHandler
     {
         var items = await _repo.GetSriIdTypesByUsageAsync(request.Usage, cancellationToken);
         return Result<IReadOnlyList<SriIdTypeDto>>.Success(
-            items.Select(t => new SriIdTypeDto(t.Code, t.Name, t.Digits)).ToList()
+            items.Select(t => new SriIdTypeDto(t.Code, t.Name, t.Digits, t.ShortName)).ToList()
         );
     }
 }

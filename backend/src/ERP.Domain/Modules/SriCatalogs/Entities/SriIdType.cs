@@ -4,5 +4,6 @@ public class SriIdType
 {
     public string Code { get; set; } = null!;
     public string Name { get; set; } = null!;
+    public string ShortName { get; set; } = null!;
     public short? Digits { get; set; }
 }

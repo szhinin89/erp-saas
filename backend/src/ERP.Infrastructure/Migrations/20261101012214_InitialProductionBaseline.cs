@@ -1681,6 +1681,7 @@ namespace ERP.Infrastructure.Migrations
                 {
                     code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
                     name = table.Column<string>(type: "character varying(70)", maxLength: 70, nullable: false),
+                    short_name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     digits = table.Column<short>(type: "smallint", nullable: true)
                 },
                 constraints: table =>
@@ -7162,15 +7163,15 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.InsertData(
                 schema: "global",
                 table: "sri_id_type",
-                columns: new[] { "code", "digits", "name" },
+                columns: new[] { "code", "digits", "name", "short_name" },
                 values: new object[,]
                 {
-                    { "04", (short)13, "Registro Único de Contribuyentes" },
-                    { "05", (short)10, "Cédula de ciudadanía" },
-                    { "06", null, "Pasaporte" },
-                    { "07", null, "Consumidor Final" },
-                    { "08", null, "Identificación del exterior" },
-                    { "09", null, "Placa" }
+                    { "04", (short)13, "Registro Único de Contribuyentes", "RUC" },
+                    { "05", (short)10, "Cédula de ciudadanía", "Cédula" },
+                    { "06", null, "Pasaporte", "Pasaporte" },
+                    { "07", null, "Consumidor Final", "CF" },
+                    { "08", null, "Identificación del exterior", "ID exterior" },
+                    { "09", null, "Placa", "Placa" }
                 });
 
             migrationBuilder.InsertData(

@@ -5,6 +5,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../i18n/i18n";
+import { useSriIdTypes } from "../api/useSriIdTypes";
 import type {
   BusinessPartnerStatusFilter,
   BusinessPartnerSummaryDto,
@@ -60,6 +61,12 @@ export function MasterDataPartnerListTab({
   onDisable,
 }: MasterDataPartnerListTabProps) {
   const { t } = useI18n();
+  const { options: idTypes } = useSriIdTypes();
+  // Abreviatura oficial (catálogo sri_id_type) para el espacio compacto; sin catálogo, solo el número.
+  const formatIdentification = (bp: BusinessPartnerSummaryDto) => {
+    const shortName = idTypes.find((o) => o.code === bp.identificationType)?.shortName;
+    return shortName ? `${shortName} ${bp.identificationNumber}` : bp.identificationNumber;
+  };
   const prefix =
     role === "customer" ? "masterdata.customers" : "masterdata.suppliers";
 
@@ -69,14 +76,14 @@ export function MasterDataPartnerListTab({
   };
 
   const partnerColumns: ZHDataTableColumn<BusinessPartnerSummaryDto>[] = [
-    { key: "identification", header: t(`${prefix}.col.identification`, "Identificación"), render: (bp) => <span className="mono">{bp.identificationNumber}</span>,
+    { key: "identification", header: t(`${prefix}.col.identification`, "Identificación"), render: (bp) => <span className="mono">{formatIdentification(bp)}</span>,
       cellClassName: role === "customer" ? "md-customer-col-id" : undefined },
     {
       key: "legalName",
       header: t(`${prefix}.col.legalName`, "Razón social"),
       render: (bp) => role === "supplier" ? (
         <div className="md-supplier-identity">
-          <span className="md-supplier-identity__id mono">{bp.identificationNumber}</span>
+          <span className="md-supplier-identity__id mono">{formatIdentification(bp)}</span>
           <span className="md-supplier-identity__legal">{bp.legalName}</span>
           {bp.tradeName?.trim() && bp.tradeName.trim() !== bp.legalName.trim() && (
             <span className="md-supplier-identity__trade">{bp.tradeName.trim()}</span>
@@ -90,7 +97,7 @@ export function MasterDataPartnerListTab({
         <div className="md-customer-identity">
           <span className="md-customer-identity__name">{bp.tradeName?.trim() || bp.legalName}</span>
           {bp.tradeName?.trim() && <span className="md-customer-identity__legal prd-sub-text">{bp.legalName}</span>}
-          <span className="md-customer-identity__id mono">{bp.identificationNumber}</span>
+          <span className="md-customer-identity__id mono">{formatIdentification(bp)}</span>
           <span className={`md-customer-identity__status prd-status-dot ${bp.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}>
             <span className="prd-status-dot__bullet" />
             {bp.isActive ? t("common.active") : t("common.inactive")}

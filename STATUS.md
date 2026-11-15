@@ -1,5 +1,22 @@
 # Project Status
 
+## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — IMPLEMENTADO LOCAL, sin push ni CI (2026-11-15)
+
+- **Alcance:** columna `short_name` (`varchar(20)`, NOT NULL) añadida al baseline inicial
+  `20261101012214_InitialProductionBaseline` (CreateTable, InsertData, Designer y snapshot); sin migraciones
+  nuevas ni otras tablas. Valores: 04 RUC · 05 Cédula · 06 Pasaporte · 07 CF · 08 ID exterior · 09 Placa.
+  `Code`, `Name`, `Digits` y validaciones sin cambios.
+- **API:** `SriIdTypeDto` añade `shortName` (campo nuevo, propiedades existentes intactas); aplica a
+  `/catalog/sri-id-types` y `/catalog/sri-id-types/by-usage/{usage}`.
+- **Frontend:** `shortName` en cabecera de la ficha y en la identificación compacta de los listados de
+  Clientes y Proveedores; `name` se conserva donde corresponde la descripción completa.
+- **Verificado:** `has-pending-model-changes` sin cambios; prueba de seed (12/12 en la clase),
+  Architecture.Tests 145/145, 74 pruebas Vitest focalizadas, `tsc -b` y guardrails PR-7 OK;
+  `erp_zh_dev` contiene los seis `short_name` aprobados (el propietario aplicó la columna aditivamente).
+- **SIN VERIFICAR:** respuesta real de la API con `shortName` (sin sesión autorizada) y CI de GitHub.
+  Instalaciones que ya aplicaron el baseline anterior requieren añadir la columna de forma aditiva;
+  una instalación nueva la recibe del baseline.
+
 ## BP-CONSOLIDATION-01 — Business Partners — CORRECCIÓN UX EN REVISIÓN (no CLOSED; Etapa 5 congelada) (2026-11-15)
 
 > **Corrección de interpretación (sin commit; pendiente de revisión del propietario):** la ficha única mezclaba

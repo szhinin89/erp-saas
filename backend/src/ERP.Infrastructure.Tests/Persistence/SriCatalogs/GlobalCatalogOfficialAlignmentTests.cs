@@ -13,6 +13,27 @@ namespace ERP.Infrastructure.Tests.Persistence.SriCatalogs;
 public sealed class GlobalCatalogOfficialAlignmentTests
 {
     [Fact]
+    public void SriIdType_seed_carries_the_six_official_short_names_without_changing_code_or_name()
+    {
+        var seed = Seed<SriIdType>(new SriIdTypeConfiguration());
+
+        seed.ToDictionary(
+                x => (string)x[nameof(SriIdType.Code)]!,
+                x => (string)x[nameof(SriIdType.ShortName)]!)
+            .Should().BeEquivalentTo(new Dictionary<string, string>
+            {
+                ["04"] = "RUC",
+                ["05"] = "Cédula",
+                ["06"] = "Pasaporte",
+                ["07"] = "CF",
+                ["08"] = "ID exterior",
+                ["09"] = "Placa",
+            });
+        seed.Single(x => (string)x[nameof(SriIdType.Code)]! == "04")[nameof(SriIdType.Name)]
+            .Should().Be("Registro Único de Contribuyentes");
+    }
+
+    [Fact]
     public void Placa_09_is_kept_but_never_selectable_because_table_6_and_the_xsd_only_admit_04_to_08()
     {
         var usages = Seed<SriIdTypeUsage>(new SriIdTypeUsageConfiguration());

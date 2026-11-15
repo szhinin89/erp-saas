@@ -156,10 +156,15 @@ export function MasterDataBusinessPartnerDetailPage({ context }: { context: BpCo
   const contextLabel = isSupplier
     ? t("masterdata.bp.detail.context.supplier", "Administrar proveedor")
     : t("masterdata.bp.detail.context.customer", "Administrar cliente");
-  // «04» es el código SRI del tipo de identificación (catálogo sri_id_type): se muestra su nombre oficial.
+  // «04» es el código SRI del tipo de identificación (catálogo sri_id_type): el encabezado es un
+  // espacio compacto, por lo que muestra su abreviatura oficial (`shortName`).
   const idTypeName = bp
-    ? describeCatalogCode(bp.identificationType, idTypes, idTypesLoading, (c) =>
-        t("masterdata.bp.detail.unknownCatalog", { code: c }),
+    ? describeCatalogCode(
+        bp.identificationType,
+        idTypes,
+        idTypesLoading,
+        (c) => t("masterdata.bp.detail.unknownCatalog", { code: c }),
+        "shortName",
       )
     : null;
   const identificationText = bp

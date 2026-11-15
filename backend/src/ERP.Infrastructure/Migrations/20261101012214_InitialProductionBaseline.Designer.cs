@@ -17803,6 +17803,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(70)")
                         .HasColumnName("name");
 
+                    b.Property<string>("ShortName")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("short_name");
+
                     b.HasKey("Code");
 
                     b.ToTable("sri_id_type", "global");
@@ -17812,33 +17818,39 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Code = "04",
                             Digits = (short)13,
-                            Name = "Registro Único de Contribuyentes"
+                            Name = "Registro Único de Contribuyentes",
+                            ShortName = "RUC"
                         },
                         new
                         {
                             Code = "05",
                             Digits = (short)10,
-                            Name = "Cédula de ciudadanía"
+                            Name = "Cédula de ciudadanía",
+                            ShortName = "Cédula"
                         },
                         new
                         {
                             Code = "06",
-                            Name = "Pasaporte"
+                            Name = "Pasaporte",
+                            ShortName = "Pasaporte"
                         },
                         new
                         {
                             Code = "07",
-                            Name = "Consumidor Final"
+                            Name = "Consumidor Final",
+                            ShortName = "CF"
                         },
                         new
                         {
                             Code = "08",
-                            Name = "Identificación del exterior"
+                            Name = "Identificación del exterior",
+                            ShortName = "ID exterior"
                         },
                         new
                         {
                             Code = "09",
-                            Name = "Placa"
+                            Name = "Placa",
+                            ShortName = "Placa"
                         });
                 });
 

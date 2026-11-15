@@ -4,6 +4,9 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- SRI-ID-TYPE-SHORT-NAME-01 (IMPLEMENTADO local en commit pendiente de push; CI sin ejecutar): `short_name`
+  en `global.sri_id_type` vía baseline inicial. Pendientes: push manual del propietario, CI y verificar
+  `shortName` en la API real con sesión autorizada. Estado y evidencia en [STATUS](../../STATUS.md).
 - IAM-V1-F2 (IMPLEMENTADO, pendiente gate del propietario; autorizado 2026-11-10; CI #1144
   SUCCESS valida su contenido; IAM-V1-F3 ya CLOSED con CI #1146 SUCCESS y aceptación del propietario
   2026-11-11, evidencia en [STATUS](../../STATUS.md); sin siguiente fase IAM autorizada): administración de Perfiles, Permisos y Usuarios, visibilidad

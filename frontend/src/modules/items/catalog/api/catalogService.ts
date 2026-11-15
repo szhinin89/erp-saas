@@ -77,6 +77,8 @@ export interface SriDocTypeLookup {
 export interface SriIdTypeLookup {
   code: string;
   name: string;
+  /** Abreviatura oficial para cabeceras y espacios compactos; `name` es la descripción completa. */
+  shortName: string;
   digits: number | null;
 }
 export interface SriSupplierTypeLookup {

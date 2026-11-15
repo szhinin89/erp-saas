@@ -12,6 +12,7 @@ public class SriIdTypeConfiguration : IEntityTypeConfiguration<SriIdType>
         builder.HasKey(x => x.Code);
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(5);
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(70).IsRequired();
+        builder.Property(x => x.ShortName).HasColumnName("short_name").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Digits).HasColumnName("digits");
 
         builder.HasData(
@@ -19,36 +20,42 @@ public class SriIdTypeConfiguration : IEntityTypeConfiguration<SriIdType>
             {
                 Code = "04",
                 Name = "Registro Único de Contribuyentes",
+                ShortName = "RUC",
                 Digits = 13,
             },
             new SriIdType
             {
                 Code = "05",
                 Name = "Cédula de ciudadanía",
+                ShortName = "Cédula",
                 Digits = 10,
             },
             new SriIdType
             {
                 Code = "06",
                 Name = "Pasaporte",
+                ShortName = "Pasaporte",
                 Digits = null,
             },
             new SriIdType
             {
                 Code = "07",
                 Name = "Consumidor Final",
+                ShortName = "CF",
                 Digits = null,
             },
             new SriIdType
             {
                 Code = "08",
                 Name = "Identificación del exterior",
+                ShortName = "ID exterior",
                 Digits = null,
             },
             new SriIdType
             {
                 Code = "09",
                 Name = "Placa",
+                ShortName = "Placa",
                 Digits = null,
             }
         );

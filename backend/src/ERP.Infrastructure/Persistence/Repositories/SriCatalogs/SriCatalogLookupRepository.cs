@@ -189,6 +189,7 @@ public sealed class SriCatalogLookupRepository : ISriCatalogLookupRepository
                     {
                         Code = t.Code,
                         Name = t.Name,
+                        ShortName = t.ShortName,
                         Digits = t.Digits,
                     }
             )
