@@ -1,6 +1,4 @@
 import { create } from "zustand";
-import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
-
 export type PartnerTabId = "resumen" | "listado" | "nuevo";
 
 export type PartnerActivityAction =
@@ -15,12 +13,10 @@ export interface PartnerActivityItem {
 
 export interface PartnerUiState {
   activeTab: PartnerTabId;
-  editingPartner: BusinessPartnerSummaryDto | null;
   recentActivity: PartnerActivityItem[];
 
   setActiveTab: (tab: PartnerTabId) => void;
-  startEdit: (partner: BusinessPartnerSummaryDto) => void;
-  cancelEdit: () => void;
+  showList: () => void;
   addActivity: (partnerName: string, action: PartnerActivityAction) => void;
   reset: () => void;
 }
@@ -28,13 +24,10 @@ export interface PartnerUiState {
 function createPartnerUiStore() {
   return create<PartnerUiState>((set) => ({
     activeTab: "resumen",
-    editingPartner: null,
     recentActivity: [],
 
     setActiveTab: (tab) => set({ activeTab: tab }),
-    startEdit: (partner) =>
-      set({ editingPartner: partner, activeTab: "nuevo" }),
-    cancelEdit: () => set({ editingPartner: null, activeTab: "listado" }),
+    showList: () => set({ activeTab: "listado" }),
 
     addActivity: (partnerName, action) =>
       set((s) => ({
@@ -45,7 +38,7 @@ function createPartnerUiStore() {
       })),
 
     reset: () =>
-      set({ activeTab: "resumen", editingPartner: null, recentActivity: [] }),
+      set({ activeTab: "resumen", recentActivity: [] }),
   }));
 }
 

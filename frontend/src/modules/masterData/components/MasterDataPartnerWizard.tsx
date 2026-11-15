@@ -84,7 +84,8 @@ interface Props {
     body: CreateBusinessPartnerBody,
     supplierConfig?: SupplierConfigAtCreation,
   ) => Promise<void>;
-  onSubmitUpdate: (body: UpdateBusinessPartnerBody) => Promise<void>;
+  /** Solo la edición embebida de la ficha lo usa; el alta desde los listados no edita. */
+  onSubmitUpdate?: (body: UpdateBusinessPartnerBody) => Promise<void>;
   onAssignRole: (id: string) => Promise<void>;
   onCancel: () => void;
   onAssignSuccess?: () => void;
@@ -289,7 +290,7 @@ export function MasterDataPartnerWizard({
     setBannerError(null);
     try {
       if (isEdit) {
-        await onSubmitUpdate(buildUpdateBody());
+        await onSubmitUpdate?.(buildUpdateBody());
         clearDraft(draftKey);
       } else {
         const v = form.getValues();

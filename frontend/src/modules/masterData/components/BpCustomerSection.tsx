@@ -113,7 +113,6 @@ export function BpCustomerSection({
               key={`${sales.data?.paymentTermId ?? ""}-${salesVersion}`}
               initialSettings={sales.data}
               saving={saving}
-              error={null}
               submittingRef={salesSubmitting}
               readOnly={!canConfigure}
               onSaved={() => {

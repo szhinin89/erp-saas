@@ -201,7 +201,8 @@ describe("BP-NAV-GUARD-01 — Atrás, Adelante y pestañas", () => {
 describe("BP-NAV-GUARD-01 — cada sección de la ficha protege sus cambios", () => {
   const changeIn = async (heading: string, label: string | RegExp, value: string) => {
     const section = await screen.findByRole("heading", { name: heading });
-    const control = within(section.parentElement!).getByLabelText(label);
+    // El encabezado aparece antes que el formulario (carga asíncrona): se espera al control.
+    const control = await within(section.parentElement!).findByLabelText(label);
     if (control.tagName === "SELECT")
       await waitFor(() => expect(control.querySelector(`option[value="${value}"]`)).toBeTruthy());
     fireEvent.change(control, { target: { value } });

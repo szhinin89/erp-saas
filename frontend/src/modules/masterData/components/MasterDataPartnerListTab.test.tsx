@@ -4,7 +4,6 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataPartnerListTab } from "./MasterDataPartnerListTab";
-import { useMasterDataCustomersUiStore } from "../store/masterDataPartnerUiStore";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
 /**
@@ -37,11 +36,9 @@ function renderTab(page: number, pageSize: number, role: "customer" | "supplier"
       <MemoryRouter>
         <MasterDataPartnerListTab
           role={role}
-          store={useMasterDataCustomersUiStore}
           canCreate
           canUpdate
           canDisable
-          canConfigure
           loading={false}
           saving={false}
           partners={[partner]}
@@ -133,8 +130,8 @@ describe("customer assign-as-supplier availability", () => {
       <I18nProvider>
         <MemoryRouter>
           <MasterDataPartnerListTab
-            role="customer" store={useMasterDataCustomersUiStore}
-            canCreate canUpdate={canUpdate} canDisable canConfigure
+            role="customer"
+            canCreate canUpdate={canUpdate} canDisable
             loading={false} saving={false} partners={[partner]} totalCount={1}
             search="" setSearch={() => {}} statusFilter="all" setStatusFilter={() => {}}
             page={1} pageSize={50} totalPages={1} setPage={() => {}}
@@ -158,7 +155,7 @@ describe("customer assign-as-supplier availability", () => {
     const { onDisable } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isSupplier: true, canAssignAsSupplier: false });
     openMenu();
     expect(assignItem()).toBeNull();
-    expect(screen.getByRole("button", { name: /^Editar: Cliente/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Gestionar: Cliente/ })).toBeTruthy();
     fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar cliente" }));
     expect(onDisable).toHaveBeenCalledExactlyOnceWith("1");
   });

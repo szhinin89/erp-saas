@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHLineAction } from "../../../components/zh/ZHLineAction";
@@ -11,36 +11,43 @@ type Props = {
   canUpdate: boolean;
   canDisable: boolean;
   saving: boolean;
-  onEdit: (bp: BusinessPartnerSummaryDto) => void;
-  onSupplierProfile?: (bp: BusinessPartnerSummaryDto) => void;
   onAddAsCustomer?: (id: string) => void;
   onActivate: (id: string) => void;
   onDisable: (id: string) => void;
 };
 
-/** Supplier composition of the official DS controls; existing callbacks retain confirmations. */
+/**
+ * Supplier row: «Gestionar» opens the unified record (/masterdata/business-partners/:id), where edit,
+ * SRI configuration, locations, contacts and roles live. Only status and cross-role actions stay here;
+ * confirmations remain in the page handlers. Without secondary items there is no menu.
+ */
 export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisable, saving,
-  onEdit, onSupplierProfile, onAddAsCustomer, onActivate, onDisable}: Props) {
+  onAddAsCustomer, onActivate, onDisable}: Props) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const {t} = useI18n();
   const identity = `${bp.legalName} (${bp.identificationNumber})`;
   const label = (action: string) => t(`masterdata.suppliers.listAction.${action}`);
+
+  const items: ReactElement[] = [];
+  if (canUpdate && bp.canAssignAsCustomer && onAddAsCustomer)
+    items.push(<ZHLineActionItem key="assign" label={label("assign")} disabled={saving} onClick={() => onAddAsCustomer(bp.id)} />);
+  if (canUpdate && !bp.isActive)
+    items.push(<ZHLineActionItem key="activate" label={t("masterdata.suppliers.action.activate")} disabled={saving} onClick={() => onActivate(bp.id)} />);
+  if (canDisable && bp.isActive)
+    items.push(<ZHLineActionItem key="deactivate" label={t("masterdata.suppliers.action.deactivate")} tone="danger" disabled={saving} onClick={() => onDisable(bp.id)} />);
+
   return (
     <div className="md-supplier-actions">
-      <ZHBtn variant="ghost" size="sm" aria-label={`${t("common.view")}: ${identity}`}
-        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{t("common.view")}</ZHBtn>
-      {(canUpdate || (canDisable && bp.isActive)) && (
-        <ZHLineAction kind="menu" icon={"\u22ef"} label={label("more")}
+      <ZHBtn variant="ghost" size="sm" aria-label={`${label("manage")}: ${identity}`}
+        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{label("manage")}</ZHBtn>
+      {items.length > 0 && (
+        <ZHLineAction kind="menu" icon={"⋯"} label={label("more")}
           ariaLabel={`${label("more")}: ${identity}`} menuLabel={`${label("more")}: ${identity}`}
           className="md-supplier-actions__more" menuClassName="md-supplier-actions-menu"
           portal menuAlign="end" open={open} onOpenChange={setOpen} closeOnSelect>
           <div className="md-supplier-actions-menu__identity" role="presentation">{identity}</div>
-          {canUpdate && <ZHLineActionItem label={label("edit")} onClick={() => onEdit(bp)} />}
-          {canUpdate && onSupplierProfile && <ZHLineActionItem label={label("sri")} onClick={() => onSupplierProfile(bp)} />}
-          {canUpdate && bp.canAssignAsCustomer && onAddAsCustomer && <ZHLineActionItem label={label("assign")} disabled={saving} onClick={() => onAddAsCustomer(bp.id)} />}
-          {canUpdate && !bp.isActive && <ZHLineActionItem label={t("masterdata.suppliers.action.activate")} disabled={saving} onClick={() => onActivate(bp.id)} />}
-          {canDisable && bp.isActive && <ZHLineActionItem label={t("masterdata.suppliers.action.deactivate")} tone="danger" disabled={saving} onClick={() => onDisable(bp.id)} />}
+          {items}
         </ZHLineAction>
       )}
     </div>

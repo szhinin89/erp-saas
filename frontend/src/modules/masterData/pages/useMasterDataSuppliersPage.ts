@@ -1,15 +1,11 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useCompanyScopedAsync } from "../../../hooks/useCompanyScopedAsync";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   BusinessPartnerStatusFilter,
-  BusinessPartnerSummaryDto,
   CreateBusinessPartnerBody,
-  SupplierConfigBody,
-  SupplierRoleConfigDto,
-  UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -20,13 +16,17 @@ function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefin
   return undefined;
 }
 
+/**
+ * Listado de Proveedores. La edición, la configuración SRI, las retenciones y las subcategorías viven
+ * en la ficha unificada (`/masterdata/business-partners/:id`); aquí solo quedan lista, alta, asignación
+ * de rol y activar/desactivar.
+ */
 export function useMasterDataSuppliersPage() {
   const { canShow } = usePermissionsUi();
   const canView = canShow("masterdata.businesspartners.view");
   const canCreate = canShow("masterdata.businesspartners.create");
   const canUpdate = canShow("masterdata.businesspartners.update");
   const canDisable = canShow("masterdata.businesspartners.disable");
-  const canConfigure = canShow("masterdata.businesspartners.configure-company");
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -35,17 +35,8 @@ export function useMasterDataSuppliersPage() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 50;
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editBp, setEditBp] = useState<BusinessPartnerSummaryDto | null>(null);
-  // supplierProfileBp: store the bp + roleId + current config for prefilling the modal
-  const [supplierConfigBp, setSupplierConfigBp] = useState<{
-    bp: BusinessPartnerSummaryDto;
-    roleId: string;
-    config: SupplierRoleConfigDto | null;
-  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
-  const [modalError, setModalError] = useState<string | null>(null);
 
   const listState = useCompanyScopedAsync(
     () =>
@@ -64,7 +55,6 @@ export function useMasterDataSuppliersPage() {
   const totalCount = listState.data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const clearModalError = () => setModalError(null);
   const setSearchReset = (v: string) => {
     setSearch(v);
     setPage(1);
@@ -76,22 +66,11 @@ export function useMasterDataSuppliersPage() {
 
   // ── Create ─────────────────────────────────────────────────────────────────
 
-  const openCreate = () => {
-    clearModalError();
-    setInlineError(null);
-    setModalOpen(true);
-  };
-  const closeCreate = useCallback(() => {
-    setModalOpen(false);
-    clearModalError();
-  }, []);
-
   const createSupplier = async (
     body: CreateBusinessPartnerBody,
     supplierConfig?: { refundProviderTypeCode: string },
   ): Promise<void> => {
     setSaving(true);
-    clearModalError();
     try {
       const created = await businessPartnerFacade.createBusinessPartner(body);
       await businessPartnerFacade.assignRole(created.id, {
@@ -102,7 +81,6 @@ export function useMasterDataSuppliersPage() {
             }
           : undefined,
       });
-      setModalOpen(false);
       listState.refetch();
     } finally {
       setSaving(false);
@@ -111,91 +89,15 @@ export function useMasterDataSuppliersPage() {
 
   const assignAsSupplier = async (id: string): Promise<void> => {
     setSaving(true);
-    clearModalError();
     try {
       await businessPartnerFacade.assignRole(id, {
         roleType: RoleTypeEnum.Supplier,
       });
-      setModalOpen(false);
       listState.refetch();
     } finally {
       setSaving(false);
     }
   };
-
-  // ── Update ─────────────────────────────────────────────────────────────────
-
-  const openEdit = (bp: BusinessPartnerSummaryDto) => {
-    clearModalError();
-    setInlineError(null);
-    setEditBp(bp);
-  };
-  const closeEdit = useCallback(() => {
-    setEditBp(null);
-    clearModalError();
-  }, []);
-
-  const updateSupplier = async (
-    id: string,
-    body: UpdateBusinessPartnerBody,
-  ): Promise<void> => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.updateBusinessPartner(id, body);
-      setEditBp(null);
-      listState.refetch();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ── Supplier config (SRI defaults) ────────────────────────────────────────
-
-  const openSupplierConfig = async (bp: BusinessPartnerSummaryDto) => {
-    clearModalError();
-    try {
-      const roles = await businessPartnerFacade.getRoles(bp.id, true);
-      const supplierRole = roles.find((r) => r.roleType === "Supplier");
-      if (supplierRole)
-        setSupplierConfigBp({
-          bp,
-          roleId: supplierRole.id,
-          config: supplierRole.supplierConfig,
-        });
-    } catch {
-      /* no action */
-    }
-  };
-
-  const closeSupplierConfig = useCallback(() => {
-    setSupplierConfigBp(null);
-    clearModalError();
-  }, []);
-
-  const saveSupplierConfig = async (
-    bpId: string,
-    roleId: string,
-    config: SupplierConfigBody,
-  ): Promise<boolean> => {
-    setSaving(true);
-    clearModalError();
-    try {
-      await businessPartnerFacade.updateSupplierConfig(bpId, roleId, config);
-      setSupplierConfigBp(null);
-      return true;
-    } catch (err) {
-      setModalError(
-        formatApiRequestError(err, {
-          generic: "Error al procesar la operación.",
-        }),
-      );
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
 
   // ── Inline actions ─────────────────────────────────────────────────────────
 
@@ -258,13 +160,11 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
-
   return {
     canView,
     canCreate,
     canUpdate,
     canDisable,
-    canConfigure,
     search,
     setSearch: setSearchReset,
     statusFilter,
@@ -278,23 +178,11 @@ export function useMasterDataSuppliersPage() {
     loading: listState.loading,
     listError: listState.error,
     inlineError,
-    modalError,
-    modalOpen,
-    openCreate,
-    closeCreate,
-    editBp,
-    openEdit,
-    closeEdit,
     createSupplier,
-    updateSupplier,
     assignAsSupplier,
     disableSupplier,
     activateSupplier,
     addAsCustomer,
-    supplierConfigBp,
-    openSupplierConfig,
-    closeSupplierConfig,
-    saveSupplierConfig,
     saving,
     refetch: listState.refetch,
   };

@@ -35,15 +35,13 @@ const ORPHAN_CODE_MESSAGE =
  * Formulario de Config SRI operativa del proveedor (S3-A: incluye método de pago + exención).
  * Extraído de MasterDataSuppliersPage sin cambio de comportamiento; el guardado sigue
  * delegado en `onSave` (reemplazo completo de la configuración SRI).
- * Dentro de la ficha: `readOnly` (sin permiso de edición), `onClose` ausente (sin «Cerrar») y
- * `onDirtyChange` para avisar de cambios sin guardar.
+ * `readOnly` (sin permiso de edición) y `onDirtyChange` (avisa de cambios sin guardar) son de la ficha.
  */
 export function SupplierSriConfigForm({
   initialConfig,
   saving,
   error,
   readOnly = false,
-  onClose,
   onSave,
   onDirtyChange,
 }: {
@@ -51,7 +49,6 @@ export function SupplierSriConfigForm({
   saving: boolean;
   error?: string | null;
   readOnly?: boolean;
-  onClose?: () => void;
   onSave: (body: SupplierConfigBody) => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
@@ -195,8 +192,7 @@ export function SupplierSriConfigForm({
       </ZHGrid>
       {!readOnly && (
         <ZHFormActions
-          onCancel={onClose}
-          hideCancel={!onClose}
+          hideCancel
           hideDraft
           saveButtonType="submit"
           disableSave={saving}

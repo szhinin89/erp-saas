@@ -9,19 +9,13 @@ import type {
   BusinessPartnerStatusFilter,
   BusinessPartnerSummaryDto,
 } from "../types/businessPartner.types";
-import type { PartnerUiState } from "../store/masterDataPartnerUiStore";
-import type { StoreApi, UseBoundStore } from "zustand";
-
-type UiStore = UseBoundStore<StoreApi<PartnerUiState>>;
 type Role = "customer" | "supplier";
 
 export interface MasterDataPartnerListTabProps {
   role: Role;
-  store: UiStore;
   canCreate: boolean;
   canUpdate: boolean;
   canDisable: boolean;
-  canConfigure: boolean;
   loading: boolean;
   saving: boolean;
   partners: BusinessPartnerSummaryDto[];
@@ -35,9 +29,6 @@ export interface MasterDataPartnerListTabProps {
   totalPages: number;
   setPage: (n: number) => void;
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
-  onSettings?: (bp: BusinessPartnerSummaryDto) => void;
-  onSupplierProfile?: (bp: BusinessPartnerSummaryDto) => void;
-  onCustomerConfig?: (bp: BusinessPartnerSummaryDto) => void;
   onAddAsSupplier?: (id: string) => void;
   onAddAsCustomer?: (id: string) => void;
   onActivate: (id: string) => void;
@@ -46,10 +37,8 @@ export interface MasterDataPartnerListTabProps {
 
 export function MasterDataPartnerListTab({
   role,
-  store,
   canUpdate,
   canDisable,
-  canConfigure,
   loading,
   saving,
   partners,
@@ -63,16 +52,12 @@ export function MasterDataPartnerListTab({
   totalPages,
   setPage,
   searchInputRef,
-  onSettings,
-  onSupplierProfile,
-  onCustomerConfig,
   onAddAsSupplier,
   onAddAsCustomer,
   onActivate,
   onDisable,
 }: MasterDataPartnerListTabProps) {
   const { t } = useI18n();
-  const startEdit = store((s) => s.startEdit);
   const prefix =
     role === "customer" ? "masterdata.customers" : "masterdata.suppliers";
 
@@ -128,13 +113,10 @@ export function MasterDataPartnerListTab({
       header: "",
       render: (bp) => role === "supplier" ? (
         <MasterDataSupplierListActions partner={bp} canUpdate={canUpdate} canDisable={canDisable}
-          saving={saving} onEdit={startEdit} onSupplierProfile={onSupplierProfile}
-          onAddAsCustomer={onAddAsCustomer} onActivate={onActivate} onDisable={onDisable} />
+          saving={saving} onAddAsCustomer={onAddAsCustomer} onActivate={onActivate} onDisable={onDisable} />
       ) : (
         <MasterDataCustomerListActions partner={bp} canUpdate={canUpdate} canDisable={canDisable}
-          canConfigure={canConfigure} saving={saving} onEdit={startEdit} onSettings={onSettings}
-          onCustomerConfig={onCustomerConfig} onAddAsSupplier={onAddAsSupplier}
-          onActivate={onActivate} onDisable={onDisable} />
+          saving={saving} onAddAsSupplier={onAddAsSupplier} onActivate={onActivate} onDisable={onDisable} />
       ),
       cellClassName: role === "customer" ? "md-customer-col-actions" : undefined,
     },

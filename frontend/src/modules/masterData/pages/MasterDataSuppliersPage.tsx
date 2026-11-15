@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataSuppliersPage } from "./useMasterDataSuppliersPage";
@@ -11,16 +10,7 @@ import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResu
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
 import { useMasterDataSuppliersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
-import type {
-  CreateBusinessPartnerBody,
-  SupplierConfigBody,
-  SupplierRoleConfigDto,
-  UpdateBusinessPartnerBody,
-} from "../types/businessPartner.types";
-import { SupplierSriConfigForm } from "../components/SupplierSriConfigForm";
-import { SupplierPurchaseDefaultSection } from "../components/SupplierPurchaseDefaultSection";
-import { SupplierRetentionDefaultsSection } from "../components/SupplierRetentionDefaultsSection";
-import { SupplierExpenseSubcategoriesSection } from "../components/SupplierExpenseSubcategoriesSection";
+import type { CreateBusinessPartnerBody } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
@@ -48,69 +38,14 @@ const TABS = [
 
 const DRAFT_KEY = "erp.masterdata.suppliers.draft";
 
-// ── SupplierConfigModal — Config SRI operativa + secciones independientes ──
-// Cada sección (formulario SRI, condición de compras, retenciones, subcategorías de gasto)
-// es un componente propio con fetch/guardado independiente; el modal solo las compone.
-function SupplierConfigModal({
-  bpId,
-  bpName,
-  initialConfig,
-  saving,
-  error,
-  onClose,
-  onSave,
-}: {
-  bpId: string;
-  bpName: string;
-  initialConfig: SupplierRoleConfigDto | null;
-  saving: boolean;
-  error?: string | null;
-  onClose: () => void;
-  onSave: (body: SupplierConfigBody) => void;
-}) {
-  return (
-    <ZHModal
-      open
-      onClose={onClose}
-      size="xl"
-      title="Config SRI — Proveedor"
-      subtitle={bpName}
-      closeOnBackdrop={false}
-    >
-      <div className="md-supplier-config-grid">
-      <div className="md-supplier-config-section">
-        <SupplierSriConfigForm
-          initialConfig={initialConfig}
-          saving={saving}
-          error={error}
-          onClose={onClose}
-          onSave={onSave}
-        />
-      </div>
-      <div className="md-supplier-config-section">
-        <SupplierPurchaseDefaultSection bpId={bpId} />
-      </div>
-      </div>
-
-      <div className="md-supplier-config-section">
-        <SupplierRetentionDefaultsSection bpId={bpId} disabled={saving} />
-      </div>
-      <div className="md-supplier-config-section">
-        <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
-      </div>
-    </ZHModal>
-  );
-}
-
 export function MasterDataSuppliersPage() {
   const { t } = useI18n();
   const page = useMasterDataSuppliersPage();
   const ui = useMasterDataSuppliersUiStore;
 
   const activeTab = ui((s) => s.activeTab);
-  const editingPartner = ui((s) => s.editingPartner);
   const setActiveTab = ui((s) => s.setActiveTab);
-  const cancelEdit = ui((s) => s.cancelEdit);
+  const showList = ui((s) => s.showList);
   const addActivity = ui((s) => s.addActivity);
   const reset = ui((s) => s.reset);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -145,17 +80,6 @@ export function MasterDataSuppliersPage() {
       setActiveTab("listado");
     },
     [page, addActivity, setActiveTab],
-  );
-
-  const handleUpdate = useCallback(
-    async (body: UpdateBusinessPartnerBody): Promise<void> => {
-      if (!editingPartner) return;
-      await page.updateSupplier(editingPartner.id, body);
-      addActivity(body.legalName, "updated");
-      message.success("Proveedor actualizado correctamente.");
-      cancelEdit();
-    },
-    [editingPartner, page, addActivity, cancelEdit],
   );
 
   const handleAssign = useCallback(
@@ -272,11 +196,9 @@ export function MasterDataSuppliersPage() {
         {activeTab === "listado" && (
           <MasterDataPartnerListTab
             role="supplier"
-            store={ui}
             canCreate={page.canCreate}
             canUpdate={page.canUpdate}
             canDisable={page.canDisable}
-            canConfigure={page.canConfigure}
             loading={page.loading}
             saving={page.saving}
             partners={page.suppliers}
@@ -290,46 +212,23 @@ export function MasterDataSuppliersPage() {
             totalPages={page.totalPages}
             setPage={page.setPage}
             searchInputRef={searchRef}
-
-            onSupplierProfile={(bp) => void page.openSupplierConfig(bp)}
             onAddAsCustomer={(id) => void page.addAsCustomer(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
           />
         )}
-        {activeTab === "nuevo" && (page.canCreate || editingPartner) && (
+        {activeTab === "nuevo" && page.canCreate && (
           <MasterDataPartnerWizard
-            key={editingPartner?.id ?? "create"}
             role="supplier"
             draftKey={DRAFT_KEY}
             submitting={page.saving}
-            editingPartner={editingPartner}
+            editingPartner={null}
             onSubmitCreate={handleCreate}
-            onSubmitUpdate={handleUpdate}
             onAssignRole={handleAssign}
-            onCancel={cancelEdit}
+            onCancel={showList}
           />
         )}
       </div>
-
-
-      {page.supplierConfigBp && (
-        <SupplierConfigModal
-          bpId={page.supplierConfigBp.bp.id}
-          bpName={page.supplierConfigBp.bp.legalName}
-          initialConfig={page.supplierConfigBp.config}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeSupplierConfig}
-          onSave={(body) =>
-            void page.saveSupplierConfig(
-              page.supplierConfigBp!.bp.id,
-              page.supplierConfigBp!.roleId,
-              body,
-            )
-          }
-        />
-      )}
     </ErpPageTemplate>
   );
 }

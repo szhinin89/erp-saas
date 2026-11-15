@@ -1,13 +1,57 @@
 # Project Status
 
-## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 2 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapa 1 commit local `e0f1d338c`
+## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 3 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapas 1–2 publicadas (`e0f1d338c`, `9761470e8`)
 
-### Etapa 2 — ficha unificada (`/masterdata/business-partners/:id`)
+### Etapa 3 — los listados dejan de administrar; la ficha es el único punto
+
+En Proveedores y Clientes, «Ver» pasa a **«Gestionar»** (abre `/masterdata/business-partners/:id`, con
+`aria-label` «Gestionar: razón social (identificación)») y se retiran del listado **Editar**, **Config SRI**,
+**Empresa** y **Clasificación**; quedan **Más acciones → Asignar/Agregar el otro rol, Activar y Desactivar**,
+con las mismas condiciones de permiso/estado, confirmaciones en los handlers de la página, foco de retorno y
+navegación por teclado. El menú aparece solo si tiene ítems. Solo frontend: sin backend, API, permisos,
+rutas, base de datos ni Dashboard.
+
+- **Dónde está ahora cada función retirada** (componentes de las etapas 1–2, sin duplicados): Editar →
+  *Datos generales* (wizard embebido); Config SRI, condición de compras, retenciones y subcategorías →
+  *Proveedor*; Empresa (condición de ventas) y Clasificación → *Cliente*; ubicaciones y contactos →
+  *Ubicaciones*/*Contactos*; revocar rol → *Roles*. Los permisos reales (`update`, `configure-company`,
+  `disable`) y los guardados independientes de la Etapa 2 no cambian.
+- **Código retirado (verificadas las referencias en todo `frontend/src`, E2E y docs; sin otros
+  consumidores):** `MasterDataCustomerConfigModal`, `MasterDataSalesSettingsModal` y el `SupplierConfigModal`
+  interno de `MasterDataSuppliersPage`; en los hooks de listado todo el estado de modales/edición/config
+  (`openSupplierConfig`, `openCustomerConfig`, `openSettings`, `save*`, `update*`, `editBp`, `modal*`,
+  `canConfigure`); en el store `editingPartner` y `startEdit` (`cancelEdit` pasa a `showList`); las props
+  `onClose`/`error` ya sin uso de los formularios; los selectores CSS `md-supplier-config-*`; y las claves
+  i18n `masterdata.customers.action.company/classification` y `masterdata.suppliers.listAction.edit/sri`
+  (se añade `…listAction.manage`). `MasterDataPartnerWizard.onSubmitUpdate` pasa a opcional (solo lo usa la
+  edición embebida). **No se retira** la rama de edición no embebida del wizard (sigue cubierta por sus
+  pruebas y por `CreateSupplierModal`/ficha); queda como deuda menor candidata a una limpieza propia.
+- **Pruebas:** las suites de acciones de fila se reescriben (Gestionar, menú reducido, permisos, `saving`,
+  teclado y foco) y la cobertura de los modales se **migra** a la ficha en lugar de perderse: clasificación
+  del cliente (8, BUG-CUSTOMERS-CLASSIFICATION-01), condición de ventas (4, CUSTOMER-SALES-SETTINGS-UX-FIX-01),
+  Config SRI y retenciones (6). `src/modules/masterData` 271/271 en 6 corridas; bloque focal
+  (masterData + hooks + `AppLayout`/`CompanySwitcher` + rutas + `App` real + `CreateSupplierModal`) 340/340
+  ×2; `tsc -b`, `npm run build`, `architecture:check` (incluye i18n) y guardrail oficial
+  `-SkipFrontendChunk` PASS; el wizard queda en 622 líneas (techo ADR-047 647, sin cambios en el JSON).
+
+**CI de las etapas ya publicadas** (API pública de GitHub, solo lectura; sin credenciales no hay logs):
+- **#1202 — SUCCESS** sobre `9761470e8` (Etapa 2 + BP-NAV-GUARD-01): 8 jobs (perfil selectivo; backend y
+  publish omitidos), todos los ejecutados en verde. El gate del propietario sigue pendiente.
+- **#1201 — FAILURE** sobre `e0f1d338c` (Etapa 1): incidencia **CI-1201**. Falló
+  `backend / Backend (api)` (y por tanto `CI gate`); los 18 jobs restantes pasaron, incluidos los de
+  frontend. Fallo localizado en una prueba de integración de **Ventas**:
+  `SalesCancelCollectionConcurrencyTests.Cancel_y_devolucion_con_credito_a_CxC_simultaneas_no_se_bloquean_y_quedan_consistentes`
+  — respondió HTTP 422 en lugar de HTTP 201; 1724 de 1725 pruebas correctas. **Causa raíz pendiente de
+  determinar** (sin investigar ni modificar Ventas en esta entrega). El run fue de perfil completo (21 jobs)
+  porque el commit tocó `architecture-grandfather.json` (CI-SELECTIVE-ARCHITECTURE-01); el commit no cambió
+  backend, y #1200 y #1202 pasaron. No se atribuye a Business Partners.
+
+### Etapa 2 — ficha unificada (`/masterdata/business-partners/:id`) — commit `9761470e8`, CI #1202 SUCCESS
 
 La ficha existente pasa a ser el centro único de administración de Proveedores y Clientes, **reutilizando**
 los componentes de la Etapa 1 (sin pantallas, formularios ni servicios paralelos). Solo frontend: sin
 backend, API, permisos, rutas, base de datos ni Dashboard. **Los listados de Clientes y Proveedores y sus
-modales no se tocan**; siguen funcionando hasta la Etapa 3 (retiro único de los accesos).
+modales no se tocaron en esta etapa**; sus accesos se retiraron en la Etapa 3.
 
 - **Pestañas** (`ZHTabBar`, `bpDetailTabs.ts` como fuente única): Resumen, Datos generales, Proveedor
   (solo con rol Supplier activo), Cliente (solo con rol Customer activo), Ubicaciones, Contactos y Roles.
@@ -30,7 +74,7 @@ modales no se tocan**; siguen funcionando hasta la Etapa 3 (retiro único de los
   modificar se muestra en solo lectura (aviso, campos deshabilitados y sin acciones). Los componentes
   reciben `readOnly` opcional (por defecto igual que antes), así que los modales no cambian.
 - **Empresa activa:** las secciones por empresa se remontan y la ficha se relee al cambiar de empresa.
-- **Cambios sin guardar (BP-NAV-GUARD-01, IMPLEMENTADO local):** `onDirtyChange` en los formularios de
+- **Cambios sin guardar (BP-NAV-GUARD-01, publicado en `9761470e8`):** `onDirtyChange` en los formularios de
   cada sección y un único hook, `useUnsavedChangesGuard` (`hooks/`), con los mecanismos oficiales de React
   Router: `useBlocker` + `message.confirm` + `beforeunload`. Para habilitar `useBlocker`, `App.tsx` migra de
   `BrowserRouter` a `createBrowserRouter` + `RouterProvider` con una ruta comodín (`path="*"`) que renderiza
@@ -85,7 +129,7 @@ Cierre de BP-NAV-GUARD-01: 19 pruebas más (hook 9, `CompanySwitcher` 4, `AppLay
 guard + sesión + rutas + `App` real 119/119, `masterData` 278/278 ×3, `tsc -b`, `npm run build`,
 `architecture:check` y guardrail oficial `-SkipFrontendChunk` PASS.
 
-### Etapa 1 — extracción de componentes (commit local `e0f1d338c`, sin push)
+### Etapa 1 — extracción de componentes (commit `e0f1d338c`; CI #1201 FAILURE: prueba de integración de Ventas, causa raíz pendiente; ver CI-1201)
 
 Preparación de la consolidación de Proveedores y Clientes: **solo extracciones sin cambio funcional**
 (`frontend/src/modules/masterData/`). Sin backend, API, permisos, base de datos, rutas, contratos ni

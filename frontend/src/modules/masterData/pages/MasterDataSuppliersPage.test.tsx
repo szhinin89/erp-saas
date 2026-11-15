@@ -157,7 +157,6 @@ afterEach(() => {
   cleanup();
   useMasterDataSuppliersUiStore.setState({
     activeTab: "resumen",
-    editingPartner: null,
     recentActivity: [],
   });
 });
@@ -383,6 +382,6 @@ describe("MasterDataSuppliersPage — FUNC-PARTNER-ROLE-01 asignar como cliente"
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: /^Más acciones:/ }));
     expect(screen.queryByRole("menuitem", { name: "Asignar como cliente" })).toBeNull();
-    expect(screen.getByRole("menuitem", { name: "Editar proveedor" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Desactivar proveedor" })).toBeTruthy();
   });
 });

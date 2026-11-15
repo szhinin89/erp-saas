@@ -31,15 +31,15 @@ function PersistedValueOption({
 }
 
 /**
- * Formulario de clasificación comercial del cliente (CRM). Extraído de
- * MasterDataCustomerConfigModal sin cambio de comportamiento; el modal solo aporta el marco.
+ * Formulario de clasificación comercial del cliente (CRM), usado en la pestaña Cliente de la ficha
+ * unificada (`/masterdata/business-partners/:id`). El PATCH del rol reemplaza la configuración completa:
+ * parte siempre de la persistida y no guarda mientras los catálogos cargan o fallan.
  */
 export function CustomerClassificationForm({
   initialConfig,
   saving,
   error,
   readOnly = false,
-  onClose,
   onSave,
   onDirtyChange,
 }: {
@@ -48,8 +48,6 @@ export function CustomerClassificationForm({
   error?: string | null;
   /** Ficha sin permiso de edición: campos deshabilitados y sin acciones. */
   readOnly?: boolean;
-  /** Ausente dentro de la ficha (sin «Cerrar»). */
-  onClose?: () => void;
   onSave: (body: CustomerConfigBody) => void;
   /** Avisa de cambios sin guardar (protección de la ficha). */
   onDirtyChange?: (dirty: boolean) => void;
@@ -227,8 +225,7 @@ export function CustomerClassificationForm({
       </ZHGrid>
       {!readOnly && (
         <ZHFormActions
-          onCancel={onClose}
-          hideCancel={!onClose}
+          hideCancel
           hideDraft
           saveButtonType="submit"
           disableSave={saveBlocked}

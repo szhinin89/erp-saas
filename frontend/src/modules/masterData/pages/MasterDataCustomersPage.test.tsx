@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen, within, waitFor, fireEvent, cleanup } from "@testing-library/react";
-import { paymentTermService } from "../api/paymentTermService";
+import { render, screen, within, waitFor, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataCustomersPage } from "./MasterDataCustomersPage";
@@ -23,8 +22,6 @@ vi.mock("../api/businessPartnerFacade", () => ({
     deactivateBusinessPartner: vi.fn(),
     activateBusinessPartner: vi.fn(),
     assignRole: vi.fn(),
-    getSalesSettings: vi.fn(),
-    upsertSalesSettings: vi.fn(),
   },
 }));
 
@@ -36,8 +33,6 @@ vi.mock("../api/useSriIdTypes", () => ({
 vi.mock("../api/useLegalEntityTypes", () => ({
   useLegalEntityTypes: () => ({ options: [], loading: false }),
 }));
-
-vi.mock("../api/paymentTermService", () => ({ paymentTermService: { list: vi.fn() } }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: vi.fn(),
@@ -93,7 +88,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   useMasterDataCustomersUiStore.setState({
     activeTab: "listado",
-    editingPartner: null,
     recentActivity: [],
   });
   vi.mocked(usePermissionsUi).mockReturnValue({
@@ -114,7 +108,6 @@ afterEach(() => {
   cleanup();
   useMasterDataCustomersUiStore.setState({
     activeTab: "resumen",
-    editingPartner: null,
     recentActivity: [],
   });
 });
@@ -320,73 +313,5 @@ describe("MasterDataCustomersPage — ZH-LISTING-COMPLIANCE-AUDIT-08, showRowNum
     // La identificación vive en su columna; la copia de la identidad solo se muestra en móvil (CSS).
     const ids = screen.getAllByText("0999999999");
     expect(ids.map((el) => el.closest("td")?.className)).toEqual(["md-customer-col-id", "md-customer-col-identity"]);
-  });
-});
-
-describe("CUSTOMER-SALES-SETTINGS-UX-FIX-01", () => {
-  const settings = (paymentTermId: string | null) => ({
-    id: "settings-1", businessPartnerId: CUSTOMER.id, paymentTermId, hasCustomConfiguration: true,
-  });
-  beforeEach(() => {
-    vi.mocked(businessPartnerFacade.getSalesSettings).mockResolvedValue(settings(null));
-    vi.mocked(paymentTermService.list).mockResolvedValue([{
-      id: "term-30", code: "CRED001", name: "CRÉDITO DE 30 DÍAS", summary: "30 días",
-      installments: 1, daysBetweenInstallments: 30, totalDays: 30, isActive: true,
-    }]);
-  });
-  async function openSettings() {
-    await screen.findByText("Cliente Uno");
-    clickRowAction("Empresa");
-    await waitFor(() => expect((screen.getByRole("button", { name: "Guardar" }) as HTMLButtonElement).disabled).toBe(false));
-  }
-  it("guarda, confirma y cierra sin recargar ni reabrir automáticamente", async () => {
-    vi.mocked(businessPartnerFacade.upsertSalesSettings).mockResolvedValue(settings("term-30"));
-    renderPage();
-    await openSettings();
-    fireEvent.change(within(screen.getByRole("dialog")).getByRole("combobox"), { target: { value: "term-30" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(businessPartnerFacade.upsertSalesSettings).toHaveBeenCalledWith(CUSTOMER.id, { paymentTermId: "term-30" });
-    expect(businessPartnerFacade.getSalesSettings).toHaveBeenCalledTimes(1);
-    expect(message.success).toHaveBeenCalledWith("Condición de ventas guardada correctamente.");
-  });
-  it("mantiene abierto el modal y muestra el error si falla el guardado", async () => {
-    vi.mocked(businessPartnerFacade.upsertSalesSettings).mockRejectedValue({
-      isAxiosError: true, response: { status: 409, data: { message: { user: "No se pudo guardar la condición." } } },
-    });
-    renderPage();
-    await openSettings();
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    expect(await screen.findByText("No se pudo guardar la condición.")).toBeTruthy();
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(message.success).not.toHaveBeenCalled();
-  });
-  it("carga el valor persistido al reabrir manualmente", async () => {
-    vi.mocked(businessPartnerFacade.upsertSalesSettings).mockResolvedValue(settings("term-30"));
-    renderPage();
-    await openSettings();
-    fireEvent.change(within(screen.getByRole("dialog")).getByRole("combobox"), { target: { value: "term-30" } });
-    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(businessPartnerFacade.getSalesSettings).toHaveBeenCalledTimes(1);
-    vi.mocked(businessPartnerFacade.getSalesSettings).mockResolvedValue(settings("term-30"));
-    await openSettings();
-    expect((within(screen.getByRole("dialog")).getByRole("combobox") as HTMLSelectElement).value).toBe("term-30");
-    expect(businessPartnerFacade.getSalesSettings).toHaveBeenCalledTimes(2);
-  });
-  it("evita cierre y envíos duplicados mientras el guardado está pendiente", async () => {
-    let finish!: (value: ReturnType<typeof settings>) => void;
-    vi.mocked(businessPartnerFacade.upsertSalesSettings).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
-    renderPage();
-    await openSettings();
-    const form = screen.getByRole("button", { name: "Guardar" }).closest("form")!;
-    fireEvent.submit(form);
-    fireEvent.submit(form);
-    fireEvent.keyDown(window, { key: "Escape" });
-    within(screen.getByRole("dialog")).getAllByRole("button", { name: "Cerrar" }).forEach((button) => fireEvent.click(button));
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    expect(businessPartnerFacade.upsertSalesSettings).toHaveBeenCalledTimes(1);
-    await act(async () => { finish(settings(null)); });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

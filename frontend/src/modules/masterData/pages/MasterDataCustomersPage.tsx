@@ -5,18 +5,13 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataCustomersPage } from "./useMasterDataCustomersPage";
-import { MasterDataSalesSettingsModal } from "./MasterDataSalesSettingsModal";
-import { MasterDataCustomerConfigModal } from "../components/MasterDataCustomerConfigModal";
 import { MasterDataPartnerWizard } from "../components/MasterDataPartnerWizard";
 import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResumenTab";
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
 import { useMasterDataCustomersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
-import type {
-  CreateBusinessPartnerBody,
-  UpdateBusinessPartnerBody,
-} from "../types/businessPartner.types";
+import type { CreateBusinessPartnerBody } from "../types/businessPartner.types";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
 const TABS = [
@@ -48,9 +43,8 @@ export function MasterDataCustomersPage() {
   const ui = useMasterDataCustomersUiStore;
 
   const activeTab = ui((s) => s.activeTab);
-  const editingPartner = ui((s) => s.editingPartner);
   const setActiveTab = ui((s) => s.setActiveTab);
-  const cancelEdit = ui((s) => s.cancelEdit);
+  const showList = ui((s) => s.showList);
   const addActivity = ui((s) => s.addActivity);
   const reset = ui((s) => s.reset);
 
@@ -86,22 +80,6 @@ export function MasterDataCustomersPage() {
       setActiveTab("listado");
     },
     [page, addActivity, setActiveTab, t],
-  );
-
-  const handleUpdate = useCallback(
-    async (body: UpdateBusinessPartnerBody): Promise<void> => {
-      if (!editingPartner) return;
-      await page.updateCustomer(editingPartner.id, body);
-      addActivity(body.legalName, "updated");
-      message.success(
-        t(
-          "masterdata.customers.updated.success",
-          "Cliente actualizado correctamente.",
-        ),
-      );
-      cancelEdit();
-    },
-    [editingPartner, page, addActivity, cancelEdit, t],
   );
 
   const handleAssign = useCallback(
@@ -223,11 +201,9 @@ export function MasterDataCustomersPage() {
         {activeTab === "listado" && (
           <MasterDataPartnerListTab
             role="customer"
-            store={ui}
             canCreate={page.canCreate}
             canUpdate={page.canUpdate}
             canDisable={page.canDisable}
-            canConfigure={page.canConfigure}
             loading={page.loading}
             saving={page.saving}
             partners={page.customers}
@@ -241,60 +217,23 @@ export function MasterDataCustomersPage() {
             totalPages={page.totalPages}
             setPage={page.setPage}
             searchInputRef={searchRef}
-            onSettings={(bp) => void page.openSettings(bp)}
-            onCustomerConfig={
-              page.canUpdate
-                ? (bp) => void page.openCustomerConfig(bp)
-                : undefined
-            }
             onAddAsSupplier={(id) => void page.addAsSupplier(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
           />
         )}
-        {activeTab === "nuevo" && (page.canCreate || editingPartner) && (
+        {activeTab === "nuevo" && page.canCreate && (
           <MasterDataPartnerWizard
-            key={editingPartner?.id ?? "create"}
             role="customer"
             draftKey={DRAFT_KEY}
             submitting={page.saving}
-            editingPartner={editingPartner}
+            editingPartner={null}
             onSubmitCreate={handleCreate}
-            onSubmitUpdate={handleUpdate}
             onAssignRole={handleAssign}
-            onCancel={cancelEdit}
+            onCancel={showList}
           />
         )}
       </div>
-
-      {page.settingsBp && page.canConfigure && (
-        <MasterDataSalesSettingsModal
-          partner={page.settingsBp}
-          initialSettings={page.settingsData}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeSettings}
-          onSave={(payload) => page.saveSettings(page.settingsBp!.id, payload)}
-        />
-      )}
-
-      {page.customerConfigBp && (
-        <MasterDataCustomerConfigModal
-          key={page.customerConfigBp.roleId}
-          bpName={page.customerConfigBp.bp.legalName}
-          initialConfig={page.customerConfigBp.config}
-          saving={page.saving}
-          error={page.modalError}
-          onClose={page.closeCustomerConfig}
-          onSave={(body) =>
-            void page.saveCustomerConfig(
-              page.customerConfigBp!.bp.id,
-              page.customerConfigBp!.roleId,
-              body,
-            )
-          }
-        />
-      )}
     </ErpPageTemplate>
   );
 }

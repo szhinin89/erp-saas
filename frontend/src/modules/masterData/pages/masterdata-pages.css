@@ -367,8 +367,7 @@
   color: var(--color-text-secondary);
 }
 
-/* SUPPLIER-CONFIG-MODAL-UX-01 — secciones del modal «Config SRI — Proveedor» (ZHModal size xl) */
-.md-supplier-config-grid,
+/* Secciones de configuración de las pestañas Proveedor y Cliente de la ficha unificada (rejilla responsive) */
 .md-bp-config-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -376,7 +375,6 @@
   align-items: start;
 }
 
-.md-supplier-config-section,
 .md-bp-config-section {
   min-width: 0;
   padding: var(--space-4);
@@ -384,8 +382,6 @@
   border-radius: var(--radius-md);
 }
 
-.md-supplier-config-section + .md-supplier-config-section,
-.md-supplier-config-grid + .md-supplier-config-section,
 .md-bp-config-section + .md-bp-config-section,
 .md-bp-config-grid + .md-bp-config-section {
   margin-top: var(--space-4);

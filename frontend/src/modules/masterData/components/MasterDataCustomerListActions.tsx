@@ -11,21 +11,18 @@ type Props = {
   partner: BusinessPartnerSummaryDto;
   canUpdate: boolean;
   canDisable: boolean;
-  canConfigure: boolean;
   saving: boolean;
-  onEdit: (bp: BusinessPartnerSummaryDto) => void;
-  onSettings?: (bp: BusinessPartnerSummaryDto) => void;
-  onCustomerConfig?: (bp: BusinessPartnerSummaryDto) => void;
   onAddAsSupplier?: (id: string) => void;
   onActivate: (id: string) => void;
   onDisable: (id: string) => void;
 };
 
-/** Customer row: View + Edit visible, secondary actions under «Más acciones» (portal).
- * Each item keeps the exact permission/state condition and callback of the previous buttons;
- * confirmations remain in the page handlers. Without secondary items there is no menu. */
-export function MasterDataCustomerListActions({partner: bp, canUpdate, canDisable, canConfigure,
-  saving, onEdit, onSettings, onCustomerConfig, onAddAsSupplier, onActivate, onDisable}: Props) {
+/** Customer row: «Gestionar» opens the unified record (/masterdata/business-partners/:id), where edit,
+ * commercial classification, sales terms, locations, contacts and roles live. Only status and cross-role
+ * actions stay in the «Más acciones» menu (portal); each item keeps the exact permission/state condition
+ * and callback, and confirmations remain in the page handlers. Without secondary items there is no menu. */
+export function MasterDataCustomerListActions({partner: bp, canUpdate, canDisable,
+  saving, onAddAsSupplier, onActivate, onDisable}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -37,10 +34,6 @@ export function MasterDataCustomerListActions({partner: bp, canUpdate, canDisabl
   const run = (action: () => void) => () => { returnFocus(); action(); };
 
   const items: ReactElement[] = [];
-  if (canConfigure && onSettings)
-    items.push(<ZHLineActionItem key="company" label={t("masterdata.customers.action.company")} onClick={run(() => onSettings(bp))} />);
-  if (canUpdate && onCustomerConfig)
-    items.push(<ZHLineActionItem key="classification" label={t("masterdata.customers.action.classification")} onClick={run(() => onCustomerConfig(bp))} />);
   // canAssignAsSupplier (backend): activo y sin rol Supplier; el POST revalida.
   if (canUpdate && bp.canAssignAsSupplier && onAddAsSupplier)
     items.push(<ZHLineActionItem key="assign" label={label("assign")} disabled={saving} onClick={run(() => onAddAsSupplier(bp.id))} />);
@@ -51,12 +44,8 @@ export function MasterDataCustomerListActions({partner: bp, canUpdate, canDisabl
 
   return (
     <div className="md-customer-actions" ref={rootRef}>
-      <ZHBtn variant="ghost" size="sm" aria-label={`${t("common.view")}: ${identity}`}
-        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{t("common.view")}</ZHBtn>
-      {canUpdate && (
-        <ZHBtn variant="ghost" size="sm" aria-label={`${t("common.edit")}: ${identity}`}
-          onClick={() => onEdit(bp)}>{t("common.edit")}</ZHBtn>
-      )}
+      <ZHBtn variant="ghost" size="sm" aria-label={`${label("manage")}: ${identity}`}
+        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{label("manage")}</ZHBtn>
       {items.length > 0 && (
         <ZHLineAction kind="menu" icon={"⋯"} label={label("more")}
           ariaLabel={`${label("more")}: ${identity}`} menuLabel={`${label("more")}: ${identity}`}

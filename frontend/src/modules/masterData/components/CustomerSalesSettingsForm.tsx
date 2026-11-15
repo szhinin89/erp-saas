@@ -10,31 +10,26 @@ import { message } from "../../../lib/messages";
 type Props = {
   initialSettings: CompanyBpSalesSettingsDto | null;
   saving: boolean;
-  error: string | null;
-  /** Bandera compartida con el modal: bloquea el cierre mientras hay un guardado en curso. */
+  /** Bandera de guardado en curso: evita envíos duplicados. */
   submittingRef: MutableRefObject<boolean>;
   /** Ficha sin permiso de edición: campo deshabilitado y sin acciones. */
   readOnly?: boolean;
-  /** Cancelar/cerrar manual (el modal lo protege mientras hay un guardado en curso). Ausente en la ficha. */
-  onClose?: () => void;
   /** Avisa de cambios sin guardar (protección de la ficha). */
   onDirtyChange?: (dirty: boolean) => void;
-  /** Cierre tras un guardado exitoso (sin la guarda de guardado en curso). */
+  /** Se invoca tras un guardado exitoso. */
   onSaved: () => void;
   onSave: (body: { paymentTermId: string | null }) => Promise<void>;
 };
 
 /**
  * Formulario de condición de pago predeterminada para ventas (por empresa activa).
- * Extraído de MasterDataSalesSettingsModal sin cambio de comportamiento.
+ * Se usa en la pestaña Cliente de la ficha unificada.
  */
 export function CustomerSalesSettingsForm({
   initialSettings,
   saving,
-  error,
   submittingRef,
   readOnly = false,
-  onClose,
   onDirtyChange,
   onSaved,
   onSave,
@@ -75,7 +70,7 @@ export function CustomerSalesSettingsForm({
         submittingRef.current = false;
       }
     }}>
-      {(error || formError) && <ZHPageNotice variant="error" message={error ?? formError!} />}
+      {formError && <ZHPageNotice variant="error" message={formError} />}
       {invalidSelection && !loading && <ZHPageNotice variant="warning" message="La condición configurada no está disponible. Seleccione una condición activa o quite el valor predeterminado." />}
       <ZHField label="Condición predeterminada para ventas" hint="Aplica a la empresa activa. Sin valor predeterminado, deberá seleccionar una condición al crear la venta.">
         <ZhSelect aria-label="Condición predeterminada para ventas" value={paymentTermId} disabled={loading || saving || loadFailed || readOnly} onChange={(event) => setPaymentTermId(event.target.value)}>
@@ -84,7 +79,7 @@ export function CustomerSalesSettingsForm({
           {terms.filter((pt) => pt.isActive).map((pt) => <option key={pt.id} value={pt.id}>{pt.code} — {pt.name} ({pt.summary})</option>)}
         </ZhSelect>
       </ZHField>
-      {!readOnly && <ZHFormActions onCancel={onClose} hideCancel={!onClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />}
+      {!readOnly && <ZHFormActions hideCancel saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />}
     </form>
   );
 }

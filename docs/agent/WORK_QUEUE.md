@@ -23,12 +23,16 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01 (Etapa 1 commit local `e0f1d338c`, sin push; Etapa 2 ficha unificada
-  IMPLEMENTADA local, pendiente gate del propietario, sin commit ni push): pestañas por rol, `?tab=`,
-  permisos y solo lectura, reutilizando los componentes extraídos. Incluye la corrección de
-  EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01 (CORREGIDO con prueba de regresión). La Etapa 3
-  (retirar los accesos de los listados) no está autorizada. Evidencia en [STATUS](../../STATUS.md).
-- BP-NAV-GUARD-01 (IMPLEMENTADO local, pendiente gate del propietario, sin commit ni push): router de
+- BP-CONSOLIDATION-01 (Etapas 1–2 publicadas: `e0f1d338c`, `9761470e8`; CI #1202 SUCCESS, gate del
+  propietario pendiente; Etapa 3 —listados con «Gestionar» y retiro de modales/acciones redundantes—
+  IMPLEMENTADA local, pendiente gate del propietario, sin commit ni push). Evidencia en
+  [STATUS](../../STATUS.md).
+- CI-1201 (PENDING; causa raíz por determinar): run #1201 sobre `e0f1d338c` falló en `backend / Backend (api)`
+  por una prueba de integración de Ventas,
+  `SalesCancelCollectionConcurrencyTests.Cancel_y_devolucion_con_credito_a_CxC_simultaneas_no_se_bloquean_y_quedan_consistentes`
+  (HTTP 422 en lugar de 201; 1724/1725 correctas). Commit sin cambios de backend; #1200 y #1202 pasaron; no
+  se atribuye a Business Partners. Sin investigar ni tocar Ventas aún. Detalle en [STATUS](../../STATUS.md).
+- BP-NAV-GUARD-01 (publicado en `9761470e8`, CI #1202 SUCCESS; gate del propietario pendiente): router de
   datos en `App.tsx`; protección de cambios sin guardar de la ficha con `useBlocker` y consulta previa en el
   cambio de empresa, el cierre de sesión y «Volver al Admin Core»; los eventos automáticos de seguridad no
   se bloquean. Casos no protegidos y evidencia en [STATUS](../../STATUS.md).
