@@ -259,4 +259,76 @@ describe("SupplierExpenseSubcategoriesSection", () => {
     ).toBe(true);
     expect(message.success).not.toHaveBeenCalled();
   });
+
+  it("busca por código y nombre, muestra contador y no altera la selección guardada", async () => {
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    mount();
+    await screen.findByLabelText("AGUA — Agua");
+    expect(screen.getByText("1 seleccionadas")).toBeTruthy();
+    const search = screen.getByLabelText("Buscar subcategorías");
+    fireEvent.change(search, { target: { value: "luz" } });
+    expect(screen.queryByLabelText("AGUA — Agua")).toBeNull();
+    expect(screen.getByLabelText("LUZ — Luz")).toBeTruthy();
+    fireEvent.change(search, { target: { value: "agua" } });
+    expect(screen.queryByLabelText("LUZ — Luz")).toBeNull();
+    fireEvent.change(search, { target: { value: "zzz" } });
+    expect(screen.getByText(/Ninguna subcategoría coincide/)).toBeTruthy();
+    // Filtrar no marca nada como cambiado: Guardar sigue deshabilitado.
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar subcategorías",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("seleccionar/desmarcar visibles conserva la selección oculta por el filtro", async () => {
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    mount();
+    await screen.findByLabelText("AGUA — Agua");
+    const search = screen.getByLabelText("Buscar subcategorías");
+    fireEvent.change(search, { target: { value: "luz" } });
+    fireEvent.click(screen.getByRole("button", { name: "Seleccionar visibles" }));
+    fireEvent.change(search, { target: { value: "" } });
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(
+      (screen.getByLabelText("LUZ — Luz") as HTMLInputElement).checked,
+    ).toBe(true);
+
+    fireEvent.change(search, { target: { value: "agua" } });
+    fireEvent.click(screen.getByRole("button", { name: "Desmarcar visibles" }));
+    fireEvent.change(search, { target: { value: "" } });
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(
+      (screen.getByLabelText("LUZ — Luz") as HTMLInputElement).checked,
+    ).toBe(true);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar subcategorías" }),
+    );
+    await waitFor(() =>
+      expect(
+        businessPartnerFacade.setExpenseSubcategories,
+      ).toHaveBeenCalledWith("bp1", { expenseSubcategoryIds: ["s2"] }),
+    );
+  });
+
+  it("cada modo se distingue por su variante de aviso", async () => {
+    const { container } = mount();
+    await screen.findByText(/Sin restricción/);
+    expect(
+      container.querySelector(
+        ".md-supplier-expense-subcategories__mode--Unconfigured",
+      ),
+    ).toBeTruthy();
+  });
 });

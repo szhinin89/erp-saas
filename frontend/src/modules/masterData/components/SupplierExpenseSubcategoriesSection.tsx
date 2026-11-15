@@ -3,6 +3,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhCheckbox } from "../../../components/zh/inputs/ZhCheckbox";
+import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { useCompanyScopedAsync } from "../../../hooks/useCompanyScopedAsync";
 import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
@@ -15,6 +16,13 @@ import type {
 } from "../types/businessPartner.types";
 
 const K = "masterdata.suppliers.expenseSubcategories.";
+
+// Cada modo se distingue por variante del aviso oficial (sin restricción / restringido / sin disponibles).
+const MODE_VARIANT = {
+  Unconfigured: "neutral",
+  Restricted: "info",
+  RestrictedEmpty: "error",
+} as const;
 
 type Option = { id: string; label: string; unavailable?: boolean };
 type Group = { key: string; title: string; options: Option[] };
@@ -76,6 +84,8 @@ export function SupplierExpenseSubcategoriesSection({
   const [edits, setEdits] = useState<Set<string> | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Solo filtra la vista: nunca modifica `edits` ni lo guardado.
+  const [query, setQuery] = useState("");
 
   const config = useCompanyScopedAsync(
     () => businessPartnerFacade.getExpenseSubcategories(bpId),
@@ -99,6 +109,8 @@ export function SupplierExpenseSubcategoriesSection({
     setEdits(null);
   }, [bpId, config.data]);
 
+  useEffect(() => setQuery(""), [bpId]);
+
   const selected = edits ?? new Set(activeIds);
 
   const groups = useMemo(
@@ -111,7 +123,20 @@ export function SupplierExpenseSubcategoriesSection({
     [catalog, data, t],
   );
 
+  const visibleGroups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return groups;
+    return groups
+      .map((g) => ({
+        ...g,
+        options: g.options.filter((o) => o.label.toLowerCase().includes(q)),
+      }))
+      .filter((g) => g.options.length > 0);
+  }, [groups, query]);
+
   if (!canView) return null;
+
+  const visibleIds = visibleGroups.flatMap((g) => g.options.map((o) => o.id));
 
   const dirty =
     selected.size !== activeIds.length ||
@@ -164,13 +189,23 @@ export function SupplierExpenseSubcategoriesSection({
       return next;
     });
 
+  // Opera solo sobre lo visible; la selección de lo oculto por el filtro se conserva.
+  const setVisible = (checked: boolean) =>
+    setEdits(() => {
+      const next = new Set(selected);
+      for (const id of visibleIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+
   const loadError = config.error
     ? `${t(`${K}loadError`)} ${config.error}`
     : null;
 
   return (
     <>
-      <hr className="md-supplier-section-divider" />
       <div className="md-supplier-expense-subcategories">
         <h4>{t(`${K}title`)}</h4>
         <p className="md-supplier-section-hint">{t(`${K}hint`)}</p>
@@ -182,8 +217,9 @@ export function SupplierExpenseSubcategoriesSection({
         ) : data ? (
           <>
             <ZHPageNotice
-              variant={data.mode === "RestrictedEmpty" ? "warning" : "info"}
+              variant={MODE_VARIANT[data.mode]}
               message={t(`${K}mode.${data.mode}`)}
+              className={`md-supplier-expense-subcategories__mode md-supplier-expense-subcategories__mode--${data.mode}`}
             />
             {!editable ? (
               <ReadOnlyList
@@ -193,29 +229,77 @@ export function SupplierExpenseSubcategoriesSection({
             ) : groups.length === 0 ? (
               <p className="md-supplier-section-hint">{t(`${K}empty`)}</p>
             ) : (
-              groups.map((group) => (
-                <fieldset
-                  key={group.key}
-                  className="md-supplier-expense-subcategories__group"
-                >
-                  <legend>{group.title}</legend>
-                  {group.options.map((option) => (
-                    <ZhCheckbox
-                      key={option.id}
-                      label={
-                        option.unavailable
-                          ? `${option.label} (${t(`${K}inactiveInCatalog`)})`
-                          : option.label
-                      }
-                      checked={selected.has(option.id)}
-                      disabled={busy}
-                      onChange={(event) =>
-                        toggle(option.id, event.target.checked)
-                      }
-                    />
-                  ))}
-                </fieldset>
-              ))
+              <>
+                <div className="md-supplier-expense-subcategories__toolbar">
+                  <ZhTextInput
+                    type="search"
+                    density="compact"
+                    value={query}
+                    placeholder={t(`${K}searchPlaceholder`)}
+                    aria-label={t(`${K}searchLabel`)}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                  <span
+                    className="md-supplier-expense-subcategories__counter"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {t(`${K}selectedCount`).replace(
+                      "{count}",
+                      String(selected.size),
+                    )}
+                  </span>
+                  <ZHBtn
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={busy || visibleIds.length === 0}
+                    onClick={() => setVisible(true)}
+                  >
+                    {t(`${K}selectVisible`)}
+                  </ZHBtn>
+                  <ZHBtn
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={busy || visibleIds.length === 0}
+                    onClick={() => setVisible(false)}
+                  >
+                    {t(`${K}clearVisible`)}
+                  </ZHBtn>
+                </div>
+                {visibleGroups.length === 0 ? (
+                  <p className="md-supplier-section-hint" role="status">
+                    {t(`${K}noMatches`)}
+                  </p>
+                ) : (
+                  <div className="md-supplier-expense-subcategories__groups">
+                    {visibleGroups.map((group) => (
+                      <fieldset
+                        key={group.key}
+                        className="md-supplier-expense-subcategories__group"
+                      >
+                        <legend>{group.title}</legend>
+                        {group.options.map((option) => (
+                          <ZhCheckbox
+                            key={option.id}
+                            label={
+                              option.unavailable
+                                ? `${option.label} (${t(`${K}inactiveInCatalog`)})`
+                                : option.label
+                            }
+                            checked={selected.has(option.id)}
+                            disabled={busy}
+                            onChange={(event) =>
+                              toggle(option.id, event.target.checked)
+                            }
+                          />
+                        ))}
+                      </fieldset>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
             {editable && (
               <div className="md-supplier-expense-subcategories__actions">

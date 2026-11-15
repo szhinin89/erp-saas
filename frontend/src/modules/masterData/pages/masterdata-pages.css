@@ -367,10 +367,24 @@
   color: var(--color-text-secondary);
 }
 
-.md-supplier-section-divider {
-  margin: var(--space-5) 0;
-  border: none;
-  border-top: 1px solid var(--color-border);
+/* SUPPLIER-CONFIG-MODAL-UX-01 — secciones del modal «Config SRI — Proveedor» (ZHModal size xl) */
+.md-supplier-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.md-supplier-config-section {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.md-supplier-config-section + .md-supplier-config-section,
+.md-supplier-config-grid + .md-supplier-config-section {
+  margin-top: var(--space-4);
 }
 
 .md-supplier-purchase-default-section h4 {
@@ -641,10 +655,42 @@
   font-weight: 600;
 }
 
+.md-supplier-expense-subcategories__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.md-supplier-expense-subcategories__toolbar > input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.md-supplier-expense-subcategories__counter {
+  font-size: var(--text-body-sm-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.md-supplier-expense-subcategories__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  /* Scroll propio de la lista: toolbar y acciones quedan en flujo, sin superponerse al contenido. */
+  max-height: min(50dvh, 420px);
+  overflow-y: auto;
+}
+
 .md-supplier-expense-subcategories__group {
   display: grid;
+  align-content: start;
   gap: var(--space-2);
-  margin: var(--space-3) 0 0;
+  min-width: 0;
+  margin: 0;
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -654,6 +700,7 @@
   padding: 0 var(--space-2);
   font-size: var(--text-body-sm-size);
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .md-supplier-expense-subcategories__readonly {

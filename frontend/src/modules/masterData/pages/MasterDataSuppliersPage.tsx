@@ -27,12 +27,11 @@ import type {
   SupplierRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
-import { paymentTermService } from "../api/paymentTermService";
-import type { PaymentTermDto } from "../api/paymentTermService";
 import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
 import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
 import { useSriTaxSupportCodes } from "../api/useSriTaxSupportCodes";
 import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
+import { SupplierPurchaseDefaultSection } from "../components/SupplierPurchaseDefaultSection";
 import { SupplierExpenseSubcategoriesSection } from "../components/SupplierExpenseSubcategoriesSection";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
@@ -110,9 +109,6 @@ function SupplierConfigModal({
   );
   const [isRequiredToKeepAccounting, setIsRequiredToKeepAccounting] =
     useState(initialConfig?.isRequiredToKeepAccounting ?? false);
-  const [paymentTermsList, setPaymentTermsList] = useState<PaymentTermDto[]>(
-    [],
-  );
   const { options: supplierTypeOptions } = useSriSupplierTypes();
   const {
     options: paymentMethodOptions,
@@ -131,78 +127,17 @@ function SupplierConfigModal({
     loadingTaxSupport,
   );
 
-  useEffect(() => {
-    paymentTermService
-      .list()
-      .then(setPaymentTermsList)
-      .catch(() => {});
-  }, []);
-
-  // ── Default de compras/gastos por empresa activa (ADR-033) ───────────────
-  // Sección independiente: fetch/save propios, separados del formulario de
-  // Config SRI de arriba — un fallo en uno no afecta al otro, y cada uno
-  // muestra su propio error.
-  const [purchaseDefaultPtId, setPurchaseDefaultPtId] = useState("");
-  const [purchaseSettingsLoading, setPurchaseSettingsLoading] =
-    useState(true);
-  const [purchaseSettingsSaving, setPurchaseSettingsSaving] = useState(false);
-  const [purchaseSettingsError, setPurchaseSettingsError] = useState<
-    string | null
-  >(null);
-  const [purchaseSettingsSaved, setPurchaseSettingsSaved] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setPurchaseSettingsLoading(true);
-    businessPartnerFacade
-      .getPurchaseSettings(bpId)
-      .then((dto) => {
-        if (!cancelled) setPurchaseDefaultPtId(dto.paymentTermId ?? "");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled)
-          setPurchaseSettingsError(
-            formatApiRequestError(err, {
-              generic: "No se pudo cargar la condición predeterminada.",
-            }),
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setPurchaseSettingsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [bpId]);
-
-  const handleSavePurchaseDefault = async () => {
-    setPurchaseSettingsSaving(true);
-    setPurchaseSettingsError(null);
-    setPurchaseSettingsSaved(false);
-    try {
-      await businessPartnerFacade.upsertPurchaseSettings(bpId, {
-        paymentTermId: purchaseDefaultPtId || null,
-      });
-      setPurchaseSettingsSaved(true);
-    } catch (err: unknown) {
-      setPurchaseSettingsError(
-        formatApiRequestError(err, {
-          generic: "No se pudo guardar la condición predeterminada.",
-        }),
-      );
-    } finally {
-      setPurchaseSettingsSaving(false);
-    }
-  };
-
   return (
     <ZHModal
       open
       onClose={onClose}
+      size="xl"
       title="Config SRI — Proveedor"
       subtitle={bpName}
       closeOnBackdrop={false}
     >
+      <div className="md-supplier-config-grid">
+      <div className="md-supplier-config-section">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -216,7 +151,7 @@ function SupplierConfigModal({
         }}
       >
         {error && <ZHPageNotice variant="error" message={error} />}
-        <ZHGrid cols={2}>
+        <ZHGrid cols={1}>
           <ZHField
             label="Sustento tributario predeterminado"
             fieldError={
@@ -283,24 +218,20 @@ function SupplierConfigModal({
               ))}
             </ZhSelect>
           </ZHField>
-          <div className="zh-col-span-2">
-            <ZHToggle
-              label="Exento de retención"
-              description="RISE / Microempresa / Sector publico"
-              value={isRetentionExempt}
-              onChange={setIsRetentionExempt}
-              disabled={saving}
-            />
-          </div>
-          <div className="zh-col-span-2">
-            <ZHToggle
-              label="Obligado a llevar contabilidad"
-              description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
-              value={isRequiredToKeepAccounting}
-              onChange={setIsRequiredToKeepAccounting}
-              disabled={saving}
-            />
-          </div>
+          <ZHToggle
+            label="Exento de retención"
+            description="RISE / Microempresa / Sector publico"
+            value={isRetentionExempt}
+            onChange={setIsRetentionExempt}
+            disabled={saving}
+          />
+          <ZHToggle
+            label="Obligado a llevar contabilidad"
+            description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
+            value={isRequiredToKeepAccounting}
+            onChange={setIsRequiredToKeepAccounting}
+            disabled={saving}
+          />
         </ZHGrid>
         <ZHFormActions
           onCancel={onClose}
@@ -313,59 +244,18 @@ function SupplierConfigModal({
           }}
         />
       </form>
-
-      <hr className="md-supplier-section-divider" />
-
-      <div className="md-supplier-purchase-default-section">
-        <h4>Condición predeterminada para compras/gastos</h4>
-        {purchaseSettingsError && (
-          <ZHPageNotice variant="error" message={purchaseSettingsError} />
-        )}
-        <ZHField
-          label="Condición predeterminada para compras/gastos"
-          hint="Aplica solo a la empresa activa. Si este proveedor trabaja con otra empresa, puede tener una condición distinta."
-        >
-          <ZhSelect
-            value={purchaseDefaultPtId}
-            onChange={(e) => {
-              setPurchaseDefaultPtId(e.target.value);
-              setPurchaseSettingsSaved(false);
-            }}
-            disabled={purchaseSettingsLoading || purchaseSettingsSaving}
-          >
-            <option value="">
-              — Sin default (exigir selección al crear documentos) —
-            </option>
-            {paymentTermsList
-              .filter(
-                (pt) => pt.isActive || pt.id === purchaseDefaultPtId,
-              )
-              .map((pt) => (
-                <option key={pt.id} value={pt.id}>
-                  {pt.code} — {pt.name} ({pt.summary})
-                </option>
-              ))}
-          </ZhSelect>
-        </ZHField>
-        <ZHBtn
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={purchaseSettingsLoading || purchaseSettingsSaving}
-          onClick={() => void handleSavePurchaseDefault()}
-        >
-          {purchaseSettingsSaving
-            ? "Guardando..."
-            : purchaseSettingsSaved
-              ? "Guardado ✓"
-              : "Guardar condición de compras/gastos"}
-        </ZHBtn>
+      </div>
+      <div className="md-supplier-config-section">
+        <SupplierPurchaseDefaultSection bpId={bpId} />
+      </div>
       </div>
 
-      <hr className="md-supplier-section-divider" />
-
-      <SupplierRetentionDefaultsSection bpId={bpId} disabled={saving} />
-      <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
+      <div className="md-supplier-config-section">
+        <SupplierRetentionDefaultsSection bpId={bpId} disabled={saving} />
+      </div>
+      <div className="md-supplier-config-section">
+        <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
+      </div>
     </ZHModal>
   );
 }
