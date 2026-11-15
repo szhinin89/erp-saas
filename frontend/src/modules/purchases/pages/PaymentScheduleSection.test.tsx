@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
-import { PaymentScheduleSection } from "./PurchasesPage";
+import { PaymentScheduleSection } from "../components/PaymentScheduleSection";
 
 // PURCHASE-PAYABLE-E2E-01 — tras Regenerar (o cargar el borrador) la cuota cambia de monto con el
 // input ya montado: debe mostrarse el monto vigente y entrar/salir sin editar no debe re-confirmar

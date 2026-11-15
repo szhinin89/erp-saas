@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
@@ -16,7 +16,7 @@ import { purchaseStatusBadge } from "../utils/purchaseDocumentState";
 import { focusPurchaseTarget } from "../utils/purchaseFocus";
 
 /** Composes existing ZH patterns. One form status, navigation summary and general rejection. */
-export function PurchaseFormFeedback({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
+export function PurchaseFormFeedback({ ctx, leading }: { ctx: ReturnType<typeof usePurchasesPage>; leading?: ReactNode }) {
   const { t } = useI18n();
   const precision = usePrecisionPolicy();
   const navigate = useNavigate();
@@ -89,6 +89,7 @@ export function PurchaseFormFeedback({ ctx }: { ctx: ReturnType<typeof usePurcha
       }}>{t("purchases.duplicate.viewExisting", "Ver compra existente")}</ZHBtn>}
     </div>}
     <div className="pf-doc-state" id="purchase-form-feedback" tabIndex={-1} aria-live="polite">
+      {leading}
       <Badge variant={status?.variant ?? "neutral"} size="md" label={status ? t(status.key, status.fallback) : t("purchases.documentState.new", "Nueva compra · sin guardar")} />
       <ZHDataValue variant="muted">{statusText}</ZHDataValue>
       {!ctx.readOnly && ctx.hasUnsavedFormChanges && <Badge variant="warning" label={t("purchases.feedback.unsavedChanges", "Cambios sin guardar")} />}

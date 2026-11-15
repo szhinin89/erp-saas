@@ -7,7 +7,9 @@ import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "../utils/purchaseLineReadiness";
-import { PurchaseDetailLines, PurchaseLineCard } from "./PurchasesPage";
+import {
+  PurchaseDetailLines, PurchaseExpandAllButton, PurchaseLineCard, usePurchaseLinesExpansion, type PurchaseLinesExpansion,
+} from "../components/PurchaseLineCard";
 import {
   brokenDownLine,
   manualLineWithoutCommercialData,
@@ -75,7 +77,7 @@ describe("PurchaseLineCard — layout compacto", () => {
 
   it("distingue subtotal de producto (cabecera) de la base imponible tributaria del XML", () => {
     renderLine(xmlIceEditedLine);
-    expect(screen.getByText("Subtotal producto")).toBeTruthy();
+    expect(screen.getByText("Subtotal")).toBeTruthy();
     expect(screen.getByText("Base imp. IVA")).toBeTruthy();
     expect(screen.queryByText("BASE IMP.")).toBeNull();
     expect(screen.queryByText("Base imponible")).toBeNull();
@@ -94,7 +96,7 @@ describe("PurchaseLineCard — layout compacto", () => {
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText("Producto recibido (XML)")).toBeNull();
-    expect(screen.getByText("Subtotal producto")).toBeTruthy();
+    expect(screen.getByText("Subtotal")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Detalle colapsado/);
   });
 
@@ -243,13 +245,18 @@ describe("P0 - field validation on purchase lines", () => {
 });
 
 
+function ExpansionHarness({ ctx }: { ctx: Parameters<typeof PurchaseDetailLines>[0]["ctx"] }) {
+  const expansion: PurchaseLinesExpansion = usePurchaseLinesExpansion(ctx.lines);
+  return <><PurchaseExpandAllButton expansion={expansion} /><PurchaseDetailLines ctx={ctx} expansion={expansion} /></>;
+}
+
 it("detalle principal: inicio contraído, expansión global/individual sin mutar líneas", () => {
   const { ctx } = renderLine(xmlIceEditedLine);
   cleanup();
   const lines = [xmlIceEditedLine, { ...manualLineWithoutCommercialData, _key: 900 }];
   const snapshot = JSON.stringify(lines);
   const mount = () => render(<MemoryRouter><I18nProvider>
-    <PurchaseDetailLines ctx={{ ...ctx, lines }} />
+    <ExpansionHarness ctx={{ ...ctx, lines }} />
     <PurchaseLineCard line={{ ...xmlIceEditedLine, _key: 901 }} idx={2} ctx={ctx} />
   </I18nProvider></MemoryRouter>);
   mount();

@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
-import { PurchaseLineCard } from "../pages/PurchasesPage";
+import { PurchaseLineCard } from "./PurchaseLineCard";
 import { lineCardContext, manualLineWithoutCommercialData, missingItemReadiness, unlinkedXmlLine } from "../pages/purchaseLineCard.fixture";
 import { PurchaseFormFeedback } from "./PurchaseFormFeedback";
 import { PurchaseRetentionDraft } from "./PurchaseRetentionDraft";

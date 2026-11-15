@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
-import { RetentionSection } from "./PurchasesPage";
+import { RetentionSection } from "../components/RetentionSection";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 
 // PURCHASE-PAYABLE-E2E-01 — una compra confirmada sin retención mostraba la clave i18n cruda

@@ -937,18 +937,9 @@
    margen % vive solo en la cabecera (Badge); precio de venta y desc. máx. pasaron a
    ZHInfoRow en la grilla de "Información comercial". */
 
-/* PURCHASE-ADD-LINE-CTA-REUSE-AFTER-LAST-LINE-01 — misma acción/botón que .pdl-empty__cta
-   (ctx.addLine), reutilizada como continuación compacta de la lista cuando ya hay líneas —
-   sin caja/borde punteado grande: solo un borde superior sutil como el resto de las filas
-   (.pdl-line ya usa border-top: 1px solid var(--color-border) entre ítems). */
-.pdl-add-inline {
-  display: flex;
-  padding: var(--space-3) var(--space-5);
-  border-top: 1px solid var(--color-border);
-}
 /* PURCHASE-EMPTY-LINES-STATE-DESIGN-01 — tarjeta compacta horizontal (icono | texto | CTA),
-   reemplaza el bloque grande de borde punteado centrado. Mismo botón/acción que .pdl-add
-   (ctx.addLine) — solo cambia presentación, nunca se duplica la lógica de agregar línea. */
+   reemplaza el bloque grande de borde punteado centrado. Agregar líneas vive solo en la barra
+   de herramientas del detalle (ctx.addLine). */
 .pdl-empty {
   display: flex;
   align-items: center;
@@ -984,17 +975,9 @@
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
 }
-.pdl-empty__cta {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
 @media (max-width: 640px) {
   .pdl-empty {
     flex-wrap: wrap;
-  }
-  .pdl-empty__cta {
-    width: 100%;
-    justify-content: center;
   }
 }
 
@@ -1490,3 +1473,316 @@
     width: 100%;
   }
 }
+
+/* ── Nueva compra — rediseño sobre la referencia visual aprobada por el propietario ─────────
+   Todo scoped a `.pf-purchase-form`: .pf-mini-card/.pf-card/.pdl-* de erp-form-core.css y
+   .zh-line-issues de zh-notice.css son compartidos (Kardex, Ventas) y no se modifican.
+   Cabecera en un solo panel con divisores (Proveedor | Documento | Condiciones), detalle de
+   productos como tarjeta con barra de herramientas en dos filas, líneas en una fila compacta,
+   Plazos | Resumen equilibrados y barra de acciones fija al pie. */
+.pf-purchase-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pf-purchase-form .pf-main-layout { gap: var(--space-3); }
+.pf-purchase-form .pf-doc-state { margin-bottom: 0; gap: var(--space-2); }
+
+/* Panel de cabecera */
+.pf-purchase-form .pf-header-cards-row--purchase {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.6fr);
+  gap: 0;
+  margin: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.pf-purchase-form .pf-mini-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
+}
+.pf-purchase-form .pf-mini-card + .pf-mini-card { border-left: 1px solid var(--color-border); }
+.pf-purchase-form .pf-mini-card__title {
+  border-bottom: 0;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  font-size: var(--text-title-sm-size);
+}
+.pf-purchase-form .pf-mini-card__body { gap: var(--space-2) var(--space-3); }
+.pf-purchase-form #purchase-document .pf-mini-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+}
+.pf-purchase-form #purchase-document .pf-mini-card__row { display: contents; }
+.pf-purchase-form #purchase-document .pf-mini-card__body > :last-child { grid-column: 1 / -1; }
+.pf-purchase-form .pf-header-cards-row--purchase > :nth-child(3) .pf-mini-card__body {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+.pf-purchase-form .zh-field--compact .zh-field-label {
+  font-size: var(--text-help-size);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-primary);
+}
+.pf-purchase-form .pf-extras { margin: 0; }
+
+/* Detalle de productos: tarjeta + barra de herramientas (título/acciones | buscar/filtro/agregar) */
+.pf-purchase-form .pdl-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.pf-purchase-form .pdl-topbar--split {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+.pf-purchase-form .pdl-toolbar { display: contents; }
+.pf-purchase-form .pdl-toolbar__add { white-space: nowrap; }
+/* Tablet/móvil (flex con ajuste de línea, orden natural del DOM = orden de Tab): título |
+   Ver motivo + Distribuir (misma línea si caben) | búsqueda | filtro + Expandir todo | Agregar.
+   Sin rejilla de pistas automáticas: los elementos que abarcan varias columnas inflaban la primera
+   pista a 360 px. En escritorio la rejilla coloca los mismos elementos en el mismo orden de lectura. */
+.pf-purchase-form .pdl-topbar__title { flex: 1 1 100%; }
+.pf-purchase-form .pdl-toolbar .pdl-search__wrap { flex: 1 1 100%; max-width: none; min-width: 0; }
+.pf-purchase-form .pdl-toolbar__actions { width: auto; margin-left: 0; justify-content: flex-start; }
+.pf-purchase-form .pdl-topbar--split > .zh-stack { align-items: flex-start; min-width: 0; }
+.pf-purchase-form .pdl-toolbar__add { margin-left: auto; }
+@media (max-width: 640px) {
+  .pf-purchase-form .pdl-toolbar__add { flex: 1 1 100%; margin-left: 0; }
+}
+@media (min-width: 901px) {
+  .pf-purchase-form .pdl-topbar--split {
+    display: grid;
+    grid-template-columns: minmax(220px, 480px) auto auto minmax(0, 1fr) auto;
+    column-gap: var(--space-3);
+    row-gap: var(--space-3);
+  }
+  .pf-purchase-form .pdl-topbar__title { grid-row: 1; grid-column: 1 / 4; }
+  .pf-purchase-form .pdl-topbar--split > .zh-stack { grid-row: 1; grid-column: 4; justify-self: end; align-items: flex-end; margin-right: calc(-1 * var(--space-2)); }
+  .pf-purchase-form .pdl-toolbar__actions { grid-row: 1; grid-column: 5; justify-content: flex-end; }
+  .pf-purchase-form .pdl-toolbar .pdl-search__wrap { grid-row: 2; grid-column: 1; }
+  .pf-purchase-form .pdl-toolbar .pdl-type-filter-select { grid-row: 2; grid-column: 2; }
+  .pf-purchase-form .pdl-toolbar__expand { grid-row: 2; grid-column: 3; }
+  .pf-purchase-form .pdl-toolbar__add { grid-row: 2; grid-column: 5; margin-left: 0; justify-self: end; }
+}
+.pf-purchase-form .pdl-lines { padding: 0 var(--space-4) var(--space-3); }
+.pf-purchase-form .pdl-empty { padding: var(--space-4) 0; }
+.pf-purchase-form .pdl-line-card.zh-line-card {
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border-width: 1px 0 0;
+}
+.pf-purchase-form .pdl-line-card.zh-line-card:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.pf-purchase-form .pdl-line-card.zh-line-card:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); border-bottom-width: 1px; }
+.pf-purchase-form .pdl-line-card.zh-line-card:only-child { border-radius: var(--radius-md); }
+.pf-purchase-form .pdl-line-card--has-issues.zh-line-card { margin-top: 0; }
+.pf-purchase-form .pdl-container .pdl-line-card--has-issues .pdl-line__main { padding-top: var(--space-1); }
+
+/* Línea: etiqueta de incidencias en el flujo (no flotante) y fila única compacta */
+.pf-purchase-form .zh-line-issues {
+  position: static;
+  transform: none;
+  max-width: none;
+  margin: var(--space-2) 0 0 var(--space-3);
+}
+.pf-purchase-form .pdl-container .pdl-line__main { padding: var(--space-2) var(--space-3); }
+.pf-purchase-form .pdl-line__summary {
+  grid-template-columns:
+    minmax(200px, 3fr) /* Producto */
+    minmax(130px, 1.2fr) /* Bodega (solo con producto vinculado) */
+    104px /* Cantidad */
+    128px /* Costo unitario */
+    minmax(76px, 0.5fr) /* Subtotal */
+    minmax(112px, 0.6fr) /* IVA / ICE */
+    minmax(92px, 0.6fr) /* Total línea */
+    minmax(68px, 0.4fr); /* Margen */
+}
+.pf-purchase-form .pdl-line__summary--no-warehouse {
+  grid-template-columns:
+    minmax(200px, 3.6fr) 104px 128px minmax(76px, 0.5fr) minmax(112px, 0.6fr) minmax(92px, 0.6fr) minmax(68px, 0.4fr);
+}
+.pf-purchase-form .pdl-line__summary > * { padding: 0 var(--space-2); }
+.pf-purchase-form .pdl-line__metric .zh-field-label { white-space: nowrap; }
+.pf-purchase-form .pdl-line__identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+}
+.pf-purchase-form .pdl-line__identity > * { grid-column: 1; min-width: 0; }
+.pf-purchase-form .pdl-line__identity > .pdl-line__identity-actions {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin-top: 0;
+}
+.pf-purchase-form .pdl-line__identity .pdl-line__product-name { margin-bottom: 0; }
+
+/* Plazos | Resumen */
+.pf-purchase-form .pf-plazos-resumen-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: var(--space-3);
+}
+.pf-purchase-form .pf-card { margin-bottom: 0; }
+.pf-purchase-form .pf-card__header { padding: var(--space-3) var(--space-4); }
+.pf-purchase-form .pf-card__body { padding: var(--space-3) var(--space-4); }
+.pf-purchase-form .pf-schedule-setup { margin-bottom: var(--space-2); }
+.pf-purchase-form .pf-totals {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.pf-purchase-form .pf-totals__header { grid-column: 1 / -1; padding: var(--space-3) var(--space-4); }
+.pf-purchase-form .pf-totals__vat-breakdown { grid-column: 1; grid-row: 2 / span 2; padding: var(--space-3) var(--space-4); border-bottom: 0; }
+.pf-purchase-form .pf-totals__body { grid-column: 2; grid-row: 2; padding: var(--space-2) var(--space-4) 0; }
+.pf-purchase-form .pf-totals__grand { grid-column: 2; grid-row: 3; padding: var(--space-2) var(--space-4); }
+.pf-purchase-form .pf-totals__row { padding: var(--space-1) 0; }
+@media (max-width: 960px) {
+  .pf-purchase-form .pf-plazos-resumen-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .pf-purchase-form .pf-totals { grid-template-columns: 1fr; }
+  .pf-purchase-form .pf-totals__vat-breakdown,
+  .pf-purchase-form .pf-totals__body,
+  .pf-purchase-form .pf-totals__grand { grid-column: 1; grid-row: auto; }
+}
+
+/* Barra de acciones: fija al pie del área de contenido, sin duplicar acciones */
+.pf-purchase-form .pf-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0 calc(-1 * var(--shell-content-padding));
+  padding: var(--space-3) var(--shell-content-padding);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .pf-purchase-form .pf-footer { padding: var(--space-2) var(--shell-content-padding); }
+  .pf-purchase-form .pf-footer > * { flex: 1 1 auto; }
+}
+
+/* Refinamientos de la referencia: enlace «Expandir todo», identidad centrada, errores de impuesto
+   compactos, estado vacío de plazos en línea y filas de totales más densas. */
+.pf-purchase-form .pdl-toolbar__expand { color: var(--color-primary); font-weight: 600; }
+.pf-purchase-form .pdl-line__identity { align-content: center; }
+.pf-purchase-form .pdl-line__metric .zh-field-hint { font-size: var(--text-overline-size); line-height: 1.25; text-align: right; }
+.pf-purchase-form .pf-schedule-empty { display: flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); }
+.pf-purchase-form .pf-schedule-empty__icon { display: inline-block; margin: 0; font-size: 20px; }
+.pf-purchase-form .pf-totals__row { padding: 2px 0; line-height: 1.3; }
+.pf-purchase-form .pf-totals__divider { margin: var(--space-1) 0; }
+
+/* Línea en tablet (<=1100px): identidad y bodega a ancho completo, métricas en 3 columnas; en móvil
+   (<=640px) una columna. Debe ir después de las reglas de escritorio de este bloque (misma
+   especificidad que ellas y mayor que el responsive histórico de la línea). */
+@media (max-width: 1100px) {
+  .pf-purchase-form .pdl-line__summary,
+  .pf-purchase-form .pdl-line__summary--no-warehouse { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pf-purchase-form .pdl-line__summary > * { border: 0; padding: var(--space-2); }
+  .pf-purchase-form .pdl-line__summary > .pdl-line__identity,
+  .pf-purchase-form .pdl-line__summary > .pdl-line__warehouse { grid-column: 1 / -1; }
+  .pf-purchase-form .pdl-line__summary > .pdl-line__identity { border-bottom: 1px solid var(--color-border); }
+  .pf-purchase-form .pdl-line__metric { align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .pf-purchase-form .pdl-line__summary,
+  .pf-purchase-form .pdl-line__summary--no-warehouse { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Cabecera y resumen responsive: tablet = Proveedor a ancho completo y Documento | Condiciones;
+   móvil = una columna con divisores horizontales. */
+@media (max-width: 1200px) {
+  .pf-purchase-form .pf-totals { grid-template-columns: minmax(0, 1fr); }
+  .pf-purchase-form .pf-totals__vat-breakdown,
+  .pf-purchase-form .pf-totals__body,
+  .pf-purchase-form .pf-totals__grand { grid-column: 1; grid-row: auto; }
+  .pf-purchase-form .pf-totals__vat-breakdown { border-bottom: 1px solid var(--color-border); }
+}
+@media (max-width: 1100px) {
+  .pf-purchase-form .pf-header-cards-row--purchase { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-purchase-form .pf-header-cards-row--purchase > :first-child { grid-column: 1 / -1; }
+  .pf-purchase-form .pf-mini-card + .pf-mini-card { border-left: 0; border-top: 1px solid var(--color-border); }
+  .pf-purchase-form .pf-header-cards-row--purchase > :nth-child(3) { border-left: 1px solid var(--color-border); }
+  .pf-purchase-form .pf-header-cards-row--purchase > :nth-child(3) .pf-mini-card__body { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 800px) {
+  .pf-purchase-form .pf-header-cards-row--purchase { grid-template-columns: minmax(0, 1fr); }
+  .pf-purchase-form .pf-header-cards-row--purchase > :nth-child(3) { border-left: 0; }
+  .pf-purchase-form #purchase-document .pf-mini-card__body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-purchase-form #purchase-document .pf-mini-card__body > :first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 340px) {
+  .pf-purchase-form #purchase-document .pf-mini-card__body { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Tarjeta de línea en móvil (<=640px): el rail pasa a una franja horizontal sobre el contenido (gana
+   el ancho que ocupaba la columna lateral), Cantidad | Costo en una fila, Subtotal | IVA | Total en
+   otra y Margen como fila etiqueta/valor. Mismos controles y mensajes; solo cambia la disposición. */
+@media (max-width: 640px) {
+  .pf-purchase-form .pdl-line-card.zh-line-card { grid-template-columns: minmax(0, 1fr); }
+  .pf-purchase-form .pdl-line-card .zh-line-card__rail {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    width: auto;
+    padding: var(--space-1) var(--space-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .pf-purchase-form .pdl-line-card .zh-line-card__body { grid-column: 1; grid-row: 2; }
+  .pf-purchase-form .pdl-line-row__num { margin-right: auto; }
+  .pf-purchase-form .zh-line-issues { margin: var(--space-2) var(--space-2) 0; }
+  .pf-purchase-form .pdl-container .pdl-line__main { padding: var(--space-1) var(--space-2) var(--space-2); }
+  .pf-purchase-form .pdl-line__summary,
+  .pf-purchase-form .pdl-line__summary--no-warehouse { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .pf-purchase-form .pdl-line__summary > * { padding: var(--space-1) var(--space-2); }
+  .pf-purchase-form .pdl-line__metric:nth-last-child(6),
+  .pf-purchase-form .pdl-line__metric:nth-last-child(5) { grid-column: span 3; }
+  .pf-purchase-form .pdl-line__metric:nth-last-child(4),
+  .pf-purchase-form .pdl-line__metric:nth-last-child(3),
+  .pf-purchase-form .pdl-line__metric:nth-last-child(2) { grid-column: span 2; }
+  .pf-purchase-form .pdl-line__metric:nth-last-child(1) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pf-purchase-form .pdl-line__tax { align-items: flex-start; text-align: left; }
+  .pf-purchase-form .pdl-line__metric .zh-input-group,
+  .pf-purchase-form .pdl-line__metric .pdl-input--qty,
+  .pf-purchase-form .pdl-line__metric .pdl-input--cost { width: 100%; min-width: 0; }
+}
+
+/* Retenciones: la tabla no trae contenedor propio; el cuerpo de la tarjeta desplaza en horizontal en vez de recortarla. */
+.pf-purchase-form #purchase-retention .pf-card__body { overflow-x: auto; }
+
+/* La búsqueda no debe imponer su ancho mínimo de contenido a las pistas automáticas de la barra (360 px). */
+.pf-purchase-form .pdl-toolbar .pdl-search__wrap,
+.pf-purchase-form .pdl-toolbar .pdl-search__input-wrap { min-width: 0; }
+.pf-purchase-form .pdl-toolbar .pdl-search__input { min-width: 0; width: 100%; }

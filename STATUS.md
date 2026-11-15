@@ -1,12 +1,53 @@
 # Project Status
 
+## PURCHASES-NEW-TAB-REDESIGN-01 — Compras V1: rediseño visual aprobado de «Nueva compra» y extracción de componentes — SIN COMMIT, sin push; validación con API real y XML real PENDIENTE (2026-11-15)
+
+> Reapertura visual autorizada por el propietario sobre la imagen de referencia aprobada; el diseño quedó aprobado.
+> Sin cambios de hooks de negocio, cálculos, contratos, backend, API, BD ni migraciones. La barra de acciones fija
+> al pie (la «Fase B» de PURCHASES-NEW-TAB-PHASE-A-01, entonces no autorizada) se implementó a petición expresa del
+> propietario como `position: sticky` del pie existente, sin duplicar acciones. Esto supera la nota de la Fase A.
+
+- **Código:** `PurchasesPage.tsx` 2992 -> 121 líneas físicas (composición). Extraídos a `modules/purchases/components/`:
+  `PurchaseListTab`, `PurchaseHeaderCards`, `PurchaseExtrasPanel`, `PurchaseProductsSection`, `PurchaseLineCard`
+  (+ `PurchaseLineActions`, `PurchaseLineDetailBlocks`), `PaymentScheduleSection`, `RetentionSection`,
+  `PurchaseFooterActions`, `PurchaseDialogs`; utilidades `purchaseLineHandlers.ts` y `purchaseLineCardLabels.ts`.
+  Ningún archivo nuevo supera 500 líneas no vacías (máximo 464). Retirada la excepción PR-7 obsoleta de
+  `PurchasesPage.tsx` en `architecture-grandfather.json`. El estado y la lógica siguen en `usePurchasesPage`; los
+  componentes extraídos no añaden estado de negocio (comparación línea a línea contra HEAD sin diferencias salvo las
+  intencionales).
+- **Visual:** estilos nuevos acotados a `.pf-purchase-form` en `purchases-invoice.css` (no tocan Kardex/Ventas).
+  Cabecera en un panel; barra de productos con «Agregar producto o servicio» y «Expandir todo»; líneas compactas
+  (rail horizontal y métricas en rejilla en móvil); Plazos | Resumen; pie fijo. La pestaña «Listado» solo se muestra
+  en el listado; en «Nueva compra» el botón de volver ejecuta el mismo `requestLeave`/`resetForm`/`setTab`, y el
+  título pasa a «Nueva compra»/«Editar compra»/«Ver compra».
+- **Accesibilidad:** el orden de Tab de la barra de productos sigue el orden visual con el orden natural del DOM
+  (Ver motivo, Distribuir, búsqueda, filtro, Expandir todo, Agregar), sin `tabindex` positivo y con foco visible. Como
+  consecuencia, en móvil la fila «Ver motivo» + «Distribuir» queda sobre la búsqueda.
+- **Verificación:** Vitest de Compras 60 archivos / 689 pruebas (tras la extracción; el TSX posterior solo reordena la
+  barra y se cubrió con las 3 pruebas focalizadas afectadas, 38 pruebas); `tsc -b`; ESLint; guardrail oficial
+  (`check-architecture-guardrails.ps1 -SkipFrontendChunk`) y checks i18n/css/css-deps/design-system/precisión/fechas/
+  imports/módulos. Playwright `e2e/purchases-form-visual.spec.ts` (arnés con API simulada: 1440/1024/768/412/390/360 px,
+  estados vacío, con incidencias, borrador con productos vinculados y modo lectura, sin overflow; teclado en
+  escritorio y móvil): 23 pruebas.
+- **i18n (es/en):** auditadas las claves de los componentes de «Nueva compra»; añadidas las claves faltantes y
+  sustituido el texto fijo en español de plazos, listado y retenciones; 9 ayudas contextuales de Compras pasaron a
+  `i18nPrefix` en `help/helpRegistry.ts` con sus claves `help.purchases.*` (solo entradas de Compras). Verificado en
+  navegador con API simulada, en español e inglés, de 1440 a 360 px y con cambio de idioma sin recargar (Playwright).
+- **Limitación conocida (no corregida):** al cambiar el idioma, los mensajes de validación del formulario que ya
+  estaban visibles conservan el idioma anterior hasta que se vuelve a validar; el resto de la pantalla cambia al
+  instante. Corregirlo requiere tocar `usePurchasesPage.ts` (revalidar al cambiar de idioma), fuera de este alcance;
+  no existe un patrón oficial en el proyecto.
+- **Pendiente:** validación con API real, sesión autenticada y una compra desde XML real (productos pendientes);
+  validar visualmente la tarjeta de retención en borrador (no simulada en el arnés); decisión del propietario sobre la
+  limitación de idioma; staging y commit a cargo del propietario.
+
 ## PURCHASES-NEW-TAB-PHASE-A-01 — Compras V1: mejora visual de «Nueva compra» (Fase A) — COMMIT LOCAL, sin push; validación con API real PENDIENTE (2026-11-15)
 
 > **Reapertura puntual y solo visual de Compras V1**, autorizada por el propietario para la pantalla `/purchases`,
 > pestaña «Nueva compra». **No modifica el estado CLOSED de la funcionalidad de negocio de Compras**: sin cambios
 > de hooks, cálculos, impuestos, retenciones, validaciones, permisos, backend, API, BD ni migraciones. La Fase B
-> (barra de acciones sticky, total visible mientras se editan líneas, mover Guardar/Confirmar) **no** está
-> implementada ni autorizada.
+> (barra de acciones sticky, total visible mientras se editan líneas, mover Guardar/Confirmar) **no** estaba
+> implementada ni autorizada en esta fase; la barra fija se implementó después en PURCHASES-NEW-TAB-REDESIGN-01.
 
 - **Alcance (frontend, `modules/purchases`):**
   - Cabecera: se elimina la tarjeta «Logística y totales» (un solo campo en una fila 2fr/1fr con una columna

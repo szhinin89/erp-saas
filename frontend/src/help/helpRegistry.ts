@@ -122,41 +122,50 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     long: "El precio final es el que paga el cliente; el costo nunca se muestra en ventas.",
   },
   [HELP_KEYS.PURCHASES_SUPPLIER]: {
+    i18nPrefix: "help.purchases.supplier",
     title: "Proveedor",
     short: "Selecciónelo por RUC o nombre; sus datos fiscales se completan automáticamente.",
   },
   [HELP_KEYS.PURCHASES_SRI_AUTHORIZATION]: {
+    i18nPrefix: "help.purchases.sriAuthorization",
     title: "Autorización SRI",
     short: "Número de autorización emitido por el SRI para este comprobante electrónico.",
   },
   [HELP_KEYS.PURCHASES_SRI_AUTHORIZATION_DATE]: {
+    i18nPrefix: "help.purchases.sriAuthorizationDate",
     title: "Fecha y hora de autorización",
     short: "Fecha y hora en que el SRI autorizó este comprobante.",
   },
   [HELP_KEYS.PURCHASES_XML_RECEIVED]: {
+    i18nPrefix: "help.purchases.xmlReceived",
     title: "XML recibido",
     short: "Indica si esta línea proviene del XML/TXT enviado por el proveedor.",
     long: "Si la compra fue manual, no hay XML de origen.",
   },
   [HELP_KEYS.PURCHASES_ITEM_MATCHING]: {
+    i18nPrefix: "help.purchases.itemMatching",
     title: "Matching de ítems",
     short: "Compara el producto de la línea con el ítem ya registrado en el catálogo interno.",
   },
   [HELP_KEYS.PURCHASES_WAREHOUSE]: {
+    i18nPrefix: "help.purchases.warehouse",
     title: "Bodega",
     short: "Bodega destino donde ingresará el stock de esta compra.",
     long: "Puede sobrescribirse por línea si un producto va a otra bodega.",
   },
   [HELP_KEYS.PURCHASES_VAT]: {
+    i18nPrefix: "help.purchases.vat",
     title: "IVA",
     short: "Impuesto al valor agregado calculado sobre las líneas gravadas de la factura.",
   },
   [HELP_KEYS.PURCHASES_RETENTIONS]: {
+    i18nPrefix: "help.purchases.retentions",
     title: "Retenciones",
     short:
       "Retenciones de IVA y Renta según el proveedor y la empresa. Se definen en el borrador y se emiten al confirmar la compra; el registro ante el SRI se hace después.",
   },
   [HELP_KEYS.PURCHASES_PAYMENT_SCHEDULE]: {
+    i18nPrefix: "help.purchases.paymentSchedule",
     title: "Plazos de pago",
     short: "Cuotas y fechas de vencimiento de esta compra a crédito.",
   },

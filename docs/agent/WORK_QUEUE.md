@@ -4,11 +4,13 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- PURCHASES-NEW-TAB-PHASE-A-01 (commit local, sin push; reapertura puntual y solo visual de Compras V1, que
-  sigue CLOSED en lo funcional): distribución de «Nueva compra» (tarjetas, disclosures oficiales, barra del
-  detalle). Pendiente: revisión visual del propietario con API real, sesión autenticada y una compra desde XML
-  real (lo verificado fue con API simulada). La Fase B (barra de acciones sticky, total visible, mover
-  Guardar/Confirmar) no está autorizada. Alcance, pruebas y evidencia en [STATUS](../../STATUS.md).
+- PURCHASES-NEW-TAB-REDESIGN-01 (sin commit, sin push; reapertura visual de Compras V1, que sigue CLOSED en
+  lo funcional; sustituye a PURCHASES-NEW-TAB-PHASE-A-01): rediseño de «Nueva compra» aprobado por el propietario,
+  extracción de componentes de `PurchasesPage.tsx` y barra de acciones fija. Pendiente: validación con API real,
+  sesión autenticada y una compra desde XML real con productos pendientes (lo verificado fue con API simulada), y
+  staging/commit a cargo del propietario. Limitación conocida de i18n: al cambiar de idioma, los mensajes de
+  validación ya visibles conservan el idioma anterior hasta revalidar (requiere cambio en `usePurchasesPage.ts`; sin
+  decisión del propietario). Alcance, pruebas y evidencia en [STATUS](../../STATUS.md).
 - SRI-ID-TYPE-SHORT-NAME-01 (PUBLICADO en `f4f04c272`; CI sin confirmar): `short_name`
   en `global.sri_id_type` vía baseline inicial. Pendientes: confirmar CI y verificar
   `shortName` en la API real con sesión autorizada. Estado y evidencia en [STATUS](../../STATUS.md).

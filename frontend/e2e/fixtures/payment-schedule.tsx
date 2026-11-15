@@ -5,7 +5,10 @@ import { I18nProvider } from "../../src/i18n/i18n";
 import { setPrecisionPolicyForTests } from "../../src/lib/config/precisionPolicy.config";
 import { TEST_PRECISION_POLICY } from "../../src/test/precisionPolicyFixture";
 import "../../src/index.css";
-import { PaymentScheduleSection } from "../../src/modules/purchases/pages/PurchasesPage";
+import "../../src/styles/shared/items-catalog.css";
+import "../../src/styles/shared/erp-form-core.css";
+import "../../src/modules/purchases/styles/purchases-invoice.css";
+import { PaymentScheduleSection } from "../../src/modules/purchases/components/PaymentScheduleSection";
 
 /**
  * Fixture del cronograma de pagos de Compras (UIUX Paquete D): monta el `PaymentScheduleSection` REAL
