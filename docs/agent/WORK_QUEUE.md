@@ -4,8 +4,8 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- SRI-ID-TYPE-SHORT-NAME-01 (IMPLEMENTADO local en commit pendiente de push; CI sin ejecutar): `short_name`
-  en `global.sri_id_type` vía baseline inicial. Pendientes: push manual del propietario, CI y verificar
+- SRI-ID-TYPE-SHORT-NAME-01 (PUBLICADO en `f4f04c272`; CI sin confirmar): `short_name`
+  en `global.sri_id_type` vía baseline inicial. Pendientes: confirmar CI y verificar
   `shortName` en la API real con sesión autorizada. Estado y evidencia en [STATUS](../../STATUS.md).
 - IAM-V1-F2 (IMPLEMENTADO, pendiente gate del propietario; autorizado 2026-11-10; CI #1144
   SUCCESS valida su contenido; IAM-V1-F3 ya CLOSED con CI #1146 SUCCESS y aceptación del propietario
@@ -26,13 +26,11 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01 (Etapas 1–4 publicadas: `e0f1d338c`, `9761470e8`, `ad6154970`, `8d0298a8a`; CI #1202,
-  #1203 y #1204 SUCCESS; #1201 es CI-1201, ajeno): corrección UX local (fichas separadas `/suppliers/:id` y
-  `/customers/:id`, códigos con descripción, enlace de Recepción de Compras, alineación de listados), sin
-  push; **integración con backend real SIN VERIFICAR** (API de desarrollo sin sesión autorizada: todo se
-  comprobó con mocks y con navegador con API simulada). Etapa 5 no iniciada; no se declara CLOSED. Matriz de cierre y verificaciones en
-  [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01-DEBT (deuda técnica independiente; **no bloquea la ficha**; sin autorización de
+- BP-CONSOLIDATION-01-E2E (PENDING; independiente, **no bloquea el cierre**): validación E2E de Clientes y
+  Proveedores con API real y sesión autorizada; hasta ahora solo mocks y navegador con API simulada.
+  BP-CONSOLIDATION-01 está COMPLETADA / CLOSED (commit `65c207e42`, CI #1205 SUCCESS; #1201 es CI-1201,
+  ajeno). Evidencia en [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01-DEBT (deuda técnica independiente; **no bloquea el cierre**; sin autorización de
   implementación): flechas/*roving tabindex* en `ZHTabBar`; auditoría de contraste y axe-core con herramienta
   aprobada; accesibilidad de `ZHPromptModal`; rama `section="review"` de `MasterDataBpFormFields` y rama de
   edición no embebida del wizard; y las limitaciones de BP-NAV-GUARD-01 (overlay de bloqueo, shell AdminCore,

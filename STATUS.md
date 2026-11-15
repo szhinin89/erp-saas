@@ -1,6 +1,6 @@
 # Project Status
 
-## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — IMPLEMENTADO LOCAL, sin push ni CI (2026-11-15)
+## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — PUBLICADO en `origin/main` (`f4f04c272`); CI sin confirmar (2026-11-15)
 
 - **Alcance:** columna `short_name` (`varchar(20)`, NOT NULL) añadida al baseline inicial
   `20261101012214_InitialProductionBaseline` (CreateTable, InsertData, Designer y snapshot); sin migraciones
@@ -13,11 +13,26 @@
 - **Verificado:** `has-pending-model-changes` sin cambios; prueba de seed (12/12 en la clase),
   Architecture.Tests 145/145, 74 pruebas Vitest focalizadas, `tsc -b` y guardrails PR-7 OK;
   `erp_zh_dev` contiene los seis `short_name` aprobados (el propietario aplicó la columna aditivamente).
-- **SIN VERIFICAR:** respuesta real de la API con `shortName` (sin sesión autorizada) y CI de GitHub.
+- **SIN VERIFICAR:** respuesta real de la API con `shortName` (sin sesión autorizada) y resultado del CI de
+  `f4f04c272` (no consultado desde este entorno).
   Instalaciones que ya aplicaron el baseline anterior requieren añadir la columna de forma aditiva;
   una instalación nueva la recibe del baseline.
 
-## BP-CONSOLIDATION-01 — Business Partners — CORRECCIÓN UX EN REVISIÓN (no CLOSED; Etapa 5 congelada) (2026-11-15)
+## BP-CONSOLIDATION-01 — Business Partners — Clientes y Proveedores — COMPLETADA / CLOSED (2026-11-15)
+
+> **Cierre autorizado por el propietario (2026-11-15):** la implementación de Clientes y Proveedores
+> (fichas separadas `/suppliers/:id` y `/customers/:id`, listados, códigos con descripción y abreviatura)
+> queda **COMPLETADA / CLOSED**. Commit final `65c207e42` (`fix(masterdata): separate customer supplier
+> views and correct display`), **CI #1205: SUCCESS**. Etapas previas: `e0f1d338c`, `9761470e8`,
+> `ad6154970`, `8d0298a8a` (CI #1202, #1203 y #1204 SUCCESS; #1201 es CI-1201, ajeno).
+>
+> **Pendiente independiente (no bloquea el cierre):** validación E2E con API real. Todo se comprobó con
+> mocks y con navegador con API simulada; falta una sesión autorizada contra el backend real.
+>
+> **Deuda técnica:** se conserva como BP-CONSOLIDATION-01-DEBT (ver WORK_QUEUE); sin autorización de
+> implementación ni tareas nuevas. Este cierre es solo documental: sin cambios de código, backend, API,
+> BD, migraciones ni Dashboard. Los textos históricos de abajo («en revisión», «no CLOSED», «sin commit»)
+> describen el estado en su fecha y quedan superados por este bloque.
 
 > **Corrección de interpretación (sin commit; pendiente de revisión del propietario):** la ficha única mezclaba
 > Proveedor y Cliente. Ahora `MasterDataBusinessPartnerDetailPage` se parametriza por `context` y se monta en
