@@ -78,10 +78,21 @@ export function SupplierExpenseSubcategoriesSection({
   const canView = canShow("masterdata.businesspartners.view");
   const canEdit = canShow("masterdata.businesspartners.configure-company");
 
-  const [override, setOverride] =
-    useState<SupplierExpenseSubcategoriesDto | null>(null);
+  // Respuesta del PUT y ediciones del usuario viven ligadas al proveedor y a la respuesta del GET
+  // (`source`) sobre la que se hicieron: si cambia cualquiera (otro proveedor, refetch por cambio de
+  // empresa o contexto) dejan de aplicar por derivación, sin un efecto que las restablezca después de
+  // pintar (ese efecto descartaba un clic hecho justo tras cargar: EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01).
+  const [overrideState, setOverride] = useState<{
+    bpId: string;
+    source: SupplierExpenseSubcategoriesDto | null;
+    dto: SupplierExpenseSubcategoriesDto;
+  } | null>(null);
   // null = sin cambios del usuario: la selección es la configuración vigente del servidor.
-  const [edits, setEdits] = useState<Set<string> | null>(null);
+  const [editsState, setEdits] = useState<{
+    bpId: string;
+    source: SupplierExpenseSubcategoriesDto | null;
+    ids: Set<string>;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   // Solo filtra la vista: nunca modifica `edits` ni lo guardado.
@@ -92,7 +103,16 @@ export function SupplierExpenseSubcategoriesSection({
     canView,
     [bpId],
   );
-  const data = override ?? config.data;
+  const source = config.data;
+  const override =
+    overrideState?.bpId === bpId && overrideState.source === source
+      ? overrideState.dto
+      : null;
+  const edits =
+    editsState?.bpId === bpId && editsState.source === source
+      ? editsState.ids
+      : null;
+  const data = override ?? source;
   // El PUT no devuelve el catálogo: se conserva el del último GET. `null` = sin permiso de configurar.
   const catalog = config.data?.catalog ?? null;
   const editable = canEdit && catalog !== null;
@@ -103,11 +123,6 @@ export function SupplierExpenseSubcategoriesSection({
         .map((i) => i.expenseSubcategoryId),
     [data],
   );
-
-  useEffect(() => {
-    setOverride(null);
-    setEdits(null);
-  }, [bpId, config.data]);
 
   useEffect(() => setQuery(""), [bpId]);
 
@@ -153,7 +168,7 @@ export function SupplierExpenseSubcategoriesSection({
           expenseSubcategoryIds: ids,
         },
       );
-      setOverride(updated);
+      setOverride({ bpId, source, dto: updated });
       setEdits(null);
       message.success(t(successKey));
     } catch (err) {
@@ -186,7 +201,7 @@ export function SupplierExpenseSubcategoriesSection({
       const next = new Set(selected);
       if (checked) next.add(id);
       else next.delete(id);
-      return next;
+      return { bpId, source, ids: next };
     });
 
   // Opera solo sobre lo visible; la selección de lo oculto por el filtro se conserva.
@@ -197,7 +212,7 @@ export function SupplierExpenseSubcategoriesSection({
         if (checked) next.add(id);
         else next.delete(id);
       }
-      return next;
+      return { bpId, source, ids: next };
     });
 
   const loadError = config.error

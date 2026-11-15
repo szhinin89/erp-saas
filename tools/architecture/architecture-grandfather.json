@@ -125,18 +125,6 @@
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
     {
-      "file": "frontend/src/modules/masterData/pages/MasterDataBusinessPartnerDetailPage.tsx",
-      "maxLines": 1221,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
-      "file": "frontend/src/modules/masterData/pages/MasterDataSuppliersPage.tsx",
-      "maxLines": 704,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
       "file": "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
       "maxLines": 568,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",

@@ -724,7 +724,7 @@ Archivos >800 líneas bloquearon code-splitting y revisión humana.
 ### ENFORCEMENT
 - **BLOQUEANTE PR:** > 500 líneas **no vacías** (`Measure-Object -Line`, no `wc -l`) en `frontend/src/**/*.tsx`, incluidas pruebas `*.test.tsx` y rutas `.tsx`; los `.ts` quedan fuera.
 - Warning CI: > 400 líneas (no implementado en el verificador).
-- Deuda histórica aprobada: [ADR-047](../decisions/ADR-047-historical-tsx-size-debt.md). Solo 36 excepciones con techo individual en `tsxMaxLines500`; crecimiento y excepciones obsoletas fallan. El límite general permanece en 500.
+- Deuda histórica aprobada: [ADR-047](../decisions/ADR-047-historical-tsx-size-debt.md). Solo las excepciones vigentes con techo individual en `tsxMaxLines500` (inventario único en `tools/architecture/architecture-grandfather.json`; la tabla del ADR es la autorización inicial); crecimiento y excepciones obsoletas fallan. El límite general permanece en 500.
 
 ---
 

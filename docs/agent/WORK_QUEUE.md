@@ -23,6 +23,10 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01 Etapa 1 (IMPLEMENTADO local, pendiente gate del propietario; sin commit ni
+  push): extracción de componentes de Proveedores, Clientes y ficha compartida sin cambio funcional,
+  más la corrección de EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01 (CORREGIDO con prueba de
+  regresión). La Etapa 2 no está autorizada. Evidencia y archivos en [STATUS](../../STATUS.md).
 - Revisión de perfiles de acceso antes de desplegar (PENDING; riesgo residual de
   PURCHASES-RECEPTION-SECURITY-01, CLOSED con CI #1128 SUCCESS): perfiles con `purchases.view` sin
   `purchases.create`/`purchases.update` pierden acciones de recepción y conciliación. Consulta de

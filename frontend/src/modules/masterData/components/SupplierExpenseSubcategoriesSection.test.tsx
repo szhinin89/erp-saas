@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
+  act,
   fireEvent,
   render,
   screen,
@@ -83,12 +84,14 @@ function allow(view: boolean, configure: boolean) {
   } as unknown as ReturnType<typeof usePermissionsUi>);
 }
 
-function mount() {
-  return render(
-    <I18nProvider>
-      <SupplierExpenseSubcategoriesSection bpId="bp1" />
-    </I18nProvider>,
-  );
+const tree = (bpId: string) => (
+  <I18nProvider>
+    <SupplierExpenseSubcategoriesSection bpId={bpId} />
+  </I18nProvider>
+);
+
+function mount(bpId = "bp1") {
+  return render(tree(bpId));
 }
 
 describe("SupplierExpenseSubcategoriesSection", () => {
@@ -320,6 +323,108 @@ describe("SupplierExpenseSubcategoriesSection", () => {
         businessPartnerFacade.setExpenseSubcategories,
       ).toHaveBeenCalledWith("bp1", { expenseSubcategoryIds: ["s2"] }),
     );
+  });
+
+  // EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01: un efecto pasivo restablecía `edits` tras presentar
+  // el GET y descartaba el clic hecho antes de vaciarse. El MutationObserver corre como microtarea justo
+  // tras el commit del DOM (antes de los efectos pasivos), de forma determinista.
+  it("conserva la edición hecha en cuanto aparece la lista (carrera con el restablecimiento)", async () => {
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    let clicked = false;
+    const observer = new MutationObserver(() => {
+      const box = screen.queryByLabelText("AGUA — Agua");
+      if (box && !clicked) {
+        clicked = true;
+        fireEvent.click(box);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    try {
+      mount();
+      await waitFor(() => expect(clicked).toBe(true));
+    } finally {
+      observer.disconnect();
+    }
+    await act(async () => {});
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar subcategorías",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(false);
+  });
+
+  it("al cambiar de proveedor descarta las ediciones pendientes y muestra la configuración del nuevo", async () => {
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    const view = mount("bp1");
+    fireEvent.click(await screen.findByLabelText("AGUA — Agua"));
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(false);
+
+    view.rerender(tree("bp2"));
+    await waitFor(() =>
+      expect(
+        businessPartnerFacade.getExpenseSubcategories,
+      ).toHaveBeenCalledWith("bp2"),
+    );
+    await act(async () => {});
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Guardar subcategorías",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
+  it("tras guardar muestra lo devuelto por el PUT sin conservar la edición", async () => {
+    vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(
+      restricted,
+    );
+    vi.mocked(businessPartnerFacade.setExpenseSubcategories).mockResolvedValue({
+      ...restricted,
+      items: [item("s2", "Luz")],
+      availableSubcategoryIds: ["s2"],
+      catalog: null,
+    });
+    mount();
+    fireEvent.click(await screen.findByLabelText("AGUA — Agua"));
+    fireEvent.click(screen.getByLabelText("LUZ — Luz"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar subcategorías" }),
+    );
+    await waitFor(() =>
+      expect(
+        businessPartnerFacade.setExpenseSubcategories,
+      ).toHaveBeenCalledWith("bp1", { expenseSubcategoryIds: ["s2"] }),
+    );
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Guardar subcategorías",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true),
+    );
+    expect(
+      (screen.getByLabelText("LUZ — Luz") as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(
+      (screen.getByLabelText("AGUA — Agua") as HTMLInputElement).checked,
+    ).toBe(false);
   });
 
   it("cada modo se distingue por su variante de aviso", async () => {

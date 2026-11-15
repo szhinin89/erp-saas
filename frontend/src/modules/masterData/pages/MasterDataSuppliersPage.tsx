@@ -1,16 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import {
-  ZHBtn,
-  ZHField,
-  ZHGrid,
-  ZHToggle,
-  ZHFormActions,
-} from "../../../components/zh/ZHForm";
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataSuppliersPage } from "./useMasterDataSuppliersPage";
@@ -19,24 +11,19 @@ import { MasterDataPartnerResumenTab } from "../components/MasterDataPartnerResu
 import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab";
 import { useMasterDataSuppliersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
-import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import type {
   CreateBusinessPartnerBody,
   SupplierConfigBody,
-  SupplierRetentionDefaultDto,
   SupplierRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
-import { useSriSupplierTypes } from "../api/useSriSupplierTypes";
-import { useSriPaymentMethods } from "../api/useSriPaymentMethods";
-import { useSriTaxSupportCodes } from "../api/useSriTaxSupportCodes";
-import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
+import { SupplierSriConfigForm } from "../components/SupplierSriConfigForm";
 import { SupplierPurchaseDefaultSection } from "../components/SupplierPurchaseDefaultSection";
+import { SupplierRetentionDefaultsSection } from "../components/SupplierRetentionDefaultsSection";
 import { SupplierExpenseSubcategoriesSection } from "../components/SupplierExpenseSubcategoriesSection";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
-import { ZhSelect } from "../../../components/zh/inputs";
 
 const TABS = [
   {
@@ -61,23 +48,9 @@ const TABS = [
 
 const DRAFT_KEY = "erp.masterdata.suppliers.draft";
 
-/**
- * Un valor guardado que ya no exista o esté inactivo en el catálogo no se descarta ni se
- * reemplaza silenciosamente (perdería el dato real sin que el usuario lo note) — se detecta
- * aquí para mostrar una opción sintética deshabilitada + fieldError, exigiendo reselección.
- */
-function isOrphanCatalogValue(
-  value: string,
-  options: readonly { code: string }[],
-  loading: boolean,
-): boolean {
-  return value !== "" && !loading && !options.some((o) => o.code === value);
-}
-
-const ORPHAN_CODE_MESSAGE =
-  "Este código ya no está activo en el catálogo. Selecciona una opción válida.";
-
-// ── SupplierConfigModal — Config SRI operativa (S3-A: incluye método de pago + exención) ──
+// ── SupplierConfigModal — Config SRI operativa + secciones independientes ──
+// Cada sección (formulario SRI, condición de compras, retenciones, subcategorías de gasto)
+// es un componente propio con fetch/guardado independiente; el modal solo las compone.
 function SupplierConfigModal({
   bpId,
   bpName,
@@ -95,38 +68,6 @@ function SupplierConfigModal({
   onClose: () => void;
   onSave: (body: SupplierConfigBody) => void;
 }) {
-  const [taxSupportCode, setTaxSupportCode] = useState(
-    initialConfig?.defaultTaxSupportCode ?? "",
-  );
-  const [paymentMethodCode, setPaymentMethodCode] = useState(
-    initialConfig?.defaultPaymentMethodCode ?? "",
-  );
-  const [refundProviderType, setRefundProviderType] = useState(
-    initialConfig?.refundProviderTypeCode ?? "",
-  );
-  const [isRetentionExempt, setIsRetentionExempt] = useState(
-    initialConfig?.isRetentionExempt ?? false,
-  );
-  const [isRequiredToKeepAccounting, setIsRequiredToKeepAccounting] =
-    useState(initialConfig?.isRequiredToKeepAccounting ?? false);
-  const { options: supplierTypeOptions } = useSriSupplierTypes();
-  const {
-    options: paymentMethodOptions,
-    loading: loadingPaymentMethods,
-    error: paymentMethodsError,
-  } = useSriPaymentMethods();
-  const {
-    options: taxSupportOptions,
-    loading: loadingTaxSupport,
-    error: taxSupportFetchError,
-  } = useSriTaxSupportCodes();
-
-  const taxSupportOrphan = isOrphanCatalogValue(
-    taxSupportCode,
-    taxSupportOptions,
-    loadingTaxSupport,
-  );
-
   return (
     <ZHModal
       open
@@ -138,112 +79,13 @@ function SupplierConfigModal({
     >
       <div className="md-supplier-config-grid">
       <div className="md-supplier-config-section">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSave({
-            defaultTaxSupportCode: taxSupportCode || null,
-            defaultPaymentMethodCode: paymentMethodCode || null,
-            refundProviderTypeCode: refundProviderType || null,
-            isRetentionExempt,
-            isRequiredToKeepAccounting,
-          });
-        }}
-      >
-        {error && <ZHPageNotice variant="error" message={error} />}
-        <ZHGrid cols={1}>
-          <ZHField
-            label="Sustento tributario predeterminado"
-            fieldError={
-              taxSupportFetchError ??
-              (taxSupportOrphan ? ORPHAN_CODE_MESSAGE : undefined)
-            }
-          >
-            <ZhSelect
-              value={taxSupportCode}
-              onChange={(e) => setTaxSupportCode(e.target.value)}
-              disabled={saving || loadingTaxSupport}
-            >
-              <option value="">— Sin definir —</option>
-              {loadingTaxSupport ? (
-                <option value="">Cargando…</option>
-              ) : (
-                <>
-                  {taxSupportOrphan && (
-                    <option value={taxSupportCode} disabled>
-                      {taxSupportCode} — (código no vigente)
-                    </option>
-                  )}
-                  {taxSupportOptions.map((o) => (
-                    <option key={o.code} value={o.code}>
-                      {o.code} — {o.name}
-                    </option>
-                  ))}
-                </>
-              )}
-            </ZhSelect>
-          </ZHField>
-          <ZHField
-            label="Método de pago SRI"
-            fieldError={paymentMethodsError ?? undefined}
-          >
-            <ZhSelect
-              value={paymentMethodCode}
-              onChange={(e) => setPaymentMethodCode(e.target.value)}
-              disabled={saving || loadingPaymentMethods}
-            >
-              <option value="">— Sin preferencia —</option>
-              {loadingPaymentMethods ? (
-                <option value="">Cargando…</option>
-              ) : (
-                paymentMethodOptions.map((o) => (
-                  <option key={o.code} value={o.code}>
-                    {o.code} — {o.name}
-                  </option>
-                ))
-              )}
-            </ZhSelect>
-          </ZHField>
-          <ZHField label="Tipo de Proveedor">
-            <ZhSelect
-              value={refundProviderType}
-              onChange={(e) => setRefundProviderType(e.target.value)}
-              disabled={saving}
-            >
-              <option value="">— Sin clasificar —</option>
-              {supplierTypeOptions.map((o) => (
-                <option key={o.code} value={o.code}>
-                  {o.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHToggle
-            label="Exento de retención"
-            description="RISE / Microempresa / Sector publico"
-            value={isRetentionExempt}
-            onChange={setIsRetentionExempt}
-            disabled={saving}
-          />
-          <ZHToggle
-            label="Obligado a llevar contabilidad"
-            description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
-            value={isRequiredToKeepAccounting}
-            onChange={setIsRequiredToKeepAccounting}
-            disabled={saving}
-          />
-        </ZHGrid>
-        <ZHFormActions
-          onCancel={onClose}
-          hideDraft
-          saveButtonType="submit"
-          disableSave={saving}
-          labels={{
-            cancel: "Cerrar",
-            save: saving ? "Guardando..." : "Guardar",
-          }}
+        <SupplierSriConfigForm
+          initialConfig={initialConfig}
+          saving={saving}
+          error={error}
+          onClose={onClose}
+          onSave={onSave}
         />
-      </form>
       </div>
       <div className="md-supplier-config-section">
         <SupplierPurchaseDefaultSection bpId={bpId} />
@@ -257,255 +99,6 @@ function SupplierConfigModal({
         <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
       </div>
     </ZHModal>
-  );
-}
-
-// ── SupplierRetentionDefaultsSection — RETENTIONS-SUPPLIER-DEFAULTS-DYNAMIC-01 ──
-// Lista dinámica de retenciones predeterminadas por proveedor+empresa activa. Reemplaza los
-// antiguos selects fijos "Código ret. IVA/Renta predeterminado" (máx. 1 código por impuesto,
-// tenant-wide). Mismo patrón de sección independiente que "Condición predeterminada para
-// compras/gastos" arriba: fetch/save propios, desacoplada del form de Config SRI.
-function SupplierRetentionDefaultsSection({
-  bpId,
-  disabled,
-}: {
-  bpId: string;
-  disabled?: boolean;
-}) {
-  const [rows, setRows] = useState<SupplierRetentionDefaultDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [newTaxType, setNewTaxType] = useState<"IVA" | "RENTA">("IVA");
-  const [newCodeId, setNewCodeId] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const { options: vatOptions, loading: loadingVat } =
-    useSriRetentionCodes("IVA");
-  const { options: incomeOptions, loading: loadingIncome } =
-    useSriRetentionCodes("RENTA");
-  const catalogOptions = newTaxType === "IVA" ? vatOptions : incomeOptions;
-  const loadingCatalog = newTaxType === "IVA" ? loadingVat : loadingIncome;
-
-  const load = useCallback(() => {
-    setLoading(true);
-    businessPartnerFacade
-      .getRetentionDefaults(bpId)
-      .then(setRows)
-      .catch((err: unknown) =>
-        setError(
-          formatApiRequestError(err, {
-            generic: "No se pudieron cargar las retenciones predeterminadas.",
-          }),
-        ),
-      )
-      .finally(() => setLoading(false));
-  }, [bpId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const availableCodes = catalogOptions.filter(
-    (o) => !rows.some((r) => r.sriRetentionCodeId === o.id),
-  );
-
-  const sortedRows = [...rows].sort((a, b) => a.displayOrder - b.displayOrder);
-
-  const handleAdd = async () => {
-    if (!newCodeId) return;
-    setAdding(true);
-    setError(null);
-    try {
-      const created = await businessPartnerFacade.addRetentionDefault(bpId, {
-        sriRetentionCodeId: newCodeId,
-      });
-      setRows((prev) => [...prev, created]);
-      setNewCodeId("");
-    } catch (err) {
-      setError(
-        formatApiRequestError(err, {
-          generic: "No se pudo agregar la retención predeterminada.",
-        }),
-      );
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleToggleActive = async (
-    row: SupplierRetentionDefaultDto,
-    next: boolean,
-  ) => {
-    setBusyId(row.id);
-    setError(null);
-    try {
-      const updated = await businessPartnerFacade.setRetentionDefaultState(
-        bpId,
-        row.id,
-        { isActive: next, displayOrder: row.displayOrder },
-      );
-      setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
-    } catch (err) {
-      setError(
-        formatApiRequestError(err, {
-          generic: "No se pudo actualizar la retención predeterminada.",
-        }),
-      );
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleMove = async (row: SupplierRetentionDefaultDto, direction: -1 | 1) => {
-    const index = sortedRows.findIndex((r) => r.id === row.id);
-    const other = sortedRows[index + direction];
-    if (!other) return;
-    setBusyId(row.id);
-    setError(null);
-    try {
-      const [updatedRow, updatedOther] = await Promise.all([
-        businessPartnerFacade.setRetentionDefaultState(bpId, row.id, {
-          isActive: row.isActive,
-          displayOrder: other.displayOrder,
-        }),
-        businessPartnerFacade.setRetentionDefaultState(bpId, other.id, {
-          isActive: other.isActive,
-          displayOrder: row.displayOrder,
-        }),
-      ]);
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === updatedRow.id
-            ? updatedRow
-            : r.id === updatedOther.id
-              ? updatedOther
-              : r,
-        ),
-      );
-    } catch (err) {
-      setError(
-        formatApiRequestError(err, {
-          generic: "No se pudo reordenar la retención predeterminada.",
-        }),
-      );
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  return (
-    <div className="md-supplier-purchase-default-section">
-      <h4>Retenciones predeterminadas</h4>
-      <p className="md-supplier-section-hint">
-        Se proponen automáticamente al calcular retenciones en Compras/Gastos
-        para este proveedor en la empresa activa. El usuario puede
-        modificarlas antes de confirmar. La retención final emitida se guarda
-        siempre en el documento de retención, nunca aquí.
-      </p>
-      {error && <ZHPageNotice variant="error" message={error} />}
-
-      {loading ? (
-        <p className="md-supplier-section-hint">Cargando…</p>
-      ) : sortedRows.length === 0 ? (
-        <p className="md-supplier-section-hint">
-          Sin retenciones predeterminadas configuradas para esta empresa.
-        </p>
-      ) : (
-        <ul className="md-supplier-retention-list">
-          {sortedRows.map((row, index) => (
-            <li
-              key={row.id}
-              className={`md-supplier-retention-row${row.isActive ? "" : " md-supplier-retention-row--inactive"}`}
-            >
-              <span className="md-supplier-retention-row__code">
-                {row.taxType} — {row.code} — {row.codeName} (
-                {row.percentage}%)
-              </span>
-              {!row.isCatalogCodeActive && (
-                <span className="md-supplier-retention-row__warning">
-                  Código inactivo en catálogo
-                </span>
-              )}
-              <div className="md-supplier-retention-row__actions">
-                <ZHIconButton
-                  icon="arrow_upward"
-                  title="Subir"
-                  ariaLabel={`Subir prioridad de ${row.code}`}
-                  variant="ghost"
-                  disabled={disabled || busyId === row.id || index === 0}
-                  onClick={() => void handleMove(row, -1)}
-                />
-                <ZHIconButton
-                  icon="arrow_downward"
-                  title="Bajar"
-                  ariaLabel={`Bajar prioridad de ${row.code}`}
-                  variant="ghost"
-                  disabled={
-                    disabled ||
-                    busyId === row.id ||
-                    index === sortedRows.length - 1
-                  }
-                  onClick={() => void handleMove(row, 1)}
-                />
-                <ZHToggle
-                  label={row.isActive ? "Activa" : "Inactiva"}
-                  description="Se propone automáticamente al calcular retenciones si está activa"
-                  value={row.isActive}
-                  onChange={(next) => void handleToggleActive(row, next)}
-                  disabled={disabled || busyId === row.id}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <ZHGrid cols={3}>
-        <ZHField label="Tipo de impuesto">
-          <ZhSelect
-            value={newTaxType}
-            onChange={(e) => {
-              setNewTaxType(e.target.value as "IVA" | "RENTA");
-              setNewCodeId("");
-            }}
-            disabled={disabled || adding}
-          >
-            <option value="IVA">IVA</option>
-            <option value="RENTA">Renta</option>
-          </ZhSelect>
-        </ZHField>
-        <ZHField label="Código de retención SRI">
-          <ZhSelect
-            value={newCodeId}
-            onChange={(e) => setNewCodeId(e.target.value)}
-            disabled={disabled || adding || loadingCatalog}
-          >
-            <option value="">— Seleccione —</option>
-            {loadingCatalog ? (
-              <option value="">Cargando…</option>
-            ) : (
-              availableCodes.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.code} — {o.name} ({o.percentage}%)
-                </option>
-              ))
-            )}
-          </ZhSelect>
-        </ZHField>
-        <div className="md-supplier-retention-add-btn">
-          <ZHBtn
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={disabled || adding || !newCodeId}
-            onClick={() => void handleAdd()}
-          >
-            {adding ? "Agregando..." : "Agregar retención"}
-          </ZHBtn>
-        </div>
-      </ZHGrid>
-    </div>
   );
 }
 

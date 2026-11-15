@@ -1,5 +1,48 @@
 # Project Status
 
+## BP-CONSOLIDATION-01 — Business Partners, Etapa 1: extracción de componentes — IMPLEMENTADO local, pendiente gate del propietario (2026-11-14)
+
+Preparación de la consolidación de Proveedores y Clientes: **solo extracciones sin cambio funcional**
+(`frontend/src/modules/masterData/`). Sin backend, API, permisos, base de datos, rutas, contratos ni
+Dashboard; los modales actuales se conservan. Sin staging, commit ni push.
+
+- **Proveedores:** `SupplierSriConfigForm` (formulario SRI) y `SupplierRetentionDefaultsSection`
+  (retenciones predeterminadas); se reutilizan `SupplierPurchaseDefaultSection` (sin cambios) y
+  `SupplierExpenseSubcategoriesSection` (solo la corrección de carrera indicada abajo). `MasterDataSuppliersPage.tsx`: 811 → 313 líneas.
+- **Clientes:** `CustomerClassificationForm` (clasificación) y `CustomerSalesSettingsForm` (condición
+  de ventas); `MasterDataCustomerConfigModal` y `MasterDataSalesSettingsModal` quedan como marco
+  `ZHModal` + formulario.
+- **Ficha compartida:** `BpLocationsSection` (+ `BpLocationCard`, `BpLocationFormFields`,
+  `bpLocationForm.ts`) y `BpContactsSection`. `MasterDataBusinessPartnerDetailPage.tsx`: 1221 → 292.
+  `saving`, `actionError` y la recarga siguen en la página (sin estado duplicado); las secciones
+  permanecen montadas al cambiar de pestaña. Único cambio visible: los emojis de teléfono/celular de las
+  tarjetas se mostraban corruptos (`ðŸ“ž`) y se escriben correctamente.
+- **ADR-047:** se retiran de `architecture-grandfather.json` las excepciones de ambas páginas (≤ 500
+  líneas, obsoletas por regla del ADR); el inventario vigente queda en 29 entradas. Todo archivo nuevo
+  cumple 500 (máximo `BpLocationsSection` 369).
+
+Validación (focalizada, sin suite completa): `tsc -b` PASS; ESLint de `masterData` 0 errores;
+Vitest `src/modules/masterData` 229/229 ×5; `architecture:check`
+PASS (0 nuevas) y guardrail oficial `-SkipFrontendChunk` OK. Durante la extracción una prueba existente
+detectó y se corrigió una regresión (cierre del modal de ventas tras guardar).
+
+**EXPENSE-SUPPLIER-SUBCATEGORIES-EDITS-RACE-01 — CORREGIDO** (autorizado por el propietario; sin backend,
+API, permisos, rutas ni contratos). Causa: en `SupplierExpenseSubcategoriesSection`, el efecto
+`useEffect(() => { setOverride(null); setEdits(null); }, [bpId, config.data])` corría tras el commit del
+GET; un clic hecho entre ese commit y el vaciado de efectos pasivos se encolaba y el efecto lo borraba
+(`edits = null`). Era también la causa de la intermitencia de su prueba (un test distinto fallaba por
+corrida bajo carga). Corrección mínima: se elimina el efecto; la respuesta del PUT (`override`) y las
+ediciones (`edits`) quedan ligadas al proveedor y a la respuesta del GET (`source`) sobre la que se
+hicieron y solo aplican mientras ambos coincidan, por derivación en el render. Cambiar de proveedor o
+refetch por cambio de empresa/contexto las descarta como antes; guardar y «Quitar restricción» no cambian.
+Efecto lateral correcto: una respuesta de PUT tardía de otro proveedor ya no se muestra en el actual.
+Regresión: `conserva la edición hecha en cuanto aparece la lista` (MutationObserver, microtarea tras el
+commit y antes de los efectos pasivos) **falló 5/5 contra el código anterior (20 ms, sin timeout)** y pasa
+con la corrección; además, cambio de proveedor descarta ediciones y tras guardar se muestra lo devuelto
+por el PUT. Sin subir timeouts ni debilitar aserciones. La intermitencia no se reprodujo: componente
+15/15 en 8 corridas y `src/modules/masterData` 229/229 en 5 corridas completas (antes ~1 de cada 2
+fallaba).
+
 ## Conciliación GitHub Actions — 2026-11-14
 
 API de GitHub consultada directamente: workflow `ci.yml`, `head_sha`, estado
