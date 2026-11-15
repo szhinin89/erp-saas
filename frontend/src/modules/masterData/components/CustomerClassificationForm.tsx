@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHField, ZHGrid, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import { useI18n } from "../../../i18n/i18n";
 import type { CustomerConfigBody, CustomerRoleConfigDto } from "../types/businessPartner.types";
 import {
   useCustomerCategories,
@@ -26,8 +27,9 @@ function PersistedValueOption({
   loading: boolean;
   options: readonly { code: string }[];
 }>) {
+  const { t } = useI18n();
   if (!value || loading || options.some((o) => o.code === value)) return null;
-  return <option value={value}>{`${value} (fuera del catálogo activo)`}</option>;
+  return <option value={value}>{t("masterdata.bp.detail.cls.outOfCatalog", { value })}</option>;
 }
 
 /**
@@ -52,6 +54,7 @@ export function CustomerClassificationForm({
   /** Avisa de cambios sin guardar (protección de la ficha). */
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const [category, setCategory] = useState(initialConfig?.customerCategory ?? "");
   const [segment, setSegment] = useState(initialConfig?.customerSegment ?? "");
   const [zone, setZone] = useState(initialConfig?.salesZone ?? "");
@@ -112,14 +115,14 @@ export function CustomerClassificationForm({
       {error && <ZHPageNotice variant="error" message={error} />}
       {catalogsError && <ZHPageNotice variant="error" message={catalogsError} />}
       <ZHGrid cols={2}>
-        <ZHField label="Categoría">
+        <ZHField label={t("masterdata.bp.detail.cls.category", "Categoría")}>
           <ZhSelect
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             disabled={busy || categories.loading}
           >
             <option value="">
-              {categories.loading ? "Cargando…" : "— Sin asignar —"}
+              {categories.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.cls.unassigned", "— Sin asignar —")}
             </option>
             <PersistedValueOption value={category} loading={categories.loading} options={categories.options} />
             {categories.options.map((v) => (
@@ -129,14 +132,14 @@ export function CustomerClassificationForm({
             ))}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Segmento">
+        <ZHField label={t("masterdata.bp.detail.cls.segment", "Segmento")}>
           <ZhSelect
             value={segment}
             onChange={(e) => setSegment(e.target.value)}
             disabled={busy || segments.loading}
           >
             <option value="">
-              {segments.loading ? "Cargando…" : "— Sin asignar —"}
+              {segments.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.cls.unassigned", "— Sin asignar —")}
             </option>
             <PersistedValueOption value={segment} loading={segments.loading} options={segments.options} />
             {segments.options.map((v) => (
@@ -146,24 +149,24 @@ export function CustomerClassificationForm({
             ))}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Zona de ventas">
+        <ZHField label={t("masterdata.bp.detail.cls.zone", "Zona de ventas")}>
           <ZhTextInput
             className="zh-input"
             value={zone}
             onChange={(e) => setZone(e.target.value)}
-            placeholder="Norte, Sur, Centro…"
+            placeholder={t("masterdata.bp.detail.cls.zonePlaceholder", "Norte, Sur, Centro…")}
             maxLength={100}
             disabled={busy}
           />
         </ZHField>
-        <ZHField label="Rating crediticio">
+        <ZHField label={t("masterdata.bp.detail.cls.rating", "Rating crediticio")}>
           <ZhSelect
             value={rating}
             onChange={(e) => setRating(e.target.value)}
             disabled={busy || creditRatings.loading}
           >
             <option value="">
-              {creditRatings.loading ? "Cargando…" : "— Sin calificar —"}
+              {creditRatings.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.cls.unrated", "— Sin calificar —")}
             </option>
             <PersistedValueOption value={rating} loading={creditRatings.loading} options={creditRatings.options} />
             {creditRatings.options.map((v) => (
@@ -173,13 +176,13 @@ export function CustomerClassificationForm({
             ))}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Nivel de fidelización">
+        <ZHField label={t("masterdata.bp.detail.cls.loyalty", "Nivel de fidelización")}>
           <ZhSelect
             value={loyalty}
             onChange={(e) => setLoyalty(e.target.value)}
             disabled={busy || loyaltyTiers.loading}
           >
-            <option value="">{loyaltyTiers.loading ? "Cargando…" : "— Sin nivel —"}</option>
+            <option value="">{loyaltyTiers.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.cls.noTier", "— Sin nivel —")}</option>
             <PersistedValueOption value={loyalty} loading={loyaltyTiers.loading} options={loyaltyTiers.options} />
             {loyaltyTiers.options.map((v) => (
               <option key={v.id} value={v.code}>
@@ -188,14 +191,14 @@ export function CustomerClassificationForm({
             ))}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Formato de factura">
+        <ZHField label={t("masterdata.bp.detail.cls.invoiceFormat", "Formato de factura")}>
           <ZhSelect
             value={invoiceFormat}
             onChange={(e) => setInvoiceFormat(e.target.value)}
             disabled={busy || invoiceFormats.loading}
           >
             <option value="">
-              {invoiceFormats.loading ? "Cargando…" : "— Sin preferencia —"}
+              {invoiceFormats.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.sri.noPreference", "— Sin preferencia —")}
             </option>
             <PersistedValueOption value={invoiceFormat} loading={invoiceFormats.loading} options={invoiceFormats.options} />
             {invoiceFormats.options.map((v) => (
@@ -205,14 +208,14 @@ export function CustomerClassificationForm({
             ))}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Clasificación comercial">
+        <ZHField label={t("masterdata.bp.detail.cls.classification", "Clasificación comercial")}>
           <ZhSelect
             value={classification}
             onChange={(e) => setClassification(e.target.value)}
             disabled={busy || classifications.loading}
           >
             <option value="">
-              {classifications.loading ? "Cargando…" : "— Sin clasificar —"}
+              {classifications.loading ? t("masterdata.bp.detail.loadingShort", "Cargando…") : t("masterdata.bp.detail.sri.unclassified", "— Sin clasificar —")}
             </option>
             <PersistedValueOption value={classification} loading={classifications.loading} options={classifications.options} />
             {classifications.options.map((v) => (
@@ -230,8 +233,7 @@ export function CustomerClassificationForm({
           saveButtonType="submit"
           disableSave={saveBlocked}
           labels={{
-            cancel: "Cerrar",
-            save: saving ? "Guardando..." : "Guardar",
+            save: saving ? t("masterdata.bp.detail.saving", "Guardando...") : t("masterdata.bp.detail.save", "Guardar"),
           }}
         />
       )}

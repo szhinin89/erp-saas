@@ -23,7 +23,7 @@ function LocationProbe() {
 
 export function renderBpDetail(
   search = "",
-  history: { before?: string[]; after?: string[] } = {},
+  history: { before?: string[]; after?: string[]; state?: unknown } = {},
 ) {
   const before = history.before ?? [];
   // La ficha solo existe con sesión activa; la protección de cambios no interviene sin ella.
@@ -42,7 +42,11 @@ export function renderBpDetail(
       { path: "*", element: <LocationProbe /> },
     ],
     {
-      initialEntries: [...before, `${BP_PATH}${search}`, ...(history.after ?? [])],
+      initialEntries: [
+        ...before,
+        { pathname: BP_PATH, search, state: history.state },
+        ...(history.after ?? []),
+      ],
       initialIndex: before.length,
     },
   );

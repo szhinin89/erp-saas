@@ -1,8 +1,65 @@
 # Project Status
 
-## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 3 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapas 1–2 publicadas (`e0f1d338c`, `9761470e8`)
+## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 4 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapas 1–3 publicadas (`e0f1d338c`, `9761470e8`, `ad6154970`)
 
-### Etapa 3 — los listados dejan de administrar; la ficha es el único punto
+### Etapa 4 — accesibilidad, navegación, responsive e i18n de la ficha (sin rediseño ni funciones nuevas)
+
+Solo frontend: sin backend, API, permisos, rutas, base de datos ni Dashboard. Se distingue entre lo
+**verificado en Chromium real** (Playwright sobre un arnés temporal que monta la ficha real con API
+simulada, router de datos con hash, anchos 1366/768/375/320 px; el arnés y su servidor se eliminaron) y lo
+**automatizado en jsdom** (que no calcula layout). Las comprobaciones en navegador **no son E2E** (sin
+backend real ni `AppLayout`/menú lateral).
+
+**Problemas encontrados y corregidos**
+
+| # | Problema demostrado | Evidencia | Corrección |
+|---|---|---|---|
+| 1 | «Volver» usaba `navigate(-1)`: tras recorrer pestañas retrocedía pestaña a pestaña, no al listado | automatizado + navegador | `state.from` (mecanismo de `UserConfigPage`): «Gestionar» pasa el listado de origen, se conserva al cambiar de pestaña y al normalizar `?tab=`; sin origen, listado del rol |
+| 2 | Cada pestaña declaraba `aria-controls` hacia un panel inexistente hasta visitarla (5 referencias ARIA colgantes) | navegador + automatizado | el contenedor del panel existe siempre; el contenido se monta al visitarla |
+| 3 | 5 interruptores `ZHToggle` (DS) sin nombre accesible (SRI ×2, retenciones ×3) | navegador + automatizado | `aria-labelledby`/`aria-describedby` en `ZHToggle` (aditivo; lo usan 32 pantallas) |
+| 4 | Iconos «add» de «Nueva ubicación»/«Nuevo contacto» formaban parte del nombre accesible | navegador + automatizado | `aria-hidden` |
+| 5 | Filtro de ubicaciones sin nombre accesible | navegador + automatizado | `aria-label` |
+| 6 | `ZHConfirmModal` (DS, `message.confirm`): el foco no entraba al diálogo, Tab recorría el fondo, Escape no cerraba y el `alertdialog` no tenía nombre | navegador + 6 pruebas | foco inicial en «Cancelar», Escape cancela, trampa de Tab, retorno del foco, `aria-labelledby`/`describedby` e icono `aria-hidden` (el clic en confirmar/cancelar/fondo no cambia) |
+| 7 | Ubicaciones en móvil: el correo largo se cortaba en el borde de la tarjeta, iconos apilados sobre el texto y a 320 px «Nueva ubicación» quedaba recortado | **solo navegador** (capturas) | `flex-wrap` y `overflow-wrap` en la tarjeta y en la cabecera de sección |
+| 8 | Textos fijos en español en el alcance de la ficha (~230) | automatizado (es/en, sin claves ni `{{x}}` visibles) | claves `masterdata.bp.detail.*` (217, paridad es/en) con fábrica de esquema `t` para los mensajes de Zod de ubicación/contacto |
+| 9 | Latente: las primeras claves con parámetros usaban `{x}` en vez de `{{x}}` (se habría mostrado la llave literal) | automatizado | corregido y cubierto por la suite i18n |
+
+**Verificado sin cambios (navegador real):** teclado (Tab alcanza las 7 pestañas, Enter/Espacio activan, el
+foco permanece en la pestaña y el contorno es visible); sin desbordes ni errores de consola en las 7 pestañas
+a 1366/768/375/320 px (la barra de pestañas se desplaza y mantiene visible la activa); enlaces profundos y
+normalización de `?tab=` inválido; Atrás del navegador entre pestañas; confirmación única al salir con
+cambios (cancelar conserva ruta y valor, cambiar de pestaña no pregunta, descartar navega).
+
+**Limitaciones y casos no cubiertos (informados):** las flechas no mueven entre pestañas (el `ZHTabBar` oficial
+usa botones sin *roving tabindex*; no se modifica un componente de toda la app sin decisión); **no se midió el
+contraste ni se ejecutó axe-core** (el entorno no permitió descargar/ejecutar código remoto; sin copia local ni
+dependencia), solo se comprobó por script el nombre accesible de controles; `ZHPromptModal` tiene las mismas
+carencias de foco/Escape que tenía la confirmación y no pertenece a la ficha; rama muerta
+`MasterDataBpFormFields section="review"` (sin consumidores, aún con texto fijo) y mensajes de validación del
+esquema de identidad compartido con el alta (siguen en español) quedan como deuda; los rótulos que entrega el
+backend (tipo/propósitos de ubicación, rol) son datos del servidor, no textos de interfaz.
+
+**Gate del Design System (`ZHToggle`, `ZHConfirmModal`):** cambios revisados línea a línea (aditivos: ids
+`useId`, `aria-labelledby/describedby`, `aria-hidden` del icono, foco inicial en «Cancelar», Escape, trampa de
+Tab y retorno del foco; confirmar/cancelar/clic en el fondo sin cambios). Compatibilidad verificada con las
+pruebas de **todos los módulos que los consumen** (access, accounting, admin-core, admin/access-sessions,
+branches, caja, configuracion, emissionPoints, establishments, expenses, initialLoad, inventory, items,
+masterData, pricing, purchases/components, Ventas emisión y forma de pago, DS): 204 archivos, 2063 pruebas
+verdes; `ZHConfirmModal.test.tsx` (6) cubre foco inicial/retorno, Escape, Tab/Shift+Tab, nombre/descripción
+ARIA y el comportamiento por clic. Foco, Escape y Tab también comprobados en Chromium real (arnés temporal
+con API simulada). **No se ejecutó E2E con backend real ni auditoría axe-core.**
+
+**CI:** **#1203 — SUCCESS** sobre `ad6154970` (Etapa 3): 8 jobs (perfil selectivo; backend y publish omitidos),
+todos los ejecutados en verde. **CI-1201** se mantiene como incidencia independiente de **Ventas**
+(`SalesCancelCollectionConcurrencyTests…`, HTTP 422 en lugar de 201; causa raíz pendiente); no se tocó Ventas.
+
+**Pruebas (focalizadas, sin suite completa):** `src/modules/masterData` 281/281; bloque focal (masterData +
+`components` + `hooks` + rutas + `App` real + `CreateSupplierModal`) 1115/1115 ×2; pantallas con interruptores o
+confirmaciones (access, accounting, items, purchases, sales emisión/forma de pago, caja, inventario, carga
+inicial, DS) verdes; `tsc -b`, `npm run build`, `architecture:check` (incluye i18n) y guardrail oficial
+`-SkipFrontendChunk` PASS (wizard 622/647).
+
+### Etapa 3 — los listados dejan de administrar; la ficha es el único punto (commit `ad6154970`, CI #1203 SUCCESS)
 
 En Proveedores y Clientes, «Ver» pasa a **«Gestionar»** (abre `/masterdata/business-partners/:id`, con
 `aria-label` «Gestionar: razón social (identificación)») y se retiran del listado **Editar**, **Config SRI**,
@@ -34,7 +91,7 @@ rutas, base de datos ni Dashboard.
   ×2; `tsc -b`, `npm run build`, `architecture:check` (incluye i18n) y guardrail oficial
   `-SkipFrontendChunk` PASS; el wizard queda en 622 líneas (techo ADR-047 647, sin cambios en el JSON).
 
-**CI de las etapas ya publicadas** (API pública de GitHub, solo lectura; sin credenciales no hay logs):
+**CI de las etapas 1–2** (API pública de GitHub, solo lectura; sin credenciales no hay logs):
 - **#1202 — SUCCESS** sobre `9761470e8` (Etapa 2 + BP-NAV-GUARD-01): 8 jobs (perfil selectivo; backend y
   publish omitidos), todos los ejecutados en verde. El gate del propietario sigue pendiente.
 - **#1201 — FAILURE** sobre `e0f1d338c` (Etapa 1): incidencia **CI-1201**. Falló

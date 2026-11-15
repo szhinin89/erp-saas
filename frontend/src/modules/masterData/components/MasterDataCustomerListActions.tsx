@@ -45,7 +45,7 @@ export function MasterDataCustomerListActions({partner: bp, canUpdate, canDisabl
   return (
     <div className="md-customer-actions" ref={rootRef}>
       <ZHBtn variant="ghost" size="sm" aria-label={`${label("manage")}: ${identity}`}
-        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{label("manage")}</ZHBtn>
+        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`, { state: { from: "/customers" } })}>{label("manage")}</ZHBtn>
       {items.length > 0 && (
         <ZHLineAction kind="menu" icon={"⋯"} label={label("more")}
           ariaLabel={`${label("more")}: ${identity}`} menuLabel={`${label("more")}: ${identity}`}

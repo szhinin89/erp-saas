@@ -13,7 +13,7 @@ import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 const partner = {id: "customer-7", legalName: "Cliente Siete", identificationNumber: "0990000007001",
   isActive: true, isSupplier: false, canAssignAsSupplier: true} as BusinessPartnerSummaryDto;
 const MORE = /^Más acciones: Cliente Siete \(0990000007001\)$/;
-function Location() { return <output>{useLocation().pathname}</output>; }
+function Location() { const l = useLocation(); return <><output>{l.pathname}</output><output data-testid="state">{JSON.stringify(l.state)}</output></>; }
 function setup(overrides = {}) {
   const props = {partner, canUpdate: true, canDisable: true, saving: false,
     onAddAsSupplier: vi.fn(), onActivate: vi.fn(), onDisable: vi.fn(), ...overrides};
@@ -35,6 +35,8 @@ describe("customer row actions — visible actions", () => {
     expect(screen.queryByRole("button", {name: /^Ver:|^Editar:/})).toBeNull();
     fireEvent.click(screen.getByRole("button", {name: /^Gestionar: Cliente Siete/}));
     expect(screen.getByText("/masterdata/business-partners/customer-7")).toBeTruthy();
+    // El listado de origen queda como destino de «Volver» en la ficha.
+    expect(screen.getByTestId("state").textContent).toBe('{"from":"/customers"}');
   });
 });
 

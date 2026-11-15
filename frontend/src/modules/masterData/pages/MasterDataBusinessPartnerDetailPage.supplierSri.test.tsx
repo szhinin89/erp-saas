@@ -119,6 +119,9 @@ describe("Config SRI del proveedor", () => {
     await open();
     expect(toggleByLabel("Obligado a llevar contabilidad").getAttribute("aria-checked")).toBe("true");
     expect(selectByFieldLabel("Sustento tributario predeterminado").value).toBe("01");
+    // Los interruptores tienen nombre accesible (antes el texto era un hermano sin relación con el switch).
+    expect(screen.getByRole("switch", { name: /Obligado a llevar contabilidad/ })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Exento de retención/ })).toBeTruthy();
     expect(selectByFieldLabel("Tipo de Proveedor").value).toBe("01");
     expect(businessPartnerFacade.updateSupplierConfig).not.toHaveBeenCalled();
   });

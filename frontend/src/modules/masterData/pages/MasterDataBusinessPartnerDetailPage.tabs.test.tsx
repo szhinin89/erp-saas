@@ -194,6 +194,43 @@ describe("ficha unificada — navegación y enlaces profundos", () => {
   });
 });
 
+describe("ficha unificada — «Volver» al listado de origen", () => {
+  const back = () => fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
+
+  it("tras recorrer varias pestañas vuelve al listado de origen, no a la pestaña anterior", async () => {
+    renderPage("", { before: ["/suppliers"], state: { from: "/suppliers" } });
+    await loaded();
+    for (const name of [/^Datos generales/, /^Ubicaciones/, /^Contactos/])
+      fireEvent.click(screen.getByRole("tab", { name }));
+    await waitFor(() => expect(screen.getByTestId("search").textContent).toBe("?tab=contacts"));
+    back();
+    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/suppliers"));
+  });
+
+  it("el origen se conserva al normalizar un ?tab= inválido", async () => {
+    renderPage("?tab=supplier", { state: { from: "/customers" } });
+    await loaded();
+    await waitFor(() => expect(screen.getByTestId("search").textContent).toBe("?tab=summary"));
+    back();
+    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/customers"));
+  });
+
+  it("sin origen (enlace directo) vuelve al listado del rol: Clientes si es cliente", async () => {
+    renderPage("?tab=roles");
+    await loaded();
+    back();
+    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/customers"));
+  });
+
+  it("sin origen y solo proveedor activo vuelve a Proveedores", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
+    renderPage();
+    await loaded();
+    back();
+    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/suppliers"));
+  });
+});
+
 describe("ficha unificada — accesibilidad", () => {
   it("el tablist tiene nombre y cada pestaña controla un tabpanel enlazado; solo el activo es visible", async () => {
     renderPage("?tab=customer");
@@ -206,13 +243,40 @@ describe("ficha unificada — accesibilidad", () => {
     expect(panel.hasAttribute("hidden")).toBe(false);
   });
 
-  it("las pestañas ya visitadas se conservan ocultas (sin perder su estado)", async () => {
+  it("cada pestaña apunta a un tabpanel real, aunque no se haya visitado, y su contenido se monta al visitarla", async () => {
     renderPage("?tab=locations");
     await loaded();
+    const tabs = screen.getAllByRole("tab");
+    for (const tab of tabs) {
+      const panel = document.getElementById(tab.getAttribute("aria-controls") ?? "");
+      expect(panel, `panel de ${tab.id}`).not.toBeNull();
+      expect(panel!.getAttribute("aria-labelledby")).toBe(tab.id);
+    }
+    const panelOf = (id: string) => document.getElementById(`bp-panel-${id}`)!;
+    expect(panelOf("contacts").childElementCount).toBe(0); // sin visitar: vacío y oculto
+    expect(panelOf("contacts").hasAttribute("hidden")).toBe(true);
+
     fireEvent.click(screen.getByRole("tab", { name: /^Contactos/ }));
-    const hidden = document.querySelectorAll('[role="tabpanel"][hidden]');
-    expect(hidden.length).toBe(1);
-    expect(hidden[0].id).toBe("bp-panel-locations");
+    expect(panelOf("contacts").childElementCount).toBeGreaterThan(0);
+    // lo ya visitado se conserva, oculto, con su contenido
+    expect(panelOf("locations").hasAttribute("hidden")).toBe(true);
+    expect(panelOf("locations").childElementCount).toBeGreaterThan(0);
+  });
+});
+
+describe("ficha unificada — nombres accesibles", () => {
+  it("los botones de alta no incluyen el texto del icono (aria-hidden): «Nueva ubicación», «Nuevo contacto»", async () => {
+    renderPage("?tab=locations");
+    await loaded();
+    expect(screen.getByRole("button", { name: "Nueva ubicación" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /^Contactos/ }));
+    expect(screen.getByRole("button", { name: "Nuevo contacto" })).toBeTruthy();
+  });
+
+  it("el filtro de ubicaciones tiene nombre accesible", async () => {
+    renderPage("?tab=locations");
+    await loaded();
+    expect(screen.getByRole("combobox", { name: "Filtrar ubicaciones por estado" })).toBeTruthy();
   });
 });
 

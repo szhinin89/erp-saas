@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import {
   ZhSelect,
   ZhCheckbox,
 } from "../../../components/zh/inputs";
+import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -30,32 +31,37 @@ import type {
   UpdateContactBody,
 } from "../types/businessPartner.types";
 
-const contactSchema = z.object({
-  firstName: z.string().min(1, "Nombre obligatorio.").max(100),
-  lastName: z.string().max(100).optional().or(z.literal("")),
-  position: z.string().max(150).optional().or(z.literal("")),
-  role: z.number({ required_error: "Seleccione un rol." }),
-  locationId: z.string().optional().or(z.literal("")),
-  phone: z.string().max(20).optional().or(z.literal("")),
-  mobile: z.string().max(20).optional().or(z.literal("")),
-  email: z.string().max(254).optional().or(z.literal("")),
-  notes: z.string().max(2000).optional().or(z.literal("")),
-  isPrimary: z.boolean().default(false),
-  otherDescription: z.string().max(100).optional().or(z.literal("")),
-});
-type ContactFormValues = z.infer<typeof contactSchema>;
+type Translate = (key: string, fallback?: string) => string;
 
+/** Esquema del formulario de contacto; los mensajes se resuelven con `t` (idioma activo). */
+const contactSchema = (t: Translate) =>
+  z.object({
+    firstName: z.string().min(1, t("masterdata.bp.detail.con.validation.firstNameRequired", "Nombre obligatorio.")).max(100),
+    lastName: z.string().max(100).optional().or(z.literal("")),
+    position: z.string().max(150).optional().or(z.literal("")),
+    role: z.number({ required_error: t("masterdata.bp.detail.con.validation.roleRequired", "Seleccione un rol.") }),
+    locationId: z.string().optional().or(z.literal("")),
+    phone: z.string().max(20).optional().or(z.literal("")),
+    mobile: z.string().max(20).optional().or(z.literal("")),
+    email: z.string().max(254).optional().or(z.literal("")),
+    notes: z.string().max(2000).optional().or(z.literal("")),
+    isPrimary: z.boolean().default(false),
+    otherDescription: z.string().max(100).optional().or(z.literal("")),
+  });
+type ContactFormValues = z.infer<ReturnType<typeof contactSchema>>;
+
+const R = "masterdata.bp.detail.con.role.";
 const CONTACT_ROLES = [
-  { value: ContactRoleEnum.Commercial, label: "Comercial" },
-  { value: ContactRoleEnum.Accounting, label: "Contabilidad" },
-  { value: ContactRoleEnum.Management, label: "Gerencia" },
-  { value: ContactRoleEnum.Reception, label: "Recepción" },
-  { value: ContactRoleEnum.Dispatch, label: "Despacho" },
-  { value: ContactRoleEnum.Billing, label: "Facturación" },
-  { value: ContactRoleEnum.Technical, label: "Técnico" },
-  { value: ContactRoleEnum.Purchasing, label: "Compras" },
-  { value: ContactRoleEnum.Legal, label: "Legal" },
-  { value: ContactRoleEnum.Other, label: "Otro" },
+  { value: ContactRoleEnum.Commercial, labelKey: R + "commercial", fallback: "Comercial" },
+  { value: ContactRoleEnum.Accounting, labelKey: R + "accounting", fallback: "Contabilidad" },
+  { value: ContactRoleEnum.Management, labelKey: R + "management", fallback: "Gerencia" },
+  { value: ContactRoleEnum.Reception, labelKey: R + "reception", fallback: "Recepción" },
+  { value: ContactRoleEnum.Dispatch, labelKey: R + "dispatch", fallback: "Despacho" },
+  { value: ContactRoleEnum.Billing, labelKey: R + "billing", fallback: "Facturación" },
+  { value: ContactRoleEnum.Technical, labelKey: R + "technical", fallback: "Técnico" },
+  { value: ContactRoleEnum.Purchasing, labelKey: R + "purchasing", fallback: "Compras" },
+  { value: ContactRoleEnum.Legal, labelKey: R + "legal", fallback: "Legal" },
+  { value: ContactRoleEnum.Other, labelKey: R + "other", fallback: "Otro" },
 ];
 
 type ConModal = { mode: "create" | "edit"; data?: BpContactDto } | null;
@@ -96,10 +102,12 @@ export function BpContactsSection({
   onActionError,
   onReload,
 }: BpContactsSectionProps) {
+  const { t } = useI18n();
   const [conModal, setConModal] = useState<ConModal>(null);
+  const resolver = useMemo(() => zodResolver(contactSchema(t)), [t]);
 
   const conForm = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema),
+    resolver,
     defaultValues: {
       firstName: "",
       role: ContactRoleEnum.Commercial,
@@ -170,13 +178,13 @@ export function BpContactsSection({
           conModal.data.id,
           updateBody as UpdateContactBody,
         );
-        message.success("Contacto actualizado correctamente.");
+        message.success(t("masterdata.bp.detail.con.updated", "Contacto actualizado correctamente."));
       } else {
         await businessPartnerFacade.createContact(
           bpId,
           body as CreateContactBody,
         );
-        message.success("Contacto creado correctamente.");
+        message.success(t("masterdata.bp.detail.con.created", "Contacto creado correctamente."));
       }
       setConModal(null);
       await onReload();
@@ -184,7 +192,7 @@ export function BpContactsSection({
       const applied = applyServerErrors(err, conForm.setError, (msg) =>
         onActionError(msg),
       );
-      if (!applied) onActionError("Error al guardar el contacto.");
+      if (!applied) onActionError(t("masterdata.bp.detail.con.saveError", "Error al guardar el contacto."));
     } finally {
       onSavingChange(false);
     }
@@ -195,14 +203,16 @@ export function BpContactsSection({
 
     const confirmed = await message.confirm({
       title: con.isActive
-        ? `Desactivar "${con.fullName}"`
-        : `Activar "${con.fullName}"`,
+        ? t("masterdata.bp.detail.con.confirmDeactivateTitle", { name: con.fullName })
+        : t("masterdata.bp.detail.con.confirmActivateTitle", { name: con.fullName }),
       message: con.isActive
-        ? `"${con.fullName}" dejará de estar disponible para uso operativo (notificaciones, contacto comercial). El histórico no se elimina.`
-        : `"${con.fullName}" volverá a estar disponible para uso operativo.`,
+        ? t("masterdata.bp.detail.con.confirmDeactivateMessage", { name: con.fullName })
+        : t("masterdata.bp.detail.con.confirmActivateMessage", { name: con.fullName }),
       variant: con.isActive ? "danger" : "warning",
-      confirmLabel: con.isActive ? "Desactivar" : "Activar",
-      cancelLabel: "Cancelar",
+      confirmLabel: con.isActive
+        ? t("masterdata.bp.detail.action.deactivate", "Desactivar")
+        : t("masterdata.bp.detail.action.activate", "Activar"),
+      cancelLabel: t("common.cancel", "Cancelar"),
     });
     if (!confirmed) return;
 
@@ -215,12 +225,12 @@ export function BpContactsSection({
       await onReload();
       message.success(
         con.isActive
-          ? "Contacto desactivado correctamente."
-          : "Contacto activado correctamente.",
+          ? t("masterdata.bp.detail.con.deactivated", "Contacto desactivado correctamente.")
+          : t("masterdata.bp.detail.con.activated", "Contacto activado correctamente."),
       );
     } catch (err) {
       const errorMessage = formatApiRequestError(err, {
-        generic: "Error al cambiar estado del contacto.",
+        generic: t("masterdata.bp.detail.con.toggleError", "Error al cambiar estado del contacto."),
       });
       onActionError(errorMessage);
       message.error(errorMessage);
@@ -235,10 +245,10 @@ export function BpContactsSection({
     try {
       await businessPartnerFacade.setContactPrimary(bpId, con.id);
       await onReload();
-      message.success(`"${con.fullName}" marcado como contacto principal.`);
+      message.success(t("masterdata.bp.detail.con.primaryDone", { name: con.fullName }));
     } catch (err) {
       const errorMessage = formatApiRequestError(err, {
-        generic: "Error al marcar como principal.",
+        generic: t("masterdata.bp.detail.primaryError", "Error al marcar como principal."),
       });
       onActionError(errorMessage);
       message.error(errorMessage);
@@ -252,19 +262,21 @@ export function BpContactsSection({
       {visible && (
         <section className="md-detail-section">
           <div className="md-detail-section__header">
-            <h3>Contactos</h3>
+            <h3>{t("masterdata.bp.detail.tabs.contacts", "Contactos")}</h3>
             <ZHBtn
               variant="primary"
               size="sm"
               onClick={openConCreate}
               disabled={!canUpdate}
             >
-              <span className="material-symbols-outlined">add</span> Nuevo
-              contacto
+              <span className="material-symbols-outlined" aria-hidden="true">add</span>{" "}
+              {t("masterdata.bp.detail.con.new", "Nuevo contacto")}
             </ZHBtn>
           </div>
           {contacts.length === 0 ? (
-            <p className="md-detail-empty-hint">No hay contactos registrados.</p>
+            <p className="md-detail-empty-hint">
+              {t("masterdata.bp.detail.con.empty", "No hay contactos registrados.")}
+            </p>
           ) : (
             <div className="md-contacts-grid">
               {contacts.map((c) => (
@@ -276,7 +288,7 @@ export function BpContactsSection({
                     <span className="md-contact-card__name zh-row-title">
                       {c.fullName}
                     </span>
-                    {c.isPrimary && <Badge variant="success" label="Principal" />}
+                    {c.isPrimary && <Badge variant="success" label={t("masterdata.bp.detail.primary", "Principal")} />}
                     <Badge variant="neutral" label={c.roleLabel} />
                   </div>
                   {c.position && (
@@ -295,7 +307,7 @@ export function BpContactsSection({
                           size="sm"
                           onClick={() => openConEdit(c)}
                         >
-                          Editar
+                          {t("masterdata.bp.detail.action.edit", "Editar")}
                         </ZHBtn>
                       )}
                       {canUpdate && c.isActive && !c.isPrimary && (
@@ -305,7 +317,7 @@ export function BpContactsSection({
                           disabled={saving}
                           onClick={() => void setPrimaryCon(c)}
                         >
-                          Principal
+                          {t("masterdata.bp.detail.action.primary", "Principal")}
                         </ZHBtn>
                       )}
                       {(c.isActive ? canDisable : canUpdate) && (
@@ -315,7 +327,9 @@ export function BpContactsSection({
                           disabled={saving}
                           onClick={() => void toggleCon(c)}
                         >
-                          {c.isActive ? "Desactivar" : "Activar"}
+                          {c.isActive
+                            ? t("masterdata.bp.detail.action.deactivate", "Desactivar")
+                            : t("masterdata.bp.detail.action.activate", "Activar")}
                         </ZHBtn>
                       )}
                     </div>
@@ -330,8 +344,12 @@ export function BpContactsSection({
       <ZHModal
         open={conModal !== null}
         onClose={() => setConModal(null)}
-        title={conModal?.mode === "edit" ? "Editar contacto" : "Nuevo contacto"}
-        subtitle="Configure los datos del contacto."
+        title={
+          conModal?.mode === "edit"
+            ? t("masterdata.bp.detail.con.edit", "Editar contacto")
+            : t("masterdata.bp.detail.con.new", "Nuevo contacto")
+        }
+        subtitle={t("masterdata.bp.detail.con.subtitle", "Configure los datos del contacto.")}
         footer={
           <ZHFormActions
             onCancel={() => setConModal(null)}
@@ -339,12 +357,12 @@ export function BpContactsSection({
             hideDraft
             disableSave={saving}
             labels={{
-              cancel: "Cancelar",
+              cancel: t("common.cancel", "Cancelar"),
               save: saving
-                ? "Guardando..."
+                ? t("masterdata.wizard.btn.saving", "Guardando…")
                 : conModal?.mode === "edit"
-                  ? "Guardar cambios"
-                  : "Crear contacto",
+                  ? t("common.saveChanges", "Guardar cambios")
+                  : t("masterdata.bp.detail.con.create", "Crear contacto"),
             }}
           />
         }
@@ -353,7 +371,7 @@ export function BpContactsSection({
         <div className="pg-section-body">
           <ZHGrid cols={2}>
             <ZHField
-              label="Nombre *"
+              label={t("masterdata.bp.detail.con.field.firstName", "Nombre *")}
               required
               error={conForm.formState.errors.firstName?.message}
             >
@@ -363,7 +381,7 @@ export function BpContactsSection({
                 {...conForm.register("firstName")}
               />
             </ZHField>
-            <ZHField label="Apellido">
+            <ZHField label={t("masterdata.bp.detail.con.field.lastName", "Apellido")}>
               <ZhTextInput
                 className="zh-input"
                 disabled={saving}
@@ -373,7 +391,7 @@ export function BpContactsSection({
           </ZHGrid>
           <ZHGrid cols={2}>
             <ZHField
-              label="Rol *"
+              label={t("masterdata.bp.detail.con.field.role", "Rol *")}
               required
               error={conForm.formState.errors.role?.message}
             >
@@ -381,14 +399,14 @@ export function BpContactsSection({
                 disabled={saving}
                 {...conForm.register("role", { valueAsNumber: true })}
               >
-                {CONTACT_ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
+                {CONTACT_ROLES.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {t(role.labelKey, role.fallback)}
                   </option>
                 ))}
               </ZhSelect>
             </ZHField>
-            <ZHField label="Cargo">
+            <ZHField label={t("masterdata.bp.detail.con.field.position", "Cargo")}>
               <ZhTextInput
                 className="zh-input"
                 disabled={saving}
@@ -397,7 +415,7 @@ export function BpContactsSection({
             </ZHField>
           </ZHGrid>
           <ZHGrid cols={3}>
-            <ZHField label="Teléfono">
+            <ZHField label={t("masterdata.bp.detail.con.field.phone", "Teléfono")}>
               <Controller
                 name="phone"
                 control={conForm.control}
@@ -406,7 +424,7 @@ export function BpContactsSection({
                 )}
               />
             </ZHField>
-            <ZHField label="Celular">
+            <ZHField label={t("masterdata.bp.detail.con.field.mobile", "Celular")}>
               <Controller
                 name="mobile"
                 control={conForm.control}
@@ -415,7 +433,7 @@ export function BpContactsSection({
                 )}
               />
             </ZHField>
-            <ZHField label="Email">
+            <ZHField label={t("masterdata.bp.detail.con.field.email", "Email")}>
               <ZhTextInput
                 className="zh-input"
                 disabled={saving}
@@ -423,9 +441,9 @@ export function BpContactsSection({
               />
             </ZHField>
           </ZHGrid>
-          <ZHField label="Ubicación asociada">
+          <ZHField label={t("masterdata.bp.detail.con.field.location", "Ubicación asociada")}>
             <ZhSelect disabled={saving} {...conForm.register("locationId")}>
-              <option value="">— Ninguna —</option>
+              <option value="">{t("masterdata.bp.detail.con.none", "— Ninguna —")}</option>
               {activeLocations.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name} ({l.typeLabel})
@@ -433,7 +451,7 @@ export function BpContactsSection({
               ))}
             </ZhSelect>
           </ZHField>
-          <ZHField label="Notas">
+          <ZHField label={t("masterdata.bp.detail.con.field.notes", "Notas")}>
             <ZhTextarea
               className="zh-input"
               rows={2}
@@ -447,7 +465,7 @@ export function BpContactsSection({
                 {...conForm.register("isPrimary")}
                 disabled={saving}
               />
-              <span>Marcar como contacto principal</span>
+              <span>{t("masterdata.bp.detail.con.markPrimary", "Marcar como contacto principal")}</span>
             </label>
           )}
         </div>

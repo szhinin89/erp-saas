@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useI18n } from "../../../i18n/i18n";
 import { useFormContext, Controller } from "react-hook-form";
 import { ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
@@ -26,6 +27,7 @@ export function MasterDataBpFormFields({
   usage,
   identityLocked = false,
 }: Props) {
+  const { t } = useI18n();
   const {
     register,
     control,
@@ -94,10 +96,10 @@ export function MasterDataBpFormFields({
   return (
     <>
       <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
-        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Datos de identificación</h4>
+        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>{t("masterdata.bp.detail.id.identification", "Datos de identificación")}</h4>
         <ZHGrid cols={modalLayout ? 2 : 3}>
           <ZHField
-            label="Tipo de identificación"
+            label={t("masterdata.bp.detail.id.idType", "Tipo de identificación")}
             required
             fieldError={errors.identificationType?.message}
           >
@@ -106,7 +108,7 @@ export function MasterDataBpFormFields({
               disabled={saving || loadingTypes || identityLocked}
             >
               {loadingTypes ? (
-                <option value="">Cargando…</option>
+                <option value="">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</option>
               ) : (
                 idTypes.map((t) => (
                   <option key={t.code} value={t.code}>
@@ -118,7 +120,7 @@ export function MasterDataBpFormFields({
           </ZHField>
 
           <ZHField
-            label="Número de identificación"
+            label={t("masterdata.bp.detail.id.idNumber", "Número de identificación")}
             required
             fieldError={errors.identificationNumber?.message}
           >
@@ -130,11 +132,11 @@ export function MasterDataBpFormFields({
           </ZHField>
 
           <ZHField
-            label="Tipo de entidad legal"
+            label={t("masterdata.bp.detail.id.legalEntityType", "Tipo de entidad legal")}
             required={!isLegalEntityTypeInferable(watchedIdentificationType)}
             hint={
               isLegalEntityTypeInferable(watchedIdentificationType)
-                ? "Se determina automáticamente a partir de la identificación."
+                ? t("masterdata.bp.detail.id.inferable", "Se determina automáticamente a partir de la identificación.")
                 : undefined
             }
             fieldError={errors.legalEntityTypeCode?.message}
@@ -149,9 +151,9 @@ export function MasterDataBpFormFields({
                 isLegalEntityTypeInferable(watchedIdentificationType)
               }
             >
-              <option value="">— Seleccionar —</option>
+              <option value="">{t("masterdata.bp.detail.select", "— Seleccionar —")}</option>
               {loadingLegalEntityTypes ? (
-                <option value="">Cargando...</option>
+                <option value="">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</option>
               ) : (
                 legalEntityTypes.map((o) => (
                   <option key={o.code} value={o.code}>
@@ -165,10 +167,10 @@ export function MasterDataBpFormFields({
       </div>
 
       <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
-        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Datos principales</h4>
+        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>{t("masterdata.bp.detail.id.main", "Datos principales")}</h4>
         <ZHGrid cols={modalLayout ? 2 : 3}>
           <ZHField
-            label="Razón social"
+            label={t("masterdata.bp.detail.id.legalName", "Razón social")}
             required
             fieldError={errors.legalName?.message}
           >
@@ -179,7 +181,7 @@ export function MasterDataBpFormFields({
             />
           </ZHField>
 
-          <ZHField label="Nombre comercial">
+          <ZHField label={t("masterdata.bp.detail.id.tradeName", "Nombre comercial")}>
             <ZhTextInput
               className="zh-input"
               {...register("tradeName")}
@@ -188,7 +190,7 @@ export function MasterDataBpFormFields({
           </ZHField>
 
           <ZHField
-            label="País (ISO alpha-2)"
+            label={t("masterdata.bp.detail.id.country", "País (ISO alpha-2)")}
             fieldError={errors.countryCode?.message}
           >
             <Controller
@@ -214,10 +216,10 @@ export function MasterDataBpFormFields({
 
       {usage === "supplier" && !identityLocked && (
         <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
-          <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Configuración del proveedor</h4>
+          <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>{t("masterdata.bp.detail.id.supplierConfig", "Configuración del proveedor")}</h4>
           <ZHGrid cols={2}>
             <ZHField
-              label="Tipo de Proveedor"
+              label={t("masterdata.bp.detail.sri.providerType", "Tipo de Proveedor")}
               required
               fieldError={errors.refundProviderTypeCode?.message}
             >
@@ -225,7 +227,7 @@ export function MasterDataBpFormFields({
                 {...register("refundProviderTypeCode")}
                 disabled={saving || loadingSupplierTypes}
               >
-                <option value="">— Seleccionar —</option>
+                <option value="">{t("masterdata.bp.detail.select", "— Seleccionar —")}</option>
                 {supplierTypeOptions.map((o) => (
                   <option key={o.code} value={o.code}>
                     {o.name}

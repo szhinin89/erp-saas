@@ -1,5 +1,6 @@
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
@@ -7,6 +8,8 @@ import type {
   BusinessPartnerDetailDto,
   BusinessPartnerRoleDto,
 } from "../types/businessPartner.types";
+
+const K = "masterdata.bp.detail.roles.";
 
 export interface BpRolesSectionProps {
   bp: BusinessPartnerDetailDto;
@@ -31,6 +34,7 @@ export function BpRolesSection({
   onActionError,
   onReload,
 }: BpRolesSectionProps) {
+  const { t } = useI18n();
   const activeRoles = bp.roles.filter((r) => r.isActive);
   const revokedRoles = bp.roles.filter((r) => !r.isActive);
 
@@ -38,11 +42,11 @@ export function BpRolesSection({
     if (saving) return;
 
     const confirmed = await message.confirm({
-      title: `Revocar rol "${role.roleLabel}"`,
-      message: `El socio de negocio dejará de operar bajo el rol "${role.roleLabel}". El socio de negocio en sí no se elimina — solo deja de tener este rol activo.`,
+      title: t(`${K}revokeTitle`, { role: role.roleLabel }),
+      message: t(`${K}revokeMessage`, { role: role.roleLabel }),
       variant: "danger",
-      confirmLabel: "Revocar rol",
-      cancelLabel: "Cancelar",
+      confirmLabel: t(`${K}revokeConfirm`, "Revocar rol"),
+      cancelLabel: t("common.cancel", "Cancelar"),
     });
     if (!confirmed) return;
 
@@ -51,10 +55,10 @@ export function BpRolesSection({
     try {
       await businessPartnerFacade.revokeRole(bp.id, role.id);
       await onReload();
-      message.success(`Rol "${role.roleLabel}" revocado correctamente.`);
+      message.success(t(`${K}revoked`, { role: role.roleLabel }));
     } catch (err) {
       const errorMessage = formatApiRequestError(err, {
-        generic: "Error al revocar el rol.",
+        generic: t(`${K}revokeError`, "Error al revocar el rol."),
       });
       onActionError(errorMessage);
       message.error(errorMessage);
@@ -67,7 +71,7 @@ export function BpRolesSection({
     <section className="md-detail-section">
       {bp.roles.length === 0 ? (
         <p className="md-detail-empty-hint">
-          Este BP no tiene roles asignados.
+          {t(`${K}empty`, "Este socio de negocio no tiene roles asignados.")}
         </p>
       ) : (
         <>
@@ -84,7 +88,7 @@ export function BpRolesSection({
                         disabled={saving}
                         onClick={() => void revokeRole(r)}
                       >
-                        Revocar
+                        {t(`${K}revoke`, "Revocar")}
                       </ZHBtn>
                     )}
                   </div>
@@ -92,33 +96,33 @@ export function BpRolesSection({
                   {r.customerConfig && (
                     <div className="md-role-card__config md-role-card__config--crm">
                       {r.customerConfig.customerCategory && (
-                        <small>Categoría: {r.customerConfig.customerCategory}</small>
+                        <small>{t(`${K}category`, { value: r.customerConfig.customerCategory })}</small>
                       )}
                       {r.customerConfig.customerSegment && (
-                        <small>Segmento: {r.customerConfig.customerSegment}</small>
+                        <small>{t(`${K}segment`, { value: r.customerConfig.customerSegment })}</small>
                       )}
                       {r.customerConfig.salesZone && (
-                        <small>Zona: {r.customerConfig.salesZone}</small>
+                        <small>{t(`${K}zone`, { value: r.customerConfig.salesZone })}</small>
                       )}
                       {r.customerConfig.creditRating && (
-                        <small>Rating: {r.customerConfig.creditRating}</small>
+                        <small>{t(`${K}rating`, { value: r.customerConfig.creditRating })}</small>
                       )}
                       {r.customerConfig.loyaltyTier && (
-                        <small>Fidelización: {r.customerConfig.loyaltyTier}</small>
+                        <small>{t(`${K}loyalty`, { value: r.customerConfig.loyaltyTier })}</small>
                       )}
                     </div>
                   )}
                   {r.supplierConfig && (
                     <div className="md-role-card__config">
                       <small>
-                        Sustento: {r.supplierConfig.defaultTaxSupportCode ?? "—"}
+                        {t(`${K}taxSupport`, { value: r.supplierConfig.defaultTaxSupportCode ?? "—" })}
                       </small>
                     </div>
                   )}
                   {r.carrierConfig?.transportAuthorizationNumber && (
                     <div className="md-role-card__config">
                       <small>
-                        Autorización: {r.carrierConfig.transportAuthorizationNumber}
+                        {t(`${K}authorization`, { value: r.carrierConfig.transportAuthorizationNumber })}
                       </small>
                     </div>
                   )}
@@ -128,13 +132,13 @@ export function BpRolesSection({
           )}
           {revokedRoles.length > 0 && (
             <>
-              <h4 className="md-detail-subheader">Roles revocados</h4>
+              <h4 className="md-detail-subheader">{t(`${K}revokedTitle`, "Roles revocados")}</h4>
               <div className="md-roles-grid md-roles-grid--inactive">
                 {revokedRoles.map((r) => (
                   <div key={r.id} className="md-role-card md-role-card--inactive">
                     <div className="md-role-card__header">
                       <Badge variant="warning" label={r.roleLabel} />
-                      <Badge variant="warning" label="Revocado" />
+                      <Badge variant="warning" label={t(`${K}revokedBadge`, "Revocado")} />
                     </div>
                   </div>
                 ))}

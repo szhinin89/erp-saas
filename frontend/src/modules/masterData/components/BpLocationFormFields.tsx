@@ -7,6 +7,7 @@ import {
   ZhSelect,
   ZhCheckbox,
 } from "../../../components/zh/inputs";
+import { useI18n } from "../../../i18n/i18n";
 import type { GeographyItemDto } from "../../branches/facades/geographyLookupFacade";
 import {
   LOCATION_TYPES,
@@ -37,11 +38,12 @@ export function BpLocationFormFields({
   onProvinceChange: (provinceId: string) => void;
   onCantonChange: (cantonId: string) => void;
 }) {
+  const { t } = useI18n();
   return (
   <div className="pg-section-body">
     <ZHGrid cols={2}>
       <ZHField
-        label="Nombre *"
+        label={t("masterdata.bp.detail.loc.field.name", "Nombre *")}
         required
         error={form.formState.errors.name?.message}
       >
@@ -52,7 +54,7 @@ export function BpLocationFormFields({
         />
       </ZHField>
       <ZHField
-        label="Tipo *"
+        label={t("masterdata.bp.detail.loc.field.type", "Tipo *")}
         required
         error={form.formState.errors.type?.message}
       >
@@ -60,16 +62,16 @@ export function BpLocationFormFields({
           disabled={saving}
           {...form.register("type", { valueAsNumber: true })}
         >
-          {LOCATION_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {LOCATION_TYPES.map((type) => (
+            <option key={type.value} value={type.value}>
+              {t(type.labelKey, type.fallback)}
             </option>
           ))}
         </ZhSelect>
       </ZHField>
     </ZHGrid>
     <ZHField
-      label="Dirección *"
+      label={t("masterdata.bp.detail.loc.field.address", "Dirección *")}
       required
       error={form.formState.errors.addressLine?.message}
     >
@@ -82,7 +84,7 @@ export function BpLocationFormFields({
     </ZHField>
     <ZHGrid cols={3}>
       <ZHField
-        label="Provincia"
+        label={t("masterdata.bp.detail.loc.field.province", "Provincia")}
         error={form.formState.errors.provinceCode?.message}
       >
         <ZhSelect
@@ -95,7 +97,7 @@ export function BpLocationFormFields({
             onProvinceChange(e.target.value);
           }}
         >
-          <option value="">— Seleccionar —</option>
+          <option value="">{t("masterdata.bp.detail.select", "— Seleccionar —")}</option>
           {provinces.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -104,7 +106,7 @@ export function BpLocationFormFields({
         </ZhSelect>
       </ZHField>
       <ZHField
-        label="Cantón"
+        label={t("masterdata.bp.detail.loc.field.canton", "Cantón")}
         error={form.formState.errors.cantonCode?.message}
       >
         <ZhSelect
@@ -116,7 +118,7 @@ export function BpLocationFormFields({
             onCantonChange(e.target.value);
           }}
         >
-          <option value="">— Seleccionar —</option>
+          <option value="">{t("masterdata.bp.detail.select", "— Seleccionar —")}</option>
           {cantons.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -125,14 +127,14 @@ export function BpLocationFormFields({
         </ZhSelect>
       </ZHField>
       <ZHField
-        label="Parroquia"
+        label={t("masterdata.bp.detail.loc.field.parish", "Parroquia")}
         error={form.formState.errors.parishCode?.message}
       >
         <ZhSelect
           disabled={saving || parishes.length === 0}
           {...form.register("parishCode")}
         >
-          <option value="">— Seleccionar —</option>
+          <option value="">{t("masterdata.bp.detail.select", "— Seleccionar —")}</option>
           {parishes.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -142,7 +144,7 @@ export function BpLocationFormFields({
       </ZHField>
     </ZHGrid>
     <ZHGrid cols={2}>
-      <ZHField label="Teléfono">
+      <ZHField label={t("masterdata.bp.detail.loc.field.phone", "Teléfono")}>
         <Controller
           name="phone"
           control={form.control}
@@ -151,7 +153,7 @@ export function BpLocationFormFields({
           )}
         />
       </ZHField>
-      <ZHField label="Email">
+      <ZHField label={t("masterdata.bp.detail.loc.field.email", "Email")}>
         <ZhTextInput
           className="zh-input"
           disabled={saving}
@@ -159,7 +161,7 @@ export function BpLocationFormFields({
         />
       </ZHField>
     </ZHGrid>
-    <ZHField label="Propósitos">
+    <ZHField label={t("masterdata.bp.detail.loc.field.purposes", "Propósitos")}>
       <div className="md-detail-purpose-options">
         {PURPOSE_FLAGS.map((pf) => (
           <label key={pf.flag} className="zh-checkbox-label">
@@ -174,7 +176,7 @@ export function BpLocationFormFields({
               }}
               disabled={saving}
             />
-            <span>{pf.label}</span>
+            <span>{t(pf.labelKey, pf.fallback)}</span>
           </label>
         ))}
       </div>
@@ -185,7 +187,7 @@ export function BpLocationFormFields({
           {...form.register("isPrimary")}
           disabled={saving}
         />
-        <span>Marcar como ubicación principal</span>
+        <span>{t("masterdata.bp.detail.loc.markPrimary", "Marcar como ubicación principal")}</span>
       </label>
     )}
   </div>

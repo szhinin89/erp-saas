@@ -10,7 +10,7 @@ import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
  * y activar/desactivar. Editar y Config SRI viven en la ficha unificada. */
 const partner = {id: "supplier-42", legalName: "Proveedor Uno", identificationNumber: "0991234567001", isActive: true, isCustomer: false, canAssignAsCustomer: true} as BusinessPartnerSummaryDto;
 const MORE = /^Más acciones:/;
-function Location() { return <output>{useLocation().pathname}</output>; }
+function Location() { const l = useLocation(); return <><output>{l.pathname}</output><output data-testid="state">{JSON.stringify(l.state)}</output></>; }
 function setup(overrides = {}) {
   const props = {partner, canUpdate: true, canDisable: true, saving: false,
     onAddAsCustomer: vi.fn(), onActivate: vi.fn(), onDisable: vi.fn(), ...overrides};
@@ -29,6 +29,8 @@ describe("supplier row actions", () => {
     expect(screen.queryByRole("button", {name: /Editar|SRI/})).toBeNull();
     fireEvent.click(screen.getByRole("button", {name: /^Gestionar: Proveedor Uno \(0991234567001\)$/}));
     expect(screen.getByText("/masterdata/business-partners/supplier-42")).toBeTruthy();
+    // El listado de origen queda como destino de «Volver» en la ficha.
+    expect(screen.getByTestId("state").textContent).toBe('{"from":"/suppliers"}');
   });
   it("menu holds only assign-as-customer and deactivate, in that order, with no edit/SRI items", () => {
     const {open, itemNames} = setup(); open();

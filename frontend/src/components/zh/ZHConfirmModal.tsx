@@ -1,4 +1,4 @@
-﻿import { useState, type ReactNode } from "react";
+﻿import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ZHBtn, ZHField } from "./ZHForm";
 import { ZhDecimalInput } from "./inputs/ZhDecimalInput";
 import type { PrecisionKind } from "../../lib/config/precisionPolicy.config";
@@ -31,6 +31,54 @@ export function ZHConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmProps) {
+  const titleId = useId();
+  const messageId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef(onCancel);
+  useEffect(() => {
+    cancelRef.current = onCancel;
+  }, [onCancel]);
+
+  // Accesibilidad del diálogo de alerta: foco inicial en la acción menos destructiva («Cancelar»),
+  // Escape cancela, Tab/Shift+Tab no salen del diálogo y al cerrar el foco vuelve a quien lo abrió.
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const focusables = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+    focusables()[0]?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        cancelRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = !!dialogRef.current?.contains(active);
+      if (e.shiftKey && (active === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, true);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
   return (
     <div
@@ -40,19 +88,25 @@ export function ZHConfirmModal({
       }}
     >
       <div
+        ref={dialogRef}
         className="zh-modal zh-modal--sm zh-confirm-dialog"
         role="alertdialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
       >
         <div className="zh-confirm-header">
           <span
             className={`material-symbols-outlined zh-confirm-icon zh-confirm-icon--${variant}`}
+            aria-hidden="true"
           >
             {VARIANT_ICON[variant]}
           </span>
-          <h3 className="zh-confirm-title">{title}</h3>
+          <h3 className="zh-confirm-title" id={titleId}>
+            {title}
+          </h3>
         </div>
-        <div className="zh-confirm-body">
+        <div className="zh-confirm-body" id={messageId}>
           {typeof message === "string" ? (
             <p className="zh-confirm-message">{message}</p>
           ) : (

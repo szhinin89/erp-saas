@@ -157,10 +157,10 @@ describe("BP-NAV-GUARD-01 — navegación a otra ruta", () => {
   });
 
   it("«Volver» con cambios pide una sola confirmación (la del bloqueador)", async () => {
-    await renderLoaded("?tab=general", { before: ["/anterior"] });
+    await renderLoaded("?tab=general", { before: ["/anterior"], state: { from: "/suppliers" } });
     await editIdentity();
     fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
-    await waitFor(() => expect(path()).toBe("/anterior"));
+    await waitFor(() => expect(path()).toBe("/suppliers"));
     expect(message.confirm).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,6 @@
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import { useI18n } from "../../../i18n/i18n";
 import type { BpLocationDto } from "../types/businessPartner.types";
 
 /**
@@ -23,6 +24,7 @@ export function BpLocationCard({
   onSetPrimary: (location: BpLocationDto) => void;
   onToggle: (location: BpLocationDto) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className={`md-location-card ${!l.isActive ? "md-location-card--inactive" : ""}`}
@@ -31,7 +33,7 @@ export function BpLocationCard({
         <span className="md-location-card__name zh-row-title">
           {l.name}
         </span>
-        {l.isPrimary && <Badge variant="success" label="Principal" />}
+        {l.isPrimary && <Badge variant="success" label={t("masterdata.bp.detail.primary", "Principal")} />}
         <Badge variant="neutral" label={l.typeLabel} />
       </div>
       <p className="md-location-card__address">{l.addressLine}</p>
@@ -56,7 +58,7 @@ export function BpLocationCard({
               size="sm"
               onClick={() => onEdit(l)}
             >
-              Editar
+              {t("masterdata.bp.detail.action.edit", "Editar")}
             </ZHBtn>
           )}
           {canUpdate && l.isActive && !l.isPrimary && (
@@ -66,7 +68,7 @@ export function BpLocationCard({
               disabled={saving}
               onClick={() => onSetPrimary(l)}
             >
-              Principal
+              {t("masterdata.bp.detail.action.primary", "Principal")}
             </ZHBtn>
           )}
           {(l.isActive ? canDisable : canUpdate) && (
@@ -76,7 +78,9 @@ export function BpLocationCard({
               disabled={saving}
               onClick={() => onToggle(l)}
             >
-              {l.isActive ? "Desactivar" : "Activar"}
+              {l.isActive
+              ? t("masterdata.bp.detail.action.deactivate", "Desactivar")
+              : t("masterdata.bp.detail.action.activate", "Activar")}
             </ZHBtn>
           )}
         </div>

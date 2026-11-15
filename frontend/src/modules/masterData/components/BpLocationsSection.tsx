@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZHBtn, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZhSelect } from "../../../components/zh/inputs";
+import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -59,6 +60,7 @@ export function BpLocationsSection({
   onActionError,
   onReload,
 }: BpLocationsSectionProps) {
+  const { t } = useI18n();
   const [locModal, setLocModal] = useState<LocModal>(null);
   const [locFilter, setLocFilter] = useState<"all" | "active" | "inactive">(
     "active",
@@ -67,8 +69,9 @@ export function BpLocationsSection({
   const [geoCantons, setGeoCantons] = useState<GeographyItemDto[]>([]);
   const [geoParishes, setGeoParishes] = useState<GeographyItemDto[]>([]);
 
+  const resolver = useMemo(() => zodResolver(locationSchema(t)), [t]);
   const locForm = useForm<LocationFormValues>({
-    resolver: zodResolver(locationSchema),
+    resolver,
     defaultValues: {
       name: "",
       type: LocationTypeEnum.Matrix,
@@ -191,13 +194,13 @@ export function BpLocationsSection({
           locModal.data.id,
           updateBody as UpdateLocationBody,
         );
-        message.success("Ubicación actualizada correctamente.");
+        message.success(t("masterdata.bp.detail.loc.updated", "Ubicación actualizada correctamente."));
       } else {
         await businessPartnerFacade.createLocation(
           bpId,
           body as CreateLocationBody,
         );
-        message.success("Ubicación creada correctamente.");
+        message.success(t("masterdata.bp.detail.loc.created", "Ubicación creada correctamente."));
       }
       setLocModal(null);
       await onReload();
@@ -205,7 +208,7 @@ export function BpLocationsSection({
       const applied = applyServerErrors(err, locForm.setError, (msg) =>
         onActionError(msg),
       );
-      if (!applied) onActionError("Error al guardar la ubicación.");
+      if (!applied) onActionError(t("masterdata.bp.detail.loc.saveError", "Error al guardar la ubicación."));
     } finally {
       onSavingChange(false);
     }
@@ -215,13 +218,17 @@ export function BpLocationsSection({
     if (saving) return;
 
     const confirmed = await message.confirm({
-      title: loc.isActive ? `Desactivar "${loc.name}"` : `Activar "${loc.name}"`,
+      title: loc.isActive
+        ? t("masterdata.bp.detail.loc.confirmDeactivateTitle", { name: loc.name })
+        : t("masterdata.bp.detail.loc.confirmActivateTitle", { name: loc.name }),
       message: loc.isActive
-        ? `"${loc.name}" dejará de estar disponible para uso operativo (nuevos documentos, envíos). El histórico no se elimina.`
-        : `"${loc.name}" volverá a estar disponible para uso operativo.`,
+        ? t("masterdata.bp.detail.loc.confirmDeactivateMessage", { name: loc.name })
+        : t("masterdata.bp.detail.loc.confirmActivateMessage", { name: loc.name }),
       variant: loc.isActive ? "danger" : "warning",
-      confirmLabel: loc.isActive ? "Desactivar" : "Activar",
-      cancelLabel: "Cancelar",
+      confirmLabel: loc.isActive
+        ? t("masterdata.bp.detail.action.deactivate", "Desactivar")
+        : t("masterdata.bp.detail.action.activate", "Activar"),
+      cancelLabel: t("common.cancel", "Cancelar"),
     });
     if (!confirmed) return;
 
@@ -234,12 +241,12 @@ export function BpLocationsSection({
       await onReload();
       message.success(
         loc.isActive
-          ? "Ubicación desactivada correctamente."
-          : "Ubicación activada correctamente.",
+          ? t("masterdata.bp.detail.loc.deactivated", "Ubicación desactivada correctamente.")
+          : t("masterdata.bp.detail.loc.activated", "Ubicación activada correctamente."),
       );
     } catch (err) {
       const errorMessage = formatApiRequestError(err, {
-        generic: "Error al cambiar estado de la ubicación.",
+        generic: t("masterdata.bp.detail.loc.toggleError", "Error al cambiar estado de la ubicación."),
       });
       onActionError(errorMessage);
       message.error(errorMessage);
@@ -254,10 +261,10 @@ export function BpLocationsSection({
     try {
       await businessPartnerFacade.setLocationPrimary(bpId, loc.id);
       await onReload();
-      message.success(`"${loc.name}" marcada como ubicación principal.`);
+      message.success(t("masterdata.bp.detail.loc.primaryDone", { name: loc.name }));
     } catch (err) {
       const errorMessage = formatApiRequestError(err, {
-        generic: "Error al marcar como principal.",
+        generic: t("masterdata.bp.detail.primaryError", "Error al marcar como principal."),
       });
       onActionError(errorMessage);
       message.error(errorMessage);
@@ -282,14 +289,15 @@ export function BpLocationsSection({
             <div className="md-detail-filter-actions">
               <ZhSelect
                 className="md-detail-filter-select zh-select--compact"
+                aria-label={t("masterdata.bp.detail.loc.filterLabel", "Filtrar ubicaciones por estado")}
                 value={locFilter}
                 onChange={(e) =>
                   setLocFilter(e.target.value as "all" | "active" | "inactive")
                 }
               >
-                <option value="active">Activas</option>
-                <option value="inactive">Inactivas</option>
-                <option value="all">Todas</option>
+                <option value="active">{t("masterdata.bp.detail.filter.active", "Activas")}</option>
+                <option value="inactive">{t("masterdata.bp.detail.filter.inactive", "Inactivas")}</option>
+                <option value="all">{t("masterdata.bp.detail.filter.all", "Todas")}</option>
               </ZhSelect>
               <ZHBtn
                 variant="primary"
@@ -297,16 +305,18 @@ export function BpLocationsSection({
                 onClick={openLocCreate}
                 disabled={!canUpdate}
               >
-                <span className="material-symbols-outlined">add</span> Nueva
-                ubicación
+                <span className="material-symbols-outlined" aria-hidden="true">add</span>{" "}
+                {t("masterdata.bp.detail.loc.new", "Nueva ubicación")}
               </ZHBtn>
             </div>
           </div>
           {filteredLocs.length === 0 ? (
             <p className="md-detail-empty-hint">
               {locations.length === 0
-                ? "No hay ubicaciones registradas."
-                : `No hay ubicaciones ${locFilter === "active" ? "activas" : "inactivas"}.`}
+                ? t("masterdata.bp.detail.loc.empty", "No hay ubicaciones registradas.")
+                : locFilter === "active"
+                  ? t("masterdata.bp.detail.loc.emptyActive", "No hay ubicaciones activas.")
+                  : t("masterdata.bp.detail.loc.emptyInactive", "No hay ubicaciones inactivas.")}
             </p>
           ) : (
             <div className="md-locations-grid">
@@ -331,9 +341,11 @@ export function BpLocationsSection({
         open={locModal !== null}
         onClose={() => setLocModal(null)}
         title={
-          locModal?.mode === "edit" ? "Editar ubicación" : "Nueva ubicación"
+          locModal?.mode === "edit"
+            ? t("masterdata.bp.detail.loc.edit", "Editar ubicación")
+            : t("masterdata.bp.detail.loc.new", "Nueva ubicación")
         }
-        subtitle="Configure la dirección y propósito de la ubicación."
+        subtitle={t("masterdata.bp.detail.loc.subtitle", "Configure la dirección y propósito de la ubicación.")}
         footer={
           <ZHFormActions
             onCancel={() => setLocModal(null)}
@@ -341,12 +353,12 @@ export function BpLocationsSection({
             hideDraft
             disableSave={saving}
             labels={{
-              cancel: "Cancelar",
+              cancel: t("common.cancel", "Cancelar"),
               save: saving
-                ? "Guardando..."
+                ? t("masterdata.wizard.btn.saving", "Guardando…")
                 : locModal?.mode === "edit"
-                  ? "Guardar cambios"
-                  : "Crear ubicación",
+                  ? t("common.saveChanges", "Guardar cambios")
+                  : t("masterdata.bp.detail.loc.create", "Crear ubicación"),
             }}
           />
         }

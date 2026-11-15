@@ -7,6 +7,7 @@ import {
   ZHFormActions,
 } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
+import { useI18n } from "../../../i18n/i18n";
 import type {
   SupplierConfigBody,
   SupplierRoleConfigDto,
@@ -27,9 +28,6 @@ function isOrphanCatalogValue(
 ): boolean {
   return value !== "" && !loading && !options.some((o) => o.code === value);
 }
-
-const ORPHAN_CODE_MESSAGE =
-  "Este código ya no está activo en el catálogo. Selecciona una opción válida.";
 
 /**
  * Formulario de Config SRI operativa del proveedor (S3-A: incluye método de pago + exención).
@@ -52,6 +50,7 @@ export function SupplierSriConfigForm({
   onSave: (body: SupplierConfigBody) => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const { t } = useI18n();
   const [taxSupportCode, setTaxSupportCode] = useState(
     initialConfig?.defaultTaxSupportCode ?? "",
   );
@@ -110,10 +109,12 @@ export function SupplierSriConfigForm({
       {error && <ZHPageNotice variant="error" message={error} />}
       <ZHGrid cols={1}>
         <ZHField
-          label="Sustento tributario predeterminado"
+          label={t("masterdata.bp.detail.sri.taxSupport", "Sustento tributario predeterminado")}
           fieldError={
             taxSupportFetchError ??
-            (taxSupportOrphan ? ORPHAN_CODE_MESSAGE : undefined)
+            (taxSupportOrphan
+              ? t("masterdata.bp.detail.sri.orphanMessage", "Este código ya no está activo en el catálogo. Selecciona una opción válida.")
+              : undefined)
           }
         >
           <ZhSelect
@@ -121,14 +122,14 @@ export function SupplierSriConfigForm({
             onChange={(e) => setTaxSupportCode(e.target.value)}
             disabled={busy || loadingTaxSupport}
           >
-            <option value="">— Sin definir —</option>
+            <option value="">{t("masterdata.bp.detail.sri.undefined", "— Sin definir —")}</option>
             {loadingTaxSupport ? (
-              <option value="">Cargando…</option>
+              <option value="">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</option>
             ) : (
               <>
                 {taxSupportOrphan && (
                   <option value={taxSupportCode} disabled>
-                    {taxSupportCode} — (código no vigente)
+                    {t("masterdata.bp.detail.sri.orphanOption", { code: taxSupportCode })}
                   </option>
                 )}
                 {taxSupportOptions.map((o) => (
@@ -141,7 +142,7 @@ export function SupplierSriConfigForm({
           </ZhSelect>
         </ZHField>
         <ZHField
-          label="Método de pago SRI"
+          label={t("masterdata.bp.detail.sri.paymentMethod", "Método de pago SRI")}
           fieldError={paymentMethodsError ?? undefined}
         >
           <ZhSelect
@@ -149,9 +150,9 @@ export function SupplierSriConfigForm({
             onChange={(e) => setPaymentMethodCode(e.target.value)}
             disabled={busy || loadingPaymentMethods}
           >
-            <option value="">— Sin preferencia —</option>
+            <option value="">{t("masterdata.bp.detail.sri.noPreference", "— Sin preferencia —")}</option>
             {loadingPaymentMethods ? (
-              <option value="">Cargando…</option>
+              <option value="">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</option>
             ) : (
               paymentMethodOptions.map((o) => (
                 <option key={o.code} value={o.code}>
@@ -161,13 +162,13 @@ export function SupplierSriConfigForm({
             )}
           </ZhSelect>
         </ZHField>
-        <ZHField label="Tipo de Proveedor">
+        <ZHField label={t("masterdata.bp.detail.sri.providerType", "Tipo de Proveedor")}>
           <ZhSelect
             value={refundProviderType}
             onChange={(e) => setRefundProviderType(e.target.value)}
             disabled={busy}
           >
-            <option value="">— Sin clasificar —</option>
+            <option value="">{t("masterdata.bp.detail.sri.unclassified", "— Sin clasificar —")}</option>
             {supplierTypeOptions.map((o) => (
               <option key={o.code} value={o.code}>
                 {o.name}
@@ -176,15 +177,15 @@ export function SupplierSriConfigForm({
           </ZhSelect>
         </ZHField>
         <ZHToggle
-          label="Exento de retención"
-          description="RISE / Microempresa / Sector publico"
+          label={t("masterdata.bp.detail.sri.retentionExempt", "Exento de retención")}
+          description={t("masterdata.bp.detail.sri.retentionExemptHint", "RISE / Microempresa / Sector publico")}
           value={isRetentionExempt}
           onChange={setIsRetentionExempt}
           disabled={busy}
         />
         <ZHToggle
-          label="Obligado a llevar contabilidad"
-          description="Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones."
+          label={t("masterdata.bp.detail.sri.keepAccounting", "Obligado a llevar contabilidad")}
+          description={t("masterdata.bp.detail.sri.keepAccountingHint", "Dato tributario del proveedor. Por ahora se usa como información para evaluación de retenciones.")}
           value={isRequiredToKeepAccounting}
           onChange={setIsRequiredToKeepAccounting}
           disabled={busy}
@@ -197,8 +198,7 @@ export function SupplierSriConfigForm({
           saveButtonType="submit"
           disableSave={saving}
           labels={{
-            cancel: "Cerrar",
-            save: saving ? "Guardando..." : "Guardar",
+            save: saving ? t("masterdata.bp.detail.saving", "Guardando...") : t("masterdata.bp.detail.save", "Guardar"),
           }}
         />
       )}

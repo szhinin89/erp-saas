@@ -456,6 +456,11 @@ export function ZHToggle(props: {
 }) {
   const { label, description, value, onChange, disabled } = props;
   const [pressed, setPressed] = useState(false);
+  // El interruptor se nombra y describe con el texto contiguo (antes eran hermanos sin relación y el
+  // `role="switch"` quedaba sin nombre accesible).
+  const baseId = useId();
+  const labelId = `${baseId}-label`;
+  const descId = `${baseId}-desc`;
 
   const toggle = () => {
     if (disabled) return;
@@ -467,8 +472,8 @@ export function ZHToggle(props: {
   return (
     <div className="zh-toggle">
       <div className="zh-toggle-text">
-        <div className="zh-toggle-label">{label}</div>
-        <div className="zh-toggle-desc">{description}</div>
+        <div className="zh-toggle-label" id={labelId}>{label}</div>
+        <div className="zh-toggle-desc" id={descId}>{description}</div>
       </div>
       <button
         type="button"
@@ -476,6 +481,8 @@ export function ZHToggle(props: {
         role="switch"
         aria-checked={value}
         aria-disabled={disabled}
+        aria-labelledby={labelId}
+        aria-describedby={descId}
         onClick={toggle}
       >
         <span className="zh-toggle-thumb" />

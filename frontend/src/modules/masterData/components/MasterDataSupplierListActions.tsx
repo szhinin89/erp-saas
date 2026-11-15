@@ -17,7 +17,7 @@ type Props = {
 };
 
 /**
- * Supplier row: «Gestionar» opens the unified record (/masterdata/business-partners/:id), where edit,
+ * Supplier row: «Gestionar» opens the unified record (/masterdata/business-partners/:id, remembering this listing as the return path), where edit,
  * SRI configuration, locations, contacts and roles live. Only status and cross-role actions stay here;
  * confirmations remain in the page handlers. Without secondary items there is no menu.
  */
@@ -40,7 +40,7 @@ export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisabl
   return (
     <div className="md-supplier-actions">
       <ZHBtn variant="ghost" size="sm" aria-label={`${label("manage")}: ${identity}`}
-        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>{label("manage")}</ZHBtn>
+        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`, { state: { from: "/suppliers" } })}>{label("manage")}</ZHBtn>
       {items.length > 0 && (
         <ZHLineAction kind="menu" icon={"⋯"} label={label("more")}
           ariaLabel={`${label("more")}: ${identity}`} menuLabel={`${label("more")}: ${identity}`}

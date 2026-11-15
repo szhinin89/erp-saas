@@ -324,7 +324,7 @@ export function MasterDataPartnerWizard({
       <FormProvider {...form}>
         <form
           id={modalFormId}
-          aria-label={`Datos del ${roleLabelLower}`}
+          aria-label={t(role === "customer" ? "masterdata.bp.detail.id.formLabel.customer" : "masterdata.bp.detail.id.formLabel.supplier", `Datos del ${roleLabelLower}`)}
           aria-busy={submitting}
           onSubmit={form.handleSubmit(onValidSubmit)}
         >

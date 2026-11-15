@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { I18nProvider } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { paymentTermService } from "../api/paymentTermService";
 import { SupplierPurchaseDefaultSection } from "./SupplierPurchaseDefaultSection";
@@ -36,7 +37,11 @@ describe("SupplierPurchaseDefaultSection", () => {
   afterEach(cleanup);
 
   it("guarda solo la condición de compras/gastos, de forma independiente", async () => {
-    render(<SupplierPurchaseDefaultSection bpId="bp1" />);
+    render(
+      <I18nProvider>
+        <SupplierPurchaseDefaultSection bpId="bp1" />
+      </I18nProvider>,
+    );
     await screen.findByText(/30D — 30 días/);
     fireEvent.change(screen.getByRole("combobox"), {
       target: { value: "pt1" },
@@ -59,7 +64,11 @@ describe("SupplierPurchaseDefaultSection", () => {
     vi.mocked(businessPartnerFacade.getPurchaseSettings).mockRejectedValue(
       new Error("boom"),
     );
-    render(<SupplierPurchaseDefaultSection bpId="bp1" />);
+    render(
+      <I18nProvider>
+        <SupplierPurchaseDefaultSection bpId="bp1" />
+      </I18nProvider>,
+    );
     expect(
       await screen.findByText(/No se pudo cargar la condición|boom/),
     ).toBeTruthy();

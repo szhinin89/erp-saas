@@ -4,6 +4,7 @@ import { ZHBtn, ZHField, ZHGrid, ZHToggle } from "../../../components/zh/ZHForm"
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { formatApiRequestError } from "../../lib/apiError";
+import { useI18n } from "../../../i18n/i18n";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
 import { useSriRetentionCodes } from "../api/useSriRetentionCodes";
 import type { SupplierRetentionDefaultDto } from "../types/businessPartner.types";
@@ -25,6 +26,7 @@ export function SupplierRetentionDefaultsSection({
   readOnly?: boolean;
 }) {
   const disabled = disabledProp || readOnly;
+  const { t } = useI18n();
   const [rows, setRows] = useState<SupplierRetentionDefaultDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +50,12 @@ export function SupplierRetentionDefaultsSection({
       .catch((err: unknown) =>
         setError(
           formatApiRequestError(err, {
-            generic: "No se pudieron cargar las retenciones predeterminadas.",
+            generic: t("masterdata.bp.detail.ret.loadError", "No se pudieron cargar las retenciones predeterminadas."),
           }),
         ),
       )
       .finally(() => setLoading(false));
-  }, [bpId]);
+  }, [bpId, t]);
 
   useEffect(() => {
     load();
@@ -78,7 +80,7 @@ export function SupplierRetentionDefaultsSection({
     } catch (err) {
       setError(
         formatApiRequestError(err, {
-          generic: "No se pudo agregar la retención predeterminada.",
+          generic: t("masterdata.bp.detail.ret.addError", "No se pudo agregar la retención predeterminada."),
         }),
       );
     } finally {
@@ -102,7 +104,7 @@ export function SupplierRetentionDefaultsSection({
     } catch (err) {
       setError(
         formatApiRequestError(err, {
-          generic: "No se pudo actualizar la retención predeterminada.",
+          generic: t("masterdata.bp.detail.ret.updateError", "No se pudo actualizar la retención predeterminada."),
         }),
       );
     } finally {
@@ -139,7 +141,7 @@ export function SupplierRetentionDefaultsSection({
     } catch (err) {
       setError(
         formatApiRequestError(err, {
-          generic: "No se pudo reordenar la retención predeterminada.",
+          generic: t("masterdata.bp.detail.ret.reorderError", "No se pudo reordenar la retención predeterminada."),
         }),
       );
     } finally {
@@ -149,20 +151,17 @@ export function SupplierRetentionDefaultsSection({
 
   return (
     <div className="md-supplier-purchase-default-section">
-      <h4>Retenciones predeterminadas</h4>
+      <h4>{t("masterdata.bp.detail.ret.title", "Retenciones predeterminadas")}</h4>
       <p className="md-supplier-section-hint">
-        Se proponen automáticamente al calcular retenciones en Compras/Gastos
-        para este proveedor en la empresa activa. El usuario puede
-        modificarlas antes de confirmar. La retención final emitida se guarda
-        siempre en el documento de retención, nunca aquí.
+        {t("masterdata.bp.detail.ret.hint", "Se proponen automáticamente al calcular retenciones en Compras/Gastos para este proveedor en la empresa activa. El usuario puede modificarlas antes de confirmar. La retención final emitida se guarda siempre en el documento de retención, nunca aquí.")}
       </p>
       {error && <ZHPageNotice variant="error" message={error} />}
 
       {loading ? (
-        <p className="md-supplier-section-hint">Cargando…</p>
+        <p className="md-supplier-section-hint">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</p>
       ) : sortedRows.length === 0 ? (
         <p className="md-supplier-section-hint">
-          Sin retenciones predeterminadas configuradas para esta empresa.
+          {t("masterdata.bp.detail.ret.empty", "Sin retenciones predeterminadas configuradas para esta empresa.")}
         </p>
       ) : (
         <ul className="md-supplier-retention-list">
@@ -177,22 +176,22 @@ export function SupplierRetentionDefaultsSection({
               </span>
               {!row.isCatalogCodeActive && (
                 <span className="md-supplier-retention-row__warning">
-                  Código inactivo en catálogo
+                  {t("masterdata.bp.detail.ret.inactiveCode", "Código inactivo en catálogo")}
                 </span>
               )}
               <div className="md-supplier-retention-row__actions">
                 <ZHIconButton
                   icon="arrow_upward"
-                  title="Subir"
-                  ariaLabel={`Subir prioridad de ${row.code}`}
+                  title={t("masterdata.bp.detail.ret.up", "Subir")}
+                  ariaLabel={t("masterdata.bp.detail.ret.upAria", { code: row.code })}
                   variant="ghost"
                   disabled={disabled || busyId === row.id || index === 0}
                   onClick={() => void handleMove(row, -1)}
                 />
                 <ZHIconButton
                   icon="arrow_downward"
-                  title="Bajar"
-                  ariaLabel={`Bajar prioridad de ${row.code}`}
+                  title={t("masterdata.bp.detail.ret.down", "Bajar")}
+                  ariaLabel={t("masterdata.bp.detail.ret.downAria", { code: row.code })}
                   variant="ghost"
                   disabled={
                     disabled ||
@@ -202,8 +201,8 @@ export function SupplierRetentionDefaultsSection({
                   onClick={() => void handleMove(row, 1)}
                 />
                 <ZHToggle
-                  label={row.isActive ? "Activa" : "Inactiva"}
-                  description="Se propone automáticamente al calcular retenciones si está activa"
+                  label={row.isActive ? t("masterdata.bp.detail.ret.active", "Activa") : t("masterdata.bp.detail.ret.inactive", "Inactiva")}
+                  description={t("masterdata.bp.detail.ret.toggleHint", "Se propone automáticamente al calcular retenciones si está activa")}
                   value={row.isActive}
                   onChange={(next) => void handleToggleActive(row, next)}
                   disabled={disabled || busyId === row.id}
@@ -216,7 +215,7 @@ export function SupplierRetentionDefaultsSection({
 
       {!readOnly && (
         <ZHGrid cols={3}>
-          <ZHField label="Tipo de impuesto">
+          <ZHField label={t("masterdata.bp.detail.ret.taxType", "Tipo de impuesto")}>
             <ZhSelect
               value={newTaxType}
               onChange={(e) => {
@@ -225,19 +224,19 @@ export function SupplierRetentionDefaultsSection({
               }}
               disabled={disabled || adding}
             >
-              <option value="IVA">IVA</option>
-              <option value="RENTA">Renta</option>
+              <option value="IVA">{t("masterdata.bp.detail.ret.vat", "IVA")}</option>
+              <option value="RENTA">{t("masterdata.bp.detail.ret.income", "Renta")}</option>
             </ZhSelect>
           </ZHField>
-          <ZHField label="Código de retención SRI">
+          <ZHField label={t("masterdata.bp.detail.ret.code", "Código de retención SRI")}>
             <ZhSelect
               value={newCodeId}
               onChange={(e) => setNewCodeId(e.target.value)}
               disabled={disabled || adding || loadingCatalog}
             >
-              <option value="">— Seleccione —</option>
+              <option value="">{t("masterdata.bp.detail.ret.choose", "— Seleccione —")}</option>
               {loadingCatalog ? (
-                <option value="">Cargando…</option>
+                <option value="">{t("masterdata.bp.detail.loadingShort", "Cargando…")}</option>
               ) : (
                 availableCodes.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -255,7 +254,7 @@ export function SupplierRetentionDefaultsSection({
               disabled={disabled || adding || !newCodeId}
               onClick={() => void handleAdd()}
             >
-              {adding ? "Agregando..." : "Agregar retención"}
+              {adding ? t("masterdata.bp.detail.ret.adding", "Agregando...") : t("masterdata.bp.detail.ret.add", "Agregar retención")}
             </ZHBtn>
           </div>
         </ZHGrid>

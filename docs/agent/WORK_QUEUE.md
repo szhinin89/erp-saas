@@ -23,10 +23,11 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01 (Etapas 1–2 publicadas: `e0f1d338c`, `9761470e8`; CI #1202 SUCCESS, gate del
-  propietario pendiente; Etapa 3 —listados con «Gestionar» y retiro de modales/acciones redundantes—
-  IMPLEMENTADA local, pendiente gate del propietario, sin commit ni push). Evidencia en
-  [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01 (Etapas 1–3 publicadas: `e0f1d338c`, `9761470e8`, `ad6154970`; CI #1202 y #1203
+  SUCCESS, gate del propietario pendiente; Etapa 4 —accesibilidad, navegación, responsive e i18n de la
+  ficha, con correcciones en `ZHToggle` y `ZHConfirmModal` del DS— IMPLEMENTADA local, pendiente gate del
+  propietario, sin commit ni push). Pendiente de decisión: flechas entre pestañas en `ZHTabBar`, medición de
+  contraste con una herramienta aprobada, y a11y de `ZHPromptModal`. Evidencia en [STATUS](../../STATUS.md).
 - CI-1201 (PENDING; causa raíz por determinar): run #1201 sobre `e0f1d338c` falló en `backend / Backend (api)`
   por una prueba de integración de Ventas,
   `SalesCancelCollectionConcurrencyTests.Cancel_y_devolucion_con_credito_a_CxC_simultaneas_no_se_bloquean_y_quedan_consistentes`
