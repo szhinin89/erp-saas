@@ -9,7 +9,7 @@ import { geographyLookupFacade } from "../../branches/facades/geographyLookupFac
 import { PHYSICAL_ADDRESS_GEO_COUNTRY_ID } from "../constants/physicalAddressGeography";
 
 /**
- * CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04 — cubre "Revocar rol", "Activar/desactivar
+ * CRITICAL-CONFIRMATIONS-BUSINESS-PARTNERS-04 — cubre "Activar/desactivar
  * ubicación o contacto" y "Marcar ubicación/contacto como principal".
  */
 
@@ -147,49 +147,6 @@ beforeEach(() => {
 
 afterEach(() => cleanup());
 
-describe("MasterDataBusinessPartnerDetailPage — revocar rol", () => {
-  async function goToRolesTab() {
-    renderPage();
-    await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("tab", { name: /^Roles/ }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Revocar" })).toBeTruthy());
-  }
-
-  it("pide confirmación explicando que el BP no se elimina, solo deja de operar bajo el rol", async () => {
-    vi.mocked(businessPartnerFacade.revokeRole).mockResolvedValue(true);
-    await goToRolesTab();
-
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
-
-    await waitFor(() => {
-      expect(message.confirm).toHaveBeenCalledTimes(1);
-      expect(businessPartnerFacade.revokeRole).toHaveBeenCalledWith("bp-1", "role-1");
-    });
-    const options = vi.mocked(message.confirm).mock.calls[0][0];
-    expect(String(options.message)).toMatch(/dejará de operar bajo el rol/i);
-    expect(String(options.message)).toMatch(/no se elimina/i);
-  });
-
-  it("si se cancela, no llama al backend", async () => {
-    vi.mocked(message.confirm).mockResolvedValue(false);
-    await goToRolesTab();
-
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
-
-    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
-    expect(businessPartnerFacade.revokeRole).not.toHaveBeenCalled();
-  });
-
-  it("éxito muestra message.success; fallo muestra el error real", async () => {
-    vi.mocked(businessPartnerFacade.revokeRole).mockResolvedValue(true);
-    await goToRolesTab();
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
-    await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith('Rol "Cliente" revocado correctamente.'),
-    );
-  });
-});
-
 describe("MasterDataBusinessPartnerDetailPage — activar/desactivar ubicación", () => {
   async function goToLocationsTab() {
     renderPage();
@@ -297,14 +254,14 @@ describe("MasterDataBusinessPartnerDetailPage — sin diálogos nativos", () => 
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("");
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    vi.mocked(businessPartnerFacade.revokeRole).mockResolvedValue(true);
+    vi.mocked(message.confirm).mockResolvedValue(false);
 
     renderPage();
     await waitFor(() => expect(screen.getAllByText("Cliente Uno")[0]).toBeTruthy());
-    fireEvent.click(screen.getByRole("tab", { name: /^Roles/ }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Revocar" })).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Revocar" }));
-    await waitFor(() => expect(businessPartnerFacade.revokeRole).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("tab", { name: /^Ubicaciones/ }));
+    await waitFor(() => expect(screen.getByText("Matriz Quito")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
 
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(promptSpy).not.toHaveBeenCalled();

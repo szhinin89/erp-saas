@@ -7,7 +7,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataCustomerListActions } from "./MasterDataCustomerListActions";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
-/** BP-CONSOLIDATION-01 Etapa 3 — «Gestionar» abre la ficha unificada; Editar, Empresa y Clasificación
+/** BP-CONSOLIDATION-01 Etapa 3 — «Administrar cliente» abre la ficha unificada; Editar, Empresa y Clasificación
  * viven allí. En «Más acciones» solo quedan Agregar como proveedor y Activar/Desactivar con las
  * condiciones previas. */
 const partner = {id: "customer-7", legalName: "Cliente Siete", identificationNumber: "0990000007001",
@@ -26,17 +26,16 @@ const callbacks = ["onAddAsSupplier", "onActivate", "onDisable"] as const;
 afterEach(cleanup);
 
 describe("customer row actions — visible actions", () => {
-  it("shows Gestionar and More with customer-specific accessible names; Gestionar opens the unified record", () => {
+  it("shows Administrar cliente and More with customer-specific accessible names; Administrar cliente opens the unified record", () => {
     setup();
     expect(screen.queryByRole("menu")).toBeNull();
     expect(screen.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
-      "Gestionar: Cliente Siete (0990000007001)",
+      "Administrar cliente: Cliente Siete (0990000007001)",
       "Más acciones: Cliente Siete (0990000007001)", null]);
     expect(screen.queryByRole("button", {name: /^Ver:|^Editar:/})).toBeNull();
-    fireEvent.click(screen.getByRole("button", {name: /^Gestionar: Cliente Siete/}));
-    expect(screen.getByText("/masterdata/business-partners/customer-7")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", {name: /^Administrar cliente: Cliente Siete/}));
+    expect(screen.getByText("/customers/customer-7")).toBeTruthy();
     // El listado de origen queda como destino de «Volver» en la ficha.
-    expect(screen.getByTestId("state").textContent).toBe('{"from":"/customers"}');
   });
 });
 
@@ -60,9 +59,9 @@ describe("customer row actions — menu content and permissions", () => {
     for (const other of callbacks.filter((c) => c !== callback)) expect(props[other]).not.toHaveBeenCalled();
     expect(screen.queryByRole("menu")).toBeNull();
   });
-  it("no permissions: only Gestionar, no menu, no callback reachable", () => {
+  it("no permissions: only Administrar cliente, no menu, no callback reachable", () => {
     const {props} = setup({canUpdate: false, canDisable: false});
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Gestionar", "Outside"]);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Administrar cliente", "Outside"]);
     for (const c of callbacks) expect(props[c]).not.toHaveBeenCalled();
   });
   it("update without secondary actions on an active customer and no disable: menu omitted", () => {
@@ -102,7 +101,7 @@ describe("customer row actions — menu content and permissions", () => {
     expect(assign.disabled).toBe(true); expect(deactivate.disabled).toBe(true);
     fireEvent.click(assign); fireEvent.click(deactivate);
     expect(props.onAddAsSupplier).not.toHaveBeenCalled(); expect(props.onDisable).not.toHaveBeenCalled();
-    expect((screen.getByRole("button", {name: /^Gestionar:/}) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", {name: /^Administrar cliente:/}) as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
@@ -170,5 +169,22 @@ describe("customer row actions — keyboard and focus", () => {
     fireEvent.click(await screen.findByRole("button", {name: "Cerrar modal"}));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(screen.getByRole("textbox", {name: "Buscar"}));
+  });
+});
+
+describe("customer row actions — revoke role (replaces the removed Roles tab)", () => {
+  it("offers revoke only with disable permission, an active partner and a callback", () => {
+    const onRevokeRole = vi.fn();
+    const {open, itemNames} = setup({onRevokeRole}); open();
+    expect(itemNames()).toContain("Revocar rol de cliente");
+    fireEvent.click(screen.getByRole("menuitem", {name: "Revocar rol de cliente"}));
+    expect(onRevokeRole).toHaveBeenCalledExactlyOnceWith("customer-7");
+  });
+  it("hides it without disable permission or without callback", () => {
+    const first = setup({canDisable: false, onRevokeRole: vi.fn()}); first.open();
+    expect(first.itemNames()).not.toContain("Revocar rol de cliente");
+    cleanup();
+    const second = setup(); second.open();
+    expect(second.itemNames()).not.toContain("Revocar rol de cliente");
   });
 });

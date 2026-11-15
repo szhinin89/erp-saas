@@ -155,7 +155,7 @@ describe("customer assign-as-supplier availability", () => {
     const { onDisable } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isSupplier: true, canAssignAsSupplier: false });
     openMenu();
     expect(assignItem()).toBeNull();
-    expect(screen.getByRole("button", { name: /^Gestionar: Cliente/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Administrar cliente: Cliente/ })).toBeTruthy();
     fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar cliente" }));
     expect(onDisable).toHaveBeenCalledExactlyOnceWith("1");
   });

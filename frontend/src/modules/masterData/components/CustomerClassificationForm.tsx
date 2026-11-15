@@ -34,7 +34,7 @@ function PersistedValueOption({
 
 /**
  * Formulario de clasificación comercial del cliente (CRM), usado en la pestaña Cliente de la ficha
- * unificada (`/masterdata/business-partners/:id`). El PATCH del rol reemplaza la configuración completa:
+ * de cliente (`/customers/:id`). El PATCH del rol reemplaza la configuración completa:
  * parte siempre de la persistida y no guarda mientras los catálogos cargan o fallan.
  */
 export function CustomerClassificationForm({

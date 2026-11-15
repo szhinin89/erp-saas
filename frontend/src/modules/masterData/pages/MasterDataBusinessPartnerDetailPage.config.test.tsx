@@ -85,6 +85,7 @@ vi.mock("../../../lib/messages", () => ({
 }));
 
 const renderPage = (search: string) => renderBpDetail(search);
+const openTab = (name: string) => fireEvent.click(screen.getByRole("tab", { name: new RegExp(`^${name}`) }));
 
 function allow(perms: string[]) {
   vi.mocked(usePermissionsUi).mockReturnValue(
@@ -140,9 +141,9 @@ describe("ficha unificada — Datos generales (wizard embebido)", () => {
     expect(vi.mocked(businessPartnerFacade.getBusinessPartner).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("un socio con rol Proveedor se edita sin exigir «Tipo de Proveedor» (es de la pestaña Proveedor)", async () => {
+  it("un socio con rol Proveedor se edita sin exigir «Tipo de Proveedor» (es de la configuración SRI)", async () => {
     vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
-    renderPage("?tab=general");
+    renderBpDetail("?tab=general", { context: "supplier" });
     fireEvent.change(await screen.findByLabelText(/Razón social/), { target: { value: "Proveedor Dos" } });
     expect(screen.queryByLabelText(/Tipo de Proveedor/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
@@ -164,9 +165,9 @@ describe("ficha unificada — Datos generales (wizard embebido)", () => {
   });
 });
 
-describe("ficha unificada — pestaña Cliente", () => {
+describe("ficha de cliente — pestañas Clasificación y Condiciones de ventas", () => {
   it("guarda la clasificación con el PATCH del rol y la condición de ventas por separado", async () => {
-    renderPage("?tab=customer");
+    renderPage("?tab=classification");
     const classification = await screen.findByRole("heading", { name: "Clasificación comercial" });
     expect((await within(classification.parentElement!).findByLabelText("Zona de ventas") as HTMLInputElement).value).toBe("Sur");
 
@@ -183,6 +184,7 @@ describe("ficha unificada — pestaña Cliente", () => {
     );
     expect(businessPartnerFacade.upsertSalesSettings).not.toHaveBeenCalled();
 
+    openTab("Condiciones de ventas");
     const sales = sectionOf("Condición predeterminada para ventas");
     await waitFor(() =>
       expect(within(sales).getByLabelText("Condición predeterminada para ventas")).toBeTruthy(),
@@ -201,9 +203,10 @@ describe("ficha unificada — pestaña Cliente", () => {
 
   it("con update pero sin configure-company la clasificación se edita y la condición de ventas queda en solo lectura", async () => {
     allow([PERM.view, PERM.update]);
-    renderPage("?tab=customer");
+    renderPage("?tab=classification");
     const classification = await screen.findByRole("heading", { name: "Clasificación comercial" });
     expect(within(classification.parentElement!).getByRole("button", { name: "Guardar" })).toBeTruthy();
+    openTab("Condiciones de ventas");
     const sales = sectionOf("Condición predeterminada para ventas");
     await waitFor(() =>
       expect((within(sales).getByLabelText("Condición predeterminada para ventas") as HTMLSelectElement).disabled).toBe(true),
@@ -212,13 +215,13 @@ describe("ficha unificada — pestaña Cliente", () => {
   });
 });
 
-describe("ficha unificada — pestaña Proveedor", () => {
+describe("ficha de proveedor — pestañas de configuración", () => {
   beforeEach(() => {
     vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
   });
 
   it("guarda la configuración SRI con el PATCH del rol y no toca la condición de compras", async () => {
-    renderPage("?tab=supplier");
+    renderPage("?tab=sri");
     const sri = await screen.findByRole("heading", { name: "Configuración SRI" });
     fireEvent.change(within(sri.parentElement!).getByLabelText("Tipo de Proveedor"), { target: { value: "01" } });
     fireEvent.click(within(sri.parentElement!).getByRole("button", { name: "Guardar" }));
@@ -233,7 +236,7 @@ describe("ficha unificada — pestaña Proveedor", () => {
   });
 
   it("guarda la condición de compras de forma independiente", async () => {
-    renderPage("?tab=supplier");
+    renderPage("?tab=purchases");
     const purchase = await screen.findByRole("heading", { name: "Condición predeterminada para compras/gastos" });
     const select = within(purchase.parentElement!).getByLabelText(/Condición predeterminada para compras/);
     await waitFor(() => expect(within(select).getByRole("option", { name: /CONT/ })).toBeTruthy());
@@ -247,12 +250,14 @@ describe("ficha unificada — pestaña Proveedor", () => {
 
   it("con update pero sin configure-company: SRI editable; compras y retenciones en solo lectura", async () => {
     allow([PERM.view, PERM.update]);
-    renderPage("?tab=supplier");
+    renderPage("?tab=sri");
     const sri = await screen.findByRole("heading", { name: "Configuración SRI" });
     expect(within(sri.parentElement!).getByRole("button", { name: "Guardar" })).toBeTruthy();
+    openTab("Compras");
     const purchase = screen.getByRole("heading", { name: "Condición predeterminada para compras/gastos" }).parentElement!;
     expect((within(purchase).getByLabelText(/Condición predeterminada para compras/) as HTMLSelectElement).disabled).toBe(true);
     expect(within(purchase).queryByRole("button", { name: /Guardar condición/ })).toBeNull();
+    openTab("Retenciones");
     expect(screen.queryByRole("button", { name: "Agregar retención" })).toBeNull();
   });
 
@@ -271,7 +276,7 @@ describe("ficha unificada — pestaña Proveedor", () => {
   it("subcategorías de gasto: sin configure-company (aunque tenga update) no hay vía de modificación", async () => {
     allow([PERM.view, PERM.update]);
     vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(SUBCATEGORIES as never);
-    renderPage("?tab=supplier");
+    renderPage("?tab=expenseSubcategories");
     expect(await screen.findByText(/Operativo › Servicios › AGUA — Agua/)).toBeTruthy();
     expect(screen.queryByRole("checkbox")).toBeNull();
     expect(screen.queryByRole("button", { name: "Guardar subcategorías" })).toBeNull();
@@ -283,7 +288,7 @@ describe("ficha unificada — pestaña Proveedor", () => {
     allow([PERM.view, PERM.configure]);
     vi.mocked(businessPartnerFacade.getExpenseSubcategories).mockResolvedValue(SUBCATEGORIES as never);
     vi.mocked(businessPartnerFacade.setExpenseSubcategories).mockResolvedValue({ ...SUBCATEGORIES, catalog: null } as never);
-    renderPage("?tab=supplier");
+    renderPage("?tab=expenseSubcategories");
     fireEvent.click(await screen.findByLabelText("LUZ — Luz"));
     fireEvent.click(screen.getByRole("button", { name: "Guardar subcategorías" }));
     await waitFor(() =>
@@ -296,11 +301,59 @@ describe("ficha unificada — pestaña Proveedor", () => {
 
   it("con configure-company pero sin update: SRI en solo lectura; compras editable", async () => {
     allow([PERM.view, PERM.configure]);
-    renderPage("?tab=supplier");
+    renderPage("?tab=sri");
     const sri = await screen.findByRole("heading", { name: "Configuración SRI" });
     expect(within(sri.parentElement!).queryByRole("button", { name: "Guardar" })).toBeNull();
     expect((within(sri.parentElement!).getByLabelText("Tipo de Proveedor") as HTMLSelectElement).disabled).toBe(true);
+    openTab("Compras");
     expect(screen.getByRole("button", { name: "Guardar condición de compras/gastos" })).toBeTruthy();
+    openTab("Retenciones");
     expect(screen.getByRole("button", { name: "Agregar retención" })).toBeTruthy();
+  });
+});
+
+describe("RUC compartido: Cliente y Proveedor sobre el mismo Business Partner no mezclan configuraciones (API simulada)", () => {
+  beforeEach(() => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    vi.mocked(businessPartnerFacade.updateCustomerConfig).mockResolvedValue(undefined as never);
+    vi.mocked(businessPartnerFacade.updateSupplierConfig).mockResolvedValue(undefined as never);
+  });
+
+  it("en la ficha de cliente, guardar la clasificación usa solo el rol Cliente", async () => {
+    renderBpDetail("?tab=classification", { context: "customer" });
+    const classification = await screen.findByRole("heading", { name: "Clasificación comercial" });
+    fireEvent.change(within(classification.parentElement!).getByLabelText("Zona de ventas"), { target: { value: "Norte" } });
+    fireEvent.click(within(classification.parentElement!).getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(businessPartnerFacade.updateCustomerConfig).toHaveBeenCalledWith("bp-1", "role-c", expect.objectContaining({ salesZone: "Norte" })),
+    );
+    expect(businessPartnerFacade.updateSupplierConfig).not.toHaveBeenCalled();
+    expect(businessPartnerFacade.upsertPurchaseSettings).not.toHaveBeenCalled();
+  });
+
+  it("en la ficha de proveedor, guardar SRI usa solo el rol Proveedor", async () => {
+    renderBpDetail("?tab=sri", { context: "supplier" });
+    const sri = await screen.findByRole("heading", { name: "Configuración SRI" });
+    fireEvent.change(within(sri.parentElement!).getByLabelText("Tipo de Proveedor"), { target: { value: "01" } });
+    fireEvent.click(within(sri.parentElement!).getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(businessPartnerFacade.updateSupplierConfig).toHaveBeenCalledWith("bp-1", "role-s", expect.objectContaining({ refundProviderTypeCode: "01" })),
+    );
+    expect(businessPartnerFacade.updateCustomerConfig).not.toHaveBeenCalled();
+    expect(businessPartnerFacade.upsertSalesSettings).not.toHaveBeenCalled();
+  });
+
+  it("la ficha de cliente no consulta configuraciones de proveedor ni la de proveedor las de cliente", async () => {
+    renderBpDetail("?tab=sales", { context: "customer" });
+    await screen.findByRole("heading", { name: "Condición predeterminada para ventas" });
+    expect(businessPartnerFacade.getPurchaseSettings).not.toHaveBeenCalled();
+    expect(businessPartnerFacade.getRetentionDefaults).not.toHaveBeenCalled();
+    expect(businessPartnerFacade.getExpenseSubcategories).not.toHaveBeenCalled();
+    cleanup();
+    vi.clearAllMocks();
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    renderBpDetail("?tab=purchases", { context: "supplier" });
+    await screen.findByRole("heading", { name: "Condición predeterminada para compras/gastos" });
+    expect(businessPartnerFacade.getSalesSettings).not.toHaveBeenCalled();
   });
 });

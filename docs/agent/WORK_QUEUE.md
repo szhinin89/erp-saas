@@ -23,11 +23,17 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01 (Etapas 1–3 publicadas: `e0f1d338c`, `9761470e8`, `ad6154970`; CI #1202 y #1203
-  SUCCESS, gate del propietario pendiente; Etapa 4 —accesibilidad, navegación, responsive e i18n de la
-  ficha, con correcciones en `ZHToggle` y `ZHConfirmModal` del DS— IMPLEMENTADA local, pendiente gate del
-  propietario, sin commit ni push). Pendiente de decisión: flechas entre pestañas en `ZHTabBar`, medición de
-  contraste con una herramienta aprobada, y a11y de `ZHPromptModal`. Evidencia en [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01 (Etapas 1–4 publicadas: `e0f1d338c`, `9761470e8`, `ad6154970`, `8d0298a8a`; CI #1202,
+  #1203 y #1204 SUCCESS; #1201 es CI-1201, ajeno): corrección UX local (fichas separadas `/suppliers/:id` y
+  `/customers/:id`, códigos con descripción, enlace de Recepción de Compras, alineación de listados), sin
+  push; **integración con backend real SIN VERIFICAR** (API de desarrollo sin sesión autorizada: todo se
+  comprobó con mocks y con navegador con API simulada). Etapa 5 no iniciada; no se declara CLOSED. Matriz de cierre y verificaciones en
+  [STATUS](../../STATUS.md).
+- BP-CONSOLIDATION-01-DEBT (deuda técnica independiente; **no bloquea la ficha**; sin autorización de
+  implementación): flechas/*roving tabindex* en `ZHTabBar`; auditoría de contraste y axe-core con herramienta
+  aprobada; accesibilidad de `ZHPromptModal`; rama `section="review"` de `MasterDataBpFormFields` y rama de
+  edición no embebida del wizard; y las limitaciones de BP-NAV-GUARD-01 (overlay de bloqueo, shell AdminCore,
+  confirmación abierta al terminar la sesión).
 - CI-1201 (PENDING; causa raíz por determinar): run #1201 sobre `e0f1d338c` falló en `backend / Backend (api)`
   por una prueba de integración de Ventas,
   `SalesCancelCollectionConcurrencyTests.Cancel_y_devolucion_con_credito_a_CxC_simultaneas_no_se_bloquean_y_quedan_consistentes`

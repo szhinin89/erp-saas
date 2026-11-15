@@ -14,13 +14,17 @@ import { SupplierRetentionDefaultsSection } from "./SupplierRetentionDefaultsSec
 import { SupplierExpenseSubcategoriesSection } from "./SupplierExpenseSubcategoriesSection";
 
 /**
- * Pestaña «Proveedor» (solo con rol Supplier activo): compone los mismos componentes que el modal
- * de configuración del listado, cada uno con su guardado independiente. Permisos reales:
+ * Pestañas de configuración de la ficha de Proveedor (`part`: SRI, compras, retenciones o subcategorías
+ * de gasto; solo con rol Supplier activo): cada pestaña monta su componente con guardado independiente.
+ * Permisos reales:
  * `businesspartners.update` → configuración SRI; `…configure-company` → condición de compras y
  * retenciones predeterminadas (las subcategorías de gasto aplican su propia lectura/edición).
  * Sin permiso la sección se muestra en solo lectura.
  */
+export type BpSupplierPart = "sri" | "purchases" | "retentions" | "expenseSubcategories";
+
 export function BpSupplierSection({
+  part,
   bpId,
   role,
   canUpdate,
@@ -28,6 +32,7 @@ export function BpSupplierSection({
   onReload,
   onDirtyChange,
 }: {
+  part: BpSupplierPart;
   bpId: string;
   role: BusinessPartnerRoleDto;
   canUpdate: boolean;
@@ -60,18 +65,21 @@ export function BpSupplierSection({
     }
   };
 
+  const readOnlyPart =
+    part === "sri" ? !canUpdate : part === "expenseSubcategories" ? false : !canConfigure;
+
   return (
     <section className="md-detail-section">
-      {(!canUpdate || !canConfigure) && (
+      {readOnlyPart && (
         <ZHPageNotice
           variant="info"
           message={t(
             "masterdata.bp.detail.readOnly",
-            "Solo lectura: no tienes permiso para modificar algunas secciones.",
+            "Solo lectura: no tienes permiso para modificar esta sección.",
           )}
         />
       )}
-      <div className="md-bp-config-grid">
+      {part === "sri" && (
         <div className="md-bp-config-section">
           <h4>{t("masterdata.bp.detail.supplier.sri", "Configuración SRI")}</h4>
           {/* La clave remonta el formulario con la configuración persistida tras guardar (base limpia). */}
@@ -85,6 +93,8 @@ export function BpSupplierSection({
             onDirtyChange={(d) => onDirtyChange("supplier-sri", d)}
           />
         </div>
+      )}
+      {part === "purchases" && (
         <div className="md-bp-config-section">
           <SupplierPurchaseDefaultSection
             bpId={bpId}
@@ -92,17 +102,21 @@ export function BpSupplierSection({
             onDirtyChange={(d) => onDirtyChange("supplier-purchase", d)}
           />
         </div>
-      </div>
-      <div className="md-bp-config-section">
-        <SupplierRetentionDefaultsSection
-          bpId={bpId}
-          disabled={saving}
-          readOnly={!canConfigure}
-        />
-      </div>
-      <div className="md-bp-config-section">
-        <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
-      </div>
+      )}
+      {part === "retentions" && (
+        <div className="md-bp-config-section">
+          <SupplierRetentionDefaultsSection
+            bpId={bpId}
+            disabled={saving}
+            readOnly={!canConfigure}
+          />
+        </div>
+      )}
+      {part === "expenseSubcategories" && (
+        <div className="md-bp-config-section">
+          <SupplierExpenseSubcategoriesSection bpId={bpId} disabled={saving} />
+        </div>
+      )}
     </section>
   );
 }

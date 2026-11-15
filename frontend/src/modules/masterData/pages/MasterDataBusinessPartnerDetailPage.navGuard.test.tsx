@@ -135,7 +135,7 @@ describe("BP-NAV-GUARD-01 — navegación a otra ruta", () => {
     const options = vi.mocked(message.confirm).mock.calls[0][0];
     expect(String(options.title)).toBe("¿Descartar cambios?");
     expect(String(options.message)).toMatch(/cambios sin guardar/i);
-    expect(path()).toContain("/masterdata/business-partners/bp-1");
+    expect(path()).toMatch(/^\/(customers|suppliers)\/bp-1$/);
     expect((screen.getByLabelText(/Razón social/) as HTMLInputElement).value).toBe("Cliente Dos");
 
     await go(router, "/otra");
@@ -152,15 +152,15 @@ describe("BP-NAV-GUARD-01 — navegación a otra ruta", () => {
     await go(router, "/b");
     await waitFor(() => expect(message.confirm).toHaveBeenCalledTimes(1));
     await act(async () => answer(true));
-    await waitFor(() => expect(path()).not.toContain("business-partners"));
+    await waitFor(() => expect(path()).not.toContain("/customers/bp-1"));
     expect(message.confirm).toHaveBeenCalledTimes(1);
   });
 
   it("«Volver» con cambios pide una sola confirmación (la del bloqueador)", async () => {
-    await renderLoaded("?tab=general", { before: ["/anterior"], state: { from: "/suppliers" } });
+    await renderLoaded("?tab=general", { before: ["/anterior"] });
     await editIdentity();
     fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
-    await waitFor(() => expect(path()).toBe("/suppliers"));
+    await waitFor(() => expect(path()).toBe("/customers"));
     expect(message.confirm).toHaveBeenCalledTimes(1);
   });
 });
@@ -172,7 +172,7 @@ describe("BP-NAV-GUARD-01 — Atrás, Adelante y pestañas", () => {
     await editIdentity();
     await go(router, -1);
     await waitFor(() => expect(message.confirm).toHaveBeenCalledTimes(1));
-    expect(path()).toContain("business-partners");
+    expect(path()).toMatch(/^\/(customers|suppliers)\/bp-1$/);
     await go(router, -1);
     await waitFor(() => expect(path()).toBe("/anterior"));
   });
@@ -183,7 +183,7 @@ describe("BP-NAV-GUARD-01 — Atrás, Adelante y pestañas", () => {
     await editIdentity();
     await go(router, 1);
     await waitFor(() => expect(message.confirm).toHaveBeenCalledTimes(1));
-    expect(path()).toContain("business-partners");
+    expect(path()).toMatch(/^\/(customers|suppliers)\/bp-1$/);
   });
 
   it("cambiar de pestaña, ?tab= y Atrás entre pestañas nunca piden confirmación", async () => {
@@ -209,17 +209,17 @@ describe("BP-NAV-GUARD-01 — cada sección de la ficha protege sus cambios", ()
   };
   it.each([
     ["Datos generales", "?tab=general", async () => editIdentity()],
-    ["Clasificación del cliente", "?tab=customer", () => changeIn("Clasificación comercial", "Zona de ventas", "Norte")],
-    ["Condición de ventas", "?tab=customer", () => changeIn("Condición predeterminada para ventas", "Condición predeterminada para ventas", "pt1")],
-    ["Configuración SRI del proveedor", "?tab=supplier", () => changeIn("Configuración SRI", "Tipo de Proveedor", "01")],
-    ["Condición de compras", "?tab=supplier", () => changeIn("Condición predeterminada para compras/gastos", /Condición predeterminada para compras/, "pt1")],
+    ["Clasificación del cliente", "?tab=classification", () => changeIn("Clasificación comercial", "Zona de ventas", "Norte")],
+    ["Condición de ventas", "?tab=sales", () => changeIn("Condición predeterminada para ventas", "Condición predeterminada para ventas", "pt1")],
+    ["Configuración SRI del proveedor", "?tab=sri", () => changeIn("Configuración SRI", "Tipo de Proveedor", "01")],
+    ["Condición de compras", "?tab=purchases", () => changeIn("Condición predeterminada para compras/gastos", /Condición predeterminada para compras/, "pt1")],
   ])("%s: con cambios pendientes se pide confirmar al salir", async (_name, search, change) => {
     vi.mocked(message.confirm).mockResolvedValueOnce(false);
     const { router } = await renderLoaded(search);
     await change();
     await go(router, "/otra");
     await waitFor(() => expect(message.confirm).toHaveBeenCalledTimes(1));
-    expect(path()).toContain("business-partners");
+    expect(path()).toMatch(/^\/(customers|suppliers)\/bp-1$/);
   });
 
   it("tras guardar ya no hay cambios pendientes: navegar no pide confirmación", async () => {
@@ -267,7 +267,7 @@ describe("BP-NAV-GUARD-01 — cambio de empresa", () => {
   });
 
   it("las secciones por empresa se reinician con el cambio de contexto y su aviso no queda colgado", async () => {
-    const { router } = await renderLoaded("?tab=customer");
+    const { router } = await renderLoaded("?tab=classification");
     const section = await screen.findByRole("heading", { name: "Clasificación comercial" });
     fireEvent.change(within(section.parentElement!).getByLabelText("Zona de ventas"), { target: { value: "Norte" } });
     await bump();

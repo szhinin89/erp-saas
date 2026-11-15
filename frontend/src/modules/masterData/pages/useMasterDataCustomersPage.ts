@@ -18,7 +18,7 @@ function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefin
 
 /**
  * Listado de Clientes. La edición, la clasificación y la condición de ventas viven en la ficha
- * unificada (`/masterdata/business-partners/:id`); aquí solo quedan lista, alta, asignación de rol y
+ * por contexto (`/customers/:id`); aquí solo quedan lista, alta, asignación de rol y
  * activar/desactivar.
  */
 export function useMasterDataCustomersPage() {

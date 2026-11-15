@@ -18,7 +18,7 @@ function toIsActiveParam(status: BusinessPartnerStatusFilter): boolean | undefin
 
 /**
  * Listado de Proveedores. La edición, la configuración SRI, las retenciones y las subcategorías viven
- * en la ficha unificada (`/masterdata/business-partners/:id`); aquí solo quedan lista, alta, asignación
+ * en la ficha por contexto (`/suppliers/:id`); aquí solo quedan lista, alta, asignación
  * de rol y activar/desactivar.
  */
 export function useMasterDataSuppliersPage() {

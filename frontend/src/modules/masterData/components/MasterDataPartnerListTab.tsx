@@ -31,6 +31,7 @@ export interface MasterDataPartnerListTabProps {
   searchInputRef?: React.RefObject<HTMLInputElement | null>;
   onAddAsSupplier?: (id: string) => void;
   onAddAsCustomer?: (id: string) => void;
+  onRevokeRole?: (id: string) => void;
   onActivate: (id: string) => void;
   onDisable: (id: string) => void;
 }
@@ -54,6 +55,7 @@ export function MasterDataPartnerListTab({
   searchInputRef,
   onAddAsSupplier,
   onAddAsCustomer,
+  onRevokeRole,
   onActivate,
   onDisable,
 }: MasterDataPartnerListTabProps) {
@@ -113,10 +115,10 @@ export function MasterDataPartnerListTab({
       header: "",
       render: (bp) => role === "supplier" ? (
         <MasterDataSupplierListActions partner={bp} canUpdate={canUpdate} canDisable={canDisable}
-          saving={saving} onAddAsCustomer={onAddAsCustomer} onActivate={onActivate} onDisable={onDisable} />
+          saving={saving} onAddAsCustomer={onAddAsCustomer} onRevokeRole={onRevokeRole} onActivate={onActivate} onDisable={onDisable} />
       ) : (
         <MasterDataCustomerListActions partner={bp} canUpdate={canUpdate} canDisable={canDisable}
-          saving={saving} onAddAsSupplier={onAddAsSupplier} onActivate={onActivate} onDisable={onDisable} />
+          saving={saving} onAddAsSupplier={onAddAsSupplier} onRevokeRole={onRevokeRole} onActivate={onActivate} onDisable={onDisable} />
       ),
       cellClassName: role === "customer" ? "md-customer-col-actions" : undefined,
     },

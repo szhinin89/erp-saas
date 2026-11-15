@@ -1,8 +1,90 @@
 # Project Status
 
-## BP-CONSOLIDATION-01 — Business Partners: ficha unificada — Etapa 4 IMPLEMENTADA local, pendiente gate (2026-11-15); Etapas 1–3 publicadas (`e0f1d338c`, `9761470e8`, `ad6154970`)
+## BP-CONSOLIDATION-01 — Business Partners — CORRECCIÓN UX EN REVISIÓN (no CLOSED; Etapa 5 congelada) (2026-11-15)
 
-### Etapa 4 — accesibilidad, navegación, responsive e i18n de la ficha (sin rediseño ni funciones nuevas)
+> **Corrección de interpretación (sin commit; pendiente de revisión del propietario):** la ficha única mezclaba
+> Proveedor y Cliente. Ahora `MasterDataBusinessPartnerDetailPage` se parametriza por `context` y se monta en
+> `/suppliers/:id` («Administrar proveedor»: Resumen, Datos generales, Configuración SRI, Compras,
+> Retenciones, Subcategorías de gasto, Ubicaciones, Contactos) y `/customers/:id` («Administrar cliente»:
+> Resumen, Datos generales, Clasificación, Condiciones de ventas, Ubicaciones, Contactos). Sin pestañas del
+> otro rol ni «Roles»; la revocación del rol del módulo pasó al menú «Más acciones» del listado
+> («Revocar rol de proveedor/cliente»). Sin cambios de backend/permisos/API/BD. Las referencias a
+> `/masterdata/business-partners/:id` más abajo son históricas (ruta eliminada).
+>
+> **Correcciones posteriores (mismo commit local):** (1) códigos mostrados con su descripción oficial del
+> catálogo (`04` = Registro Único de Contribuyentes; sin abreviatura oficial reutilizable, se conserva el
+> nombre completo); (2) «Datos generales» sigue el contexto y no los roles del socio; (3) «Ver proveedor» en
+> Recepción de Compras abre `/suppliers/:id`; (4) columna de acciones compartida de los listados
+> (`--md-partner-actions-width`) para que «Administrar …» no se superponga a Estado a 1366/768/390/320 px.
+> **Verificación:** pruebas focalizadas (mocks), `tsc`, build, arquitectura/i18n y guardrails en verde;
+> navegador con API **simulada**. **Integración con backend real SIN VERIFICAR**: la API de desarrollo responde
+> (`/health/live` 200) pero los endpoints de datos exigen sesión y no se dispuso de una autorizada; quedan sin
+> comprobar apertura de fichas, rol doble, guardados/relecturas, permisos/errores reales, nombres del catálogo
+> real y facturación/POS reales. Contrato vigente:
+> [frontend.md](docs/architecture/frontend.md#ficha-de-business-partner-por-contexto-proveedor--cliente).
+
+## (Histórico) Etapas 1–4 publicadas — ficha unificada (reemplazada por la ficha por contexto)
+
+### Cierre de la consolidación (Etapa 5, documental; sin código funcional)
+
+**Estado:** las cuatro etapas están implementadas, publicadas en `origin/main` y con CI en verde; el gate del
+propietario sigue pendiente (no se declara CLOSED sin él). La deuda técnica de abajo es independiente y **no
+bloquea** la ficha. CI-1201 (Ventas) es una incidencia ajena, con causa raíz pendiente.
+
+| Etapa | SHA | Contenido | CI (API pública de GitHub) |
+|---|---|---|---|
+| 1 | `e0f1d338c` | extracción de componentes + corrección de la carrera de subcategorías | #1201 **FAILURE** (prueba de Ventas; CI-1201) |
+| 2 | `9761470e8` | ficha unificada por pestañas + router de datos + protección de cambios sin guardar | #1202 SUCCESS |
+| 3 | `ad6154970` | listados con «Gestionar»; retiro de modales/acciones redundantes | #1203 SUCCESS |
+| 4 | `8d0298a8a` | accesibilidad, navegación, responsive e i18n (+ `ZHToggle`, `ZHConfirmModal`) | #1204 SUCCESS |
+
+**Matriz de cierre** (una sola implementación por función; ubicación = pestaña de `/masterdata/business-partners/:id`)
+
+| Funcionalidad | Implementación definitiva | Ubicación | Pruebas ejecutadas | Estado |
+|---|---|---|---|---|
+| Edición de identidad | `MasterDataPartnerWizard` embebido vía `BpGeneralSection` (único `updateBusinessPartner` en MasterData) | Datos generales | `…config` (3), wizard, `…tabs` (solo lectura) | Consolidado |
+| Configuración SRI del proveedor | `SupplierSriConfigForm` | Proveedor | `…supplierSri` (6), `…config` | Consolidado |
+| Condición de compras, retenciones y subcategorías de gasto | `SupplierPurchaseDefaultSection`, `SupplierRetentionDefaultsSection`, `SupplierExpenseSubcategoriesSection` | Proveedor | `…supplierSri`, `…config`, `SupplierExpenseSubcategoriesSection` (15) | Consolidado |
+| Clasificación del cliente | `CustomerClassificationForm` | Cliente | `…customerClassification` (8) | Consolidado |
+| Condición de ventas del cliente | `CustomerSalesSettingsForm` | Cliente | `…customerSales` (4) | Consolidado |
+| Ubicaciones y contactos (CRUD, principal, activar) | `BpLocationsSection`, `BpContactsSection` | Ubicaciones / Contactos | `…test`, `…tabs`, `…i18n` | Consolidado |
+| Roles: revocar | `BpRolesSection` | Roles | `…test` (3), `…navGuard` | Consolidado |
+| Roles: asignar | única llamada `assignRole` (`businessPartnerFacade`); puntos de entrada: «Agregar como …» del menú de fila, búsqueda del alta (wizard) y altas rápidas | listados / «Nuevo» | pruebas de acciones de fila y del wizard | Sin copia de UI en la ficha (la ficha solo revoca; asignar queda en el listado, fuera de alcance) |
+| Listados (Gestionar, activar/desactivar, otro rol) | `MasterDataCustomerListActions`, `MasterDataSupplierListActions` | `/customers`, `/suppliers` | acciones de fila, lista y páginas | Consolidado |
+| Navegación, permisos y cambios sin guardar | `useUnsavedChangesGuard`, `AppRoutes`, `CompanySwitcher`, `AppLayout` | transversal | `…navGuard` (17), hook (9), `CompanySwitcher` (4), `AppLayout` (6), `App.router` (4) | Consolidado, con limitaciones |
+| Accesibilidad, responsive e i18n | secciones `Bp*`, `ZHToggle`, `ZHConfirmModal`, `masterdata.bp.detail.*` | transversal | `…i18n`, `…tabs`, `ZHConfirmModal` (6); Chromium real sobre arnés temporal | Consolidado, con limitaciones |
+
+**Implementaciones paralelas:** verificado por búsqueda en todo `frontend/src`: cada mutación de edición,
+SRI, clasificación, condición de ventas, ubicaciones, contactos y revocación de roles tiene un único
+consumidor en MasterData. **Excepción informada, no tocada y fuera de alcance:** las altas/ediciones rápidas
+de Ventas (POS: cliente, ubicación, contacto, rol en `useSalesPage`) y de Compras (`CreateSupplierModal`) usan
+`businessPartnerRegistrationFacade`, la superficie pública diseñada para esos flujos; son otra UI sobre el
+mismo servicio y pertenecen a módulos CLOSED.
+
+**Componentes retirados (Etapa 3, sin consumidores):** `MasterDataCustomerConfigModal`,
+`MasterDataSalesSettingsModal`, el `SupplierConfigModal` interno de `MasterDataSuppliersPage`, el estado de
+modales/edición/configuración de los hooks de listado, `editingPartner`/`startEdit` del store
+(`cancelEdit` → `showList`), selectores CSS `md-supplier-config-*`, 4 claves i18n y las suites
+`MasterDataCustomersPage.classification` y `MasterDataSuppliersPage.sriConfig` (cobertura migrada a la ficha).
+
+**Deuda técnica independiente (identificada, sin implementar; no bloquea la ficha):**
+1. Navegación con flechas / *roving tabindex* en `ZHTabBar` (componente de toda la app).
+2. Auditoría automatizada de contraste y axe-core (no ejecutada; el entorno no permitió código remoto).
+3. Accesibilidad de `ZHPromptModal` (foco inicial, Escape, trampa de Tab, nombre ARIA).
+4. Rama `MasterDataBpFormFields section="review"` (sin consumidores, aún con texto fijo) y rama de edición no
+   embebida de `MasterDataPartnerWizard` (sin consumidores desde la Etapa 3); mensajes de validación del esquema
+   de identidad compartido con el alta.
+5. Protección de navegación (BP-NAV-GUARD-01): «Salir» del overlay de bloqueo por inactividad, cierres de
+   sesión del shell AdminCore y la confirmación abierta que queda al terminar la sesión (detalle en la Etapa 2).
+
+**Verificaciones efectivamente ejecutadas en el proyecto:** pruebas focalizadas por etapa (sin suite completa)
+—`src/modules/masterData` 281/281 y bloque focal 1115/1115 al cierre de la Etapa 4, y 204 archivos/2063 pruebas
+de los módulos que consumen `ZHToggle`/`ZHConfirmModal`—, `tsc -b`, `npm run build`, `architecture:check`
+(incluye i18n), guardrail oficial `-SkipFrontendChunk` y guardrails de staging en cada commit; CI #1202–#1204 en
+verde. En Chromium real (arnés temporal con API simulada, 1366/768/375/320 px): responsive, teclado, ARIA,
+enlaces profundos y confirmación al salir. **No se ejecutó E2E con backend real ni auditoría axe-core.**
+
+### Etapa 4 — accesibilidad, navegación, responsive e i18n de la ficha (commit `8d0298a8a`, CI #1204 SUCCESS)
 
 Solo frontend: sin backend, API, permisos, rutas, base de datos ni Dashboard. Se distingue entre lo
 **verificado en Chromium real** (Playwright sobre un arnés temporal que monta la ficha real con API

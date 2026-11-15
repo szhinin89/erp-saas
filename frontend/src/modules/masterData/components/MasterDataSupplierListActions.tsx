@@ -4,6 +4,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHLineAction } from "../../../components/zh/ZHLineAction";
 import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
 import { useI18n } from "../../../i18n/i18n";
+import { bpDetailPath } from "./bpDetailTabs";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
 type Props = {
@@ -12,17 +13,18 @@ type Props = {
   canDisable: boolean;
   saving: boolean;
   onAddAsCustomer?: (id: string) => void;
+  onRevokeRole?: (id: string) => void;
   onActivate: (id: string) => void;
   onDisable: (id: string) => void;
 };
 
 /**
- * Supplier row: «Gestionar» opens the unified record (/masterdata/business-partners/:id, remembering this listing as the return path), where edit,
+ * Supplier row: «Administrar proveedor» opens the supplier-context record (/suppliers/:id), where edit,
  * SRI configuration, locations, contacts and roles live. Only status and cross-role actions stay here;
  * confirmations remain in the page handlers. Without secondary items there is no menu.
  */
 export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisable, saving,
-  onAddAsCustomer, onActivate, onDisable}: Props) {
+  onAddAsCustomer, onRevokeRole, onActivate, onDisable}: Props) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const {t} = useI18n();
@@ -32,6 +34,8 @@ export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisabl
   const items: ReactElement[] = [];
   if (canUpdate && bp.canAssignAsCustomer && onAddAsCustomer)
     items.push(<ZHLineActionItem key="assign" label={label("assign")} disabled={saving} onClick={() => onAddAsCustomer(bp.id)} />);
+  if (canDisable && bp.isActive && onRevokeRole)
+    items.push(<ZHLineActionItem key="revoke" label={label("revoke")} tone="danger" disabled={saving} onClick={() => onRevokeRole(bp.id)} />);
   if (canUpdate && !bp.isActive)
     items.push(<ZHLineActionItem key="activate" label={t("masterdata.suppliers.action.activate")} disabled={saving} onClick={() => onActivate(bp.id)} />);
   if (canDisable && bp.isActive)
@@ -40,7 +44,7 @@ export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisabl
   return (
     <div className="md-supplier-actions">
       <ZHBtn variant="ghost" size="sm" aria-label={`${label("manage")}: ${identity}`}
-        onClick={() => navigate(`/masterdata/business-partners/${bp.id}`, { state: { from: "/suppliers" } })}>{label("manage")}</ZHBtn>
+        onClick={() => navigate(bpDetailPath("supplier", bp.id))}>{label("manage")}</ZHBtn>
       {items.length > 0 && (
         <ZHLineAction kind="menu" icon={"⋯"} label={label("more")}
           ariaLabel={`${label("more")}: ${identity}`} menuLabel={`${label("more")}: ${identity}`}

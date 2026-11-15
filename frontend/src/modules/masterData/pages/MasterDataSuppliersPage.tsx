@@ -11,6 +11,7 @@ import { MasterDataPartnerListTab } from "../components/MasterDataPartnerListTab
 import { useMasterDataSuppliersUiStore } from "../store/masterDataPartnerUiStore";
 import { message } from "../../../lib/messages";
 import type { CreateBusinessPartnerBody } from "../types/businessPartner.types";
+import { revokeBpContextRole } from "./revokeBpRole";
 import { formatApiRequestError } from "../../lib/apiError";
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
@@ -155,6 +156,13 @@ export function MasterDataSuppliersPage() {
     [page, addActivity],
   );
 
+  const handleRevokeRole = useCallback(
+    async (id: string) => {
+      if (await revokeBpContextRole("supplier", id)) page.refetch();
+    },
+    [page],
+  );
+
   if (!page.canView)
     return <NoAccessPage title={t("masterdata.suppliers.title")} />;
 
@@ -213,6 +221,7 @@ export function MasterDataSuppliersPage() {
             setPage={page.setPage}
             searchInputRef={searchRef}
             onAddAsCustomer={(id) => void page.addAsCustomer(id)}
+            onRevokeRole={(id) => void handleRevokeRole(id)}
             onActivate={handleActivate}
             onDisable={handleDisable}
           />

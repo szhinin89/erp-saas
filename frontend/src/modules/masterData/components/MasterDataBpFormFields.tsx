@@ -68,7 +68,7 @@ export function MasterDataBpFormFields({
     return (
       <dl className="prd-review-grid">
         <dt>Tipo de identificación</dt>
-        <dd className="mono">{values.identificationType}</dd>
+        <dd>{idTypes.find((o) => o.code === values.identificationType)?.name ?? values.identificationType}</dd>
         <dt>Número</dt>
         <dd className="mono">{values.identificationNumber}</dd>
         <dt>Tipo de entidad legal</dt>

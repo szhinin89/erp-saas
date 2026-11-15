@@ -207,7 +207,7 @@ export function PurchaseReceptionActionsCell({
             type="button"
             onClick={() =>
               window.open(
-                `/masterdata/business-partners/${row.supplierId}`,
+                `/suppliers/${row.supplierId}`,
                 "_blank",
                 "noopener,noreferrer",
               )

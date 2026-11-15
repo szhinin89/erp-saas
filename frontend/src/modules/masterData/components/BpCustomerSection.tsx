@@ -13,12 +13,16 @@ import { CustomerClassificationForm } from "./CustomerClassificationForm";
 import { CustomerSalesSettingsForm } from "./CustomerSalesSettingsForm";
 
 /**
- * Pestaña «Cliente» (solo con rol Customer activo): compone los mismos formularios que los modales
- * del listado, con guardado independiente. Permisos reales: `businesspartners.update` →
+ * Pestañas de configuración de la ficha de Cliente (`part`: clasificación o condiciones de ventas;
+ * solo con rol Customer activo): montan los mismos formularios que los modales del listado, con
+ * guardado independiente. Permisos reales: `businesspartners.update` →
  * clasificación; `…configure-company` → condición de ventas de la empresa activa (se consulta con
  * `useCompanyScopedAsync`, así que sigue el cambio de empresa). Sin permiso, solo lectura.
  */
+export type BpCustomerPart = "classification" | "sales";
+
 export function BpCustomerSection({
+  part,
   bpId,
   role,
   canUpdate,
@@ -26,6 +30,7 @@ export function BpCustomerSection({
   onReload,
   onDirtyChange,
 }: {
+  part: BpCustomerPart;
   bpId: string;
   role: BusinessPartnerRoleDto;
   canUpdate: boolean;
@@ -42,7 +47,7 @@ export function BpCustomerSection({
   const [salesVersion, setSalesVersion] = useState(0);
   const sales = useCompanyScopedAsync(
     () => businessPartnerFacade.getSalesSettings(bpId),
-    true,
+    part === "sales",
     [bpId],
   );
 
@@ -77,16 +82,16 @@ export function BpCustomerSection({
 
   return (
     <section className="md-detail-section">
-      {(!canUpdate || !canConfigure) && (
+      {(part === "sales" ? !canConfigure : !canUpdate) && (
         <ZHPageNotice
           variant="info"
           message={t(
             "masterdata.bp.detail.readOnly",
-            "Solo lectura: no tienes permiso para modificar algunas secciones.",
+            "Solo lectura: no tienes permiso para modificar esta sección.",
           )}
         />
       )}
-      <div className="md-bp-config-grid">
+      {part === "classification" && (
         <div className="md-bp-config-section">
           <h4>{t("masterdata.bp.detail.customer.classification", "Clasificación comercial")}</h4>
           {/* La clave remonta el formulario con la configuración persistida tras guardar (base limpia). */}
@@ -100,6 +105,8 @@ export function BpCustomerSection({
             onDirtyChange={(d) => onDirtyChange("customer-classification", d)}
           />
         </div>
+      )}
+      {part === "sales" && (
         <div className="md-bp-config-section">
           <h4>{t("masterdata.bp.detail.customer.sales", "Condición predeterminada para ventas")}</h4>
           {sales.error ? (
@@ -124,7 +131,7 @@ export function BpCustomerSection({
             />
           )}
         </div>
-      </div>
+      )}
     </section>
   );
 }

@@ -10,16 +10,20 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
+import { describeCatalogCode } from "../api/catalogDescription";
+import { useSriIdTypes } from "../api/useSriIdTypes";
 import { BpSummarySection } from "../components/BpSummarySection";
 import { BpGeneralSection } from "../components/BpGeneralSection";
 import { BpSupplierSection } from "../components/BpSupplierSection";
 import { BpCustomerSection } from "../components/BpCustomerSection";
 import { BpLocationsSection } from "../components/BpLocationsSection";
 import { BpContactsSection } from "../components/BpContactsSection";
-import { BpRolesSection } from "../components/BpRolesSection";
 import {
-  availableBpTabs,
+  BP_CONTEXT_LIST_PATH,
+  BP_CONTEXT_ROLE,
   resolveBpTab,
+  tabsForContext,
+  type BpContext,
   type BpTabId,
 } from "../components/bpDetailTabs";
 import type {
@@ -32,21 +36,29 @@ import "./masterdata-pages.css";
 const TAB_LABELS: Record<BpTabId, [key: string, fallback: string]> = {
   summary: ["masterdata.bp.detail.tabs.summary", "Resumen"],
   general: ["masterdata.bp.detail.tabs.general", "Datos generales"],
-  supplier: ["masterdata.bp.detail.tabs.supplier", "Proveedor"],
-  customer: ["masterdata.bp.detail.tabs.customer", "Cliente"],
+  sri: ["masterdata.bp.detail.tabs.sri", "Configuración SRI"],
+  purchases: ["masterdata.bp.detail.tabs.purchases", "Compras"],
+  retentions: ["masterdata.bp.detail.tabs.retentions", "Retenciones"],
+  expenseSubcategories: ["masterdata.bp.detail.tabs.expenseSubcategories", "Subcategorías de gasto"],
+  classification: ["masterdata.bp.detail.tabs.classification", "Clasificación"],
+  sales: ["masterdata.bp.detail.tabs.sales", "Condiciones de ventas"],
   locations: ["masterdata.bp.detail.tabs.locations", "Ubicaciones"],
   contacts: ["masterdata.bp.detail.tabs.contacts", "Contactos"],
-  roles: ["masterdata.bp.detail.tabs.roles", "Roles"],
 };
 
+const SUPPLIER_CONFIG_PARTS = ["sri", "purchases", "retentions", "expenseSubcategories"] as const;
+const CUSTOMER_CONFIG_PARTS = ["classification", "sales"] as const;
+
 /**
- * Ficha unificada de Business Partner: centro único de administración de Proveedores y Clientes.
- * Cada pestaña compone los componentes ya existentes (identidad = wizard embebido; Proveedor y
- * Cliente = formularios de configuración; Ubicaciones/Contactos/Roles), con permisos y guardados
- * independientes. `?tab=` permite enlaces profundos; una pestaña inexistente o de un rol no activo
- * cae en Resumen. Las pestañas visitadas permanecen montadas para no perder cambios sin guardar.
+ * Ficha de administración de un Business Partner en el contexto de un módulo: `/suppliers/:id`
+ * (Proveedor) o `/customers/:id` (Cliente). Una única estructura parametrizada por `context`: cada
+ * contexto muestra solo sus pestañas y los datos de su rol (sin mezclar Proveedor con Cliente ni
+ * roles). Cada pestaña compone los componentes existentes con permisos y guardados independientes.
+ * `?tab=` permite enlaces profundos; una pestaña ajena al contexto cae en Resumen. Las pestañas
+ * visitadas permanecen montadas para no perder cambios sin guardar. Si el socio no tiene el rol
+ * activo del contexto no se muestra la ficha (aviso + volver al listado).
  */
-export function MasterDataBusinessPartnerDetailPage() {
+export function MasterDataBusinessPartnerDetailPage({ context }: { context: BpContext }) {
   const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -57,6 +69,8 @@ export function MasterDataBusinessPartnerDetailPage() {
   const canDisable = canShow("masterdata.businesspartners.disable");
   const canConfigure = canShow("masterdata.businesspartners.configure-company");
   const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
+  const isSupplier = context === "supplier";
+  const { options: idTypes, loading: idTypesLoading } = useSriIdTypes();
 
   const [bp, setBp] = useState<BusinessPartnerDetailDto | null>(null);
   const [locations, setLocations] = useState<BpLocationDto[]>([]);
@@ -100,69 +114,66 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   // ── Pestañas y enlaces profundos ───────────────────────────────────────────
 
-  const supplierRole = bp?.roles.find(
-    (r) => r.isActive && r.roleType === "Supplier",
-  );
-  const customerRole = bp?.roles.find(
-    (r) => r.isActive && r.roleType === "Customer",
+  const contextRole = bp?.roles.find(
+    (r) => r.isActive && r.roleType === BP_CONTEXT_ROLE[context],
   );
   const available = useMemo(
-    () =>
-      bp
-        ? availableBpTabs({
-            hasSupplier: Boolean(supplierRole),
-            hasCustomer: Boolean(customerRole),
-          })
-        : [],
-    [bp, supplierRole, customerRole],
+    () => (contextRole ? tabsForContext(context) : []),
+    [contextRole, context],
   );
   const requestedTab = searchParams.get("tab");
   const activeTab = resolveBpTab(requestedTab, available);
 
-  // Con la ficha cargada, un `?tab=` inválido o de un rol no activo se normaliza a Resumen.
+  // Con la ficha cargada, un `?tab=` inválido o ajeno al contexto se normaliza a Resumen.
   useEffect(() => {
-    if (bp && requestedTab !== null && requestedTab !== activeTab)
+    if (contextRole && requestedTab !== null && requestedTab !== activeTab)
       setSearchParams({ tab: activeTab }, { replace: true, state: location.state });
-  }, [bp, requestedTab, activeTab, setSearchParams, location.state]);
+  }, [contextRole, requestedTab, activeTab, setSearchParams, location.state]);
 
   // Solo se registra una pestaña realmente disponible (antes de cargar no hay pestañas).
   useEffect(() => {
-    if (!bp) return;
+    if (!contextRole) return;
     setVisited((prev) =>
       prev.has(activeTab) ? prev : new Set(prev).add(activeTab),
     );
-  }, [bp, activeTab]);
+  }, [contextRole, activeTab]);
 
   // ── Cambios sin guardar ────────────────────────────────────────────────────
 
   const reportDirty = useCallback((key: string, dirty: boolean) => {
     setDirtyMap((prev) => (prev[key] === dirty ? prev : { ...prev, [key]: dirty }));
   }, []);
-  const hasUnsaved = Object.entries(dirtyMap).some(
-    ([key, dirty]) =>
-      dirty &&
-      !(key.startsWith("supplier") && !supplierRole) &&
-      !(key.startsWith("customer") && !customerRole),
-  );
+  const hasUnsaved = Boolean(contextRole) && Object.values(dirtyMap).some(Boolean);
 
   // Bloquea la navegación a otra ruta (menú, Atrás/Adelante, «Volver») con la confirmación oficial,
   // una sola vez por navegación; `?tab=` no cambia de ruta y nunca bloquea. Incluye `beforeunload`.
   useUnsavedChangesGuard(hasUnsaved);
 
-  // «Volver» regresa al listado de origen (`state.from`, como UserConfigPage), no al historial: cada
-  // pestaña visitada añade una entrada y `navigate(-1)` retrocedería de pestaña en pestaña. Sin origen
-  // (enlace directo) se usa el listado del rol del socio.
-  const returnTo =
-    (location.state as { from?: string } | null)?.from ??
-    (supplierRole && !customerRole ? "/suppliers" : "/customers");
+  // «Volver» regresa siempre al listado del contexto, no al historial: cada pestaña visitada añade
+  // una entrada y `navigate(-1)` retrocedería de pestaña en pestaña.
+  const returnTo = BP_CONTEXT_LIST_PATH[context];
+  // El contexto del módulo se identifica siempre en el encabezado (el kicker del shell no se renderiza).
+  const contextLabel = isSupplier
+    ? t("masterdata.bp.detail.context.supplier", "Administrar proveedor")
+    : t("masterdata.bp.detail.context.customer", "Administrar cliente");
+  // «04» es el código SRI del tipo de identificación (catálogo sri_id_type): se muestra su nombre oficial.
+  const idTypeName = bp
+    ? describeCatalogCode(bp.identificationType, idTypes, idTypesLoading, (c) =>
+        t("masterdata.bp.detail.unknownCatalog", { code: c }),
+      )
+    : null;
+  const identificationText = bp
+    ? [idTypeName, bp.identificationNumber].filter(Boolean).join(" ")
+    : "";
+  const backLabel = isSupplier
+    ? t("masterdata.bp.detail.backSuppliers", "Volver a proveedores")
+    : t("masterdata.bp.detail.backCustomers", "Volver a clientes");
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  const activeRoles = bp?.roles.filter((r) => r.isActive) ?? [];
   const activeLocs = locations.filter((l) => l.isActive);
   const activeCons = contacts.filter((c) => c.isActive);
   const counts: Partial<Record<BpTabId, number>> = {
-    roles: activeRoles.length,
     locations: activeLocs.length,
     contacts: activeCons.length,
   };
@@ -185,12 +196,17 @@ export function MasterDataBusinessPartnerDetailPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("masterdata.kicker", "Clientes y proveedores")}
-      title={bp ? bp.tradeName?.trim() || bp.legalName : t("masterdata.bp.detail.title.fallback", "Socio de negocio")}
-      subtitle={bp ? `${bp.identificationType} ${bp.identificationNumber}` : ""}
+      title={
+        bp
+          ? bp.tradeName?.trim() || bp.legalName
+          : isSupplier
+            ? t("masterdata.bp.detail.title.supplier", "Proveedor")
+            : t("masterdata.bp.detail.title.customer", "Cliente")
+      }
+      subtitle={`${contextLabel}${bp ? ` · ${identificationText}` : ""}`}
       action={
         <ZHBtn variant="ghost" onClick={() => navigate(returnTo)}>
-          ← {t("common.back", "Volver")}
+          ← {backLabel}
         </ZHBtn>
       }
     >
@@ -198,7 +214,18 @@ export function MasterDataBusinessPartnerDetailPage() {
       {error && <ZHPageNotice variant="error" message={error} />}
       {actionError && <ZHPageNotice variant="error" message={actionError} />}
 
-      {bp && (
+      {bp && !contextRole && (
+        <ZHPageNotice
+          variant="error"
+          message={
+            isSupplier
+              ? t("masterdata.bp.detail.noRole.supplier", "Este socio de negocio no es un proveedor activo.")
+              : t("masterdata.bp.detail.noRole.customer", "Este socio de negocio no es un cliente activo.")
+          }
+        />
+      )}
+
+      {bp && contextRole && (
         <>
           <div className="md-detail-status-row">
             <Badge
@@ -209,9 +236,6 @@ export function MasterDataBusinessPartnerDetailPage() {
                   : t("masterdata.bp.detail.status.inactive", "Inactivo")
               }
             />
-            {activeRoles.map((r) => (
-              <Badge key={r.id} variant="success" label={r.roleLabel} />
-            ))}
           </div>
 
           <ZHTabBar
@@ -228,40 +252,47 @@ export function MasterDataBusinessPartnerDetailPage() {
           />
 
           {renderPanel("summary", () => (
-            <BpSummarySection bp={bp} locations={locations} contacts={contacts} />
+            <BpSummarySection context={context} bp={bp} locations={locations} contacts={contacts} />
           ))}
           {renderPanel("general", () => (
             <BpGeneralSection
+              context={context}
               bp={bp}
               canUpdate={canUpdate}
               onReload={reloadQuiet}
               onDirtyChange={(d) => reportDirty("general", d)}
             />
           ))}
-          {supplierRole &&
-            renderPanel("supplier", () => (
-              <BpSupplierSection
-                key={`supplier-${companySessionVersion}`}
-                bpId={bp.id}
-                role={supplierRole}
-                canUpdate={canUpdate}
-                canConfigure={canConfigure}
-                onReload={reloadQuiet}
-                onDirtyChange={reportDirty}
-              />
-            ))}
-          {customerRole &&
-            renderPanel("customer", () => (
-              <BpCustomerSection
-                key={`customer-${companySessionVersion}`}
-                bpId={bp.id}
-                role={customerRole}
-                canUpdate={canUpdate}
-                canConfigure={canConfigure}
-                onReload={reloadQuiet}
-                onDirtyChange={reportDirty}
-              />
-            ))}
+          {isSupplier &&
+            SUPPLIER_CONFIG_PARTS.map((part) =>
+              renderPanel(part, () => (
+                <BpSupplierSection
+                  key={`supplier-${part}-${companySessionVersion}`}
+                  part={part}
+                  bpId={bp.id}
+                  role={contextRole}
+                  canUpdate={canUpdate}
+                  canConfigure={canConfigure}
+                  onReload={reloadQuiet}
+                  onDirtyChange={reportDirty}
+                />
+              )),
+            )}
+          {!isSupplier &&
+            CUSTOMER_CONFIG_PARTS.map((part) =>
+              renderPanel(part, () => (
+                <BpCustomerSection
+                  key={`customer-${part}-${companySessionVersion}`}
+                  part={part}
+                  bpId={bp.id}
+                  role={contextRole}
+                  canUpdate={canUpdate}
+                  canConfigure={canConfigure}
+                  onReload={reloadQuiet}
+                  onDirtyChange={reportDirty}
+                />
+              )),
+            )}
           {renderPanel("locations", () => (
             <BpLocationsSection
               bpId={bp.id}
@@ -287,16 +318,6 @@ export function MasterDataBusinessPartnerDetailPage() {
               saving={saving}
               onSavingChange={setSaving}
               actionError={actionError}
-              onActionError={setActionError}
-              onReload={reloadQuiet}
-            />
-          ))}
-          {renderPanel("roles", () => (
-            <BpRolesSection
-              bp={bp}
-              canDisable={canDisable}
-              saving={saving}
-              onSavingChange={setSaving}
               onActionError={setActionError}
               onReload={reloadQuiet}
             />

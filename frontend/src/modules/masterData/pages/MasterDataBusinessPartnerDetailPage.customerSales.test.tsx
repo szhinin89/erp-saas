@@ -59,7 +59,7 @@ const select = () => within(section()).getByRole("combobox") as HTMLSelectElemen
 const saveButton = () => within(section()).getByRole("button", { name: "Guardar" }) as HTMLButtonElement;
 
 async function openReady() {
-  renderBpDetail("?tab=customer");
+  renderBpDetail("?tab=sales");
   await screen.findByRole("heading", { name: HEADING });
   await waitFor(() => expect(within(select()).getByRole("option", { name: /CRED001/ })).toBeTruthy());
   await waitFor(() => expect(saveButton().disabled).toBe(false));

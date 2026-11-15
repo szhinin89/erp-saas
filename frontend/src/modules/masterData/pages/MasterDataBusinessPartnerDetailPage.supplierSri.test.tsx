@@ -94,7 +94,7 @@ function selectByFieldLabel(labelText: string): HTMLSelectElement {
 const sriSection = () => screen.getByRole("heading", { name: "Configuración SRI" }).parentElement as HTMLElement;
 
 async function open() {
-  renderBpDetail("?tab=supplier");
+  renderBpDetail("?tab=sri");
   await screen.findByRole("heading", { name: "Configuración SRI" });
 }
 const loadRole = (role = ROLE) => vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([role]));
@@ -172,7 +172,7 @@ describe("Retenciones predeterminadas dinámicas del proveedor", () => {
       codeName: "Retención en la fuente IVA 100%", percentage: 100, displayOrder: 1,
     });
     vi.mocked(businessPartnerFacade.setRetentionDefaultState).mockResolvedValue({ ...RETENTION_303, isActive: false });
-    await open();
+    renderBpDetail("?tab=retentions");
     await screen.findByText("Retenciones predeterminadas");
     await waitFor(() => expect(screen.getByText(/RENTA — 303 — Honorarios profesionales/)).toBeTruthy());
 

@@ -53,7 +53,13 @@ vi.mock("../../branches/facades/geographyLookupFacade", () => ({
 }));
 const NO_OPTIONS = { options: [], loading: false, error: null };
 vi.mock("../api/useSriIdTypes", () => ({
-  useSriIdTypes: () => ({ options: [], loading: false }),
+  useSriIdTypes: () => ({
+    options: [
+      { code: "04", name: "Registro Único de Contribuyentes" },
+      { code: "05", name: "Cédula de ciudadanía" },
+    ],
+    loading: false,
+  }),
   useSriIdTypesByUsage: () => ({ options: [{ code: "05", name: "Cédula" }], loading: false }),
   getSriIdTypeName: (code: string) => (code === "05" ? "Cédula" : code),
 }));
@@ -77,7 +83,10 @@ vi.mock("../../../lib/messages", () => ({
   message: { success: vi.fn(), error: vi.fn(), confirm: vi.fn() },
 }));
 
-const renderPage = (search = "", history = {}) => renderBpDetail(search, history);
+const renderPage = (search = "", history: Parameters<typeof renderBpDetail>[1] = {}) =>
+  renderBpDetail(search, { context: "customer", ...history });
+const renderSupplier = (search = "", history: Parameters<typeof renderBpDetail>[1] = {}) =>
+  renderBpDetail(search, { ...history, context: "supplier" });
 
 const tabNames = () =>
   screen.getAllByRole("tab").map((t) => (t.textContent ?? "").replace(/\d+$/, "").trim());
@@ -106,41 +115,62 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe("ficha unificada — pestañas por rol", () => {
-  it("cliente: Resumen, Datos generales, Cliente, Ubicaciones, Contactos y Roles (sin Proveedor)", async () => {
-    renderPage();
-    await loaded();
-    expect(tabNames()).toEqual(["Resumen", "Datos generales", "Cliente", "Ubicaciones", "Contactos", "Roles"]);
-  });
-
-  it("con ambos roles activos aparecen Proveedor y Cliente", async () => {
-    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+describe("ficha por contexto — pestañas", () => {
+  it("cliente: solo Resumen, Datos generales, Clasificación, Condiciones de ventas, Ubicaciones y Contactos", async () => {
     renderPage();
     await loaded();
     expect(tabNames()).toEqual([
-      "Resumen", "Datos generales", "Proveedor", "Cliente", "Ubicaciones", "Contactos", "Roles",
+      "Resumen", "Datos generales", "Clasificación", "Condiciones de ventas", "Ubicaciones", "Contactos",
     ]);
   });
 
-  it("un rol Supplier revocado no genera la pestaña Proveedor", async () => {
-    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(
-      makeBp([CUSTOMER_ROLE, { ...SUPPLIER_ROLE, isActive: false }]),
-    );
-    renderPage();
+  it("proveedor: solo Resumen, Datos generales, SRI, Compras, Retenciones, Subcategorías, Ubicaciones y Contactos", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
+    renderSupplier();
     await loaded();
-    expect(tabNames()).not.toContain("Proveedor");
+    expect(tabNames()).toEqual([
+      "Resumen", "Datos generales", "Configuración SRI", "Compras", "Retenciones",
+      "Subcategorías de gasto", "Ubicaciones", "Contactos",
+    ]);
   });
 
-  it("al revocar el rol Cliente su pestaña desaparece y la ficha sigue usable", async () => {
-    vi.mocked(businessPartnerFacade.revokeRole).mockResolvedValue(true);
-    renderPage("?tab=roles");
+  it("mismo socio con ambos roles: cada contexto muestra solo lo suyo, sin pestañas del otro ni Roles", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    const customer = renderPage();
     await loaded();
+    const customerTabs = tabNames();
+    expect(customerTabs).toContain("Clasificación");
+    expect(customerTabs).not.toContain("Configuración SRI");
+    expect(customerTabs).not.toContain("Roles");
+    expect(screen.queryByText(/sustento tributario/i)).toBeNull();
+    expect(screen.getByText(/^Administrar cliente · /)).toBeTruthy();
+    customer.unmount();
+    cleanup();
+
+    renderSupplier();
+    await loaded();
+    const supplierTabs = tabNames();
+    expect(supplierTabs).toContain("Configuración SRI");
+    expect(supplierTabs).not.toContain("Clasificación");
+    expect(supplierTabs).not.toContain("Roles");
+    expect(screen.queryByText(/Cliente · categoría/)).toBeNull();
+    expect(screen.getByText(/^Administrar proveedor · /)).toBeTruthy();
+  });
+
+  it("un rol del contexto revocado: aviso sin ficha ni pestañas", async () => {
     vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(
-      makeBp([{ ...CUSTOMER_ROLE, isActive: false }]),
+      makeBp([{ ...CUSTOMER_ROLE, isActive: false }, SUPPLIER_ROLE]),
     );
-    fireEvent.click(await screen.findByRole("button", { name: "Revocar" }));
-    await waitFor(() => expect(tabNames()).not.toContain("Cliente"));
-    expect(isSelected(/^Roles/)).toBe(true);
+    renderPage();
+    expect(await screen.findByText("Este socio de negocio no es un cliente activo.")).toBeTruthy();
+    expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
+  it("socio solo proveedor abierto en contexto cliente (enlace cruzado): no se muestra la ficha de cliente", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
+    renderPage();
+    expect(await screen.findByText("Este socio de negocio no es un cliente activo.")).toBeTruthy();
+    expect(screen.queryByRole("tablist")).toBeNull();
   });
 });
 
@@ -152,7 +182,8 @@ describe("ficha unificada — navegación y enlaces profundos", () => {
   });
 
   it.each([
-    ["customer", /^Cliente/],
+    ["classification", /^Clasificación/],
+    ["sales", /^Condiciones de ventas/],
     ["locations", /^Ubicaciones/],
     ["general", /^Datos generales/],
   ])("?tab=%s abre su pestaña", async (tab, name) => {
@@ -161,8 +192,8 @@ describe("ficha unificada — navegación y enlaces profundos", () => {
     expect(isSelected(name)).toBe(true);
   });
 
-  it.each(["supplier", "inexistente"])(
-    "?tab=%s (inexistente o de rol no activo) cae en Resumen y se normaliza la URL",
+  it.each(["sri", "roles", "inexistente"])(
+    "?tab=%s (inexistente o de otro contexto) cae en Resumen y se normaliza la URL",
     async (tab) => {
       renderPage(`?tab=${tab}`);
       await loaded();
@@ -185,58 +216,52 @@ describe("ficha unificada — navegación y enlaces profundos", () => {
     vi.mocked(businessPartnerFacade.getBusinessPartner).mockReturnValue(
       new Promise((res) => { resolveBp = res; }),
     );
-    renderPage("?tab=customer");
-    expect(screen.getByTestId("search").textContent).toBe("?tab=customer");
+    renderPage("?tab=sales");
+    expect(screen.getByTestId("search").textContent).toBe("?tab=sales");
     await act(async () => resolveBp(makeBp([CUSTOMER_ROLE])));
     await loaded();
-    expect(isSelected(/^Cliente/)).toBe(true);
-    expect(screen.getByTestId("search").textContent).toBe("?tab=customer");
+    expect(isSelected(/^Condiciones de ventas/)).toBe(true);
+    expect(screen.getByTestId("search").textContent).toBe("?tab=sales");
   });
 });
 
-describe("ficha unificada — «Volver» al listado de origen", () => {
+describe("ficha por contexto — «Volver» al listado del módulo", () => {
   const back = () => fireEvent.click(screen.getByRole("button", { name: /Volver/ }));
 
-  it("tras recorrer varias pestañas vuelve al listado de origen, no a la pestaña anterior", async () => {
-    renderPage("", { before: ["/suppliers"], state: { from: "/suppliers" } });
+  it("cliente: tras recorrer varias pestañas vuelve a Clientes, no a la pestaña anterior", async () => {
+    renderPage("", { before: ["/customers"] });
     await loaded();
     for (const name of [/^Datos generales/, /^Ubicaciones/, /^Contactos/])
       fireEvent.click(screen.getByRole("tab", { name }));
     await waitFor(() => expect(screen.getByTestId("search").textContent).toBe("?tab=contacts"));
     back();
+    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/customers"));
+  });
+
+  it("proveedor: vuelve siempre a Proveedores", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    renderSupplier("?tab=sri");
+    await loaded();
+    expect(screen.getByRole("button", { name: /Volver a proveedores/ })).toBeTruthy();
+    back();
     await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/suppliers"));
   });
 
-  it("el origen se conserva al normalizar un ?tab= inválido", async () => {
-    renderPage("?tab=supplier", { state: { from: "/customers" } });
+  it("un ?tab= de otro contexto se normaliza a Resumen sin salir del contexto", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    renderPage("?tab=sri");
     await loaded();
     await waitFor(() => expect(screen.getByTestId("search").textContent).toBe("?tab=summary"));
-    back();
-    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/customers"));
-  });
-
-  it("sin origen (enlace directo) vuelve al listado del rol: Clientes si es cliente", async () => {
-    renderPage("?tab=roles");
-    await loaded();
-    back();
-    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/customers"));
-  });
-
-  it("sin origen y solo proveedor activo vuelve a Proveedores", async () => {
-    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([SUPPLIER_ROLE]));
-    renderPage();
-    await loaded();
-    back();
-    await waitFor(() => expect(screen.getByTestId("pathname").textContent).toBe("/suppliers"));
+    expect(screen.getByTestId("pathname").textContent).toBe("/customers/bp-1");
   });
 });
 
 describe("ficha unificada — accesibilidad", () => {
   it("el tablist tiene nombre y cada pestaña controla un tabpanel enlazado; solo el activo es visible", async () => {
-    renderPage("?tab=customer");
+    renderPage("?tab=classification");
     await loaded();
     expect(screen.getByRole("tablist").getAttribute("aria-label")).toBe("Secciones de la ficha");
-    const active = screen.getByRole("tab", { name: /^Cliente/ });
+    const active = screen.getByRole("tab", { name: /^Clasificación/ });
     const panel = screen.getByRole("tabpanel");
     expect(active.getAttribute("aria-controls")).toBe(panel.id);
     expect(panel.getAttribute("aria-labelledby")).toBe(active.id);
@@ -296,8 +321,8 @@ describe("ficha unificada — permisos y solo lectura", () => {
     expect(screen.queryByRole("textbox", { name: /Razón social/ })).toBeNull();
   });
 
-  it("solo con view: la pestaña Cliente se muestra en solo lectura, sin acciones de guardado", async () => {
-    renderPage("?tab=customer");
+  it("solo con view: la pestaña Condiciones de ventas se muestra en solo lectura, sin acciones de guardado", async () => {
+    renderPage("?tab=sales");
     await loaded();
     expect(await screen.findByText(/Solo lectura/)).toBeTruthy();
     await waitFor(() => expect(screen.getByLabelText("Condición predeterminada para ventas")).toBeTruthy());
@@ -316,7 +341,7 @@ describe("ficha unificada — permisos y solo lectura", () => {
 describe("ficha unificada — cambio de empresa", () => {
   it("al cambiar de empresa se relee la ficha y se reconsultan las secciones por empresa", async () => {
     vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
-    renderPage("?tab=supplier");
+    renderSupplier("?tab=purchases");
     await loaded();
     await waitFor(() => expect(businessPartnerFacade.getPurchaseSettings).toHaveBeenCalledTimes(1));
     const bpCalls = vi.mocked(businessPartnerFacade.getBusinessPartner).mock.calls.length;
@@ -327,7 +352,6 @@ describe("ficha unificada — cambio de empresa", () => {
       expect(vi.mocked(businessPartnerFacade.getBusinessPartner).mock.calls.length).toBeGreaterThan(bpCalls),
     );
     await waitFor(() => expect(businessPartnerFacade.getPurchaseSettings).toHaveBeenCalledTimes(2));
-    expect(vi.mocked(businessPartnerFacade.getRetentionDefaults).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -359,5 +383,59 @@ describe("ficha unificada — cambios sin guardar", () => {
       window.dispatchEvent(dirty);
       expect(dirty.defaultPrevented).toBe(true);
     });
+  });
+});
+
+describe("ficha por contexto — códigos mostrados con su descripción (BP-CODES)", () => {
+  it("la cabecera muestra el nombre del tipo de identificación, no el código SRI «05»", async () => {
+    renderPage();
+    await loaded();
+    expect(screen.getByText("Administrar cliente · Cédula de ciudadanía 1710034065")).toBeTruthy();
+    expect(screen.queryByText(/\b05 1710034065/)).toBeNull();
+  });
+
+  it("RUC (código 04): «Registro Único de Contribuyentes» en cabecera y Resumen", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(
+      makeBp([CUSTOMER_ROLE], { identificationType: "04", identificationNumber: "0302126842001" }),
+    );
+    renderPage();
+    await loaded();
+    expect(screen.getByText(/Registro Único de Contribuyentes 0302126842001/)).toBeTruthy();
+    expect(screen.getByText("Registro Único de Contribuyentes · 0302126842001")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/04 — |04 0302126842001/);
+  });
+
+  it("código fuera de catálogo: se indica «no catalogado» conservando el código", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(
+      makeBp([CUSTOMER_ROLE], { identificationType: "99", identificationNumber: "123" }),
+    );
+    renderPage();
+    await loaded();
+    expect(screen.getByText(/99 \(no catalogado\) 123/)).toBeTruthy();
+  });
+
+  it("Datos generales en solo lectura: tipo de identificación y país con descripción", async () => {
+    vi.mocked(usePermissionsUi).mockReturnValue(
+      permsOf([PERM.view]) as unknown as ReturnType<typeof usePermissionsUi>,
+    );
+    renderPage("?tab=general");
+    await loaded();
+    expect(screen.getAllByText("Cédula de ciudadanía").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^05 —/)).toBeNull();
+    expect(screen.getByText(/Ecuador \(EC\)/)).toBeTruthy();
+  });
+
+  it("socio con ambos roles: el formulario de Datos generales sigue el contexto, no los roles del socio", async () => {
+    vi.mocked(businessPartnerFacade.getBusinessPartner).mockResolvedValue(makeBp([CUSTOMER_ROLE, SUPPLIER_ROLE]));
+    const customer = renderPage("?tab=general");
+    await screen.findByLabelText(/Razón social/);
+    expect(screen.getByLabelText("Datos del cliente")).toBeTruthy();
+    expect(screen.queryByLabelText("Datos del proveedor")).toBeNull();
+    customer.unmount();
+    cleanup();
+    renderSupplier("?tab=general");
+    await screen.findByLabelText(/Razón social/);
+    expect(screen.getByLabelText("Datos del proveedor")).toBeTruthy();
+    expect(screen.queryByLabelText("Datos del cliente")).toBeNull();
   });
 });

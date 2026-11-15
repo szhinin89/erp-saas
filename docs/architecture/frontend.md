@@ -736,9 +736,10 @@ su propio contrato ([Listado de Clientes](#listado-de-clientes)). Hasta 640 px, 
 se ocultan sus columnas duplicadas y el número auxiliar, manteniendo la tabla y las acciones
 visibles sin scroll horizontal a 390 px. Escritorio y tablet conservan las cinco columnas.
 
-La fila presenta «Ver» y el menú «Más acciones», compuesto con `ZHLineAction` y
-`ZHLineActionItem`. Editar, Configuración SRI, asignar como cliente y activar/desactivar
-conservan sus condiciones de permisos, estado, guardado y callbacks de confirmación.
+La fila presenta «Administrar proveedor» —abre la [ficha por contexto](#ficha-de-business-partner-por-contexto-proveedor--cliente) `/suppliers/:id`,
+donde viven la edición y la configuración SRI— y el menú «Más acciones», compuesto con `ZHLineAction` y
+`ZHLineActionItem`. Asignar como cliente, revocar el rol de proveedor y activar/desactivar conservan sus condiciones de permisos,
+estado, guardado y callbacks de confirmación; sin ítems autorizados no se renderiza el menú.
 Cada menú identifica al proveedor por razón social y RUC. El modo opcional `portal` del
 menú oficial lo ubica fuera del scroll y dentro del viewport; permite foco inicial,
 flechas, Home/End, Tab, Escape con retorno al disparador y cierre por clic fuera.
@@ -762,16 +763,16 @@ Listado, Resumen y formulario de Clientes conservan su comportamiento.
 
 ### Listado de Clientes
 
-En `/customers`, `MasterDataCustomerListActions` presenta «Ver» y, con
-`masterdata.businesspartners.update`, «Editar»; las acciones secundarias van en «Más acciones»
+En `/customers`, `MasterDataCustomerListActions` presenta «Administrar cliente» (abre la
+[ficha por contexto](#ficha-de-business-partner-por-contexto-proveedor--cliente) `/customers/:id`, donde viven la edición, la clasificación y la
+condición de ventas); las acciones secundarias van en «Más acciones»
 (`ZHLineAction kind="menu"` con `portal`, `menuAlign="end"`, `closeOnSelect`, encabezado con
-razón social e identificación): Empresa (`configure-company` y callback disponible),
-Clasificación (`update` y callback), Agregar como proveedor (`update`, callback y
-`canAssignAsSupplier` del backend, sin inferirlo de otros campos), Activar (`update`, inactivo)
-y Desactivar (`disable`, activo, tono `danger`). Un usuario con solo `configure-company` ve
-«Ver» y el menú con Empresa. Sin ítems autorizados no se renderiza el menú. `saving` deshabilita
-asignar, activar y desactivar; las confirmaciones siguen en los handlers de la página. Los
-nombres accesibles de «Ver», «Editar» y del disparador incluyen la identidad del cliente.
+razón social e identificación): Agregar como proveedor (`update`, callback y
+`canAssignAsSupplier` del backend, sin inferirlo de otros campos), Revocar rol de cliente (`disable`, activo, tono `danger`, confirmación oficial),
+Activar (`update`, inactivo)
+y Desactivar (`disable`, activo, tono `danger`). Sin ítems autorizados no se renderiza el menú.
+`saving` deshabilita asignar, activar y desactivar; las confirmaciones siguen en los handlers de la
+página. Los nombres accesibles de «Administrar cliente» y del disparador incluyen la identidad del cliente.
 Tras cerrar el modal o la confirmación abiertos desde el menú, el foco vuelve al disparador
 de la fila si quedó en `<body>`, sin modificar `ZHModal` ni el servicio de mensajes.
 
@@ -780,9 +781,52 @@ hasta 768 px se ocultan N° e identificación y la identificación se integra en
 identidad; hasta 640 px también se integra el estado. Nombre comercial y razón social se
 presentan en líneas separadas. En filas inactivas la lista anula la opacidad compartida de
 `prd-row--inactive` y atenúa solo el nombre con `--color-text-secondary` (junto al estado
-«Inactivo»), de modo que las acciones mantienen el contraste de las filas activas. Con puntero táctil, «Ver» y «Editar» usan
+«Inactivo»), de modo que las acciones mantienen el contraste de las filas activas. Con puntero táctil, «Administrar cliente» usa
 `--density-control-height`. Sin scroll horizontal de 320 a 1440 px. El valor por defecto de
 `portal` y los menús de Proveedores y Compras no cambian.
+
+### Ficha de Business Partner por contexto (Proveedor / Cliente)
+
+`MasterDataBusinessPartnerDetailPage` es una única estructura parametrizada por `context`
+(`supplier | customer`) y se monta en dos rutas que identifican inequívocamente el módulo:
+`/suppliers/:id` («Administrar proveedor») y `/customers/:id` («Administrar cliente»). Proveedores y
+Clientes comparten la entidad Business Partner pero **no** una misma experiencia: cada ficha muestra solo
+sus pestañas y los datos de su rol, sin mezclar módulos ni exponer una pestaña «Roles». «Volver» regresa
+siempre al listado del contexto (`/suppliers` o `/customers`) y nunca retrocede por las pestañas visitadas.
+Si el socio no tiene el rol activo del contexto (enlace cruzado) se muestra un aviso, no la ficha.
+
+- **Pestañas** (`ZHTabBar`; ids, orden y contexto en `bpDetailTabs.ts`): Proveedor = Resumen, Datos
+  generales, Configuración SRI, Compras, Retenciones, Subcategorías de gasto, Ubicaciones, Contactos;
+  Cliente = Resumen, Datos generales, Clasificación, Condiciones de ventas, Ubicaciones, Contactos.
+  `?tab=` permite enlaces profundos; un valor inválido o de otro contexto cae en Resumen y la URL se
+  normaliza. Cada pestaña enlaza un `tabpanel` real (`aria-controls`/`aria-labelledby`); su contenido se
+  monta al visitarla y se conserva para no perder formularios. El Resumen y la cabecera solo muestran el
+  rol del contexto.
+- **Un componente por función** (los listados no duplican ninguno): identidad = `MasterDataPartnerWizard`
+  embebido (`BpGeneralSection`); `SupplierSriConfigForm`, `SupplierPurchaseDefaultSection`,
+  `SupplierRetentionDefaultsSection` y `SupplierExpenseSubcategoriesSection` (vía `BpSupplierSection part`);
+  `CustomerClassificationForm` y `CustomerSalesSettingsForm` (vía `BpCustomerSection part`);
+  `BpLocationsSection` y `BpContactsSection`. Guardados independientes por pestaña.
+- **Roles:** asignar el otro rol («Asignar como cliente/proveedor») y **revocar el rol del módulo**
+  («Revocar rol de proveedor/cliente», `disable`, confirmación oficial; `revokeBpContextRole`) viven en el
+  menú «Más acciones» del listado correspondiente; el socio no se elimina ni el otro rol se toca.
+- **Permisos reales:** `update` → identidad, SRI, clasificación, ubicaciones y contactos;
+  `configure-company` → condición de compras, retenciones y condición de ventas; `disable` → revocar rol y
+  desactivar. Lo consultable pero no modificable se muestra en solo lectura (aviso, campos deshabilitados,
+  sin acciones). Las subcategorías de gasto aplican su propia lectura/edición.
+- **Cambios sin guardar:** `useUnsavedChangesGuard` (`useBlocker` sobre el router de datos de `App.tsx` +
+  `message.confirm` + `beforeunload`). El cambio de empresa, cerrar sesión y volver al Admin Core consultan
+  antes de actuar (`useDiscardConfirmation`); los eventos automáticos de sesión nunca se bloquean y `?tab=` no
+  bloquea. Limitaciones vigentes en [STATUS](../../STATUS.md).
+- **Códigos con descripción:** la ficha nunca muestra códigos técnicos crudos (p. ej. el tipo de
+  identificación SRI `04`): los traduce con el catálogo oficial vigente (`sri_id_type`, sustento tributario,
+  categorías de cliente, tipos de entidad legal) mediante `describeCatalogCode`; sin catálogo cargado no
+  muestra el código y, si el catálogo no lo contiene, indica «{{code}} (no catalogado)». El código no se
+  modifica en API ni persistencia. El formulario de Datos generales sigue el `context`, no los roles del socio.
+- **i18n y accesibilidad:** textos `masterdata.bp.detail.*` (es/en); `ZHToggle` nombra su interruptor y
+  `ZHConfirmModal` gestiona foco inicial («Cancelar»), Escape, Tab y retorno del foco.
+- Las altas/ediciones rápidas de Ventas (POS) y Compras (proveedor desde la factura) usan
+  `businessPartnerRegistrationFacade` y no forman parte de la ficha.
 
 ### Resumen de Proveedores
 

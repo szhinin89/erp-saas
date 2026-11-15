@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { PurchaseReceptionActionsCell } from "./PurchaseReceptionActionsCell";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
@@ -89,5 +89,15 @@ describe("Recepción — proveedor inactivo (H4)", () => {
     expect(button("Crear compra")).toBeNull();
     expect(button("Crear gasto")).toBeNull();
     expect(button("Ver proveedor")).not.toBeNull();
+  });
+});
+
+describe("Recepción — «Ver proveedor» abre la ficha de proveedor por contexto", () => {
+  it("abre /suppliers/:id (ruta vigente) en otra pestaña, no la ruta eliminada", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ supplierIsActive: false });
+    fireEvent.click(screen.getByRole("button", { name: "Ver proveedor" }));
+    expect(open).toHaveBeenCalledExactlyOnceWith("/suppliers/supplier-1", "_blank", "noopener,noreferrer");
+    open.mockRestore();
   });
 });

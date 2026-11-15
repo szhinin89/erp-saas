@@ -28,7 +28,7 @@ contabilización: [Accounting](docs/architecture/accounting.md). Las capacidades
 | Dominio | Rutas / API | Notas |
 |---------|-------------|-------|
 | Auth & acceso | `/login`, `/api/auth/*`, `/api/me` | JWT + refresh rotation, RBAC |
-| Master data — Business Partners (Customer/Supplier) | `/api/master/business-partners*` | BP V2, roles Customer/Supplier — FROZEN (ver `STATUS.md`) |
+| Master data — Business Partners (Customer/Supplier) | `/api/master/business-partners*` | BP V2, roles Customer/Supplier — FROZEN (ver `STATUS.md`). Administración por contexto: `/suppliers/:id` («Administrar proveedor») y `/customers/:id` («Administrar cliente»), sin mezclar módulos — [contrato](docs/architecture/frontend.md#ficha-de-business-partner-por-contexto-proveedor--cliente) |
 | Carga inicial — Productos (IL-1) | `/initial-load/products`, `/api/v1/initial-load/*` | Importación del catálogo de productos desde Excel. Contrato: [Carga inicial](docs/architecture/backend.md#carga-inicial). Estado: [STATUS](STATUS.md). |
 | Carga inicial — Clientes (IL-2) | `/initial-load/customers`, `/api/v1/initial-load/*` | Importación de clientes desde Excel. Contrato: [Carga inicial](docs/architecture/backend.md#carga-inicial). Estado: [STATUS](STATUS.md). |
 | Carga inicial — Proveedores (IL-3) | `/initial-load/suppliers`, `/api/v1/initial-load/*` | Importación de proveedores desde Excel. Contrato: [Carga inicial](docs/architecture/backend.md#carga-inicial). Estado: [STATUS](STATUS.md). |

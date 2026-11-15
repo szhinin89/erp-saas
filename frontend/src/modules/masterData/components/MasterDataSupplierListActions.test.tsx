@@ -6,7 +6,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataSupplierListActions } from "./MasterDataSupplierListActions";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
-/** BP-CONSOLIDATION-01 Etapa 3 — «Gestionar» abre la ficha; en el menú solo quedan asignar el otro rol
+/** BP-CONSOLIDATION-01 Etapa 3 — «Administrar proveedor» abre la ficha; en el menú solo quedan asignar el otro rol
  * y activar/desactivar. Editar y Config SRI viven en la ficha unificada. */
 const partner = {id: "supplier-42", legalName: "Proveedor Uno", identificationNumber: "0991234567001", isActive: true, isCustomer: false, canAssignAsCustomer: true} as BusinessPartnerSummaryDto;
 const MORE = /^Más acciones:/;
@@ -21,16 +21,14 @@ function setup(overrides = {}) {
 }
 afterEach(cleanup);
 describe("supplier row actions", () => {
-  it("shows Gestionar and More (no Ver, Editar or Config SRI); Gestionar opens the unified record", () => {
+  it("shows Administrar proveedor and More (no Ver, Editar or Config SRI); Administrar proveedor opens the unified record", () => {
     setup();
     expect(screen.queryByRole("menu")).toBeNull();
     expect(screen.getAllByRole("button")).toHaveLength(3);
     expect(screen.queryByRole("button", {name: /^Ver:/})).toBeNull();
     expect(screen.queryByRole("button", {name: /Editar|SRI/})).toBeNull();
-    fireEvent.click(screen.getByRole("button", {name: /^Gestionar: Proveedor Uno \(0991234567001\)$/}));
-    expect(screen.getByText("/masterdata/business-partners/supplier-42")).toBeTruthy();
-    // El listado de origen queda como destino de «Volver» en la ficha.
-    expect(screen.getByTestId("state").textContent).toBe('{"from":"/suppliers"}');
+    fireEvent.click(screen.getByRole("button", {name: /^Administrar proveedor: Proveedor Uno \(0991234567001\)$/}));
+    expect(screen.getByText("/suppliers/supplier-42")).toBeTruthy();
   });
   it("menu holds only assign-as-customer and deactivate, in that order, with no edit/SRI items", () => {
     const {open, itemNames} = setup(); open();
@@ -69,10 +67,10 @@ describe("supplier row actions", () => {
     expect(props[callback]).toHaveBeenCalledExactlyOnceWith(partner.id);
     expect(screen.queryByRole("menu")).toBeNull();
   });
-  it("has no menu without permissions, but Gestionar stays available", () => {
+  it("has no menu without permissions, but Administrar proveedor stays available", () => {
     setup({canUpdate: false, canDisable: false});
     expect(screen.queryByRole("button", {name: MORE})).toBeNull();
-    expect(screen.getByRole("button", {name: /^Gestionar:/})).toBeTruthy();
+    expect(screen.getByRole("button", {name: /^Administrar proveedor:/})).toBeTruthy();
   });
   it("update only on an already-customer active supplier: nothing left for the menu (edit moved to the record)", () => {
     setup({canDisable: false, partner: {...partner, isCustomer: true, canAssignAsCustomer: false}});
@@ -117,5 +115,22 @@ describe("supplier row actions", () => {
   it("hides assign-as-customer without its callback", () => {
     const {open, itemNames} = setup({onAddAsCustomer: undefined}); open();
     expect(itemNames()).toEqual(["Desactivar proveedor"]);
+  });
+});
+
+describe("supplier row actions — revoke role (replaces the removed Roles tab)", () => {
+  it("offers revoke only with disable permission, an active partner and a callback", () => {
+    const onRevokeRole = vi.fn();
+    const {open, itemNames} = setup({onRevokeRole}); open();
+    expect(itemNames()).toContain("Revocar rol de proveedor");
+    fireEvent.click(screen.getByRole("menuitem", {name: "Revocar rol de proveedor"}));
+    expect(onRevokeRole).toHaveBeenCalledExactlyOnceWith("supplier-42");
+  });
+  it("hides it without disable permission or without callback", () => {
+    const first = setup({canDisable: false, onRevokeRole: vi.fn()}); first.open();
+    expect(first.itemNames()).not.toContain("Revocar rol de proveedor");
+    cleanup();
+    const second = setup(); second.open();
+    expect(second.itemNames()).not.toContain("Revocar rol de proveedor");
   });
 });

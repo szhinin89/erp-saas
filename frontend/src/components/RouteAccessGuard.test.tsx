@@ -42,3 +42,17 @@ describe("isRouteAllowed — legacy redirect prefixes (URLS-MENU-ALIGNMENT-01)",
     expect(isRouteAllowed("/products/items", groupsWithoutLegacyPrefixes)).toBe(true);
   });
 });
+
+describe("isRouteAllowed — fichas de Business Partner por contexto (BP-CONSOLIDATION-01)", () => {
+  const menu = (to: string): MainMenuGroup[] => [
+    { id: "g", label: "G", isActive: false, items: [{ id: "1", to, label: "X" }] },
+  ];
+  it("/suppliers/:id hereda la visibilidad de /suppliers y /customers/:id la de /customers", () => {
+    expect(isRouteAllowed("/suppliers/bp-1", menu("/suppliers"))).toBe(true);
+    expect(isRouteAllowed("/customers/bp-1", menu("/customers"))).toBe(true);
+  });
+  it("sin el ítem de menú del módulo la ficha queda bloqueada (no cruza de módulo)", () => {
+    expect(isRouteAllowed("/suppliers/bp-1", menu("/customers"))).toBe(false);
+    expect(isRouteAllowed("/customers/bp-1", menu("/suppliers"))).toBe(false);
+  });
+});

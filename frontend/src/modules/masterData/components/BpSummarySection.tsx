@@ -1,28 +1,38 @@
 import { useI18n } from "../../../i18n/i18n";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
+import { describeCatalogCode } from "../api/catalogDescription";
+import { useSriIdTypes } from "../api/useSriIdTypes";
+import { useSriTaxSupportCodes } from "../api/useSriTaxSupportCodes";
+import { useCustomerCategories } from "../api/useClassificationCatalogs";
 import type {
   BpContactDto,
   BpLocationDto,
   BusinessPartnerDetailDto,
 } from "../types/businessPartner.types";
 import { BpDetailRow } from "./BpDetailRow";
+import type { BpContext } from "./bpDetailTabs";
 
 /**
  * Pestaña «Resumen» de la ficha: identidad, conteos y datos clave (estado y roles activos van en la cabecera de la ficha). Solo lectura,
  * derivada de los datos ya cargados por la ficha (sin consultas propias ni estado duplicado).
  */
 export function BpSummarySection({
+  context,
   bp,
   locations,
   contacts,
 }: {
+  /** Solo se muestran los datos del rol del módulo desde el que se administra. */
+  context: BpContext;
   bp: BusinessPartnerDetailDto;
   locations: BpLocationDto[];
   contacts: BpContactDto[];
 }) {
   const { t } = useI18n();
-  const { options: idTypes } = useSriIdTypes();
+  const { options: idTypes, loading: idLoading } = useSriIdTypes();
+  const taxSupport = useSriTaxSupportCodes();
+  const categories = useCustomerCategories();
+  const unknown = (c: string) => t("masterdata.bp.detail.unknownCatalog", { code: c });
   const activeRoles = bp.roles.filter((r) => r.isActive);
   const activeLocations = locations.filter((l) => l.isActive);
   const activeContacts = contacts.filter((c) => c.isActive);
@@ -36,7 +46,7 @@ export function BpSummarySection({
     <section className="md-detail-section">
       <BpDetailRow
         label={t("masterdata.bp.detail.summary.identification", "Identificación")}
-        value={`${bp.identificationType} — ${getSriIdTypeName(bp.identificationType, idTypes)} · ${bp.identificationNumber}`}
+        value={[describeCatalogCode(bp.identificationType, idTypes, idLoading, unknown), bp.identificationNumber].filter(Boolean).join(" · ")}
       />
       <BpDetailRow
         label={t("masterdata.bp.detail.summary.legalName", "Razón social")}
@@ -54,16 +64,22 @@ export function BpSummarySection({
         label={t("masterdata.bp.detail.summary.contacts", "Contactos activos")}
         value={`${activeContacts.length}${primaryContact ? ` · ${primaryLabel}: ${primaryContact.fullName}` : ""}`}
       />
-      {supplier && (
+      {context === "supplier" && supplier && (
         <BpDetailRow
           label={t("masterdata.bp.detail.summary.supplierTaxSupport", "Proveedor · sustento tributario")}
-          value={supplier.supplierConfig?.defaultTaxSupportCode ?? null}
+          value={describeCatalogCode(supplier.supplierConfig?.defaultTaxSupportCode, taxSupport.options, taxSupport.loading, unknown)}
         />
       )}
-      {customer && (
+      {context === "customer" && customer && (
         <BpDetailRow
           label={t("masterdata.bp.detail.summary.customerCategory", "Cliente · categoría")}
-          value={customer.customerConfig?.customerCategory ?? null}
+          value={describeCatalogCode(customer.customerConfig?.customerCategory, categories.options, categories.loading, unknown)}
+        />
+      )}
+      {(context === "supplier" ? supplier : customer)?.notes && (
+        <BpDetailRow
+          label={t("masterdata.bp.detail.summary.roleNotes", "Notas del rol")}
+          value={(context === "supplier" ? supplier : customer)?.notes ?? null}
         />
       )}
       <BpDetailRow

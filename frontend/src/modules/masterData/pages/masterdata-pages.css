@@ -513,7 +513,7 @@
   width: 100px;
 }
 .md-supplier-list table :is(th, td):last-child {
-  width: 112px;
+  width: var(--md-partner-actions-width);
 }
 .md-supplier-identity {
   display: flex;
@@ -539,14 +539,20 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
-@media (max-width: 768px) {
-  .md-supplier-list table :is(th, td):last-child {
-    width: 96px;
-  }
-}
 
+/* Columna de acciones compartida por Proveedores y Clientes: debe alojar la acción principal
+   («Administrar proveedor/cliente») y «Más acciones» sin invadir la columna Estado. En móvil el
+   ancho se reduce y la acción principal puede partir su texto en dos líneas. */
+.md-supplier-list,
+.md-customer-list { --md-partner-actions-width: 240px; }
 .md-supplier-actions,
 .md-customer-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+.md-supplier-actions .zh-btn,
+.md-customer-actions .zh-btn { min-width: 0; max-width: 100%; }
+@media (max-width: 768px) {
+  .md-supplier-list,
+  .md-customer-list { --md-partner-actions-width: 208px; }
+}
 .md-supplier-actions__more .zh-line-action-menu__trigger-chevron,
 .md-customer-actions__more .zh-line-action-menu__trigger-chevron { display: none; }
 .md-supplier-actions-menu__identity,
@@ -560,6 +566,12 @@
 .md-supplier-identity__id,
 .md-supplier-identity__status { display: none; }
 @media (max-width: 640px) {
+  .md-supplier-list,
+  .md-customer-list { --md-partner-actions-width: 132px; }
+  .md-supplier-actions,
+  .md-customer-actions { flex-wrap: wrap; }
+  .md-supplier-actions .zh-btn,
+  .md-customer-actions .zh-btn { white-space: normal; text-align: center; height: auto; }
   .md-supplier-list table { min-width: 0; }
   .md-supplier-list table :is(th, td):nth-child(-n+2),
   .md-supplier-list table :is(th, td):nth-child(4) { display: none; }
@@ -586,7 +598,7 @@
   width: 100px;
 }
 .md-customer-list table .md-customer-col-actions {
-  width: 176px;
+  width: var(--md-partner-actions-width);
 }
 .md-customer-list .prd-search-input {
   min-width: 0;
@@ -623,7 +635,6 @@
 }
 @media (max-width: 640px) {
   .md-customer-list table .md-customer-col-status { display: none; }
-  .md-customer-list table .md-customer-col-actions { width: 148px; }
   .md-customer-identity__status { display: inline-flex; }
 }
 @media (pointer: coarse) {

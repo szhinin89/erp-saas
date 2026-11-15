@@ -47,7 +47,8 @@ vi.mock("../../../lib/messages", () => ({
   message: { success: vi.fn(), error: vi.fn(), confirm: vi.fn() },
 }));
 
-const TABS = ["summary", "general", "supplier", "customer", "locations", "contacts", "roles"];
+const SUPPLIER_TABS = ["summary", "general", "sri", "purchases", "retentions", "expenseSubcategories", "locations", "contacts"];
+const CUSTOMER_TABS = ["summary", "general", "classification", "sales", "locations", "contacts"];
 const RETENTION = {
   id: "srd-1", businessPartnerId: "bp-1", sriRetentionCodeId: "src-1", taxType: "RENTA", code: "303", codeName: "Honorarios",
   percentage: 10, isCatalogCodeActive: true, isActive: true, displayOrder: 0,
@@ -80,9 +81,9 @@ const expectNoRawI18n = () => {
   expect(a11yAttrs()).not.toMatch(/\{\{\s*\w+\s*\}\}|masterdata\.bp\.detail\./);
 };
 
-async function visitAllTabs() {
+async function visitAllTabs(tabs: string[]) {
   await screen.findByRole("tablist");
-  for (const tab of TABS) {
+  for (const tab of tabs) {
     fireEvent.click(document.getElementById(`bp-tab-${tab}`)!);
     await waitFor(() => expect(document.getElementById(`bp-panel-${tab}`)!.hasAttribute("hidden")).toBe(false));
     await new Promise((r) => setTimeout(r, 30));
@@ -90,29 +91,48 @@ async function visitAllTabs() {
 }
 
 describe("ficha unificada — i18n", () => {
-  it("español: ninguna pestaña muestra claves crudas ni marcadores sin resolver", async () => {
-    renderBpDetail("?tab=summary");
-    await visitAllTabs();
+  it("español (proveedor): ninguna pestaña muestra claves crudas ni marcadores sin resolver", async () => {
+    renderBpDetail("?tab=summary", { context: "supplier" });
+    await visitAllTabs(SUPPLIER_TABS);
     expectNoRawI18n();
     expect(screen.getByRole("tab", { name: /^Ubicaciones/ })).toBeTruthy();
   });
 
-  it("inglés: los textos de la ficha se muestran en inglés en todas las pestañas", async () => {
-    localStorage.setItem(storageKey, "en");
-    renderBpDetail("?tab=summary");
-    await visitAllTabs();
+  it("español (cliente): ninguna pestaña muestra claves crudas ni marcadores sin resolver", async () => {
+    renderBpDetail("?tab=summary", { context: "customer" });
+    await visitAllTabs(CUSTOMER_TABS);
     expectNoRawI18n();
-    for (const name of [/^Overview/, /^General data/, /^Supplier/, /^Customer/, /^Locations/, /^Contacts/, /^Roles/])
+  });
+
+  it("inglés (proveedor): los textos de la ficha se muestran en inglés en todas las pestañas", async () => {
+    localStorage.setItem(storageKey, "en");
+    renderBpDetail("?tab=summary", { context: "supplier" });
+    await visitAllTabs(SUPPLIER_TABS);
+    expectNoRawI18n();
+    for (const name of [/^Overview/, /^General data/, /^SRI configuration/, /^Purchases/, /^Withholdings/, /^Expense subcategories/, /^Locations/, /^Contacts/])
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     const text = visibleText();
-    for (const english of ["New location", "New contact", "Default withholdings", "Commercial classification", "Revoke", "Back"])
+    for (const english of ["New location", "New contact", "Default withholdings", "Back to suppliers"])
       expect(text, english).toContain(english);
-    // Etiquetas de campos/ayudas del ámbito que antes eran texto fijo en español.
-    for (const spanish of ["Nueva ubicación", "Nuevo contacto", "Retenciones predeterminadas", "Clasificación comercial", "Revocar", "Volver", "Datos generales", "Sustento tributario"])
+    for (const spanish of ["Nueva ubicación", "Nuevo contacto", "Retenciones predeterminadas", "Volver", "Datos generales", "Sustento tributario"])
       expect(text, spanish).not.toContain(spanish);
   });
 
-  it("los parámetros se interpolan en confirmaciones y avisos (ubicaciones, contactos y roles)", async () => {
+  it("inglés (cliente): los textos de la ficha se muestran en inglés en todas las pestañas", async () => {
+    localStorage.setItem(storageKey, "en");
+    renderBpDetail("?tab=summary", { context: "customer" });
+    await visitAllTabs(CUSTOMER_TABS);
+    expectNoRawI18n();
+    for (const name of [/^Overview/, /^General data/, /^Classification/, /^Sales terms/, /^Locations/, /^Contacts/])
+      expect(screen.getByRole("tab", { name })).toBeTruthy();
+    const text = visibleText();
+    expect(text).toContain("Commercial classification");
+    expect(text).toContain("Back to customers");
+    for (const spanish of ["Clasificación comercial", "Volver", "Datos generales"])
+      expect(text, spanish).not.toContain(spanish);
+  });
+
+  it("los parámetros se interpolan en confirmaciones y avisos (ubicaciones y contactos)", async () => {
     vi.mocked(businessPartnerFacade.deactivateLocation).mockResolvedValue(true);
     vi.mocked(businessPartnerFacade.setLocationPrimary).mockResolvedValue(true);
     vi.mocked(businessPartnerFacade.deactivateContact).mockResolvedValue(true);
@@ -140,13 +160,6 @@ describe("ficha unificada — i18n", () => {
     options = vi.mocked(message.confirm).mock.calls[1][0];
     expect(options.title).toBe('Desactivar "Luis Mora"');
     expect(String(options.message)).toContain('"Luis Mora" dejará de estar disponible');
-
-    fireEvent.click(screen.getByRole("tab", { name: /^Roles/ }));
-    fireEvent.click((await screen.findAllByRole("button", { name: "Revocar" }))[0]);
-    await waitFor(() => expect(message.confirm).toHaveBeenCalledTimes(3));
-    options = vi.mocked(message.confirm).mock.calls[2][0];
-    expect(options.title).toMatch(/^Revocar rol "(Proveedor|Cliente)"$/);
-    expect(String(options.message)).not.toMatch(/\{\{/);
   });
 
   it("inglés: las confirmaciones y avisos con parámetros también se interpolan", async () => {

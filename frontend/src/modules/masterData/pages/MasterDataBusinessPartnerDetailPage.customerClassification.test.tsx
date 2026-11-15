@@ -70,7 +70,7 @@ const selects = () => within(section()).getAllByRole("combobox") as HTMLSelectEl
 const zoneInput = () => within(section()).getByPlaceholderText("Norte, Sur, Centro…") as HTMLInputElement;
 
 async function openReady() {
-  renderBpDetail("?tab=customer");
+  renderBpDetail("?tab=classification");
   await screen.findByRole("heading", { name: "Clasificación comercial" });
   await waitFor(() => expect(saveButton().disabled).toBe(false));
 }
@@ -164,7 +164,7 @@ describe("clasificación del cliente — sin configuración y catálogos", () =>
 
   it("bloquea el guardado mientras los catálogos cargan", async () => {
     vi.mocked(classificationCatalogFacade.customerSegments).mockReturnValue(new Promise(() => {}));
-    renderBpDetail("?tab=customer");
+    renderBpDetail("?tab=classification");
     await screen.findByRole("heading", { name: "Clasificación comercial" });
     expect(saveButton().disabled).toBe(true);
     fireEvent.submit(saveButton().closest("form")!);
@@ -173,7 +173,7 @@ describe("clasificación del cliente — sin configuración y catálogos", () =>
 
   it("bloquea el guardado si falla la carga de un catálogo", async () => {
     vi.mocked(classificationCatalogFacade.customerCategories).mockRejectedValue(new Error("catálogo caído"));
-    renderBpDetail("?tab=customer");
+    renderBpDetail("?tab=classification");
     await screen.findByRole("heading", { name: "Clasificación comercial" });
     await waitFor(() => expect(selects()[1].value).toBe("SMB"));
     expect(saveButton().disabled).toBe(true);

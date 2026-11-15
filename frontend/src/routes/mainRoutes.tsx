@@ -208,9 +208,14 @@ export const mainRoutes = [
     element={<MasterDataCustomersPage />}
   />,
   <Route
-    key="masterdata-bp-detail"
-    path="/masterdata/business-partners/:id"
-    element={<MasterDataBusinessPartnerDetailPage />}
+    key="customers-detail"
+    path="/customers/:id"
+    element={<MasterDataBusinessPartnerDetailPage context="customer" />}
+  />,
+  <Route
+    key="suppliers-detail"
+    path="/suppliers/:id"
+    element={<MasterDataBusinessPartnerDetailPage context="supplier" />}
   />,
   <Route
     key="suppliers"

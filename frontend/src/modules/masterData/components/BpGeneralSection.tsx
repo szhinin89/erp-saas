@@ -4,14 +4,26 @@ import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { businessPartnerFacade } from "../api/businessPartnerFacade";
-import { useSriIdTypes, getSriIdTypeName } from "../api/useSriIdTypes";
+import { describeCatalogCode } from "../api/catalogDescription";
+import { useSriIdTypes } from "../api/useSriIdTypes";
 import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 import type {
   BusinessPartnerDetailDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { BpDetailRow } from "./BpDetailRow";
+import type { BpContext } from "./bpDetailTabs";
 import { MasterDataPartnerWizard } from "./MasterDataPartnerWizard";
+
+/** Nombre del país (ISO alpha-2) con el servicio estándar del navegador; sin soporte, el propio código. */
+function countryLabel(code: string, locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: "region" }).of(code);
+    return name && name !== code ? `${name} (${code})` : code;
+  } catch {
+    return code;
+  }
+}
 
 const NOOP = () => {};
 const NOOP_ASYNC = () => Promise.resolve();
@@ -23,34 +35,36 @@ const DRAFT_KEY = "erp.masterdata.bp.general.draft";
  * permiso muestra los mismos datos en solo lectura.
  */
 export function BpGeneralSection({
+  context,
   bp,
   canUpdate,
   onReload,
   onDirtyChange,
 }: {
+  /** Módulo desde el que se administra: define el rol del formulario (nunca se infiere de los roles del socio). */
+  context: BpContext;
   bp: BusinessPartnerDetailDto;
   canUpdate: boolean;
   onReload: () => Promise<void>;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useI18n();
-  const { options: idTypes } = useSriIdTypes();
-  const { options: legalEntityTypes } = useLegalEntityTypes();
+  const { options: idTypes, loading: idTypesLoading } = useSriIdTypes();
+  const { options: legalEntityTypes, loading: legalLoading } = useLegalEntityTypes();
+  const { locale } = useI18n();
   const [saving, setSaving] = useState(false);
   // Cada guardado exitoso remonta el formulario con lo persistido (base limpia aunque la relectura
   // devuelva exactamente los mismos valores, p. ej. si el servidor normaliza).
   const [saveVersion, setSaveVersion] = useState(0);
   const formId = `bp-general-form-${bp.id}`;
-  const role = bp.roles.some((r) => r.isActive && r.roleType === "Supplier")
-    ? "supplier"
-    : "customer";
+  const role = context;
 
   if (!canUpdate) {
     return (
       <section className="md-detail-section">
         <BpDetailRow
           label={t("masterdata.bp.detail.general.idType", "Tipo de identificación")}
-          value={`${bp.identificationType} — ${getSriIdTypeName(bp.identificationType, idTypes)}`}
+          value={describeCatalogCode(bp.identificationType, idTypes, idTypesLoading, (c) => t("masterdata.bp.detail.unknownCatalog", { code: c }))}
         />
         <BpDetailRow
           label={t("masterdata.bp.detail.general.idNumber", "Número")}
@@ -58,10 +72,12 @@ export function BpGeneralSection({
         />
         <BpDetailRow
           label={t("masterdata.bp.detail.general.legalEntityType", "Tipo de entidad legal")}
-          value={
-            legalEntityTypes.find((x) => x.code === bp.legalEntityTypeCode)?.name ??
-            String(bp.legalEntityTypeCode)
-          }
+          value={describeCatalogCode(
+            String(bp.legalEntityTypeCode),
+            legalEntityTypes.map((x) => ({ code: String(x.code), name: x.name })),
+            legalLoading,
+            (c) => t("masterdata.bp.detail.unknownCatalog", { code: c }),
+          )}
         />
         <BpDetailRow
           label={t("masterdata.bp.detail.general.legalName", "Razón social")}
@@ -73,7 +89,7 @@ export function BpGeneralSection({
         />
         <BpDetailRow
           label={t("masterdata.bp.detail.general.country", "País")}
-          value={bp.countryCode ?? "EC"}
+          value={countryLabel(bp.countryCode ?? "EC", locale)}
         />
         <BpDetailRow
           label={t("masterdata.bp.detail.summary.createdAt", "Creado")}

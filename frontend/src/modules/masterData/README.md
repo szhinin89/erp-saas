@@ -9,7 +9,7 @@ UI picker / búsqueda
 CRUD operacional legacy
     → customerService / supplierService (sin cambios)
 CRUD MasterData (coexistente)
-    → /masterdata/customers | /masterdata/suppliers
+    → listados /customers | /suppliers  ·  ficha por contexto /suppliers/:id · /customers/:id
 ```
 
 > Nota: el gating por feature flag (`masterdata.customers.enabled`/`masterdata.suppliers.enabled` vía entitlements) descrito en versiones anteriores de este documento ya no existe en `businessPartnerFacade.ts` — ver sección "Feature flags" más abajo.
