@@ -1,11 +1,15 @@
 # Project Status
 
-## PURCHASES-NEW-TAB-REDESIGN-01 — Compras V1: rediseño visual aprobado de «Nueva compra» y extracción de componentes — SIN COMMIT, sin push; validación con API real y XML real PENDIENTE (2026-11-15)
+## PURCHASES-NEW-TAB-REDESIGN-01 — Compras V1: rediseño visual aprobado de «Nueva compra» y extracción de componentes — PUBLICADO en `04619c611`, CI #1209 SUCCESS; validación con API real y XML real PENDIENTE (2026-11-15)
 
 > Reapertura visual autorizada por el propietario sobre la imagen de referencia aprobada; el diseño quedó aprobado.
 > Sin cambios de hooks de negocio, cálculos, contratos, backend, API, BD ni migraciones. La barra de acciones fija
 > al pie (la «Fase B» de PURCHASES-NEW-TAB-PHASE-A-01, entonces no autorizada) se implementó a petición expresa del
 > propietario como `position: sticky` del pie existente, sin duplicar acciones. Esto supera la nota de la Fase A.
+>
+> **Publicación y CI:** commit `04619c6114` (`refactor(purchases): redesign purchase form with reusable components`)
+> en `origin/main`; **CI #1209 — SUCCESS** (GitHub Actions, 2026-11-15): 20 jobs `success`, incluido `CI gate`; `publish`
+> omitido. El CI no sustituye la validación con API real ni la aceptación del propietario.
 
 - **Código:** `PurchasesPage.tsx` 2992 -> 121 líneas físicas (composición). Extraídos a `modules/purchases/components/`:
   `PurchaseListTab`, `PurchaseHeaderCards`, `PurchaseExtrasPanel`, `PurchaseProductsSection`, `PurchaseLineCard`
@@ -39,15 +43,18 @@
   no existe un patrón oficial en el proyecto.
 - **Pendiente:** validación con API real, sesión autenticada y una compra desde XML real (productos pendientes);
   validar visualmente la tarjeta de retención en borrador (no simulada en el arnés); decisión del propietario sobre la
-  limitación de idioma; staging y commit a cargo del propietario.
+  limitación de idioma.
 
-## PURCHASES-NEW-TAB-PHASE-A-01 — Compras V1: mejora visual de «Nueva compra» (Fase A) — COMMIT LOCAL, sin push; validación con API real PENDIENTE (2026-11-15)
+## PURCHASES-NEW-TAB-PHASE-A-01 — Compras V1: mejora visual de «Nueva compra» (Fase A) — PUBLICADO en `130d23267`, CI #1208 SUCCESS; validación con API real PENDIENTE (2026-11-15)
 
 > **Reapertura puntual y solo visual de Compras V1**, autorizada por el propietario para la pantalla `/purchases`,
 > pestaña «Nueva compra». **No modifica el estado CLOSED de la funcionalidad de negocio de Compras**: sin cambios
 > de hooks, cálculos, impuestos, retenciones, validaciones, permisos, backend, API, BD ni migraciones. La Fase B
 > (barra de acciones sticky, total visible mientras se editan líneas, mover Guardar/Confirmar) **no** estaba
 > implementada ni autorizada en esta fase; la barra fija se implementó después en PURCHASES-NEW-TAB-REDESIGN-01.
+>
+> **Publicación y CI:** commit `130d232679` (`style(purchases): improve new purchase form layout`) en
+> `origin/main`; **CI #1208 — SUCCESS** (2026-11-15): 20 jobs `success`, incluido `CI gate`; `publish` omitido.
 
 - **Alcance (frontend, `modules/purchases`):**
   - Cabecera: se elimina la tarjeta «Logística y totales» (un solo campo en una fila 2fr/1fr con una columna
@@ -86,7 +93,7 @@
   Fuera de alcance, no corregido: las tarjetas de línea llegan al borde derecho a 1440 px (no se verificó si ya
   ocurría antes).
 
-## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — PUBLICADO en `origin/main` (`f4f04c272`); CI sin confirmar (2026-11-15)
+## SRI-ID-TYPE-SHORT-NAME-01 — `short_name` en `global.sri_id_type` — PUBLICADO en `origin/main` (`f4f04c272`); CI #1206 SUCCESS (2026-11-15)
 
 - **Alcance:** columna `short_name` (`varchar(20)`, NOT NULL) añadida al baseline inicial
   `20261101012214_InitialProductionBaseline` (CreateTable, InsertData, Designer y snapshot); sin migraciones
@@ -99,8 +106,9 @@
 - **Verificado:** `has-pending-model-changes` sin cambios; prueba de seed (12/12 en la clase),
   Architecture.Tests 145/145, 74 pruebas Vitest focalizadas, `tsc -b` y guardrails PR-7 OK;
   `erp_zh_dev` contiene los seis `short_name` aprobados (el propietario aplicó la columna aditivamente).
-- **SIN VERIFICAR:** respuesta real de la API con `shortName` (sin sesión autorizada) y resultado del CI de
-  `f4f04c272` (no consultado desde este entorno).
+- **CI:** **#1206 — SUCCESS** sobre `f4f04c2727` (2026-11-15): 21 jobs `success`, incluido `CI gate`; `publish`
+  omitido.
+- **SIN VERIFICAR:** respuesta real de la API con `shortName` (sin sesión autorizada).
   Instalaciones que ya aplicaron el baseline anterior requieren añadir la columna de forma aditiva;
   una instalación nueva la recibe del baseline.
 
@@ -110,7 +118,8 @@
 > (fichas separadas `/suppliers/:id` y `/customers/:id`, listados, códigos con descripción y abreviatura)
 > queda **COMPLETADA / CLOSED**. Commit final `65c207e42` (`fix(masterdata): separate customer supplier
 > views and correct display`), **CI #1205: SUCCESS**. Etapas previas: `e0f1d338c`, `9761470e8`,
-> `ad6154970`, `8d0298a8a` (CI #1202, #1203 y #1204 SUCCESS; #1201 es CI-1201, ajeno).
+> `ad6154970`, `8d0298a8a` (CI #1202, #1203 y #1204 SUCCESS; #1201 es CI-1201, ajeno). Cierre documental de la
+> consolidación: `f529e72dd` (`docs(masterdata): close customer and supplier consolidation`), **CI #1207: SUCCESS**.
 >
 > **Pendiente independiente (no bloquea el cierre):** validación E2E con API real. Todo se comprobó con
 > mocks y con navegador con API simulada; falta una sesión autorizada contra el backend real.

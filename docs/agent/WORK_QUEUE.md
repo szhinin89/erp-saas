@@ -4,15 +4,14 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- PURCHASES-NEW-TAB-REDESIGN-01 (sin commit, sin push; reapertura visual de Compras V1, que sigue CLOSED en
-  lo funcional; sustituye a PURCHASES-NEW-TAB-PHASE-A-01): rediseño de «Nueva compra» aprobado por el propietario,
+- PURCHASES-NEW-TAB-REDESIGN-01 (publicado en `04619c611`, CI #1209 SUCCESS; reapertura visual de Compras V1, que sigue CLOSED en
+  lo funcional; sustituye a PURCHASES-NEW-TAB-PHASE-A-01, publicada en `130d23267`, CI #1208 SUCCESS): rediseño de «Nueva compra» aprobado por el propietario,
   extracción de componentes de `PurchasesPage.tsx` y barra de acciones fija. Pendiente: validación con API real,
-  sesión autenticada y una compra desde XML real con productos pendientes (lo verificado fue con API simulada), y
-  staging/commit a cargo del propietario. Limitación conocida de i18n: al cambiar de idioma, los mensajes de
+  sesión autenticada y una compra desde XML real con productos pendientes (lo verificado fue con API simulada). Limitación conocida de i18n: al cambiar de idioma, los mensajes de
   validación ya visibles conservan el idioma anterior hasta revalidar (requiere cambio en `usePurchasesPage.ts`; sin
   decisión del propietario). Alcance, pruebas y evidencia en [STATUS](../../STATUS.md).
-- SRI-ID-TYPE-SHORT-NAME-01 (PUBLICADO en `f4f04c272`; CI sin confirmar): `short_name`
-  en `global.sri_id_type` vía baseline inicial. Pendientes: confirmar CI y verificar
+- SRI-ID-TYPE-SHORT-NAME-01 (PUBLICADO en `f4f04c272`; CI #1206 SUCCESS): `short_name`
+  en `global.sri_id_type` vía baseline inicial. Pendiente: verificar
   `shortName` en la API real con sesión autorizada. Estado y evidencia en [STATUS](../../STATUS.md).
 - IAM-V1-F2 (IMPLEMENTADO, pendiente gate del propietario; autorizado 2026-11-10; CI #1144
   SUCCESS valida su contenido; IAM-V1-F3 ya CLOSED con CI #1146 SUCCESS y aceptación del propietario
