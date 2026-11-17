@@ -1,5 +1,25 @@
 # Project Status
 
+## PEDIDOS-VENTA-V1 — ADR-049 ACCEPTED: diseño de Órdenes de Pedido V1 aprobado, NO implementado; F0 PENDING / NO AUTORIZADA (2026-11-17)
+
+> El propietario aprobó formalmente el ADR-049 el 17/11/2026. **Solo es una aprobación de diseño y documentación:** no hay
+> código, endpoints, permisos, migraciones ni cambios de base de datos, y **ninguna fase de implementación está
+> autorizada** (cada una requiere autorización expresa y lista exacta de rutas). No se ejecutó CI ni suites.
+
+- **Alcance aprobado:** Ventas → Gestión de Ventas → Orden de Pedido V1 (único documento de V1; sin Cotizaciones ni CRM).
+- **Decisiones aprobadas:** DEC-01 a DEC-06 y OPS-01. DEC-01: extensiones mínimas de Ventas e Inventario, fase por
+  fase, **sin reapertura ilimitada** (siguen FROZEN/CLOSED). DEC-02: se protege la existencia física comprometida
+  (`Quantity_after ≥ ReservedQuantity`), ADR-041 intacto. DEC-03: vigencia de reservas por empresa en días. DEC-04:
+  liberación manual de selecciones. DEC-05: A1 + B1 + C1. **DEC-06: una sola baseline inicial consolidada**, sin
+  migraciones incrementales por fase. OPS-01: sin vigencia configurada, Confirmar se rechaza.
+- **Pendiente:** verificaciones técnicas VER-01 a VER-14 (Fase 0, no iniciada); F5 y F6 siguen NO AUTORIZABLES hasta cerrar
+  verificaciones y listas de rutas.
+- **Documentos:** [ADR-049](docs/decisions/ADR-049-sales-order-v1-architecture.md),
+  [especificación funcional](docs/decisions/PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md) (diseño, no SSOT) y
+  [plan por fases](docs/agent/PEDIDOS-VENTA-V1-IMPLEMENTATION-PLAN-01.md). Cola: [WORK_QUEUE](docs/agent/WORK_QUEUE.md).
+- **Verificación documental:** enlaces y anclas de los tres documentos con la función oficial (sin escribir el reporte
+  rastreado), formato y `git diff --check`; no acredita implementación.
+
 ## PURCHASES-NEW-TAB-REDESIGN-01 — Compras V1: rediseño visual aprobado de «Nueva compra» y extracción de componentes — PUBLICADO en `04619c611`, CI #1209 SUCCESS; validación con API real y XML real PENDIENTE (2026-11-15)
 
 > Reapertura visual autorizada por el propietario sobre la imagen de referencia aprobada; el diseño quedó aprobado.

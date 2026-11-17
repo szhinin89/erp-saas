@@ -51,6 +51,7 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-046](ADR-046-historical-handler-size-debt.md) | ADR-046 — Excepción temporal para deuda histórica de tamaño de handlers C-03 |
 | [ADR-047](ADR-047-historical-tsx-size-debt.md) | ADR-047 — Excepción temporal para deuda histórica de tamaño TSX (PR-7) |
 | [ADR-048](ADR-048-company-suspension-automatic-processes.md) | ADR-048 — Empresa suspendida o deshabilitada: procesos automáticos y sesiones |
+| [ADR-049](ADR-049-sales-order-v1-architecture.md) | ADR-049 — Orden de Pedido de Venta V1 (Gestión de Ventas): diseño aprobado, no implementado |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 
@@ -61,4 +62,5 @@ Los siguientes conservan decisiones referenciadas y no sustituyen las SSOT:
 - [DOCUMENT-SEQUENCES-DESIGN-02.md](DOCUMENT-SEQUENCES-DESIGN-02.md).
 - [RETENTIONS-MODULE-DESIGN-01.md](RETENTIONS-MODULE-DESIGN-01.md).
 - [EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md](EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (diseño, sin implementar).
+- [PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md](PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md) (diseño funcional de ADR-049, sin implementar; no es SSOT).
 - [RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md](RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md).

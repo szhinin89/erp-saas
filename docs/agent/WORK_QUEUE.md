@@ -4,6 +4,12 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- PEDIDOS-VENTA-V1-F0 (**PENDING / NO AUTORIZADA**; ADR-049 Accepted el 17/11/2026, diseño aprobado y no implementado):
+  verificaciones técnicas VER-01 a VER-14 de Órdenes de Pedido V1 (solo lectura; no escribe código). Requiere
+  autorización expresa del propietario para iniciarse; ninguna fase de implementación (F1–F9) está autorizada, y F5/F6
+  son NO AUTORIZABLES. Conserva la baseline única (DEC-06) y las restricciones FROZEN/CLOSED (DEC-01: extensiones
+  mínimas, fase por fase). Estado en [STATUS](../../STATUS.md); diseño en
+  [ADR-049](../decisions/ADR-049-sales-order-v1-architecture.md) y [plan](PEDIDOS-VENTA-V1-IMPLEMENTATION-PLAN-01.md).
 - PURCHASES-NEW-TAB-REDESIGN-01 (publicado en `04619c611`, CI #1209 SUCCESS; reapertura visual de Compras V1, que sigue CLOSED en
   lo funcional; sustituye a PURCHASES-NEW-TAB-PHASE-A-01, publicada en `130d23267`, CI #1208 SUCCESS): rediseño de «Nueva compra» aprobado por el propietario,
   extracción de componentes de `PurchasesPage.tsx` y barra de acciones fija. Pendiente: validación con API real,
