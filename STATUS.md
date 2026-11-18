@@ -1,22 +1,14 @@
 # Project Status
 
-## GALI-SPA-V1.1-DOC — Recuperación documental en curso; documento provisional creado; contrato final PENDIENTE; ninguna implementación autorizada (2026-11-18)
+## GALI-SPA-V1.1-DOC — SPA-DEC-115/116 recuperadas; alcance funcional aprobado; ADR-051 PROPOSED / NO APROBADO; sin implementación autorizada (2026-11-18)
 
-> Se preservó de forma **provisional** la reconstrucción de la planificación de Gali Spa V1.1. **No es un ADR ni un contrato
-> implementable.** No hay código, endpoints, permisos, migraciones ni cambios de base de datos, y **ninguna implementación de Spa ni
-> de Empleados está autorizada.** No se ejecutó CI ni suites.
+> Se conservaron y corrigieron los **13 archivos locales** de la consolidación anterior (11 modificados y 2 nuevos), sin reiniciar trabajo. Evidencia histórica aportada por el propietario: SPA-DEC-115 y SPA-DEC-116 APROBADAS antes de planificar Empleados; fecha histórica exacta no aportada. **O-23 CERRADA en inclusión funcional general**, no cierre de fase ni aprobación técnica integral. Sin código, API, frontend, base de datos o migraciones; ninguna fase autorizada.
 
-- **Documento provisional:** [GALI-SPA-V1.1-RECOVERY-01](docs/decisions/GALI-SPA-V1.1-RECOVERY-01.md) (recuperación provisional, no ADR,
-  no SSOT). Distingue lo aprobado y verificado en [ADR-050](docs/decisions/ADR-050-employees-v1-architecture.md) (identidad
-  profesional/usuario registrador, reutilización de Empleados, `IEmployeeDirectory` como necesidad), los requisitos [F] extraídos de las
-  fichas originales de Gali Spa, la información [R] recuperada de la planificación, las propuestas técnicas [T] y los pendientes [P].
-- **Fuentes originales pendientes de contraste directo:** las fichas y formularios de Gali Spa (`.docx` y `.pdf`) no están en el
-  repositorio ni fueron leídos por Claude; su contenido se transmitió por el propietario.
-- **Contrato final pendiente:** agenda, servicios y paquetes, integración con Ventas, cobros y anticipos, privacidad y permisos,
-  modelo, API, frontend, pruebas y exclusiones de V1.1; un ADR, una especificación contractual y un plan de fases posteriores.
-- **Dependencia con Empleados:** Spa no se integra antes del contrato `IEmployeeDirectory` (EMP-E6b); EMP-E1 sigue PENDING / NO
-  AUTORIZADA.
-- **Verificación documental:** guardrail documental, enlaces y `git diff --check`; no acredita implementación.
+- **Documentos:** [contrato central](docs/decisions/GALI-SPA-V1.1-CONTRACT-SPEC-01.md) con alcance/pantallas/procesos y exclusiones aprobados, [registro §9/10](docs/decisions/GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) con transcripción histórica aportada, [ADR-051](docs/decisions/ADR-051-gali-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan F0–F8](docs/decisions/GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) preliminar adaptado a dependencias, sin autorización. Índice/seis antecedentes no normativos actualizados; cuerpos históricos preservados.
+- **Integración funcional:** búsqueda por servicio/fecha/sucursal sin profesional previo y motor único; selección explícita sin confirmación automática; visitas con varios servicios/profesionales y llegada; expediente único cliente/empresa y alertas; tratamientos individuales/multisesión con ciclo/ampliación; sesiones técnicas con borrador/finalización/interrupción/corrección; paquetes individuales/combinados, vigencia/cupos/ampliación/sustitución; firma en pantalla/versiones; fotos privadas; panel/espera/reportes básicos y responsive computadora/tablet/celular.
+- **Fronteras:** diez exclusiones históricas expresas restauradas (contrato HX-01..10). O-15/O-25 conservan textos íntegros; DIR-SSOT-01 sigue instrucción de propiedad transversal, no diseño financiero; ADR-050 intacto, sin Employee paralelo.
+- **Pendientes reales:** O-14 y O-24/V-01 ABIERTAS; texto de SPA-DEC-001..114 no recuperado. Admin/sucursales, auditoría de lecturas, cifrado/claves, conservación/validez de firma/menores, precisión corporal, cálculo de restricciones, modelo visita–cita y borrador/atención parcial, políticas concretas de paquetes/finanzas, directorio Empleados y aprobación técnica integral. O-08 resuelta para recursos físicos excluidos; O-20 para expediente único; O-11/13/16 y otras cuestiones quedan parciales solo por detalles (§30).
+- **Verificación de esta corrección:** PASS guardrail documental, 585 enlaces/anclas locales y `git diff --check`; diff final revisado. Preservadas literalmente las secciones O-15/O-25, fuente aportada SPA-DEC-115/116, seis cuerpos históricos, 102 escenarios y 13 casos anteriores; verificadas 19 fichas, 16 criterios candidatos nuevos, diez exclusiones y F0–F8; sin builds ni pruebas de código. El propietario autorizó separadamente la verificación final, staging y un único commit local de estos 13 archivos; sin push ni implementación. No se declara CLOSED. Siguiente paso funcional: revisión arquitectónica del propietario, no comenzar desarrollo.
 
 ## EMPLOYEES-V1 — ADR-050 PROPOSED: arquitectura funcional de Empleados V1 aprobada y documentada, NO implementada; EMP-E1 PENDING / NO AUTORIZADA (2026-11-18)
 

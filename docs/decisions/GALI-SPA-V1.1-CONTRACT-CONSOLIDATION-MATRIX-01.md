@@ -1,5 +1,7 @@
 # Gali Spa V1.1 — Matriz maestra de consolidación de contratos
 
+> **REFERENCIA HISTÓRICA NO NORMATIVA — actualizada el 2026-11-18.** SPA-DEC-115/116 se recuperaron aprobadas por evidencia aportada por el propietario: [registro §9/10](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). El [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md) contiene el alcance funcional aprobado y O-23 cerrada en inclusión general; los detalles técnicos, legales y las fichas originales siguen pendientes según su registro. [ADR-051](ADR-051-gali-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) sin fases autorizadas. Se preserva el cuerpo previo como evidencia de su fecha: sus afirmaciones «solo título», alcance sin confirmar, alternativas y cierres pendientes describen la recuperación anterior y no el estado actual. No sustituye contrato/registro ni autoriza implementar.
+
 **MATRIZ DOCUMENTAL — NO ADR — NO CONTRATO IMPLEMENTABLE — NO IMPLEMENTACIÓN AUTORIZADA.**
 
 Documento de consolidación (SPA-V1.1-DOC-05). Reúne en una matriz única los requisitos de los cuatro documentos de Spa existentes, **sin duplicar ni modificar su

@@ -1,17 +1,18 @@
-# Gali Spa V1.1 — Registro de decisiones funcionales aprobadas (O-25 y O-15)
+# Gali Spa V1.1 — Registro de decisiones funcionales aprobadas (SPA-DEC-115, SPA-DEC-116, O-25, O-15 y directriz transversal)
 
-**REGISTRO DE DECISIONES APROBADAS POR EL PROPIETARIO — ALCANCE LIMITADO — NO ADR — NO CONTRATO IMPLEMENTABLE — NO IMPLEMENTACIÓN AUTORIZADA.**
+**REGISTRO DE APROBACIONES LIMITADAS E INSTRUCCIONES DEL PROPIETARIO — NO ADR — NO CONTRATO IMPLEMENTABLE — NO IMPLEMENTACIÓN AUTORIZADA.**
 
-Registro canónico de SPA-V1.1-DECISION-CLOSURE-01. Documenta las **dos primeras decisiones funcionales de Gali Spa V1.1 aprobadas expresamente por el propietario**, ambas el **2026-11-18**: `O-25` y `O-15`.
+Registro canónico de las aprobaciones de Spa. Conserva O-25/O-15, aprobadas el 2026-11-18, y añade la evidencia histórica SPA-DEC-115/116 recuperada por el propietario en el encargo de integración del 2026-11-18. Las decisiones históricas fueron aprobadas antes de planificar Empleados; su fecha original exacta no fue aportada.
 Estado de entrega: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
+
+Comportamiento consolidado: [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md). Arquitectura candidata: [ADR-051](ADR-051-gali-spa-v1.1-architecture.md), PROPOSED / NO APROBADO. Fases: [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md), ninguna autorizada. DIR-SSOT-01 (§7) es una instrucción de propiedad, no una aprobación de diseño financiero.
 
 ## 0. Naturaleza y límites
 
 1. **La aprobación corresponde únicamente a las alternativas indicadas y a sus límites**, no a todas las propuestas técnicas incluidas en los borradores de Spa.
-2. **Estas aprobaciones no son decisiones históricas.** No se les asigna ningún identificador `SPA-DEC` nuevo, y no deben confundirse con el historial perdido `SPA-DEC-001` a `SPA-DEC-115` ni con
-   `SPA-DEC-116` (de la cual solo está confirmado el título).
+2. O-25/O-15 no reciben identificadores SPA-DEC nuevos. SPA-DEC-115/116 se registran con sus identificadores históricos y la evidencia aportada por el propietario (§9/10). **No se fabrican SPA-DEC-001 a SPA-DEC-114 ni se dan por recuperados sus textos.**
 3. **Evidencia de la aprobación:** confirmación expresa del propietario en la conversación del proyecto (SPA-V1.1-DECISION-CLOSURE-01), sobre la base del análisis SPA-V1.1-DECISION-REVIEW-01 (informe de sesión, no versionado en el repositorio).
-4. No se cierra ninguna otra cuestión `O-xx` por inferencia (§5). No se crea un ADR implementable y no se autoriza implementación de Spa ni de Empleados.
+4. Los cierres parciales de §5 se apoyan en SPA-DEC-115/116 y el encargo expreso, no en inferencias. No se crea un ADR implementable y no se autoriza implementación de Spa ni de Empleados.
 5. No se modifica Ventas ni ningún módulo FROZEN.
 
 Documentos relacionados: [RECOVERY-01](GALI-SPA-V1.1-RECOVERY-01.md), [OPERATIONS-SPEC](GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01.md), [CARE-PRIVACY](GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01.md),
@@ -141,7 +142,7 @@ Entidades del contrato y de su libro de movimientos; restricción de unicidad po
 
 ## 3. Conflictos
 
-- **C-06 (terminología de citas y sesiones):** el **conflicto terminológico queda resuelto** por `O-25` (alternativa A). Las **políticas comerciales** relacionadas (ausencias que consumen saldo, efecto de cancelar, atención sin cita, varios servicios por cita) **siguen abiertas**.
+- **C-06 (terminología de citas y sesiones):** el **conflicto terminológico queda resuelto** por `O-25` (alternativa A). Las **políticas comerciales** relacionadas (ausencias que consumen saldo, efecto de cancelar, atención sin cita) **siguen abiertas**. Varios servicios/profesionales por visita sí están aprobados por SPA-DEC-116; su representación técnica se delimita en §11.
 - **C-01 y C-02** no se modifican y siguen abiertos.
 - **C-08** (anticipos frente a la capacidad real de Ventas y CxC) no se modifica: depende de `O-14`.
 
@@ -153,11 +154,133 @@ Entidades del contrato y de su libro de movimientos; restricción de unicidad po
 - No aprueban la creación automática de contratos.
 - No modifican ADR-050 ni la especificación de Empleados.
 
-## 5. Decisiones que permanecen abiertas
+## 5. Estado de las cuestiones tras la evidencia histórica
 
-Las **23 cuestiones restantes** siguen pendientes: `O-01` a `O-14` y `O-16` a `O-24`. En particular siguen abiertas `O-01` (administrador y datos clínicos), `O-05` (eliminación frente a la regla de no borrado), `O-14` (anticipos),
-`O-13` (paquetes), `O-10` (atención sin cita) y `O-11` (servicio y procedimiento). Tampoco se resuelven por inferencia los pendientes de evidencia externa (fichas originales, texto de `SPA-DEC-116`, validación jurídica, Empleados implementado).
+O-15/O-25 permanecen íntegros. **O-23 queda CERRADA en su componente de inclusión funcional general**, por SPA-DEC-116 y la instrucción expresa del propietario. No se requiere volver a aprobar capacidad por capacidad el alcance ya declarado.
+
+O-08 queda resuelta en cuanto a cabinas/equipos: su control de disponibilidad está expresamente excluido. O-20 queda resuelta: expediente único por cliente y empresa. O-09/O-11/O-12/O-13/O-16 tienen componentes funcionales aprobados y detalles abiertos, delimitados en el contrato §30. No se presenta como pendiente la existencia de firma en pantalla, versiones, tratamientos multisesión, paquetes combinados, vigencia, cupos o varios servicios/profesionales.
+
+**O-14 y O-24 siguen abiertas.** También siguen pendientes política Admin, acceso entre sucursales, registro de lecturas, cifrado, conservación/eliminación, menores, alcance académico, datos/obligatoriedad de formularios, precisión de medidas y reglas comerciales concretas. El contraste de fichas está en O-24/V-01; los detalles de decisiones SPA-DEC-001..114 no recuperados son evidencia histórica pendiente, no ausencia de aprobación del alcance. Estado detallado único: contrato §30.
 
 ## 6. Límites
 
-Este documento solo registra dos aprobaciones funcionales. No es un ADR, no es una especificación contractual, no autoriza implementación de Spa ni de Empleados, migraciones ni cambios en módulos FROZEN, y no aprueba ninguna otra decisión.
+Este documento registra dos decisiones históricas aprobadas, O-15/O-25 y una instrucción transversal de propiedad, sin aprobar mecanismos técnicos pendientes. No es un ADR, no es una especificación contractual, no autoriza implementación de Spa ni de Empleados, migraciones ni cambios en módulos FROZEN, y no aprueba ninguna otra decisión.
+
+## 7. DIR-SSOT-01 — Anticipos de Clientes como proceso transversal
+
+**Estado: INSTRUCCIÓN DEL PROPIETARIO; no aprobación de diseño.** Fecha: 2026-11-18. Procedencia: encargo SPA-V1.1-SSOT-CONSOLIDATION, ya recogido en el contrato §20.4, y reiteración expresa en el encargo «Consolidación documental definitiva», §4.
+
+Anticipos de Clientes es un proceso independiente y transversal del ERP, no una entidad financiera propia de Gali Spa. Esta frontera no asigna su implementación a Ventas o CxC, no diseña cobros sin factura, aplicaciones, devoluciones, contabilización ni tratamiento fiscal, y no autoriza desarrollo. **O-14 permanece abierta; C-08 conserva su brecha funcional.** Spa solo podría consumir el contrato del proceso si se aprueba separadamente. DIR-SSOT-01 no cierra O-23; su componente funcional se cierra por SPA-DEC-116 y el encargo expreso, no por esta instrucción.
+
+## 8. Decisiones de Empleados aplicables a Spa
+
+Referencia de autoridad: [ADR-050](ADR-050-employees-v1-architecture.md), arquitectura funcional aprobada; ADR en estado Proposed y módulo sin implementar. Este resumen no modifica sus decisiones.
+
+| Fuente exacta | Alcance aplicable | Límite |
+|---|---|---|
+| §3 DEC-E1; §13 | Reutilizar Employee; contrato mínimo IEmployeeDirectory de solo lectura, ids estables no reutilizados, inactivos consultables para historia | No aprueba firmas técnicas ni habilita consumo antes de EMP-E6b |
+| §3 DEC-E4; §13 | Profesional responsable separado del usuario registrador; quien documenta requiere usuario autorizado | No identifica automáticamente profesional, vendedor y cobrador |
+| §3 DEC-E5 y P-01 | Catálogos distintos de cargo, profesión y especialidad; cargo/profesión pueden faltar | No aprueba una regla de elegibilidad de Spa por especialidad |
+| §3 DEC-E6, E-D4 y P-04; §8 | Varias sucursales laborales; sin principal obligatoria; sin asignación válida no hay elegibilidad para operaciones que la exijan | Asignación laboral no es autorización ERP ni disponibilidad horaria |
+| §6, §8, §13 | Permisos y acceso ERP oficiales; Spa posee permisos clínicos, agenda, horarios, sesiones y disponibilidad | employees.* y access.* no son permisos clínicos; política Admin de Spa pendiente O-01 |
+
+**Alcance del registro:** O-15/O-25 conservan su aprobación y texto; SPA-DEC-115/116 aportan las aprobaciones históricas de §9/10. Los componentes O-xx resueltos o todavía pendientes se delimitan en §5 y contrato §30, sin aprobación técnica integral ni autorización de desarrollo.
+
+## 9. SPA-DEC-115 — Búsqueda de disponibilidad por servicio
+
+**APROBADA HISTÓRICA — evidencia recuperada el 2026-11-18.** Fuente: contenido de conversaciones originales aportado expresamente por el propietario en el encargo «Integración de las decisiones históricas aprobadas SPA-DEC-115 y SPA-DEC-116», §1. No se declara inspección independiente de la conversación original ni una fecha histórica no proporcionada. Transcripción aportada:
+
+**Título:** Búsqueda de disponibilidad por servicio para Gali Spa V1.1.
+
+Funcionamiento aprobado:
+
+1. Recepción podrá buscar horarios disponibles sin seleccionar previamente un profesional.
+2. La búsqueda considerará servicio, fecha y sucursal.
+3. El ERP mostrará los profesionales habilitados y sus horarios disponibles.
+4. Se respetarán descansos, bloqueos, tiempos de preparación, traslados y demás restricciones aprobadas.
+5. Recepción seleccionará el profesional y horario que mejor convengan al cliente.
+6. La cita no se confirmará automáticamente.
+7. Se reutilizará la agenda y su mecanismo centralizado de disponibilidad.
+
+**No convertir esta decisión en una segunda agenda ni en otro motor independiente.**
+
+Las reglas exactas de cálculo y representación de restricciones deberán verificarse contra las decisiones anteriores que permanezcan disponibles. No inventar valores de duración, tolerancias ni márgenes.
+
+## 10. SPA-DEC-116 — Revisión y consolidación del alcance
+
+**APROBADA HISTÓRICA — evidencia recuperada el 2026-11-18.** Misma fuente aportada por el propietario, §1/2. Ya no se conoce solo el título: se recuperaron las áreas, agrupaciones funcionales y exclusiones siguientes. Esto no equivale a recuperar todos los detalles de decisiones anteriores ni aprobar estructuras de datos. Transcripción aportada:
+
+**Título:** Revisión y consolidación del alcance de Gali Spa V1.1.
+
+La decisión fue aprobada expresamente por el propietario.
+
+La revisión posterior documentó que las siguientes áreas **forman parte del alcance funcional aprobado de V1.1**:
+
+| Área | Alcance histórico aprobado |
+|---|---|
+| Clientes y expedientes | Expediente único por empresa, antecedentes, valoraciones, alertas e historial |
+| Empleados | Modelo general reutilizable del ERP, vinculado con usuarios y sucursales |
+| Tratamientos | Planes individuales, multisesión, ampliaciones, suspensión, cancelación y cierre |
+| Sesiones | Registro técnico individual, resultados, productos, incidencias, fotografías y evolución |
+| Agenda | Citas diarias y semanales, profesionales, horarios, disponibilidad y reprogramaciones |
+| Paquetes | Individuales y combinados, vigencia, cupos, ampliaciones y sustituciones |
+| Consentimientos | Por procedimiento, firma en pantalla, versiones y autorizaciones específicas |
+| Ventas y cobros | Integración con servicios, facturas, CxC, cobros y ventas de productos oficiales |
+| Seguridad | Permisos existentes, aislamiento por empresa, auditoría y archivos privados |
+| Interfaz | Diseño responsivo para computadora, tablet y celular |
+| Gestión operativa | Panel inicial, seguimiento de tratamientos, lista de espera y reportes básicos |
+
+**También se aprobaron estas agrupaciones funcionales:**
+
+- Motor de agenda: disponibilidad, horarios, bloqueos, traslados, preparación y conflictos.
+- Gestión de visitas: citas, varios servicios, varios profesionales, llegada y cambios.
+- Gestión de sesiones: formularios, borradores, finalización, interrupciones y correcciones.
+- Gestión de tratamientos: sesiones contratadas, cupos, ampliaciones, suspensiones y cierres.
+- Expediente del cliente: valoraciones, alertas, consentimientos, fotografías e historial.
+- Gestión comercial: paquetes, facturas, cobros, saldos, cancelaciones y ajustes.
+- Seguridad: permisos, auditoría, acceso a archivos y protección de datos.
+
+Estas agrupaciones forman parte de procesos integrados. No requieren crear un módulo independiente por cada característica.
+
+### 10.1 Exclusiones originales expresas de V1.1
+
+SPA-DEC-116 documenta que quedaron fuera:
+
+1. Control de disponibilidad de cabinas y equipos.
+2. Recordatorios automáticos por WhatsApp, correo o SMS.
+3. Desarrollo de un nuevo sistema de respaldos o recuperación.
+4. Reservas públicas de clientes.
+5. Descuento automático mediante Kardex de productos aplicados en sesiones.
+6. Nómina y administración completa de recursos humanos.
+7. Aplicación móvil independiente.
+8. Funcionamiento sin conexión a Internet.
+9. Diagnósticos automáticos e inteligencia artificial para evaluar resultados.
+10. Dashboard analítico adicional y contabilidad paralela.
+
+**Distinciones obligatorias:**
+
+- Los descansos, bloqueos, preparación y traslados de SPA-DEC-115 no autorizan un módulo de disponibilidad de cabinas o equipos.
+- El panel operativo y los reportes básicos están incluidos. El dashboard analítico adicional está excluido.
+- Registrar los productos utilizados en una sesión no implica descontarlos automáticamente de Kardex.
+- El diseño responsive está incluido. Una aplicación móvil independiente está excluida.
+- El uso de funcionalidades existentes de respaldo no equivale a desarrollar un sistema nuevo de respaldos.
+- La integración con Ventas y cobros no autoriza crear contabilidad, Caja ni CxC dentro de Spa.
+
+### 10.2 Orden preliminar histórico de fases
+
+El propietario aporta en §7 del encargo la secuencia histórica de SPA-DEC-116: F0 arquitectura y contratos; F1 Empleados y base segura; F2 expediente y valoraciones; F3 tratamientos y sesiones; F4 consentimientos y fotografías; F5 agenda y lista de espera; F6 integración comercial; F7 operación y reportes; F8 pruebas integrales. Es orden preliminar, adaptable a dependencias técnicas, no secuencia inmutable ni autorización de fases. Desarrollo del orden y gates: plan oficial.
+
+## 11. Compatibilidad con decisiones posteriores y pendientes concretos
+
+| Evidencias conservadas | Delimitación, sin revocación inferida |
+|---|---|
+| SPA-DEC-115 y O-25 | Buscar devuelve profesionales/horarios y requiere selección explícita; no confirma automáticamente. Reservar crea cita y nunca consume por reservar/reprogramar. Buscar no crea sesión clínica ni una segunda agenda |
+| SPA-DEC-116 (visitas) y O-25 | Varios servicios/profesionales por visita es capacidad aprobada. O-25 no aprobó esa cardinalidad en su propio alcance, pero tampoco la excluyó. Representación visita–cita–servicios–profesionales queda pendiente; no imponer una cita de un único servicio como modelo definitivo |
+| SPA-DEC-116 (sesiones) y O-25 | Borradores, finalización, interrupciones y correcciones aprobados como capacidades. Un borrador técnico no certifica una atención realizada. Efectos de sesión parcial/interrumpida sobre cita, cupos y consumo siguen sin definir; ausencia/cancelación no crea sesión clínica |
+| SPA-DEC-116 (paquetes) y O-15/O-25 | Individual/combinado, vigencia, cupos, ampliación/sustitución aprobados. Contrato explícito desde factura/línea, transacción independiente, sin duplicados; movimiento comercial separado de sesión. No se aprueba creación automática ni se fija política de consumo/NC/crédito por inclusión general |
+| SPA-DEC-116 (comercial) y DIR-SSOT-01 | Integrar servicios, productos, facturas, CxC/cobros oficiales no crea motores financieros Spa; anticipos siguen transversales, O-14 abierta |
+| SPA-DEC-116 y ADR-050 | Employee general reutilizado con usuario/sucursales; sin segundo registro. Responsable y registrador separados. Directorio real pendiente |
+| Firma/privacidad histórica y seguridad actual | Firma en pantalla, versiones, permisos oficiales, auditoría y archivos privados aprobados como capacidad; autenticidad, conservación legal, Admin, cifrado, concurrencia y claves concretas pendientes |
+| Restricciones y exclusiones históricas | Descansos/bloqueos/preparación/traslados aprobados, sin valores inventados. No control de disponibilidad de cabinas/equipos. Panel/reportes operativos incluidos; dashboard analítico adicional excluido. Usar respaldos existentes no permite desarrollar un sistema nuevo |
+
+**No se detecta revocación expresa entre las fuentes aportadas.** Las cuestiones concretas que necesitan definición son representación de visita/cita múltiple y borrador/sesión parcial, cálculo de restricciones, consumo/ajustes comerciales y protección legal/técnica. Se conservan ambas evidencias y no se resuelven esas cuestiones en silencio. O-23 está cerrada solo para inclusión funcional; O-14/O-24 abiertas.

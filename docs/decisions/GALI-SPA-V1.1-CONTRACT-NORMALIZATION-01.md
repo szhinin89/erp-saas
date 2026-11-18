@@ -1,5 +1,7 @@
 # Gali Spa V1.1 — Normalización de contratos y preparación del cierre documental
 
+> **REFERENCIA HISTÓRICA NO NORMATIVA — actualizada el 2026-11-18.** SPA-DEC-115/116 se recuperaron aprobadas por evidencia aportada por el propietario: [registro §9/10](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). El [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md) contiene el alcance funcional aprobado y O-23 cerrada en inclusión general; los detalles técnicos, legales y las fichas originales siguen pendientes según su registro. [ADR-051](ADR-051-gali-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) sin fases autorizadas. Se preserva el cuerpo previo como evidencia de su fecha: sus afirmaciones «solo título», alcance sin confirmar, alternativas y cierres pendientes describen la recuperación anterior y no el estado actual. No sustituye contrato/registro ni autoriza implementar.
+
 **NORMALIZACIÓN DOCUMENTAL — PROPUESTAS NO APROBADAS — NO CONTRATO IMPLEMENTABLE.**
 
 Documento de normalización (SPA-V1.1-DOC-06). Ejecuta las tareas `K-01` a `K-08` de la [matriz maestra](GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01.md) (§10.4) sobre los cuatro documentos de Spa

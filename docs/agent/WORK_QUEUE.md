@@ -4,12 +4,7 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- GALI-SPA-V1.1-DOC (**EN CURSO, solo documental; ninguna implementación autorizada**): recuperación documental de la planificación de
-  Gali Spa V1.1. Documento provisional creado ([GALI-SPA-V1.1-RECOVERY-01](../decisions/GALI-SPA-V1.1-RECOVERY-01.md); no ADR, no contrato
-  implementable). Pendiente: contraste directo de las fuentes originales de Gali Spa (fichas y formularios, no verificados por Claude),
-  recuperación o decisión de agenda, servicios y paquetes, cobros y anticipos, privacidad y permisos, API, frontend, pruebas y
-  exclusiones, y el contrato final (ADR, especificación y plan). Depende del contrato `IEmployeeDirectory` de Empleados (EMP-E6b).
-  Estado en [STATUS](../../STATUS.md).
+- GALI-SPA-V1.1-DOC (**PREPARADO PARA REVISIÓN; solo documental, ninguna fase autorizada**): SPA-DEC-115/116 recuperadas APROBADAS; alcance funcional general y exclusiones consolidados; **O-23 CERRADA en inclusión funcional general**. Se conservan los 13 archivos anteriores. [Contrato central](../decisions/GALI-SPA-V1.1-CONTRACT-SPEC-01.md), [registro histórico §9/10](../decisions/GALI-SPA-V1.1-APPROVED-DECISIONS-01.md), [ADR-051](../decisions/ADR-051-gali-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan F0–F8](../decisions/GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) sin autorización. Pendiente: revisión/aprobación técnica integral, mecanismos de privacidad/conservación/firma y concurrencia, modelo visita–cita/borrador-sesión parcial, cálculo de restricciones, políticas comerciales y contraste de formularios O-24/V-01. O-14 ABIERTA; anticipos transversal separado. Detalles SPA-DEC-001..114 sin recuperar no reabren el alcance. Directorio EMP-E6b requiere implementación/pruebas bajo autorización separada; no desarrollar Spa/Empleados ni iniciar F0 por este plan. Estado en [STATUS](../../STATUS.md).
 - EMPLOYEES-V1-E1 (**PENDING / NO AUTORIZADA**; ADR-050 Proposed, arquitectura funcional aprobada y documentada, Empleados no
   implementado): verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS (migraciones y baseline,
   nombres, categorías de error, locks, puerto de la guardia de BP, búsqueda de usuarios en Access, wizard de BP). Requiere
