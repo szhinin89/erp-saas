@@ -4,6 +4,12 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- GALI-SPA-V1.1-DOC (**EN CURSO, solo documental; ninguna implementación autorizada**): recuperación documental de la planificación de
+  Gali Spa V1.1. Documento provisional creado ([GALI-SPA-V1.1-RECOVERY-01](../decisions/GALI-SPA-V1.1-RECOVERY-01.md); no ADR, no contrato
+  implementable). Pendiente: contraste directo de las fuentes originales de Gali Spa (fichas y formularios, no verificados por Claude),
+  recuperación o decisión de agenda, servicios y paquetes, cobros y anticipos, privacidad y permisos, API, frontend, pruebas y
+  exclusiones, y el contrato final (ADR, especificación y plan). Depende del contrato `IEmployeeDirectory` de Empleados (EMP-E6b).
+  Estado en [STATUS](../../STATUS.md).
 - EMPLOYEES-V1-E1 (**PENDING / NO AUTORIZADA**; ADR-050 Proposed, arquitectura funcional aprobada y documentada, Empleados no
   implementado): verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS (migraciones y baseline,
   nombres, categorías de error, locks, puerto de la guardia de BP, búsqueda de usuarios en Access, wizard de BP). Requiere

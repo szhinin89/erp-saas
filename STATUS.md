@@ -1,5 +1,23 @@
 # Project Status
 
+## GALI-SPA-V1.1-DOC — Recuperación documental en curso; documento provisional creado; contrato final PENDIENTE; ninguna implementación autorizada (2026-11-18)
+
+> Se preservó de forma **provisional** la reconstrucción de la planificación de Gali Spa V1.1. **No es un ADR ni un contrato
+> implementable.** No hay código, endpoints, permisos, migraciones ni cambios de base de datos, y **ninguna implementación de Spa ni
+> de Empleados está autorizada.** No se ejecutó CI ni suites.
+
+- **Documento provisional:** [GALI-SPA-V1.1-RECOVERY-01](docs/decisions/GALI-SPA-V1.1-RECOVERY-01.md) (recuperación provisional, no ADR,
+  no SSOT). Distingue lo aprobado y verificado en [ADR-050](docs/decisions/ADR-050-employees-v1-architecture.md) (identidad
+  profesional/usuario registrador, reutilización de Empleados, `IEmployeeDirectory` como necesidad), los requisitos [F] extraídos de las
+  fichas originales de Gali Spa, la información [R] recuperada de la planificación, las propuestas técnicas [T] y los pendientes [P].
+- **Fuentes originales pendientes de contraste directo:** las fichas y formularios de Gali Spa (`.docx` y `.pdf`) no están en el
+  repositorio ni fueron leídos por Claude; su contenido se transmitió por el propietario.
+- **Contrato final pendiente:** agenda, servicios y paquetes, integración con Ventas, cobros y anticipos, privacidad y permisos,
+  modelo, API, frontend, pruebas y exclusiones de V1.1; un ADR, una especificación contractual y un plan de fases posteriores.
+- **Dependencia con Empleados:** Spa no se integra antes del contrato `IEmployeeDirectory` (EMP-E6b); EMP-E1 sigue PENDING / NO
+  AUTORIZADA.
+- **Verificación documental:** guardrail documental, enlaces y `git diff --check`; no acredita implementación.
+
 ## EMPLOYEES-V1 — ADR-050 PROPOSED: arquitectura funcional de Empleados V1 aprobada y documentada, NO implementada; EMP-E1 PENDING / NO AUTORIZADA (2026-11-18)
 
 > La documentación contractual de Empleados V1 fue autorizada **exclusivamente como trabajo documental** (EMP-E0-DOC). El diseño
