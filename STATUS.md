@@ -1,5 +1,27 @@
 # Project Status
 
+## EMPLOYEES-V1 — ADR-050 PROPOSED: arquitectura funcional de Empleados V1 aprobada y documentada, NO implementada; EMP-E1 PENDING / NO AUTORIZADA (2026-11-18)
+
+> La documentación contractual de Empleados V1 fue autorizada **exclusivamente como trabajo documental** (EMP-E0-DOC). El diseño
+> funcional fue aprobado por el propietario; el ADR-050 queda en estado Proposed hasta su aceptación formal. **No hay código,
+> endpoints, permisos, migraciones ni cambios de base de datos, y ninguna fase de programación está autorizada.** No se ejecutó
+> CI ni suites.
+
+- **Alcance aprobado:** módulo técnico `Employees` independiente y general (ficha por BusinessPartner y empresa, períodos
+  laborales, sucursales laborales, catálogos de cargo, profesión y especialidad, vínculo opcional con usuario ERP, auditoría,
+  protección de BusinessPartner y contrato mínimo `IEmployeeDirectory` para Gali Spa). Módulo visual propio en el launcher; sin
+  «Datos Maestros». Excluye nómina, salarios, contratos laborales, comisiones y reportes de productividad.
+- **Decisiones aprobadas:** DEC-E1 a DEC-E6, EMP-T-01 a EMP-T-10 (T-10 corregida), E-D1 a E-D4 y P-01 a P-07.
+- **Pendiente:** EMP-E1 (verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS); definición del
+  propietario del procedimiento de regularización de asignaciones futuras al dar de baja; autorizaciones separadas para
+  MasterData, allowlist de `IgnoreQueryFiltersAuditTests`, Kernel y frontend compartido. La protección de BusinessPartner debe
+  estar implementada y comprobada antes de habilitar altas reales; Spa no se integra antes del contrato `IEmployeeDirectory`.
+- **Documentos:** [ADR-050](docs/decisions/ADR-050-employees-v1-architecture.md),
+  [especificación contractual](docs/decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md) (diseño, no SSOT) y
+  [plan de implementación](docs/agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). Cola: [WORK_QUEUE](docs/agent/WORK_QUEUE.md).
+- **Verificación documental:** guardrail documental, enlaces entre los tres documentos y `git diff --check`; no acredita
+  implementación. `employees.md`, `MENU_MAP.md` y `FEATURES.md` no se actualizan hasta que exista código comprobado.
+
 ## PEDIDOS-VENTA-V1 — ADR-049 ACCEPTED: diseño de Órdenes de Pedido V1 aprobado, NO implementado; F0 PENDING / NO AUTORIZADA (2026-11-17)
 
 > El propietario aprobó formalmente el ADR-049 el 17/11/2026. **Solo es una aprobación de diseño y documentación:** no hay

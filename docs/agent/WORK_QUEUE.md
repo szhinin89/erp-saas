@@ -4,6 +4,14 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- EMPLOYEES-V1-E1 (**PENDING / NO AUTORIZADA**; ADR-050 Proposed, arquitectura funcional aprobada y documentada, Empleados no
+  implementado): verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS (migraciones y baseline,
+  nombres, categorías de error, locks, puerto de la guardia de BP, búsqueda de usuarios en Access, wizard de BP). Requiere
+  autorización expresa del propietario para iniciarse; ninguna fase de programación (E2–E7, E6b) está autorizada. Quedan además
+  pendientes la definición del propietario sobre asignaciones futuras al dar de baja y las autorizaciones separadas de MasterData
+  y de la allowlist de arquitectura. Estado en [STATUS](../../STATUS.md); diseño en
+  [ADR-050](../decisions/ADR-050-employees-v1-architecture.md), [especificación](../decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md) y
+  [plan](EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md).
 - PEDIDOS-VENTA-V1-F0 (**PENDING / NO AUTORIZADA**; ADR-049 Accepted el 17/11/2026, diseño aprobado y no implementado):
   verificaciones técnicas VER-01 a VER-14 de Órdenes de Pedido V1 (solo lectura; no escribe código). Requiere
   autorización expresa del propietario para iniciarse; ninguna fase de implementación (F1–F9) está autorizada, y F5/F6
