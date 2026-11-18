@@ -11,6 +11,9 @@ Documento de normalización (SPA-V1.1-DOC-06). Ejecuta las tareas `K-01` a `K-08
 
 ## 0. Cómo leer este documento
 
+**Actualización del 2026-11-18:** el propietario aprobó `O-25` (alternativa A: cita separada de la sesión realizada) y `O-15` (alternativa A: contrato de paquete creado explícitamente tras validar una factura autorizada); el texto exacto y sus límites están en el [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md).
+Este documento **conserva su redacción original** y solo se actualizan las referencias afectadas, marcadas como «aprobada por `O-25`» o «aprobada por `O-15`». **Ninguna otra cuestión `O-xx` se cierra por inferencia**, y las definiciones y propuestas no mencionadas siguen sin aprobarse.
+
 Se conservan las etiquetas de la matriz: **A** (aprobada literal), **A-der** (derivada), **E** (existente en el ERP), **F** (formularios, sin contraste directo), **R** (reconstruida), **T** (propuesta técnica), **P** (pendiente) y **NV** (no verificado).
 Los identificadores `SPA-*` son referencias a los definidos en R1 a R4; los códigos `K-xx`, `C-xx`, `D-xx`, `V-xx`, `O-xx`, `DUP-xx` y `CE-xx` son los de la matriz; los `PT-xx` (grupos de pruebas) y `G-xx` (glosario) son **propios de este documento**.
 
@@ -20,7 +23,7 @@ Redacción original de cada tarea (matriz §10.4) y su clasificación.
 
 | K | Tarea (redacción original) | Resultado | Clasificación |
 |---|---|---|---|
-| K-01 | Unificar las duplicaciones `DUP-01` a `DUP-16` en una redacción única por regla | **Parcialmente ejecutada:** 13 de 16 grupos tienen redacción canónica propuesta (§1.1); 3 quedan bloqueados | Ejecutable sin decisiones nuevas (13); dependiente del propietario (3: `DUP-07` por O-05, `DUP-08` por O-25, `DUP-10` por O-14) |
+| K-01 | Unificar las duplicaciones `DUP-01` a `DUP-16` en una redacción única por regla | **Parcialmente ejecutada:** 14 de 16 grupos tienen redacción canónica propuesta (§1.1; `DUP-08` se incorporó tras aprobarse `O-25`); 2 quedan bloqueados | Ejecutable sin decisiones nuevas (14); dependiente del propietario (2: `DUP-07` por O-05 y `DUP-10` por O-14) |
 | K-02 | Unificar el catálogo candidato de permisos y resolver el solapamiento de nombres | **Ejecutada** en cuanto a nombres (§3); las políticas de acceso siguen abiertas | Ejecutable sin decisiones nuevas (nombres); dependiente del propietario (políticas) |
 | K-03 | Alinear la terminología de sesión, cita y consumo dejando la decisión como alternativa explícita | **Ejecutada como glosario propuesto** (§2); no resuelve C-06 | Ejecutable sin decisiones nuevas; la decisión es de O-25 |
 | K-04 | Unificar las familias de pruebas y enlazarlas a los invariantes | **Ejecutada** (§4): 102 pruebas agrupadas en 17 grupos `PT-xx`, sin renumerar | Ejecutable sin decisiones nuevas |
@@ -44,7 +47,7 @@ Cada redacción **reproduce el contenido del ancla de la matriz** y no añade de
 | DUP-05 | `SPA-SEC-AUD-01` | Toda lectura exitosa de un recurso sensible deja un registro append-only con usuario, empresa, recurso, operación, instante y resultado, sin contenido clínico. | T | Ejecutada; modo de escritura y retención pendientes (O-03) |
 | DUP-06 | `SPA-FC-08` | Una corrección crea una versión nueva con autor, fecha y motivo; las versiones anteriores se conservan con acceso restringido y no se muestran como vigentes. | T; si la rectificación obliga a ocultar la versión inexacta es L-NV | Ejecutada |
 | DUP-07 | `SPA-SEC-RET-01` | **Bloqueada:** el texto de R3 («nunca se elimina») y el de R4 (procedimiento de eliminación legal controlado) son incompatibles; no se redacta una versión única. | — | **Bloqueada por O-05 (C-02)** |
-| DUP-08 | `SPA-AT-06` | **Bloqueada:** depende de si una sesión programada es una cita o una entidad propia (G-11). | — | **Bloqueada por O-25 (C-06)** |
+| DUP-08 | `SPA-AT-06` | La **cita** representa la programación en la agenda y la **sesión realizada** es un registro independiente creado al documentar una atención; una **sesión programada** de un paquete es una cita vinculada al contrato; **reservar y reprogramar no consume saldo**; cancelar o registrar una ausencia **no crea una sesión realizada**. | A (aprobada por `O-25`, [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)) | Ejecutada; las políticas de saldo (ausencias que consumen, efecto de cancelar) siguen abiertas (O-13) |
 | DUP-09 | `SPA-AT-05` | El plan de tratamiento describe lo previsto para la persona; el paquete comercial representa derechos de consumo derivados de una compra; no se vinculan automáticamente y su relación es una decisión pendiente. | T + P | Ejecutada; relación pendiente (O-13) |
 | DUP-10 | `SPA-OPS-VTA-03` | **Bloqueada:** depende de si el ERP debe tener anticipos de clientes, capacidad inexistente hoy. | — | **Bloqueada por O-14 (C-08)** |
 | DUP-11 | `SPA-INV-10` | Las fechas de negocio son `DateOnly`; los instantes, UTC mostrados en `Company.Timezone`; los valores numéricos siguen la política de precisión oficial. Las medidas corporales **no coinciden con ninguna clase de la tabla de escalas** y requieren revisión arquitectónica (V-04). | A-der (normas oficiales) + hallazgo V-04 | Ejecutada; medidas pendientes (O-22) |
@@ -56,7 +59,7 @@ Cada redacción **reproduce el contenido del ancla de la matriz** y no añade de
 
 ## 2. Glosario contractual (propuesta)
 
-Distingue los conceptos que los documentos usan de forma entrelazada. **Todas las definiciones son propuestas [T]**, salvo donde se indica una etiqueta A o E; **no resuelven el conflicto C-06**.
+Distingue los conceptos que los documentos usan de forma entrelazada. **Todas las definiciones son propuestas [T]**, salvo donde se indica una etiqueta A o E y salvo las **alternativas A de G-09 y G-11, aprobadas por `O-25` el 2026-11-18**. Resuelven el conflicto terminológico C-06; **no resuelven sus políticas comerciales**, que siguen abiertas.
 
 | G | Término | Definición propuesta | No es | Entidad u origen oficial | Fuentes | Estado |
 |---|---|---|---|---|---|---|
@@ -68,9 +71,9 @@ Distingue los conceptos que los documentos usan de forma entrelazada. **Todas la
 | G-06 | **Procedimiento** | Técnica estética realizada sobre la persona, con su protocolo, precauciones y equipos. Concepto propio de Spa. Su relación con el servicio (1:1 o N:M) es pendiente. | El servicio | Spa | `SPA-OPS-SRV-02`, `SPA-FC-04` | F + R; relación pendiente (O-11) |
 | G-07 | **Plan de tratamiento** | Lo previsto para la persona: objetivo, procedimiento, sesiones sugeridas, cuidados y decisión de proceder, adaptar o posponer. Sinónimo propuesto de «plan de atención» (`SPA-AT-01`). | El paquete comercial | Spa (expediente) | `SPA-AT-01`, `SPA-AT-05` | F; el sinónimo es T |
 | G-08 | **Paquete comercial** | Derecho de consumo de sesiones derivado de una compra (definición, contrato y libro de movimientos). | El plan de tratamiento | Spa, con la factura de Ventas | `SPA-PQ-01`, `SPA-OPS-PKG-01` a `PKG-07` | T + P (O-13) |
-| G-09 | **Reserva** | Acto de apartar un intervalo para un profesional (y, si se decide, un recurso). **Alternativa A (propuesta):** la reserva es la operación que crea una cita, no una entidad aparte. **Alternativa B:** reserva provisional como entidad previa a la confirmación. | La atención | Spa (agenda) | `SPA-AG-01`, `SPA-OPS-AGE-01` | T; no se elige una alternativa |
+| G-09 | **Reserva** | Acto de apartar un intervalo para un profesional (y, si se decide, un recurso). **Alternativa A (APROBADA por `O-25`, 2026-11-18):** la reserva es la operación que crea una cita, no una entidad aparte. ~~Alternativa B: reserva provisional como entidad previa a la confirmación~~ (no aprobada). | La atención | Spa (agenda) | `SPA-AG-01`, `SPA-OPS-AGE-01` | **A (aprobada por `O-25`)** |
 | G-10 | **Cita** | Registro programado en la agenda: cliente, profesional, sucursal, servicio, inicio y fin (UTC) y estado. | La atención ni la sesión | Spa (agenda) | `SPA-OPS-AGE-01`, `SPA-OPS-AGE-02` | T |
-| G-11 | **Sesión programada** | Sesión prevista dentro de un plan o paquete que aún no se realiza. **Alternativa A:** no es entidad propia, es una cita vinculada al plan o contrato. **Alternativa B:** es una entidad propia con estado. | La sesión realizada | Spa | `SPA-AT-06`, `SPA-OPS-AGE-10` | T; **C-06 abierto (O-25)** |
+| G-11 | **Sesión programada** | Sesión prevista dentro de un plan o paquete que aún no se realiza. **Alternativa A (APROBADA por `O-25`, 2026-11-18):** no es entidad propia, es una cita vinculada al plan o contrato. ~~Alternativa B: entidad propia con estado~~ (no aprobada). | La sesión realizada | Spa | `SPA-AT-06`, `SPA-OPS-AGE-10` | **A (aprobada por `O-25`)**; políticas de saldo abiertas (O-13) |
 | G-12 | **Atención** | El hecho de prestar un procedimiento a un cliente en un momento determinado. Se documenta mediante una sesión realizada. | La cita (programación) ni la sesión (registro) | Spa | `SPA-OPS-AGE-10`, `SPA-AT-06` | T |
 | G-13 | **Sesión realizada** | Registro documentado de una atención efectivamente prestada (fecha, procedimiento, profesional, observaciones, reacciones, evolución). No se registra como realizada por haber llegado la fecha. | La sesión programada ni la consumida | Spa | `SPA-AT-02`, `SPA-AT-06`, `SPA-AT-07` | F + T |
 | G-14 | **Sesión consumida** | Sesión que descuenta saldo de un paquete (movimiento de consumo del libro). **No equivale a «realizada»:** si una ausencia consume o no es una pregunta pendiente. | La sesión realizada | Spa (libro del contrato) | `SPA-OPS-PKG-01`, §4.4 de R2 | T + P; propuesta de R2 (O-13) |
@@ -166,7 +169,7 @@ Los inferidos se listan en la columna correspondiente; su referencia literal abr
 | PT-06 | Aislamiento por tenant y empresa | SPA-SEC-INV-12, SPA-INV-10 | `SPA-T-16`, `SPA-CARE-T-EXP-07`, `SPA-CARE-T-SEG-08`, `SPA-OPS-T-AGE-09`, `SPA-SEC-T-14` | `SPA-CARE-T-FOT-07` | Sin decisión pendiente específica |
 | PT-07 | Valoraciones facial y corporal | SPA-FC-04, SPA-FC-05, SPA-CARE-FAC-01 a FAC-07, SPA-CARE-COR-01, COR-03, COR-04 | `SPA-T-06`, `SPA-T-07`, `SPA-CARE-T-FAC-01`, `SPA-CARE-T-COR-01` | `SPA-CARE-T-FAC-03`, `SPA-CARE-T-FAC-04`, `SPA-CARE-T-FAC-05`, `SPA-CARE-T-COR-03` | Contenido [F] sin contraste (V-01); obligatoriedad pendiente (O-21) |
 | PT-08 | Mediciones, unidades, precisión y fechas | SPA-FC-06, SPA-CARE-COR-05, SPA-INV-10 | `SPA-T-08` | `SPA-CARE-T-COR-04`, `SPA-CARE-T-COR-05`, `SPA-CARE-T-COR-06` | Requiere revisión arquitectónica del gate decimal (V-04; O-22) |
-| PT-09 | Sesiones y atención | SPA-AT-02, SPA-AT-04, SPA-AT-06, SPA-AT-07, SPA-CARE-CNS-05, SPA-CARE-CNS-06 | `SPA-T-09`, `SPA-OPS-T-VTA-02` | `SPA-CARE-T-CNS-05`, `SPA-CARE-T-CNS-06` | **Abierto** (C-06; O-25) |
+| PT-09 | Sesiones y atención | SPA-AT-02, SPA-AT-04, SPA-AT-06, SPA-AT-07, SPA-CARE-CNS-05, SPA-CARE-CNS-06 | `SPA-T-09`, `SPA-OPS-T-VTA-02` | `SPA-CARE-T-CNS-05`, `SPA-CARE-T-CNS-06` | Terminología **resuelta por `O-25`** (2026-11-18); políticas de saldo y ausencia abiertas (O-13) |
 | PT-10 | Consentimientos y autorizaciones independientes | SPA-CN-01 a CN-06, SPA-INV-05, SPA-CARE-CNS-01 a CNS-08 | `SPA-T-10`, `SPA-T-11`, `SPA-CARE-T-CNS-01`, `SPA-CARE-T-FOT-01`, `SPA-SEC-T-12` | `SPA-CARE-T-CNS-02`, `SPA-CARE-T-CNS-03`, `SPA-CARE-T-CNS-04`, `SPA-CARE-T-CNS-07`, `SPA-CARE-T-FOT-02` | Firma, versionado, menores y uso académico pendientes (O-16 a O-18; V-06) |
 | PT-11 | Fotografías y almacenamiento | SPA-FO-01, SPA-CARE-FOT-01 a FOT-11, SPA-SEC-INV-02, SPA-SEC-INV-03, SPA-SEC-INV-05 | `SPA-SEC-T-06`, `SPA-SEC-T-07`, `SPA-SEC-T-08`, `SPA-SEC-T-09` | `SPA-CARE-T-FOT-03`, `SPA-CARE-T-FOT-06` | Cifrado y claves pendientes (O-04) |
 | PT-12 | Corrección, retención y eliminación | SPA-FC-08, SPA-INV-06, SPA-SEC-RET-01 a RET-06, SPA-SEC-INV-04 | `SPA-CARE-T-EXP-03`, `SPA-SEC-T-10`, `SPA-SEC-T-11` | `SPA-CARE-T-FAC-02`, `SPA-CARE-T-COR-02`, `SPA-CARE-T-FOT-05`, `SPA-CARE-T-FOT-08` | **Abierto** (C-02; O-05, O-07) |
@@ -174,7 +177,7 @@ Los inferidos se listan en la columna correspondiente; su referencia literal abr
 | PT-14 | Agenda, disponibilidad y concurrencia | SPA-AG-01 a AG-03, SPA-OPS-AGE-01 a AGE-14, SPA-AR-06 | `SPA-T-13`, `SPA-T-18`, `SPA-OPS-T-AGE-01`, `SPA-OPS-T-AGE-02`, `SPA-OPS-T-AGE-03`, `SPA-OPS-T-AGE-04`, `SPA-OPS-T-AGE-05`, `SPA-OPS-T-AGE-06` | — | Recursos, tolerancias y política de ausencia pendientes (O-08 a O-10); depende de Empleados |
 | PT-15 | Servicios y tratamientos | SPA-SV-01, SPA-SV-02, SPA-OPS-SRV-01 a SRV-12, SPA-IN-01 a IN-03 | `SPA-OPS-T-SRV-01`, `SPA-OPS-T-SRV-02`, `SPA-OPS-T-SRV-03`, `SPA-OPS-T-SRV-04` | — | Relación servicio-procedimiento e insumos pendientes (O-11, O-12) |
 | PT-16 | Paquetes y saldos de sesiones | SPA-PQ-01, SPA-OPS-PKG-01 a PKG-07, SPA-AT-05 | `SPA-T-14`, `SPA-OPS-T-PKG-01`, `SPA-OPS-T-PKG-02`, `SPA-OPS-T-PKG-03`, `SPA-OPS-T-PKG-04`, `SPA-OPS-T-PKG-05`, `SPA-OPS-T-PKG-06` | — | Las 12 preguntas contractuales pendientes (O-13) |
-| PT-17 | Ventas, cobros y reutilización de módulos oficiales | SPA-AR-05, SPA-VT-01, SPA-INV-08, SPA-OPS-VTA-01 a VTA-06 | `SPA-T-15`, `SPA-OPS-T-SRV-06`, `SPA-OPS-T-VTA-01`, `SPA-OPS-T-VTA-03`, `SPA-OPS-T-VTA-05` | — | Anticipos y origen del contrato pendientes (O-14, O-15) |
+| PT-17 | Ventas, cobros y reutilización de módulos oficiales | SPA-AR-05, SPA-VT-01, SPA-INV-08, SPA-OPS-VTA-01 a VTA-06 | `SPA-T-15`, `SPA-OPS-T-SRV-06`, `SPA-OPS-T-VTA-01`, `SPA-OPS-T-VTA-03`, `SPA-OPS-T-VTA-05` | — | Anticipos pendientes (O-14); el origen del contrato fue **aprobado por `O-15`** (2026-11-18); estado SRI requerido, anulaciones y crédito pendientes (O-13, O-14) |
 
 Cada grupo `PT-xx` agrupa pruebas que verifican la misma capacidad desde distintos documentos; en el contrato final deben unificarse en una sola prueba por escenario, y las pruebas de `PT-04`, `PT-09`, `PT-12` y `PT-16` quedan condicionadas a decisiones abiertas.
 
@@ -235,7 +238,7 @@ Las `O-xx` son **cuestiones pendientes**, no decisiones históricas `SPA-DEC`.
 | O-12 | Tratamiento de insumos | Sí | — | — | Sí (inventario) | — |
 | O-13 | Las 12 preguntas de paquetes | Sí | — | Posible (consumidores) | — | — |
 | O-14 | Anticipos o prepagos de clientes | Sí | — | — | Sí (otro módulo) | Sí (módulo de cobros) |
-| O-15 | Origen del contrato de paquete | Sí | — | — | Sí | Si se usa el evento de Ventas |
+| O-15 | **APROBADA el 2026-11-18 (alternativa A).** Origen del contrato de paquete | Aprobada | — | — | Sí | No (la creación por evento no se aprobó) |
 | O-16 | Firma, versionado y conservación de consentimientos | Sí | — | Sí | — | — |
 | O-17 | Uso académico | Sí | Sí (ficha) | — | — | — |
 | O-18 | Consentimiento de menores y representantes | Sí | — | Sí | — | — |
@@ -245,7 +248,7 @@ Las `O-xx` son **cuestiones pendientes**, no decisiones históricas `SPA-DEC`.
 | O-22 | Escalas de mediciones, frecuencia y controles | Sí | Sí (fichas) | — | — | Sí (V-04) |
 | O-23 | Texto íntegro de SPA-DEC-116 y registro histórico | Sí | Sí (historial) | — | — | — |
 | O-24 | Versión vigente de cada formulario | Sí | Sí | — | — | — |
-| O-25 | Terminología de sesión, cita y reserva | Sí | — | — | — | — |
+| O-25 | **APROBADA el 2026-11-18 (alternativa A).** Terminología de sesión, cita y reserva | Aprobada | — | — | — | — |
 
 ## 7. Conflictos que siguen abiertos
 
@@ -253,7 +256,7 @@ Las `O-xx` son **cuestiones pendientes**, no decisiones históricas `SPA-DEC`.
 |---|---|
 | **C-01** Administrador y permisos clínicos | **ABIERTO.** Este documento no resuelve el bypass ni la política de acceso clínico; el catálogo de §3 no excluye al Admin. Las alternativas de R4 §3.3 siguen sin aprobarse |
 | **C-02** Conservación y eliminación | **ABIERTO.** `DUP-07` queda sin redacción canónica; ninguna alternativa de eliminación está aprobada |
-| **C-06** Terminología de citas y sesiones | **ABIERTO.** El glosario (§2) propone definiciones y deja las alternativas A y B de G-09 y G-11; no se elige |
+| **C-06** Terminología de citas y sesiones | **TERMINOLOGÍA RESUELTA** por `O-25` (alternativa A, 2026-11-18; [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)). **Las políticas comerciales siguen abiertas** (ausencias que consumen saldo, efecto de cancelar, atención sin cita, varios servicios por cita: O-10, O-11, O-13) |
 | C-03, C-04, C-05, C-07, C-10 | Sin cambio (decisiones pendientes o compatibles) |
 | C-08 | Sin cambio (brecha de capacidad; `DUP-10` bloqueada) |
 | C-09 | **Cerrado en cuanto a nombres** (§3.1), como propuesta no aprobada; las políticas dependen de C-01 |
@@ -280,7 +283,7 @@ La especificación contractual final (capítulos `CE-01` a `CE-15` de la matriz)
 
 ### 9.1 Bloqueantes
 
-1. **Decisiones del propietario** que condicionan la estructura: `O-01` (administrador), `O-05` (eliminación frente a la regla de no borrado), `O-14` (anticipos), `O-25` (modelo de sesión, cita y reserva) y `O-15` (origen del contrato de paquete).
+1. **Decisiones del propietario** que condicionan la estructura: `O-01` (administrador), `O-05` (eliminación frente a la regla de no borrado), y `O-14` (anticipos). **`O-25` y `O-15` fueron aprobadas el 2026-11-18 y dejan de ser bloqueantes.**
 2. **Recuperación o confirmación del historial:** texto de `SPA-DEC-116` (`O-23`) y contraste de las fichas originales (V-01; `O-24`).
 3. **Empleados:** el contrato `IEmployeeDirectory` debe existir y verificarse (V-02; EMP-E6b).
 4. **Validación jurídica** de las interpretaciones de R4 (V-06; `O-07`).
@@ -295,7 +298,7 @@ La especificación contractual final (capítulos `CE-01` a `CE-15` de la matriz)
 
 ### 9.3 Ya disponibles para la redacción
 
-Las redacciones canónicas de 13 grupos (§1.1), el glosario (§2), el catálogo de nombres (§3), la relación única de pruebas (§4) y las verificaciones cerradas (§5).
+Las redacciones canónicas de 14 grupos (§1.1), el glosario (§2), el catálogo de nombres (§3), la relación única de pruebas (§4) y las verificaciones cerradas (§5).
 
 ## 10. Límites
 

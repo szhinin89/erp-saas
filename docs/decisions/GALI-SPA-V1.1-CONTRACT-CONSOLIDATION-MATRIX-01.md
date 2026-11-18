@@ -52,6 +52,17 @@ aprobada» significa que solo un núcleo lo está y el resto de la fila no. Cual
 **Alcance de la clasificación:** las **18 filas** con respaldo aprobado (marcadas «(rev.)» en la columna «Aprobación» de §3) fueron **revisadas manualmente** una por una contra el texto de ADR-050 o de la especificación de Empleados (§3.1).
 **Todas las demás clasificaciones, así como las columnas de dependencias, verificaciones y riesgos, se generaron con reglas automáticas y son orientativas**; la fuente prevalece.
 
+### 0.5 Actualización del 2026-11-18: decisiones O-25 y O-15 aprobadas
+
+El propietario aprobó el 2026-11-18, de forma expresa y con alcance limitado, **`O-25`** (alternativa A: cita separada de la sesión realizada) y **`O-15`** (alternativa A: contrato de paquete creado explícitamente tras validar una factura autorizada).
+El texto exacto y sus límites están en el [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). Esta matriz **no reclasifica fila por fila** las reglas afectadas: **su columna «Aprobación» refleja lo que cada fuente decía cuando se redactó**, y las reglas que pasan a tener respaldo
+aprobado se identifican en la tabla siguiente. **No se cierra ninguna otra cuestión `O-xx` por inferencia** y los borradores originales no se modifican.
+
+| Decisión | Reglas relacionadas (alcance: solo los enunciados aprobados) |
+|---|---|
+| `O-25` | `SPA-AG-01`, `SPA-OPS-AGE-01`, `SPA-OPS-AGE-02`, `SPA-OPS-AGE-07` (solo el efecto de reprogramar sobre el saldo), `SPA-OPS-AGE-08`, `SPA-OPS-AGE-09`, `SPA-OPS-AGE-10`, `SPA-OPS-AGE-12`, `SPA-AT-06`, `SPA-AT-07`, `SPA-INV-09`, `SPA-OPS-PKG-01`, `SPA-OPS-PKG-02` |
+| `O-15` | `SPA-OPS-PKG-03`, `SPA-OPS-PKG-04`, `SPA-OPS-PKG-06`, `SPA-OPS-VTA-01`, `SPA-OPS-VTA-02`, `SPA-INV-08`, `SPA-AR-05`, `SPA-PQ-01` (pregunta «Venta») |
+
 ## 1. Resumen
 
 | Concepto | Cantidad |
@@ -65,10 +76,10 @@ aprobada» significa que solo un núcleo lo está y el resto de la fila no. Cual
 | — de ellos con identificador **literal** en su fuente | 273 |
 | — de ellos con identificador **inferido** (no literal) | 22 (pruebas de R3; ver §4.2) |
 | **Referencias externas (no son registros)** | 55 códigos `GS-*` del documento maestro y 21 códigos de la V01, literales en la tabla de equivalencias de R1 §17 |
-| **Cuestiones pendientes** | 25 decisiones del propietario `O-xx` (§11), 9 verificaciones `V-xx` (§8) y 67 reglas o invariantes con puntos pendientes (§10.2) |
-| **Decisiones aprobadas verificables** | **18** filas con respaldo en ADR-050 o Empleados (4 literales, 4 derivadas, 10 parciales) más el **título** de `SPA-DEC-116`. **El total de registros (295) no es un total de decisiones aprobadas.** |
+| **Cuestiones pendientes** | **23** decisiones del propietario `O-xx` (§11; de las 25 originales, `O-15` y `O-25` fueron aprobadas el 2026-11-18: [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)), 9 verificaciones `V-xx` (§8) y 67 reglas o invariantes con puntos pendientes en el momento de su clasificación (§10.2) |
+| **Decisiones aprobadas verificables** | **18** filas con respaldo en ADR-050 o Empleados (4 literales, 4 derivadas, 10 parciales) más el **título** de `SPA-DEC-116` y las dos decisiones funcionales **`O-15` y `O-25`** aprobadas el 2026-11-18 (alcance limitado). **El total de registros (295) no es un total de decisiones aprobadas.** |
 | Colisiones de identificadores entre los cuatro documentos | **0** |
-| Conflictos identificados (§6) | 10: contradicciones reales o parciales 2 (C-01, C-02); inconsistencia terminológica 1 (C-06); sin contradicción (compatibles, decisión pendiente, brecha o solapamiento) 7 |
+| Conflictos identificados (§6) | 10: contradicciones reales o parciales 2 (C-01, C-02); inconsistencia terminológica 1 (C-06, **resuelta en terminología por `O-25` el 2026-11-18**; sus políticas comerciales siguen abiertas); sin contradicción (compatibles, decisión pendiente, brecha o solapamiento) 7 |
 
 Las reglas están en §3, las pruebas en §4, los riesgos en §4.1 y los conflictos en §6.
 
@@ -610,7 +621,7 @@ Reglas de distintos documentos que expresan lo mismo. **No se fusionan ni se ren
 | DUP-05 | Auditoría de accesos y lecturas | `SPA-AU-02`, `SPA-CARE-FOT-06`, `SPA-SEC-AUD-01`, `SPA-SEC-INV-01`, `SPA-SEC-INV-06` | SPA-SEC-AUD-01 |
 | DUP-06 | Correcciones append-only con historial | `SPA-FC-08`, `SPA-INV-06`, `SPA-CARE-EXP-06`, `SPA-CARE-FAC-02`, `SPA-CARE-COR-03`, `SPA-SEC-RET-03`, `SPA-OPS-AGE-12` | SPA-FC-08 |
 | DUP-07 | Sin borrado físico arbitrario | `SPA-CARE-EXP-08`, `SPA-CARE-CNS-03`, `SPA-CARE-FOT-07`, `SPA-SEC-RET-01`, `SPA-SEC-INV-04` | SPA-SEC-RET-01 |
-| DUP-08 | Sesión prevista y sesión realizada | `SPA-AT-06`, `SPA-AT-07`, `SPA-INV-09`, `SPA-OPS-AGE-10` | SPA-AT-06 |
+| DUP-08 | Sesión prevista y sesión realizada (**terminología resuelta por `O-25`**) | `SPA-AT-06`, `SPA-AT-07`, `SPA-INV-09`, `SPA-OPS-AGE-10` | SPA-AT-06 |
 | DUP-09 | Plan de atención y paquete comercial | `SPA-AT-01`, `SPA-AT-05`, `SPA-PQ-01` | SPA-AT-05 |
 | DUP-10 | Sin anticipos ni contabilidad paralela | `SPA-AR-05`, `SPA-INV-08`, `SPA-OPS-VTA-01`, `SPA-OPS-VTA-03`, `SPA-OPS-PKG-07` | SPA-OPS-VTA-03 |
 | DUP-11 | Estándares de fechas y decimales | `SPA-FC-06`, `SPA-INV-10`, `SPA-CARE-COR-05` | SPA-INV-10 |
@@ -639,7 +650,7 @@ Listas de identificadores (reglas e invariantes) según su origen; un registro p
 
 ## 6. Matriz de conflictos
 
-**Ningún conflicto se declara resuelto.** C-01 y C-02 son conflictos arquitectónicos **abiertos**; C-06 es una inconsistencia terminológica **abierta**. Las alternativas técnicas de R3 y R4 se conservan **sin aprobarse**.
+**C-01 y C-02 son conflictos arquitectónicos abiertos y no se declaran resueltos.** C-06 era una inconsistencia terminológica: **quedó resuelta en su terminología por `O-25` (2026-11-18)**, mientras que sus políticas comerciales siguen abiertas. Ningún otro conflicto se declara resuelto. Las alternativas técnicas de R3 y R4 se conservan **sin aprobarse**.
 
 **Contradicción real:** dos documentos afirman cosas incompatibles. **Inconsistencia terminológica:** el mismo concepto con modelos distintos. **Decisión pendiente / brecha:** no hay
 contradicción, falta una decisión o una capacidad del ERP.
@@ -651,7 +662,7 @@ contradicción, falta una decisión o una capacidad del ERP.
 | C-03 | Auditoría y privacidad | Decisión pendiente (sin contradicción) | `SPA-AU-01`, `SPA-AU-02`, `SPA-CARE-FOT-06`, `SPA-SEC-AUD-01`, `SPA-SEC-AUD-07`, `SPA-SEC-INV-01`, `SPA-SEC-R-02` | No hay contradicción: R3 deja el registro de lectura como mecanismo inexistente; R4 §4 lo propone. Pendiente: el propio registro de accesos es dato personal y su retención (`SPA-SEC-AUD-07`) no está definida (O-03). |
 | C-04 | Fotografías y consentimiento | Compatibles; decisión pendiente | `SPA-CN-02`, `SPA-CN-03`, `SPA-CN-06`, `SPA-INV-05`, `SPA-CARE-FOT-03`, `SPA-CARE-FOT-08`, `SPA-CARE-CNS-01`, `SPA-SEC-INV-02`, `SPA-SEC-INV-10` | Compatibles: R1 `SPA-CN-06`, R3 `SPA-CARE-FOT-03` y R4 `SPA-SEC-INV-02` coinciden en que la finalidad se verifica contra autorizaciones independientes. Pendiente: retiro y conservación (`SPA-CARE-FOT-08`). |
 | C-05 | Plan de atención y paquete comercial | Decisión pendiente (sin contradicción) | `SPA-AT-01`, `SPA-AT-05`, `SPA-PQ-01` | No hay contradicción: R1 `SPA-AT-05` y R2 §4.2 coinciden en separar plan y paquete; la relación sigue pendiente (`SPA-PQ-01`). |
-| C-06 | Sesión programada, realizada y consumida | Inconsistencia terminológica real | `SPA-AT-06`, `SPA-AT-07`, `SPA-OPS-AGE-10`, `SPA-CARE-CNS-05`, `SPA-INV-09` | R1 `SPA-AT-06` distingue sesión prevista de realizada, pero R2 §4.3 define la entidad `Session` como «realizada o programada» y además existe `Appointment` (cita); R3 `SPA-CARE-CNS-05` añade la sesión interrumpida. Hay que decidir si una sesión programada es una cita o una sesión (O-25). La distinción realizada/consumida (R2 §4.4) es propuesta de R2. **Estado: ABIERTO.** |
+| C-06 | Sesión programada, realizada y consumida | Inconsistencia terminológica real | `SPA-AT-06`, `SPA-AT-07`, `SPA-OPS-AGE-10`, `SPA-CARE-CNS-05`, `SPA-INV-09` | R1 `SPA-AT-06` distingue sesión prevista de realizada, pero R2 §4.3 define la entidad `Session` como «realizada o programada» y además existe `Appointment` (cita); R3 `SPA-CARE-CNS-05` añade la sesión interrumpida. Hay que decidir si una sesión programada es una cita o una sesión (O-25). La distinción realizada/consumida (R2 §4.4) es propuesta de R2. **Actualización 2026-11-18:** `O-25` (alternativa A) **resuelve la terminología**: una sesión programada de un paquete es una cita vinculada al contrato y la sesión realizada es un registro independiente ([registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)). **Siguen abiertas las políticas comerciales**: ausencias que consumen saldo, efecto de cancelar, atención sin cita y varios servicios por cita (O-10, O-11, O-13). **Estado: TERMINOLOGÍA RESUELTA; POLÍTICAS ABIERTAS.** |
 | C-07 | Agenda y asignaciones de Empleados | Compatibles; dependencia no implementada | `SPA-OPS-AGE-04`, `SPA-OPS-AGE-14`, `SPA-AR-06`, `SPA-AG-03` | Compatibles con ADR-050 §8 y EMP-BR-11 y EMP-BR-12: la disponibilidad usa la elegibilidad de Empleados y no los permisos de acceso. Dependencia en un contrato **no implementado** (D-01). |
 | C-08 | Anticipos y capacidades de Ventas y CxC | Brecha de capacidad (sin contradicción entre documentos) | `SPA-AR-05`, `SPA-PQ-01`, `SPA-OPS-VTA-03`, `SPA-OPS-PKG-07`, `SPA-OPS-PKG-04` | R1 §8, R2 `SPA-OPS-VTA-03` y `SPA-OPS-PKG-07` coinciden en no crear anticipos dentro de Spa. La capacidad no existe en el ERP: Ventas y CxC solo cobran saldos de facturas a crédito (R2 §1). Se resuelve fuera de Spa (O-14). |
 | C-09 | Catálogo de permisos candidatos solapados | Solapamiento de nombres (no contradicción) | `SPA-SG-04`, `SPA-CARE-SEG-03`, `SPA-SEC-R-01` | Los permisos candidatos de R2, R3 y R4 se solapan o usan nombres distintos para lo mismo (ver §6.1). No es una contradicción; hay que unificar el catálogo candidato. |
@@ -788,7 +799,7 @@ eliminación frente a la regla de no borrado, la validación legal y la fecha de
 
 ## 11. Decisiones del propietario consolidadas (`O-xx`)
 
-Son cuestiones **pendientes**, no decisiones tomadas ni decisiones históricas `SPA-DEC`. La lista unifica las de R2, R3 y R4.
+Son cuestiones **pendientes**, no decisiones históricas `SPA-DEC`. La lista unifica las de R2, R3 y R4. **`O-15` y `O-25` fueron aprobadas el 2026-11-18** (texto exacto en el [registro de decisiones aprobadas](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)); las otras **23 siguen pendientes**.
 
 | O | Decisión pendiente | Registros relacionados |
 |---|---|---|
@@ -806,7 +817,7 @@ Son cuestiones **pendientes**, no decisiones tomadas ni decisiones históricas `
 | O-12 | Tratamiento de insumos: documental, sugerido, salida manual o consumo automático | SPA-OPS-SRV-07, SPA-IN-02 |
 | O-13 | Las 12 preguntas contractuales de paquetes | SPA-PQ-01 |
 | O-14 | Capacidad de anticipos o prepagos de clientes fuera de Spa | SPA-OPS-VTA-03 |
-| O-15 | Origen del contrato de paquete: explícito desde la factura o por evento de Ventas | SPA-OPS-PKG-04 |
+| O-15 | **APROBADA el 2026-11-18 (alternativa A: creación explícita tras validar una factura autorizada).** Origen del contrato de paquete | SPA-OPS-PKG-04 |
 | O-16 | Mecanismo de firma, versionado y conservación del consentimiento | SPA-CARE-CNS-02, SPA-CN-05 |
 | O-17 | Uso académico: pertenece o no al producto V1.1 | SPA-CN-04, SPA-CARE-CNS-07 |
 | O-18 | Consentimiento de menores y representantes | SPA-CARE-CNS-08 |
@@ -816,7 +827,7 @@ Son cuestiones **pendientes**, no decisiones tomadas ni decisiones históricas `
 | O-22 | Escalas numéricas de las mediciones, frecuencia y número de controles | SPA-CARE-COR-05 a COR-07 |
 | O-23 | Texto íntegro de SPA-DEC-116 y registro histórico SPA-DEC-* | SPA-DEC-116 |
 | O-24 | Versión vigente de cada formulario original | SPA-FC-01, SPA-CARE-FAC-07 |
-| O-25 | Modelo de sesión programada, cita y sesión realizada (terminología) | SPA-AT-06, SPA-OPS-AGE-10 |
+| O-25 | **APROBADA el 2026-11-18 (alternativa A: cita separada de la sesión realizada).** Modelo de sesión programada, cita y sesión realizada (terminología) | SPA-AT-06, SPA-OPS-AGE-10 |
 
 ## 12. Trazabilidad y límites
 
