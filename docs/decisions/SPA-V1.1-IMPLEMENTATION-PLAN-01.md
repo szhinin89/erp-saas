@@ -1,8 +1,8 @@
-# Gali Spa V1.1 — Plan de implementación por fases
+# SPA V1.1 — Plan de implementación por fases
 
 **PROPUESTO — ADR-051 PROPOSED / NO APROBADO — NO IMPLEMENTADO — NINGUNA FASE AUTORIZADA.** Fecha: 2026-11-18. Alcance funcional aprobado por SPA-DEC-115/116; este plan ordena trabajo futuro; **no autoriza comenzar ninguna fase**, ni siquiera la preparación de solo lectura, por existir. No autoriza implementar Empleados.
 
-Arquitectura y justificación: [ADR-051](ADR-051-gali-spa-v1.1-architecture.md). Comportamiento, pantallas y criterios: [contrato](GALI-SPA-V1.1-CONTRACT-SPEC-01.md). Aprobaciones literales: [registro](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). Estado: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este plan no es una SSOT ni replica el contrato.
+Arquitectura y justificación: [ADR-051](ADR-051-spa-v1.1-architecture.md). Comportamiento, pantallas y criterios: [contrato](SPA-V1.1-CONTRACT-SPEC-01.md). Aprobaciones literales: [registro](SPA-V1.1-APPROVED-DECISIONS-01.md). Estado: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este plan no es una SSOT ni replica el contrato.
 
 Patrón contrastado: el plan oficial de Pedidos se llama [PEDIDOS-VENTA-V1-IMPLEMENTATION-PLAN-01](../agent/PEDIDOS-VENTA-V1-IMPLEMENTATION-PLAN-01.md) y está en `docs/agent/`. Este archivo de Spa queda en `docs/decisions/` por ruta expresa del propietario.
 
@@ -17,7 +17,7 @@ Patrón contrastado: el plan oficial de Pedidos se llama [PEDIDOS-VENTA-V1-IMPLE
 
 ## 2. Secuencia histórica preliminar y dependencias reales
 
-Fuente: SPA-DEC-116 recuperada por el propietario; orden preliminar transcrito en [REG §10.2](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). Se preservan F0 arquitectura/contratos; F1 Empleados/base segura; F2 expediente/valoraciones; F3 tratamientos/sesiones; F4 consentimientos/fotos; F5 agenda/espera; F6 integración comercial; F7 operación/reportes; F8 pruebas integrales. La fuente permite adaptar dependencias; no autoriza ninguna fase.
+Fuente: SPA-DEC-116 recuperada por el propietario; orden preliminar transcrito en [REG §10.2](SPA-V1.1-APPROVED-DECISIONS-01.md). Se preservan F0 arquitectura/contratos; F1 Empleados/base segura; F2 expediente/valoraciones; F3 tratamientos/sesiones; F4 consentimientos/fotos; F5 agenda/espera; F6 integración comercial; F7 operación/reportes; F8 pruebas integrales. La fuente permite adaptar dependencias; no autoriza ninguna fase.
 
 **Cada fila: PENDING / NO AUTORIZADA.** Toda prueba aquí indicada es futura, no ejecutada durante esta corrección documental. La lista exacta de archivos y autorización expresa siguen siendo requisito individual.
 

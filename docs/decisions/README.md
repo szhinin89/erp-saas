@@ -53,7 +53,7 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-048](ADR-048-company-suspension-automatic-processes.md) | ADR-048 — Empresa suspendida o deshabilitada: procesos automáticos y sesiones |
 | [ADR-049](ADR-049-sales-order-v1-architecture.md) | ADR-049 — Orden de Pedido de Venta V1 (Gestión de Ventas): diseño aprobado, no implementado |
 | [ADR-050](ADR-050-employees-v1-architecture.md) | ADR-050 — Empleados V1 (módulo técnico independiente): arquitectura funcional aprobada, no implementada |
-| [ADR-051](ADR-051-gali-spa-v1.1-architecture.md) | ADR-051 — Gali Spa V1.1: PROPOSED / NO APROBADO; arquitectura candidata, sin implementación autorizada |
+| [ADR-051](ADR-051-spa-v1.1-architecture.md) | ADR-051 — SPA V1.1: PROPOSED / NO APROBADO; arquitectura candidata, sin implementación autorizada |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 
@@ -68,24 +68,15 @@ Los siguientes conservan decisiones referenciadas y no sustituyen las SSOT:
 - [EMPLOYEES-V1-CONTRACT-SPEC-01.md](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (especificación contractual de ADR-050, sin implementar; no es SSOT).
 - [RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md](RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md).
 
-## Gali Spa V1.1 — Documentación oficial en revisión
+## SPA V1.1 — Módulo de Gestión de Spa y Tratamientos Estéticos: documentación oficial en revisión
 
 **Consolidación de planificación existente; no SSOT implementada. Ninguna fase de Spa ni de Empleados está autorizada.** El contrato concentra el comportamiento; el ADR explica arquitectura y el plan ordena dependencias. SPA-DEC-115/116 recuperadas y APROBADAS históricamente; O-23 CERRADA en inclusión funcional general. Detalles técnicos/legales y fichas O-24/V-01 siguen pendientes, sin autorización de implementar.
 
 | Documento | Responsabilidad | Estado |
 |---|---|---|
-| [Contrato funcional](GALI-SPA-V1.1-CONTRACT-SPEC-01.md) | Planificación histórica, reglas, pantallas, datos, integraciones, estados y aceptación | Alcance funcional APROBADO; consolidación sin aprobación técnica integral ni autorización de implementación |
-| [ADR-051](ADR-051-gali-spa-v1.1-architecture.md) | Arquitectura candidata y condiciones de aprobación | PROPOSED / NO APROBADO |
-| [Plan de implementación](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) | Fases, dependencias, pruebas y cierre | PROPUESTO; ninguna fase autorizada |
-| [Registro de decisiones](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) | SPA-DEC-115/116 históricas recuperadas, O-25/O-15 literales, Empleados aplicable y DIR-SSOT-01 | Evidencia de alcance limitado; no aprobación global |
+| [Contrato funcional](SPA-V1.1-CONTRACT-SPEC-01.md) | Planificación histórica, reglas, pantallas, datos, integraciones, estados y aceptación | Alcance funcional APROBADO; consolidación sin aprobación técnica integral ni autorización de implementación |
+| [ADR-051](ADR-051-spa-v1.1-architecture.md) | Arquitectura candidata y condiciones de aprobación | PROPOSED / NO APROBADO |
+| [Plan de implementación](SPA-V1.1-IMPLEMENTATION-PLAN-01.md) | Fases, dependencias, pruebas y cierre | PROPUESTO; ninguna fase autorizada |
+| [Registro de decisiones](SPA-V1.1-APPROVED-DECISIONS-01.md) | SPA-DEC-115/116 históricas recuperadas, O-25/O-15 literales, Empleados aplicable y DIR-SSOT-01 | Evidencia de alcance limitado; no aprobación global |
 
-### Antecedentes históricos no normativos de Spa
-
-Se conservan sin borrar ni renombrar. Sus cuerpos documentan la evidencia y las alternativas de su fecha; para el comportamiento planificado actual se usa el contrato central y para aprobaciones literales, el registro. No son especificaciones oficiales paralelas.
-
-- [RECOVERY-01](GALI-SPA-V1.1-RECOVERY-01.md): recuperación previa/equivalencias V01/GS-*; cuerpo anterior a recuperar SPA-DEC-115/116 en el registro. Fichas originales aún sin contraste.
-- [OPERATIONS-SPEC-DRAFT-01](GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01.md): propuestas operativas previas.
-- [CARE-PRIVACY-SPEC-DRAFT-01](GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01.md): propuestas de atención y privacidad previas.
-- [SECURITY-COMPLIANCE-DRAFT-01](GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01.md): investigación técnica/legal previa, sin certificación de vigencia ni cumplimiento.
-- [CONTRACT-CONSOLIDATION-MATRIX-01](GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01.md): inventario de procedencia y conflictos de la revisión previa.
-- [CONTRACT-NORMALIZATION-01](GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01.md): normalización y verificaciones previas, incorporadas al contrato según su estado.
+Los seis antecedentes previos (RECOVERY-01, OPERATIONS-SPEC-DRAFT-01, CARE-PRIVACY-SPEC-DRAFT-01, SECURITY-COMPLIANCE-DRAFT-01, matriz de consolidación y normalización) se retiraron tras consolidar su contenido en estos cuatro documentos; sus versiones previas están en el historial Git.

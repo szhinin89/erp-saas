@@ -1,8 +1,8 @@
-# ADR-051 — Gali Spa V1.1
+# ADR-051 — SPA V1.1: arquitectura del módulo de Gestión de Spa y Tratamientos Estéticos
 
 Estado: **PROPOSED / NO APROBADO** — 2026-11-18. Arquitectura candidata para revisión; no implementada. **Ninguna fase está autorizada**, tampoco Empleados. SPA-DEC-115/116 aportan alcance funcional aprobado; esta integración no aprueba políticas o mecanismos técnicos pendientes ni autoriza cambios FROZEN/CLOSED.
 
-Patrón: [ADR-049](ADR-049-sales-order-v1-architecture.md). Comportamiento y pantallas: [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md); evidencia de decisiones: [registro](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md); fases: [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md). Entrega y gates: [STATUS](../../STATUS.md); trabajo abierto: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este ADR explica alternativas y límites, no es una segunda especificación funcional ni una SSOT implementada.
+Patrón: [ADR-049](ADR-049-sales-order-v1-architecture.md). Comportamiento y pantallas: [contrato central](SPA-V1.1-CONTRACT-SPEC-01.md); evidencia de decisiones: [registro](SPA-V1.1-APPROVED-DECISIONS-01.md); fases: [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md). Entrega y gates: [STATUS](../../STATUS.md); trabajo abierto: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este ADR explica alternativas y límites, no es una segunda especificación funcional ni una SSOT implementada.
 
 **Numeración comprobada:** el inventario de `docs/decisions/ADR-*.md` y el índice llegaban a ADR-050; no había archivo ni referencia ADR-051 al preparar este documento. Los huecos históricos 029/030 no se reutilizan. No se declara Accepted por asignarle número.
 
@@ -110,6 +110,23 @@ Riesgos abiertos: disponibilidad temporal aún no probada; acceso Admin sin pol�
 Para considerar Accepted: integrar el alcance ya aprobado y cierre funcional O-23, aprobar técnicamente contrato y alternativas AT aplicables, resolver política de privacidad/conservación y medidas corporales, definir representación de visita múltiple, preparación/borrador/sesión parcial, cálculo de restricciones y reglas comerciales/operativas que condicionan el modelo y documentar resultados de verificaciones técnicas. Recuperar o dejar expresamente acordado el tratamiento de fuentes no disponibles y obtener validación legal cuando corresponda. Los desacuerdos permanecen visibles; no se transforma una recomendación en decisión.
 
 **Accepted tampoco autorizaría programar.** Cada fase posterior exige autorización expresa, lista exacta de archivos, dependencias comprobadas y gates del [flujo obligatorio](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase). Empleados se implementaría bajo su propio plan/autorizaciones. No se reabre ningún módulo CLOSED por mencionar una integración.
+
+### 9.1 Cambios de arquitectura que exigen autorización especial
+
+Incorporado desde el borrador de seguridad retirado (§9 original). Cada fila es una dependencia posible, no una decisión aprobada.
+
+| Cambio | Módulos afectados | Autorización especial | Alternativa que lo origina |
+|---|---|---|---|
+| Permisos «sellados» sin bypass del Admin | Kernel, Access, sesión, navegación, frontend | **Sí**: revisión arquitectónica explícita del contrato LOCKED | §3.3 B |
+| Entidad de concesión de acceso clínico | Spa | No (nueva en Spa) | §3.3 C, D |
+| Entidad `CareAccessLog` | Spa | No (nueva en Spa); sin tocar la infraestructura FROZEN | §4 |
+| Adaptador `ICareFileStore` sobre `IFileStorage` | Spa, Infrastructure | No si es nuevo; sí si cambia `LocalFileStorage` | §5 |
+| Cifrado de aplicación y gestión de claves | Spa, Infrastructure, operación | Posible (claves externas, despliegue) | §5.3 |
+| Respaldos cifrados | `scripts/backup-restore.ps1`, operación | **Sí**: cambiar scripts de operación | §5 |
+| Procedimiento de eliminación legal | Spa, política | **Decisión del propietario**: excepción a la regla de no borrado | §6 |
+| Campos propios de nacimiento y emergencia | Spa | No | §8 A |
+| Ampliar BusinessPartner | MasterData | **Sí**: ADR nuevo, módulo FROZEN | §8 B |
+| Empleados implementado | Empleados | Autorizaciones EMP-E1 a E6b | SPA-SEC-R-09 |
 
 ## 10. Validación documental
 

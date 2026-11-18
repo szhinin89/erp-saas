@@ -1,15 +1,15 @@
-# Gali Spa V1.1 — Contrato funcional consolidado (SPA-V1.1-CONTRACT-SPEC-01)
+# SPA V1.1 — Módulo de Gestión de Spa y Tratamientos Estéticos de ERP ZH: contrato funcional (SPA-V1.1-CONTRACT-SPEC-01)
 
 **ALCANCE FUNCIONAL APROBADO (SPA-DEC-115/116) — CONSOLIDACIÓN TÉCNICA EN REVISIÓN — SIN IMPLEMENTACIÓN AUTORIZADA.**
 
-Candidato a fuente única de verdad **funcional** de Gali Spa V1.1 (2026-11-18, revisión 3 — integración de SPA-DEC-115/116 recuperadas). Responde a cuatro preguntas por funcionalidad: **qué se desarrollará, cómo debe funcionar, qué está
+Candidato a fuente única de verdad **funcional** de SPA V1.1 (2026-11-18, revisión 3 — integración de SPA-DEC-115/116 recuperadas). Responde a cuatro preguntas por funcionalidad: **qué se desarrollará, cómo debe funcionar, qué está
 aprobado y qué no lo está, y qué queda excluido.** Consolida, sin añadir decisiones de negocio, los siete documentos previos de Spa (§0.7). **No es un ADR, no es una SSOT vigente** (la SSOT de un
-módulo nace cuando existen código y pruebas: [enforcement](../architecture/enforcement.md#ssot-por-módulo)) **y no autoriza implementar Gali Spa ni Empleados**, migraciones, endpoints, pantallas,
+módulo nace cuando existen código y pruebas: [enforcement](../architecture/enforcement.md#ssot-por-módulo)) **y no autoriza implementar SPA ni Empleados**, migraciones, endpoints, pantallas,
 permisos ni cambios en módulos FROZEN o CLOSED. Estado de entrega: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md); índice oficial: [decisiones](README.md).
 
 Patrón documental: el mismo de Orden de Pedido de Venta V1 ([ADR-049](ADR-049-sales-order-v1-architecture.md), [especificación funcional](PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md)) y de Empleados V1
 ([ADR-050](ADR-050-employees-v1-architecture.md), [especificación contractual](EMPLOYEES-V1-CONTRACT-SPEC-01.md)): una especificación central con etiquetas de estado, jerarquía de autoridad
-explícita, decisiones del propietario separadas de las propuestas técnicas y [ADR-051](ADR-051-gali-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md) preparado sin autorización de ejecución; su aprobación sigue condicionada a §29.
+explícita, decisiones del propietario separadas de las propuestas técnicas y [ADR-051](ADR-051-spa-v1.1-architecture.md) PROPOSED / NO APROBADO y [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md) preparado sin autorización de ejecución; su aprobación sigue condicionada a §29.
 
 ## 0. Cómo leer este contrato
 
@@ -20,9 +20,9 @@ se registran como bloqueo (§29).**
 
 | Nivel | Fuente | Alcance |
 |---|---|---|
-| 1 | Decisiones expresamente aprobadas por el propietario | Solo dentro de su alcance literal: `SPA-DEC-115`, `SPA-DEC-116` (evidencia histórica aportada por el propietario, REG §9/10), `O-25`, `O-15` ([registro](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)), las decisiones de Empleados de [ADR-050](ADR-050-employees-v1-architecture.md) que atañen a Spa y la **instrucción** del propietario `DIR-SSOT-01` (§20.4), que fija una frontera y no aprueba un diseño |
+| 1 | Decisiones expresamente aprobadas por el propietario | Solo dentro de su alcance literal: `SPA-DEC-115`, `SPA-DEC-116` (evidencia histórica aportada por el propietario, REG §9/10), `O-25`, `O-15` ([registro](SPA-V1.1-APPROVED-DECISIONS-01.md)), las decisiones de Empleados de [ADR-050](ADR-050-employees-v1-architecture.md) que atañen a Spa y la **instrucción** del propietario `DIR-SSOT-01` (§20.4), que fija una frontera y no aprueba un diseño |
 | 2 | ADR y contratos vigentes del ERP | Respetando sus límites: [ADR-017](ADR-017-business-partner-scope.md) (BusinessPartner, FROZEN), [ADR-034](ADR-034-temporal-contract-single-source.md), [ADR-035](ADR-035-supplier-payment-unapplied-advance.md), [ADR-041](ADR-041-negative-sale-inventory-cost-obligations.md), «Security & Access Contract V1 — LOCKED» ([security](../architecture/security.md)), [auditoría](../architecture/audit-infrastructure.md), [datos](../architecture/data-standards.md), Ventas FROZEN |
-| 3 | Evidencia técnica verificada del repositorio | Las verificaciones `V-xx` cerradas ([normalización §5](GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01.md)) y las capacidades [E] citadas en cada sección |
+| 3 | Evidencia técnica verificada del repositorio | Las verificaciones `V-xx` cerradas (normalización §5) y las capacidades [E] citadas en cada sección |
 | 4 | Planificación histórica recuperada y propuestas pendientes, distinguidas por evidencia | [F]/[R] conserva lo planificado sin acta íntegra o contraste directo; [T] identifica traducciones técnicas nuevas. No se atribuye aprobación a ninguna de estas categorías ni se descarta la planificación por falta de acta |
 
 ### 0.2 Estados de aprobación (columna «Estado»)
@@ -83,15 +83,15 @@ No crea matriz ni recuperación nuevas. Esta revisión actualiza las entradas hi
 
 | Código | Documento | Contenido aportado |
 |---|---|---|
-| R1 | [GALI-SPA-V1.1-RECOVERY-01](GALI-SPA-V1.1-RECOVERY-01.md) | Reconstrucción, requisitos [F], invariantes `SPA-INV-*`, pruebas `SPA-T-*` |
-| R2 | [GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01](GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01.md) | Agenda, servicios, paquetes, ventas (`SPA-OPS-*`) |
-| R3 | [GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01](GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01.md) | Expediente, valoraciones, consentimientos, fotografías (`SPA-CARE-*`) |
-| R4 | [GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01](GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01.md) | Seguridad, auditoría, retención, legal (`SPA-SEC-*`) |
-| MATRIZ | [GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01](GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01.md) | 295 registros, conflictos `C-xx`, cuestiones `O-xx`, verificaciones `V-xx` |
-| NORM | [GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01](GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01.md) | Redacciones canónicas, glosario, catálogo de permisos, grupos de pruebas `PT-xx` |
-| REG | [GALI-SPA-V1.1-APPROVED-DECISIONS-01](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) | Fuente histórica aportada SPA-DEC-115/116, O-25/O-15, DIR-SSOT-01 y Empleados aplicable |
+| R1 | SPA-V1.1-RECOVERY-01 | Reconstrucción, requisitos [F], invariantes `SPA-INV-*`, pruebas `SPA-T-*` |
+| R2 | SPA-V1.1-OPERATIONS-SPEC-DRAFT-01 | Agenda, servicios, paquetes, ventas (`SPA-OPS-*`) |
+| R3 | SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01 | Expediente, valoraciones, consentimientos, fotografías (`SPA-CARE-*`) |
+| R4 | SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01 | Seguridad, auditoría, retención, legal (`SPA-SEC-*`) |
+| MATRIZ | SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01 | 295 registros, conflictos `C-xx`, cuestiones `O-xx`, verificaciones `V-xx` |
+| NORM | SPA-V1.1-CONTRACT-NORMALIZATION-01 | Redacciones canónicas, glosario, catálogo de permisos, grupos de pruebas `PT-xx` |
+| REG | [SPA-V1.1-APPROVED-DECISIONS-01](SPA-V1.1-APPROVED-DECISIONS-01.md) | Fuente histórica aportada SPA-DEC-115/116, O-25/O-15, DIR-SSOT-01 y Empleados aplicable |
 
-Inventario: ocho archivos previos GALI-SPA, más ADR-051 y plan preparados aquí. No se localizaron originales V01 ni GS-* independientes en el inventario de rutas; sus equivalencias transmitidas se conservan en Anexo E. Las fichas originales siguen sin contraste.
+Inventario: los seis antecedentes R1–R4, MATRIZ y NORM se retiraron del árbol tras comprobar que su contenido está representado en estos cuatro documentos oficiales (identificadores en Anexo C; evidencia legal, glosario, conflictos y dependencias en Anexos G–I; cambios de arquitectura en ADR-051 §9.1); sus versiones previas se conservan en el historial Git y los códigos R1–R4/MATRIZ/NORM se mantienen solo como procedencia. No se localizaron originales V01 ni GS-* independientes en el inventario de rutas; sus equivalencias transmitidas se conservan en Anexo E. Las fichas originales siguen sin contraste.
 
 Fuentes externas sin inspección directa en esta consolidación: `Gali_Spa_Fichas_Actualizadas.docx`, `Gali_Spa_Fichas_Clinicas_y_Consentimiento.docx`, `Gali_Spa_Ficha_Compacta_Dos_Caras.pdf`, `Gali_Spa_Facial_Actualizada.pdf`, `Gali_Spa_Corporal_Actualizada.pdf` y otras variantes transmitidas. No se presume equivalencia entre versiones (O-24). SPA-DEC-115/116 se recuperaron con alcance aprobado mediante el encargo del propietario (§9/10 de REG), antes conocido solo parcialmente. No se recuperaron los textos SPA-DEC-001..114; la numeración no demuestra inventario completo ni fechas originales.
 
@@ -102,6 +102,10 @@ Fuentes externas sin inspección directa en esta consolidación: `Gali_Spa_Ficha
 Detalles aún no recuperados: campos y obligatoriedad de fichas (O-21/O-24/V-01), flujo oficial de cliente inexistente, numeración/código de expediente (O-19), permisos/errores precisos por operación, representación de visita múltiple y borrador/interrupción de sesión, transiciones/efectos de tratamiento, restricciones temporales y ajustes/consumos de paquetes. Firma en pantalla, versiones, expediente único y las capacidades de §2 ya no se califican como pendientes de inclusión. Las fichas indican lo conocido y el detalle pendiente sin inventar diseño visual.
 
 ## 1. Objetivo del módulo
+
+**Producto genérico y multiempresa.** SPA V1.1 es el módulo genérico de ERP ZH para cualquier empresa que gestione un spa o tratamientos estéticos. No codifica empresas, profesionales, sucursales ni servicios concretos: toda configuración respeta tenant, empresa y sucursal; los clientes reutilizan BusinessPartner, los profesionales reutilizan Empleados y los servicios comerciales reutilizan Items; Ventas, Caja, CxC, Inventario y Contabilidad conservan sus responsabilidades. El módulo administra atención, agenda, tratamientos, expedientes y paquetes, y ningún expediente es accesible desde otra empresa. La interfaz utiliza el nombre SPA. «Gali Spa» solo aparece como atribución histórica de la procedencia de decisiones y formularios originales (p. ej. archivos `Gali_Spa_*` y evidencia SPA-DEC); sus particularidades no son valores fijos del módulo y este documento no crea un motor genérico nuevo de formularios ni aprueba configuraciones no documentadas.
+
+**Jerarquía documental de SPA V1.1 (fuente única por tema):** este contrato define el comportamiento funcional; [ADR-051](ADR-051-spa-v1.1-architecture.md) define arquitectura, decisiones técnicas y dependencias; el [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md) define fases F0–F8, validaciones y cierre; el [registro](SPA-V1.1-APPROVED-DECISIONS-01.md) conserva aprobaciones y su evidencia. Cada uno remite a los demás sin repetir sus reglas.
 
 **Qué se desarrollará (alcance APROBADO por SPA-DEC-116; antecedente `SPA-AL-01` [R]):** el ámbito funcional del ERP destinado a administrar un establecimiento de servicios estéticos: clientes y expedientes de atención, profesionales
 responsables, valoraciones faciales y corporales, consentimientos informados, fotografías y seguimiento, servicios y tratamientos, planes de tratamiento, agenda y reservas, sesiones realizadas, paquetes
@@ -114,7 +118,7 @@ Cuentas por Cobrar y los mecanismos oficiales de seguridad y auditoría. Parte E
 
 ## 2. Alcance funcional aprobado de V1.1
 
-**SPA-DEC-116 — APROBADA HISTÓRICA, recuperada en este encargo.** El propietario aporta expresamente su revisión de alcance y agrupaciones funcionales. Fuente canónica de evidencia: [REG §10](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md). SPA-DEC-115 añade el comportamiento aprobado de búsqueda por servicio (§7.1). No se exige una nueva aprobación general ni se confunde inclusión con aprobación técnica integral.
+**SPA-DEC-116 — APROBADA HISTÓRICA, recuperada en este encargo.** El propietario aporta expresamente su revisión de alcance y agrupaciones funcionales. Fuente canónica de evidencia: [REG §10](SPA-V1.1-APPROVED-DECISIONS-01.md). SPA-DEC-115 añade el comportamiento aprobado de búsqueda por servicio (§7.1). No se exige una nueva aprobación general ni se confunde inclusión con aprobación técnica integral.
 
 | Área aprobada | Comportamiento incluido | Sección | Detalle pendiente, sin cuestionar inclusión |
 |---|---|---|---|
@@ -303,7 +307,7 @@ No se recuperaron de las decisiones anteriores los valores de descansos/preparac
 
 ### 8.1 Decisión aprobada O-25 (alternativa A — cita separada de la sesión realizada)
 
-Texto literal de los ocho enunciados ([registro](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) §1.2):
+Texto literal de los ocho enunciados ([registro](SPA-V1.1-APPROVED-DECISIONS-01.md) §1.2):
 
 1. **Reserva** es la operación que crea una cita, no una entidad independiente.
 2. La **cita** representa la programación en la agenda.
@@ -388,7 +392,7 @@ contrato está **APROBADO** por O-15; paquetes individuales/combinados, vigencia
 
 ### 11.1 Decisión aprobada O-15 (alternativa A — creación explícita tras validar una factura autorizada)
 
-Texto literal de los siete enunciados ([registro](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) §2.2):
+Texto literal de los siete enunciados ([registro](SPA-V1.1-APPROVED-DECISIONS-01.md) §2.2):
 
 1. **Spa crea explícitamente el contrato de paquete después de validar una factura autorizada.**
 2. La creación **referencia la factura y su línea correspondiente**.
@@ -423,10 +427,10 @@ SPA-DEC-116 aprueba capacidades; O-15/O-25 resuelven origen y no consumo por res
 | Tema | Pregunta | Estado | Alternativas (sin elegir) |
 |---|---|---|---|
 | Venta | Qué origina un paquete | **RESUELTA por `O-15`** (creación explícita tras validar una factura autorizada) | La alternativa «evento de autorización» queda no aprobada |
-| Composición | Qué servicios y cantidades | Individuales/combinados y cupos APROBADOS; cantidades/equivalencias y sustitución concreta pendientes O-13 | No se impone intercambiabilidad libre por tener paquete combinado |
+| Composición | Qué servicios y cantidades | Individuales/combinados y cupos APROBADOS; cantidades/equivalencias y sustitución concreta pendientes O-13 | Definición cerrada de servicios y cantidades fijas / definición con sesiones intercambiables entre servicios (complica el saldo; no se impone intercambiabilidad libre por tener paquete combinado) |
 | Uso | Cuándo una sesión se considera consumida | PENDIENTE (`O-13`); el consumo comercial es un movimiento independiente «cuando corresponda» (`O-25` #7) | Al realizarse / al realizarse o registrarse ausencia |
-| Saldo | Cómo calcular pendientes | PENDIENTE | Derivado del libro / almacenado y actualizado bajo lock. Reservar **no consume** (`O-25` #5); si las programadas apartan saldo sigue pendiente |
-| Vigencia | Cómo aplicar su vigencia | Capacidad APROBADA por SPA-DEC-116; plazo, inicio, extensión y efecto pendientes O-13 | No se elige vencimiento automático, job ni expiración de derechos |
+| Saldo | Cómo calcular pendientes | PENDIENTE | Derivado del libro (evita desincronización) / almacenado y actualizado bajo lock (mejora la lectura). Reservar **no consume** (`O-25` #5); si las programadas apartan saldo sigue pendiente |
+| Vigencia | Cómo aplicar su vigencia | Capacidad APROBADA por SPA-DEC-116; plazo, inicio, extensión y efecto pendientes O-13 | Con vigencia y movimiento `Expired` exige cálculo o job de vencimiento (parámetro de negocio no recuperado); no se elige vencimiento automático, job ni expiración de derechos |
 | Reprogramación | Si afecta al saldo | **RESUELTA por `O-25` #5:** reprogramar no consume saldo | La alternativa «afecta según anticipación» queda no aprobada |
 | Ausencia | Si descuenta una sesión | PENDIENTE (`O-13`) | No descuenta / descuenta |
 | Cancelación | Qué ocurre con el saldo | PENDIENTE (`O-13`) | Se restituye / se restituye según anticipación |
@@ -584,6 +588,8 @@ lo modifica. Recomendación técnica no aprobada: referencias privadas, lectura 
 clave separada solo si se aprueba ese detalle, sin desarrollar sistema nuevo (HX-03) (`SPA-SEC-INV-05`); muy recomendable antes de datos reales de salud: cifrado de aplicación por archivo con cifrado de sobre y clave maestra externa. Cifrado de campos clínicos: segunda etapa.
 Cifrado de disco y publicación del directorio de archivos: `V-07` (verificación con infraestructura). Decisión `O-04`.
 
+Alternativas de protección por capa (sin elegir; R4 §5.3–5.4): transporte, TLS en la terminación del despliegue (pendiente en el runbook); archivos en reposo, A cifrado de disco/volumen de infraestructura (no verificado), B cifrado de aplicación por archivo con clave de datos por archivo y clave maestra, C almacén de objetos con cifrado del servidor (futuro); campos clínicos, A sin cifrado de campo (permisos y auditoría), B cifrado de columnas con conversor de EF (se pierde búsqueda y orden), C cifrado de disco del servidor de base de datos; claves, A Data Protection con keyring en el mismo volumen, B clave maestra en gestor de secretos o KMS externo, C clave por expediente (permite borrado criptográfico); respaldos, cifrado con clave guardada aparte o sin cifrar (hoy). El keyring comparte volumen y respaldo con los archivos, por lo que cifrar con él no protegería el respaldo: la clave maestra debe vivir separada de datos y respaldos. Perder las claves implica perder los datos (custodia, rotación e identificador de versión por objeto). No modificar `IFileStorage`/`LocalFileStorage`: adaptador propio `ICareFileStore`.
+
 **Flujos (PROPUESTOS):** subir una fotografía a una atención (comprobando el consentimiento de seguimiento vigente) → consultar dentro del expediente → comparar un grupo → exportar con permiso → desactivar. Estados: `Activa` e `Inactiva`; el bloqueo por retiro de autorización es pendiente (`SPA-CARE-FOT-08`). Permisos `spa.photos.view`, `spa.photos.create` y `spa.records.export`; errores sin catálogo recuperado (§26).
 
 ## 19. Equipos e insumos
@@ -635,7 +641,7 @@ contrato se crea leyendo la factura mediante una consulta existente de Ventas (V
 
 **Directriz del propietario (encargo SPA-V1.1-SSOT-CONSOLIDATION, 2026-11-18):** *Anticipos de Clientes es un proceso independiente y transversal del ERP, no una entidad financiera propia de Gali Spa.*
 Alcance: esta directriz fija la **propiedad** del proceso; **no** decide si el proceso existirá, ni su diseño, ni cierra `O-14`. Se registra con este alcance en el
-[registro de decisiones](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md), §7.
+[registro de decisiones](SPA-V1.1-APPROVED-DECISIONS-01.md), §7.
 
 - `O-14` **permanece abierta**. Su posible desarrollo es un **proyecto separado** (futuro, sin documento, sin ADR y sin autorización): no se diseña aquí ni dentro de Ventas ni de CxC.
 - **Único punto de integración que Spa podría necesitar** (no es contrato): disponer, si ese proceso llegara a existir, de un modo de (a) consultar el saldo de anticipo de un cliente, (b) aplicarlo como
@@ -659,7 +665,7 @@ clínico (ADR-050); permisos oficiales, aislamiento/auditoría/archivos privados
 | SPA-SG-05 / SPA-SEC-INV-12 | Aislamiento por tenant y empresa (entidades `ICompanyOperationalEntity`, filtro fail-closed) en lecturas, exportaciones y registros de acceso; la sucursal es un filtro del recurso | VIGENTE-ERP + PROPUESTO | E, T |
 | SPA-SG-06 / SPA-CARE-SEG-05 / SPA-CARE-FOT-05 / DUP-15 | Las proyecciones, listados y la agenda no exponen datos clínicos ni fotografías; estos solo se ven dentro del expediente y con permiso | PROPUESTO | T |
 | SPA-SEC-INV-09 | El acceso excepcional exige motivo y queda marcado para revisión | PROPUESTO (solo si se aprueba la alternativa D) | T |
-| SPA-SEC-R-01 / SPA-CARE-SEG-04 | **Acceso del rol Admin a datos clínicos.** El autorizador resuelve el bypass del Admin antes de la clave de permiso; excepcionarlo modifica el contrato LOCKED. Alternativas: A aceptar el bypass (control solo por auditoría de lecturas); B permisos «sellados» sin bypass (cambia Kernel, Access, sesión, navegación y frontend; revisión arquitectónica expresa); C concesión de acceso clínico propia de Spa (`CareAccessGrant`) exigida además del permiso; D acceso excepcional con motivo (variante de C). Recomendación técnica no aprobada: C + D, con B como cambio futuro | **BLOQUEADO** (`C-01`, `O-01`) | T, P |
+| SPA-SEC-R-01 / SPA-CARE-SEG-04 | **Acceso del rol Admin a datos clínicos.** El autorizador resuelve el bypass del Admin antes de la clave de permiso; excepcionarlo modifica el contrato LOCKED. Alternativas: A aceptar el bypass (control solo por auditoría de lecturas); B permisos «sellados» sin bypass (cambia Kernel, Access, sesión, navegación y frontend; revisión arquitectónica expresa); C concesión de acceso clínico propia de Spa (`CareAccessGrant`) exigida además del permiso; D acceso excepcional con motivo («break-glass»: el Admin sin concesión accede con motivo obligatorio, registro reforzado y notificación a un responsable; variante de C). Consecuencias: A deja el control solo en la confianza y la auditoría; B cumple la exclusión estricta pero modifica el contrato LOCKED y puede verse como segunda fuente de «Admin»; C reduce el acceso accidental pero no impide que un Admin se otorgue una concesión sin segunda persona; D hace visible y justificado el acceso. Recomendación técnica no aprobada: C + D, con B como cambio futuro | **BLOQUEADO** (`C-01`, `O-01`) | T, P |
 | SPA-SEC-R-08 | **Acceso entre sucursales:** A expediente de empresa visible a todo usuario con el permiso; B limitado a sucursales con `CompanyUserBranch` (patrón `IBranchAccessGuard`); C la sucursal de cada atención limita solo esa atención | PENDIENTE (`O-02`) | P |
 
 ### 21.2 Catálogo unificado de permisos candidatos (30)
@@ -723,7 +729,7 @@ restricción de acceso, conservación histórica y eliminación son conceptos di
 
 ### 22.3 Obligaciones legales y su estado de verificación
 
-Fuente: [R4 §7](GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01.md) (consulta del 2026-11-18 a textos de gob.ec extraídos de PDF con errores de reconocimiento de caracteres). **No es asesoría jurídica ni certificación de
+Fuente: R4 §7 (consulta del 2026-11-18 a textos de gob.ec extraídos de PDF con errores de reconocimiento de caracteres). **No es asesoría jurídica ni certificación de
 cumplimiento**; cada cita debe confirmarse contra el Registro Oficial (`V-09`); no se verificó ninguna reforma posterior a enero de 2025.
 
 | Estado | Contenido |
@@ -1338,8 +1344,8 @@ Las capacidades de §2 y exclusiones de §3 están aprobadas. Ninguna fase es im
 
 | Fuente | Estado y alcance | Evidencia |
 |---|---|---|
-| SPA-DEC-115 | APROBADA histórica: búsqueda por servicio/fecha/sucursal sin profesional previo; selección explícita y motor único, sin confirmar automáticamente | [REG §9](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) |
-| SPA-DEC-116 | APROBADA histórica: once áreas, siete agrupaciones y diez exclusiones; orden de fases preliminar | [REG §10](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md) |
+| SPA-DEC-115 | APROBADA histórica: búsqueda por servicio/fecha/sucursal sin profesional previo; selección explícita y motor único, sin confirmar automáticamente | [REG §9](SPA-V1.1-APPROVED-DECISIONS-01.md) |
+| SPA-DEC-116 | APROBADA histórica: once áreas, siete agrupaciones y diez exclusiones; orden de fases preliminar | [REG §10](SPA-V1.1-APPROVED-DECISIONS-01.md) |
 | O-25 | APROBADA: cita distinta de sesión realizada y consumo independiente; sin consumir por reservar/reprogramar | REG §1, literal preservado §8.1 |
 | O-15 | APROBADA: creación explícita desde factura/línea, fuera de autorización Ventas; sin duplicados/documentos propios | REG §2, literal preservado §11.1 |
 | DIR-SSOT-01 | INSTRUCCIÓN DEL PROPIETARIO: Anticipos como proceso transversal, no diseño financiero ni cierre O-14 | REG §7; contrato §20.4 |
@@ -1395,13 +1401,13 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 | Documento | Responsabilidad | Estado |
 |---|---|---|
 | **Contrato central** (este documento) | Comportamiento funcional y técnico de Spa V1.1: qué se desarrollará, cómo funciona, qué está aprobado, qué no y qué queda excluido | Candidato a SSOT funcional; EN REVISIÓN |
-| **[ADR-051](ADR-051-gali-spa-v1.1-architecture.md)** | Arquitectura candidata, fronteras y condiciones | PROPOSED / NO APROBADO |
-| **[Plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md)** | Fases, dependencias, pruebas y cierre | PROPUESTO; ninguna fase autorizada |
-| **Registro de decisiones** ([REG](GALI-SPA-V1.1-APPROVED-DECISIONS-01.md)) | Evidencia de las aprobaciones del propietario | Vigente; las aprobaciones nuevas (incluida `DIR-SSOT-01`) se registran allí o en su sucesor |
-| R1 [RECOVERY-01](GALI-SPA-V1.1-RECOVERY-01.md) | Respaldo de reconstrucción/códigos GS-*/V01 anterior a recuperar SPA-DEC-115/116 en REG | Referencia **no normativa** |
-| R2 [OPERATIONS-SPEC](GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01.md), R3 [CARE-PRIVACY](GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01.md), R4 [SECURITY-COMPLIANCE](GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01.md) | Análisis, alternativas y evidencia técnica y legal que respaldan este contrato | Referencia **no normativa** (el texto funcional vive aquí; R4 §7 conserva el detalle legal) |
-| [MATRIZ](GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01.md) | Trazabilidad de los 295 registros y conflictos `C-xx` | Referencia **no normativa** |
-| [NORM](GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01.md) | Redacciones canónicas, glosario, catálogo de permisos, verificaciones `V-xx` cerradas | Referencia **no normativa**; sus contenidos funcionales y verificaciones están integrados aquí según su estado |
+| **[ADR-051](ADR-051-spa-v1.1-architecture.md)** | Arquitectura candidata, fronteras y condiciones | PROPOSED / NO APROBADO |
+| **[Plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md)** | Fases, dependencias, pruebas y cierre | PROPUESTO; ninguna fase autorizada |
+| **Registro de decisiones** ([REG](SPA-V1.1-APPROVED-DECISIONS-01.md)) | Evidencia de las aprobaciones del propietario | Vigente; las aprobaciones nuevas (incluida `DIR-SSOT-01`) se registran allí o en su sucesor |
+| R1 RECOVERY-01 | Respaldo de reconstrucción/códigos GS-*/V01 anterior a recuperar SPA-DEC-115/116 en REG | Referencia **no normativa** |
+| R2 OPERATIONS-SPEC, R3 CARE-PRIVACY, R4 SECURITY-COMPLIANCE | Análisis, alternativas y evidencia técnica y legal que respaldan este contrato | Referencia **no normativa** (el texto funcional vive aquí; R4 §7 conserva el detalle legal) |
+| MATRIZ | Trazabilidad de los 295 registros y conflictos `C-xx` | Referencia **no normativa** |
+| NORM | Redacciones canónicas, glosario, catálogo de permisos, verificaciones `V-xx` cerradas | Referencia **no normativa**; sus contenidos funcionales y verificaciones están integrados aquí según su estado |
 
 **Efecto práctico:** el contrato concentra el comportamiento planificado; ADR-051 explica la arquitectura candidata y el plan ordena las fases. Los seis antecedentes se preservan sin borrar ni renombrar, con aviso no normativo. El índice y los estados están sincronizados; REG conserva aprobaciones e instrucción transversal con su alcance exacto.
 
@@ -1659,3 +1665,150 @@ Lectura actual: donde una fuente decía sesión programada se aplica O-25 (cita)
 | SPA-SEC-T-13 | La fecha de nacimiento y el contacto de emergencia no se copian a BusinessPartner | R4 | literal |
 | SPA-SEC-T-14 | El aislamiento por tenant y empresa se mantiene en lecturas, exportaciones y registros de acceso | R4 | literal |
 | SPA-SEC-T-15 | Un usuario limitado a una sucursal no accede a expedientes de otra (si se adopta la alternativa 2) | R4 | literal |
+
+## Anexo G. Evidencia legal consultada (Ecuador)
+
+Incorporada desde el borrador de seguridad y cumplimiento retirado (historial Git). Detalle de la sección 22.3; no es asesoría jurídica ni certificación de cumplimiento.
+
+### G.1 Fuentes y fecha de consulta
+
+**Alcance de esta sección:** reúne las disposiciones consultadas, las interpretaciones del autor y los puntos no verificados. **No constituye una certificación de cumplimiento ni una
+revisión jurídica definitiva**, y no sustituye la validación de un profesional legal.
+
+Fecha de consulta: **18 de noviembre de 2026**. Los textos se leyeron extrayendo el texto de PDF publicados en el portal oficial del Estado (gob.ec) y de un sitio gubernamental; la extracción contiene algunos errores de reconocimiento de caracteres, por lo que
+**cada cita debe confirmarse contra el Registro Oficial antes de usarse formalmente**.
+
+| Norma | Datos de publicación | Fuente consultada | Estado indicado en la fuente |
+|---|---|---|---|
+| Ley Orgánica de Protección de Datos Personales (LOPDP) | Quinto Suplemento del Registro Oficial 459, 26 de mayo de 2021 | [gob.ec (PDF)](https://www.gob.ec/sites/default/files/regulations/2025-01/01%20Ley%20Org%C3%A1nica%20de%20Protecci%C3%B3n%20de%20Datos%20Personales.pdf) y copia del [Consejo de Comunicación](https://consejodecomunicacion.gob.ec/wp-content/uploads/downloads/2021/07/lotaip/Ley%20Org%C3%A1nica%20de%20Protecci%C3%B3n%20de%20Datos%20Personales.pdf) | Vigente |
+| Reglamento General a la LOPDP | Decreto Ejecutivo 904, Suplemento del Registro Oficial 435, 13 de noviembre de 2023 | [gob.ec (PDF)](https://www.gob.ec/sites/default/files/regulations/2025-01/02%20Reglamento%20General%20a%20la%20Ley%20Org%C3%A1nica%20de%20Protecci%C3%B3n%20de%20Datos%20Personales_0.pdf) | Vigente; «Fecha de última modificación: No aplica» |
+| Ley de Comercio Electrónico, Firmas Electrónicas y Mensajes de Datos | Ley 67, Suplemento del Registro Oficial 557, 17 de abril de 2002 | [gob.ec (PDF, 2025-11)](https://www.gob.ec/sites/default/files/regulations/2025-11/Ley%20de%20Comercio%20Electr%C3%B3nico,%20Firmas%20y%20Mensaje%20de%20Datos.pdf) | Reformado; última reforma indicada: 7 de febrero de 2023 |
+
+**Vigencia de los textos [L-NV]:** las copias de la LOPDP y del Reglamento en gob.ec se publicaron en enero de 2025, y esta consulta no verificó reformas posteriores. Un resultado de búsqueda aislado mencionó una posible reforma de 2026 al artículo 43 de la LOPDP;
+**no se confirmó en ninguna fuente oficial** y no se toma como hecho.
+
+### G.2 Obligaciones expresas verificadas [L-EXPRESO]
+
+| ID | Disposición | Contenido (resumido; verificar el texto) | Aplicación a Spa |
+|---|---|---|---|
+| L-01 | LOPDP, Art. 4 | Define **datos relativos a la salud** (datos sobre la salud física o mental, incluida la prestación de servicios de atención sanitaria, que revelen información sobre el estado de salud) y **datos sensibles** (incluye salud y datos biométricos) | Ver L-INT-01 |
+| L-02 | LOPDP, Art. 8 | El consentimiento debe ser libre, específico, informado e inequívoco; revocable en cualquier momento sin justificación, con mecanismos ágiles, gratuitos y sencillos, similares al de la obtención; el tratamiento previo a la revocación es lícito; si hay varias finalidades, el consentimiento debe constar para todas | CARE-PRIVACY §5 |
+| L-03 | Reglamento, Art. 5 | El responsable debe informar previa y detalladamente tipos de tratamiento, finalidades, tiempo de conservación, medidas de protección y consecuencias; el consentimiento debe ser demostrable cuando la autoridad lo requiera; el silencio o la inacción no lo presumen; el de niñas, niños y adolescentes se obtiene por sus representantes legales | Evidencia del consentimiento (§7.4) |
+| L-04 | Reglamento, Art. 6 | Tras la revocatoria, el responsable debe suspender el tratamiento | SPA-SEC-RET-04 |
+| L-05 | LOPDP, Art. 12 | Derecho a la información: fines, base legal, tipos de tratamiento, **tiempo de conservación**, existencia de la base de datos, transferencias, posibilidad de revocar, forma de ejercer los derechos, dónde reclamar | Aviso de privacidad |
+| L-06 | LOPDP, Art. 14 | Rectificación y actualización de datos inexactos o incompletos; atención en un plazo de **quince (15) días** | SPA-SEC-RET-03 |
+| L-07 | LOPDP, Art. 15 | Derecho de eliminación en los supuestos que enumera (incluye la revocación del consentimiento y el vencimiento del plazo de conservación); el responsable aplicará métodos para eliminar, hacer ilegible o dejar irreconocibles los datos de forma definitiva y segura, en **quince (15) días**, gratis | §6 |
+| L-08 | LOPDP, Art. 18 | Excepciones a rectificación, eliminación, oposición y portabilidad, entre ellas obligación legal o contractual, defensa de reclamos y otros casos que enumera | §6 |
+| L-09 | LOPDP, Art. 10 (i) | Los datos se conservan por un tiempo no mayor al necesario; el responsable establecerá plazos para su supresión o revisión periódica | SPA-SEC-RET-06 |
+| L-10 | Reglamento, Arts. 8 a 11 | Plazos de conservación acotados a la finalidad; cumplida esta, eliminación, bloqueo o anonimización; el fichero de registro debe contener el plazo de conservación; la eliminación no aplica, entre otros supuestos, por razones de interés público en el ámbito de la salud pública y privada o para formular, ejercer o defender reclamaciones | §6 |
+| L-11 | LOPDP, Arts. 25 y 26 | Son categorías especiales los datos sensibles, de niñas, niños y adolescentes, de salud y de personas con discapacidad; el tratamiento de datos sensibles está prohibido salvo, entre otros casos, el **consentimiento explícito** con fines claramente especificados | Consentimientos |
+| L-12 | LOPDP, Arts. 30 y 31 | Datos de salud: los profesionales de la salud y las instituciones del Sistema Nacional de Salud pueden tratarlos según la ley; deber de **confidencialidad** que subsiste al terminar la relación; el tratamiento de datos de salud requiere consentimiento previo salvo excepciones; **siempre que sea posible, se anonimizarán o seudonimizarán** | Ver L-INT-01 |
+| L-13 | LOPDP, Art. 21; Reglamento, Arts. 19 y 20 | No se tratan datos sensibles ni de niñas, niños y adolescentes sin la autorización expresa del titular o de su representante legal; para menores de 15 años se requiere el consentimiento del representante legal; los adolescentes desde los 15 años pueden otorgar su consentimiento explícito si se les informa en lenguaje sencillo; el consentimiento no puede menoscabar el interés superior del menor | CNS-08 |
+| L-14 | LOPDP, Art. 37 | Medidas de seguridad según categorías y volumen de datos y riesgos; entre otras, anonimización, seudonimización o **cifrado**, medidas de confidencialidad, integridad y disponibilidad, y de resiliencia; evaluación continua de su eficacia | §5 |
+| L-15 | LOPDP, Art. 39; Reglamento, Arts. 59 y 60 | Protección de datos desde el diseño y por defecto: solo se tratan los datos necesarios para cada finalidad | §8 |
+| L-16 | LOPDP, Art. 43; Reglamento, Arts. 24 a 28 | Notificación de vulneraciones de seguridad a la autoridad en un término de **cinco (5) días**; el encargado notifica al responsable en **dos (2) días** | Plan de incidentes |
+| L-17 | LOPDP, Art. 47 | Obligaciones del responsable: políticas de protección, análisis y gestión de riesgos, medidas, notificación de violaciones, protección desde el diseño y por defecto, contratos de confidencialidad con el personal y encargados, registro nacional, delegado cuando corresponda y permitir auditorías | Gobierno del proyecto |
+| L-18 | LOPDP, Art. 48; Reglamento, Arts. 53 y 54 | Se designa un delegado de protección de datos, entre otros casos, en el tratamiento **a gran escala de categorías especiales de datos**, según los factores del Reglamento | Ver L-INT-03 |
+| L-19 | Reglamento, Art. 31 | La evaluación de impacto es obligatoria en los casos que la ley establece, entre ellos el tratamiento a gran escala de categorías especiales | Ver L-INT-03 |
+| L-20 | LOPDP, Disposición Transitoria Primera | El régimen de medidas correctivas y sancionatorio entra en vigencia dos años después de la publicación (26 de mayo de 2021) | Cómputo: L-INT-04 |
+| L-21 | Ley 67, Arts. 2, 13, 14, 15 | Los mensajes de datos tienen igual valor jurídico que los documentos escritos; la **firma electrónica** son datos electrónicos asociados a un mensaje que identifican al titular e indican que aprueba el contenido; tiene la misma validez que la manuscrita y se admite como prueba; para su validez debe ser individual y vinculada exclusivamente a su titular, permitir verificar inequívocamente la autoría e identidad, tener un método de creación y verificación confiable, seguro e inalterable, y estar bajo control exclusivo del signatario | CNS firma |
+| L-22 | Ley 67, Art. 5 | Principios de confidencialidad y reserva de los mensajes de datos, incluido el secreto profesional | Evidencia electrónica |
+| L-23 | Ley 67, Arts. 52 a 55 | Los mensajes de datos y firmas electrónicas se admiten como prueba; existe una presunción para la firma electrónica certificada (Art. 53, solo se leyó el título) | CNS firma |
+
+### G.3 Interpretaciones (no verificadas por un profesional legal)
+
+| ID | Interpretación | Estado |
+|---|---|---|
+| L-INT-01 | Los antecedentes que declara la persona (enfermedades, medicamentos, alergias, embarazo, reacciones) **revelan información sobre su estado de salud** y probablemente son datos de salud y sensibles (L-01). Si Spa es un «profesional de la salud» o parte del Sistema Nacional de Salud (L-12) **no se verificó** | [L-INTERPRETACIÓN]; [L-NV] |
+| L-INT-02 | Las fotografías del rostro o del cuerpo son datos personales; si constituyen **datos biométricos** depende de que se traten para identificar a la persona. El texto de la ley extraído no contiene las palabras «imagen» ni «fotografía». El derecho a la propia imagen en otras normas **no se consultó** | [L-INTERPRETACIÓN]; [L-NV] |
+| L-INT-03 | Si el volumen de Spa constituye «gran escala» (delegado, evaluación de impacto, registro) depende de los factores del Reglamento y de la Autoridad; **no se evaluó** | [L-NV] |
+| L-INT-04 | Con la publicación del 26 de mayo de 2021 y la transitoria primera, el régimen sancionatorio estaría vigente desde el 26 de mayo de 2023; es un cómputo del texto, no una confirmación oficial | [L-INTERPRETACIÓN] |
+| L-INT-05 | Una firma manuscrita capturada en pantalla o una aceptación electrónica pueden o no cumplir los requisitos del Art. 15 (L-21) y su valor probatorio depende del caso; si el consentimiento de un tratamiento exige firma electrónica certificada **no se verificó** | [L-INTERPRETACIÓN]; [L-NV] |
+| L-INT-06 | Un menor de 15 años exige consentimiento del representante legal (L-13); cómo se acredita la representación **no se verificó** | [L-NV] |
+| L-INT-07 | Que Spa sea el «responsable» y el titular del ERP o un tercero el «encargado» depende de la relación contractual; **no se determinó** | [L-NV] |
+
+### G.4 Recomendaciones técnicas derivadas [L-RECOMENDACIÓN]
+
+| ID | Recomendación | Relación |
+|---|---|---|
+| SPA-SEC-LEG-01 | Mostrar al titular antes de recabar el consentimiento los puntos del Art. 12 aplicables y registrar la versión mostrada | L-02, L-03, L-05 |
+| SPA-SEC-LEG-02 | Conservar la evidencia del consentimiento de forma que pueda **demostrarse** (versión del texto, instante, quién consintió y, si aplica, su representante) | L-03 |
+| SPA-SEC-LEG-03 | Registrar las solicitudes de ejercicio de derechos con fecha de recepción y plazo de 15 días | L-06, L-07 |
+| SPA-SEC-LEG-04 | Mantener un plan de respuesta a incidentes con los términos de 5 y 2 días | L-16 |
+| SPA-SEC-LEG-05 | Minimizar los datos: no almacenar más de lo necesario para cada finalidad | L-15 |
+| SPA-SEC-LEG-06 | Anonimizar o seudonimizar cuando se usen datos de seguimiento para fines distintos de la atención | L-12 |
+| SPA-SEC-LEG-07 | Obtener asesoría legal para L-INT-01 a L-INT-07 antes de aprobar retención, exportación, publicación, firma y atención a menores | §7.3 |
+
+### G.5 No consultado
+
+Ley Orgánica de Salud (historia clínica y secreto profesional), normativa de la autoridad sanitaria sobre establecimientos de estética, Código de la Niñez y Adolescencia, normativa de protección al consumidor, el derecho constitucional a la propia imagen, resoluciones de la Superintendencia de
+Protección de Datos Personales y plazos de conservación de historias clínicas: **[L-NV]**, sin ninguna afirmación.
+
+
+## Anexo H. Glosario contractual
+
+Distingue los conceptos que los documentos usan de forma entrelazada. **Todas las definiciones son propuestas [T]**, salvo donde se indica una etiqueta A o E y salvo las **alternativas A de G-09 y G-11, aprobadas por `O-25` el 2026-11-18**. Resuelven el conflicto terminológico C-06; **no resuelven sus políticas comerciales**, que siguen abiertas.
+
+| G | Término | Definición propuesta | No es | Entidad u origen oficial | Fuentes | Estado |
+|---|---|---|---|---|---|---|
+| G-01 | **Cliente** | Persona atendida. Su identidad es un BusinessPartner con rol Customer; Spa no crea otra identidad. | El expediente | MasterData (BusinessPartner) | `SPA-AR-01`, `SPA-INV-01` | R |
+| G-02 | **Expediente** | Registro longitudinal, propio de Spa, de la atención de un cliente (antecedentes versionados, valoraciones, sesiones, consentimientos y fotografías). Referencia al cliente; no copia su identidad. | El cliente; la ficha física | Spa | `SPA-FC-01`, `SPA-CARE-EXP-01` | T; cardinalidad pendiente (O-20) |
+| G-03 | **Profesional** | Empleado que presta o documenta la atención, identificado por `EmployeeId`. «Profesional responsable» es el que realiza la atención. | El usuario registrador | Empleados (Employee) | `SPA-AR-03`, `SPA-INV-02` | **A** (ADR-050 §3 DEC-E4, §13) |
+| G-04 | **Usuario registrador** | Usuario ERP que registra la información en el sistema. Distinto del profesional aunque puedan coincidir en una misma persona (observación T). | El profesional | Identity / Access (IdentityUser) | `SPA-SG-02`, `SPA-INV-03` | **A** para la distinción; la coincidencia posible es T |
+| G-05 | **Servicio** | Lo que se comercializa y factura: un Item de naturaleza `Service`. | El procedimiento | Items (`items.md` §3) | `SPA-SV-01`, `SPA-OPS-SRV-01` | **E** + T |
+| G-06 | **Procedimiento** | Técnica estética realizada sobre la persona, con su protocolo, precauciones y equipos. Concepto propio de Spa. Su relación con el servicio (1:1 o N:M) es pendiente. | El servicio | Spa | `SPA-OPS-SRV-02`, `SPA-FC-04` | F + R; relación pendiente (O-11) |
+| G-07 | **Plan de tratamiento** | Lo previsto para la persona: objetivo, procedimiento, sesiones sugeridas, cuidados y decisión de proceder, adaptar o posponer. Sinónimo propuesto de «plan de atención» (`SPA-AT-01`). | El paquete comercial | Spa (expediente) | `SPA-AT-01`, `SPA-AT-05` | F; el sinónimo es T |
+| G-08 | **Paquete comercial** | Derecho de consumo de sesiones derivado de una compra (definición, contrato y libro de movimientos). | El plan de tratamiento | Spa, con la factura de Ventas | `SPA-PQ-01`, `SPA-OPS-PKG-01` a `PKG-07` | T + P (O-13) |
+| G-09 | **Reserva** | Acto de apartar un intervalo para un profesional (y, si se decide, un recurso). **Alternativa A (APROBADA por `O-25`, 2026-11-18):** la reserva es la operación que crea una cita, no una entidad aparte. ~~Alternativa B: reserva provisional como entidad previa a la confirmación~~ (no aprobada). | La atención | Spa (agenda) | `SPA-AG-01`, `SPA-OPS-AGE-01` | **A (aprobada por `O-25`)** |
+| G-10 | **Cita** | Registro programado en la agenda: cliente, profesional, sucursal, servicio, inicio y fin (UTC) y estado. | La atención ni la sesión | Spa (agenda) | `SPA-OPS-AGE-01`, `SPA-OPS-AGE-02` | T |
+| G-11 | **Sesión programada** | Sesión prevista dentro de un plan o paquete que aún no se realiza. **Alternativa A (APROBADA por `O-25`, 2026-11-18):** no es entidad propia, es una cita vinculada al plan o contrato. ~~Alternativa B: entidad propia con estado~~ (no aprobada). | La sesión realizada | Spa | `SPA-AT-06`, `SPA-OPS-AGE-10` | **A (aprobada por `O-25`)**; políticas de saldo abiertas (O-13) |
+| G-12 | **Atención** | El hecho de prestar un procedimiento a un cliente en un momento determinado. Se documenta mediante una sesión realizada. | La cita (programación) ni la sesión (registro) | Spa | `SPA-OPS-AGE-10`, `SPA-AT-06` | T |
+| G-13 | **Sesión realizada** | Registro documentado de una atención efectivamente prestada (fecha, procedimiento, profesional, observaciones, reacciones, evolución). No se registra como realizada por haber llegado la fecha. | La sesión programada ni la consumida | Spa | `SPA-AT-02`, `SPA-AT-06`, `SPA-AT-07` | F + T |
+| G-14 | **Sesión consumida** | Sesión que descuenta saldo de un paquete (movimiento de consumo del libro). **No equivale a «realizada»:** si una ausencia consume o no es una pregunta pendiente. | La sesión realizada | Spa (libro del contrato) | `SPA-OPS-PKG-01`, §4.4 de R2 | T + P; propuesta de R2 (O-13) |
+| G-15 | **Consentimiento** | Autorización registrada, con tipo (procedimiento, fotografías de seguimiento, publicación promocional, uso académico pendiente), versión del texto, decisión, fecha y evidencia. Cada tipo es independiente. | Una firma sola ni una fotografía | Spa | `SPA-CN-01` a `CN-06`, `SPA-CARE-CNS-01` | F + T |
+
+### 2.1 Relaciones entre conceptos (propuesta)
+
+- Un **cliente** tiene uno o varios **expedientes** (O-20); el expediente contiene **planes de tratamiento**, **sesiones realizadas**, **consentimientos** y **fotografías**.
+- Un **servicio** se vende por Ventas; un **paquete comercial** referencia la factura y el servicio y genera **sesiones consumidas** en su libro.
+- Una **cita** (resultado de una **reserva**) puede dar lugar a una **atención**, que se documenta en una **sesión realizada**; esa sesión puede ser, además, **consumida** de un paquete.
+- La **cita** y la **sesión programada** pueden ser el mismo registro (alternativa A de G-11) o dos (alternativa B): decisión pendiente.
+- El **profesional** (Employee) y el **usuario registrador** (IdentityUser) se guardan siempre por separado.
+
+## Anexo I. Conflictos documentales abiertos o compatibles y dependencias
+
+| C | Tema | Naturaleza | Identificadores | Resolución |
+|---|---|---|---|---|
+| C-03 | Auditoría y privacidad | Decisión pendiente (sin contradicción) | `SPA-AU-01`, `SPA-AU-02`, `SPA-CARE-FOT-06`, `SPA-SEC-AUD-01`, `SPA-SEC-AUD-07`, `SPA-SEC-INV-01`, `SPA-SEC-R-02` | No hay contradicción: R3 deja el registro de lectura como mecanismo inexistente; R4 §4 lo propone. Pendiente: el propio registro de accesos es dato personal y su retención (`SPA-SEC-AUD-07`) no está definida (O-03). |
+| C-04 | Fotografías y consentimiento | Compatibles; decisión pendiente | `SPA-CN-02`, `SPA-CN-03`, `SPA-CN-06`, `SPA-INV-05`, `SPA-CARE-FOT-03`, `SPA-CARE-FOT-08`, `SPA-CARE-CNS-01`, `SPA-SEC-INV-02`, `SPA-SEC-INV-10` | Compatibles: R1 `SPA-CN-06`, R3 `SPA-CARE-FOT-03` y R4 `SPA-SEC-INV-02` coinciden en que la finalidad se verifica contra autorizaciones independientes. Pendiente: retiro y conservación (`SPA-CARE-FOT-08`). |
+| C-05 | Plan de atención y paquete comercial | Decisión pendiente (sin contradicción) | `SPA-AT-01`, `SPA-AT-05`, `SPA-PQ-01` | No hay contradicción: R1 `SPA-AT-05` y R2 §4.2 coinciden en separar plan y paquete; la relación sigue pendiente (`SPA-PQ-01`). |
+| C-07 | Agenda y asignaciones de Empleados | Compatibles; dependencia no implementada | `SPA-OPS-AGE-04`, `SPA-OPS-AGE-14`, `SPA-AR-06`, `SPA-AG-03` | Compatibles con ADR-050 §8 y EMP-BR-11 y EMP-BR-12: la disponibilidad usa la elegibilidad de Empleados y no los permisos de acceso. Dependencia en un contrato **no implementado** (D-01). |
+| C-10 | Fecha de nacimiento y contacto de emergencia | Compatibles (SECURITY amplía las alternativas de CARE-PRIVACY) | `SPA-FC-02`, `SPA-FC-07`, `SPA-CARE-EXP-01`, `SPA-SEC-R-07` | R3 §2.4 ofrece las alternativas A a C y R4 §8, A a E; son compatibles y R4 amplía a R3. Pendiente O-06. |
+
+| D | Dependencia |
+|---|---|
+| D-01 | Empleados no implementado; `IEmployeeDirectory` es propuesta (ADR-050, EMP-E1 a E6b) |
+| D-02 | BusinessPartner / MasterData (FROZEN, ADR-017) |
+| D-03 | Items naturaleza `Service` (items.md) |
+| D-04 | Ventas (FROZEN) y facturación |
+| D-05 | Cuentas por cobrar y cobros |
+| D-06 | Inventario (ajustes; ADR-041) |
+| D-07 | Identity / Access / Kernel (permisos; contrato LOCKED) |
+| D-08 | Entity Audit (FROZEN) |
+| D-09 | `IFileStorage` y almacenamiento |
+| D-10 | `ICompanyClock`, ADR-034 y estándar numérico |
+| D-11 | Asesoría legal (LOPDP, firma, menores) |
+| D-12 | Decisión del propietario |
+| D-13 | Sucursales (`Branch`, `CompanyUserBranch`) |
+
+### Redacciones canónicas de reglas duplicadas (DUP-01, 02, 08, 10, 11)
+
+Incorporadas desde la normalización retirada; las reglas se aplican en las secciones indicadas y no añaden aprobaciones.
+
+| DUP | Identificadores | Redacción canónica | Evidencia | Estado |
+|---|---|---|---|---|
+| DUP-01 | `SPA-AR-03` | Cada atención registrada identifica al **profesional responsable** (Employee, `EmployeeId`) y, por separado, al **usuario ERP que la registró**; son conceptos distintos. Los profesionales que documentan atenciones utilizan usuarios ERP autorizados | A (ADR-050 §3 DEC-E4, §13); «se auditan por separado» A-der | Aplicada (§6) |
+| DUP-02 | `SPA-AR-01`, `SPA-AR-02` | SPA no crea identidades paralelas: el cliente es un BusinessPartner con rol Customer y el profesional un Employee; SPA referencia sus identificadores y no copia nombre, identificación ni contacto | A para Employee (ADR-050 §3 DEC-E1, §13); R para el cliente | Aplicada (§5, §6) |
+| DUP-08 | `SPA-AT-06` | La **cita** es la programación en la agenda y la **sesión realizada** es un registro independiente creado al documentar una atención; una **sesión programada** de un paquete es una cita vinculada al contrato; **reservar y reprogramar no consume saldo**; cancelar o registrar una ausencia **no crea una sesión realizada** | A (`O-25`, [registro](SPA-V1.1-APPROVED-DECISIONS-01.md)) | Aplicada (§8, §12); políticas de saldo abiertas (O-13) |
+| DUP-10 | `SPA-OPS-VTA-03` | **Bloqueada:** depende de si el ERP debe tener anticipos de clientes, capacidad inexistente hoy | — | Bloqueada por O-14 (C-08, `DIR-SSOT-01`, §20.4) |
+| DUP-11 | `SPA-INV-10` | Las fechas de negocio son `DateOnly`; los instantes, UTC mostrados en `Company.Timezone`; los valores numéricos siguen la política de precisión oficial. Las medidas corporales no coinciden con ninguna clase de la tabla de escalas y requieren revisión arquitectónica (V-04) | A-der (normas oficiales) + hallazgo V-04 | Aplicada (§15); medidas pendientes (O-22) |

@@ -1,11 +1,11 @@
-# Gali Spa V1.1 — Registro de decisiones funcionales aprobadas (SPA-DEC-115, SPA-DEC-116, O-25, O-15 y directriz transversal)
+# SPA V1.1 — Registro de decisiones funcionales aprobadas (SPA-DEC-115, SPA-DEC-116, O-25, O-15 y directriz transversal)
 
 **REGISTRO DE APROBACIONES LIMITADAS E INSTRUCCIONES DEL PROPIETARIO — NO ADR — NO CONTRATO IMPLEMENTABLE — NO IMPLEMENTACIÓN AUTORIZADA.**
 
 Registro canónico de las aprobaciones de Spa. Conserva O-25/O-15, aprobadas el 2026-11-18, y añade la evidencia histórica SPA-DEC-115/116 recuperada por el propietario en el encargo de integración del 2026-11-18. Las decisiones históricas fueron aprobadas antes de planificar Empleados; su fecha original exacta no fue aportada.
 Estado de entrega: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
 
-Comportamiento consolidado: [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md). Arquitectura candidata: [ADR-051](ADR-051-gali-spa-v1.1-architecture.md), PROPOSED / NO APROBADO. Fases: [plan](GALI-SPA-V1.1-IMPLEMENTATION-PLAN-01.md), ninguna autorizada. DIR-SSOT-01 (§7) es una instrucción de propiedad, no una aprobación de diseño financiero.
+Comportamiento consolidado: [contrato central](SPA-V1.1-CONTRACT-SPEC-01.md). Arquitectura candidata: [ADR-051](ADR-051-spa-v1.1-architecture.md), PROPOSED / NO APROBADO. Fases: [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md), ninguna autorizada. DIR-SSOT-01 (§7) es una instrucción de propiedad, no una aprobación de diseño financiero.
 
 ## 0. Naturaleza y límites
 
@@ -15,9 +15,7 @@ Comportamiento consolidado: [contrato central](GALI-SPA-V1.1-CONTRACT-SPEC-01.md
 4. Los cierres parciales de §5 se apoyan en SPA-DEC-115/116 y el encargo expreso, no en inferencias. No se crea un ADR implementable y no se autoriza implementación de Spa ni de Empleados.
 5. No se modifica Ventas ni ningún módulo FROZEN.
 
-Documentos relacionados: [RECOVERY-01](GALI-SPA-V1.1-RECOVERY-01.md), [OPERATIONS-SPEC](GALI-SPA-V1.1-OPERATIONS-SPEC-DRAFT-01.md), [CARE-PRIVACY](GALI-SPA-V1.1-CARE-PRIVACY-SPEC-DRAFT-01.md),
-[SECURITY-COMPLIANCE](GALI-SPA-V1.1-SECURITY-COMPLIANCE-DRAFT-01.md), [matriz de consolidación](GALI-SPA-V1.1-CONTRACT-CONSOLIDATION-MATRIX-01.md) y
-[normalización](GALI-SPA-V1.1-CONTRACT-NORMALIZATION-01.md). Los cuatro primeros **no se modifican retrospectivamente** ni se les atribuyen aprobaciones que no tenían cuando se redactaron.
+Antecedentes retirados (historial Git; su contenido está consolidado en el [contrato](SPA-V1.1-CONTRACT-SPEC-01.md) y [ADR-051](ADR-051-spa-v1.1-architecture.md)): RECOVERY-01, OPERATIONS-SPEC, CARE-PRIVACY, SECURITY-COMPLIANCE, matriz de consolidación y normalización; no se les atribuyen aprobaciones que no tenían cuando se redactaron. «Gali Spa» aparece en este registro únicamente como atribución histórica en citas literales de la evidencia del propietario; el producto es el módulo genérico SPA V1.1.
 
 ## 1. O-25 — Cita separada de la sesión realizada
 
