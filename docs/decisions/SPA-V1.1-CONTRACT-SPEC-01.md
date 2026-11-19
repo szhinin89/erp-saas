@@ -20,7 +20,7 @@ se registran como bloqueo (§29).**
 
 | Nivel | Fuente | Alcance |
 |---|---|---|
-| 1 | Decisiones expresamente aprobadas por el propietario | Solo dentro de su alcance literal: `SPA-DEC-115`, `SPA-DEC-116` (evidencia histórica aportada por el propietario, REG §9/10), `O-25`, `O-15` ([registro](SPA-V1.1-APPROVED-DECISIONS-01.md)), las decisiones de Empleados de [ADR-050](ADR-050-employees-v1-architecture.md) que atañen a Spa y la **instrucción** del propietario `DIR-SSOT-01` (§20.4), que fija una frontera y no aprueba un diseño |
+| 1 | Decisiones expresamente aprobadas por el propietario | Solo dentro de su alcance literal: `SPA-DEC-115`, `SPA-DEC-116` (evidencia histórica aportada por el propietario, REG §9/10), `SPA-ARQ-01` (modelo conceptual aprobado, REG §12), `SPA-ARQ-02` (estados/eventos y situación derivada aprobados, REG §13), `SPA-ARQ-03` (ciclo clínico aprobado, REG §14 y §12 de este contrato), `SPA-ARQ-04` (agenda/disponibilidad funcional, REG §15 y §7), `SPA-ARQ-05` (tratamientos/paquetes, REG §16 y §11), `SPA-ARQ-06` (expedientes/seguridad, REG §17 y §21), `SPA-ARQ-07` (valoraciones/consentimientos/fotografías, REG §18 y §14–18/21), `SPA-ARQ-08` (fronteras ERP, REG §19 y §4), `O-25`, `O-15` ([registro](SPA-V1.1-APPROVED-DECISIONS-01.md)), las decisiones de Empleados de [ADR-050](ADR-050-employees-v1-architecture.md) que atañen a Spa y la **instrucción** del propietario `DIR-SSOT-01` (§20.4), que fija una frontera y no aprueba un diseño |
 | 2 | ADR y contratos vigentes del ERP | Respetando sus límites: [ADR-017](ADR-017-business-partner-scope.md) (BusinessPartner, FROZEN), [ADR-034](ADR-034-temporal-contract-single-source.md), [ADR-035](ADR-035-supplier-payment-unapplied-advance.md), [ADR-041](ADR-041-negative-sale-inventory-cost-obligations.md), «Security & Access Contract V1 — LOCKED» ([security](../architecture/security.md)), [auditoría](../architecture/audit-infrastructure.md), [datos](../architecture/data-standards.md), Ventas FROZEN |
 | 3 | Evidencia técnica verificada del repositorio | Las verificaciones `V-xx` cerradas (normalización §5) y las capacidades [E] citadas en cada sección |
 | 4 | Planificación histórica recuperada y propuestas pendientes, distinguidas por evidencia | [F]/[R] conserva lo planificado sin acta íntegra o contraste directo; [T] identifica traducciones técnicas nuevas. No se atribuye aprobación a ninguna de estas categorías ni se descarta la planificación por falta de acta |
@@ -66,9 +66,9 @@ EMP-E1 PENDING / NO AUTORIZADA); (3) decisiones bloqueantes abiertas (§29); (4)
 
 | Área | Qué está aprobado | Detalle que sigue abierto | Implementable hoy |
 |---|---|---|---|
-| Disponibilidad, agenda y visitas (§7/8) | Búsqueda servicio/fecha/sucursal sin profesional previo; agenda única día/semana; restricciones; varios servicios/profesionales, llegada/cambios (SPA-DEC-115/116); O-25 íntegra | Cálculo/representación de restricciones y visita–cita, estados/locks, atención sin cita; no disponibilidad de cabinas/equipos | No |
+| Disponibilidad, agenda y visitas (§7/8) | Búsqueda servicio/fecha/sucursal sin profesional previo; agenda única día/semana; restricciones; varios servicios/profesionales, llegada/cambios (SPA-DEC-115/116); O-25 íntegra | Cálculo de restricciones, esquema/vínculos técnicos del modelo SPA-ARQ-01, presentación de situación derivada SPA-ARQ-02 y locks, atención sin cita; no disponibilidad de cabinas/equipos | No |
 | Expediente y valoración (§13/15) | Único por cliente/empresa; antecedentes, alertas, valoraciones, medidas/historial (SPA-DEC-116) | Fichas O-24/V-01, mínimos/errores, numeración, datos personales y precisión | No |
-| Tratamientos y sesiones (§10/12/16) | Individual/multisesión, ampliación/suspensión/cancelación/cierre; borrador/finalización/interrupción/corrección, resultados/incidencias/evolución | Transiciones y efectos exactos, sesión parcial, permisos y relación con paquete | No |
+| Tratamientos y sesiones (§10/12/16) | Individual/multisesión, ampliación/suspensión/cancelación/cierre; borrador/finalización/interrupción/corrección, resultados/incidencias/evolución | Ciclo clínico SPA-ARQ-03 aprobado (§12); mecanismos técnicos, permisos concretos, cardinalidad clínica y efectos comerciales O-13 pendientes | No |
 | Paquetes (§11) | Individuales/combinados, vigencia/cupos/ampliaciones/sustituciones; origen O-15 y movimiento separado O-25 | Reglas concretas de consumo, equivalencias, vencimiento, ajustes, NC/crédito y concurrencia | No |
 | Consentimientos y fotos (§17/18) | Por procedimiento, firma en pantalla, versiones/finalidades específicas, fotos privadas y trazabilidad | Mecanismo/evidencia de firma, menores/académico, retiro y conservación legal; cifrado/clave/lecturas | No |
 | Integración ERP (§5/6/9/19/20) | Reutilización BP/Employee y módulos oficiales de servicios/productos, facturas, Caja/CxC/cobros; sin motores paralelos | Directorio real, contratos públicos y política financiera; O-14 abierta | No |
@@ -99,7 +99,7 @@ Fuentes externas sin inspección directa en esta consolidación: `Gali_Spa_Ficha
 
 §2 conserva las once áreas y siete agrupaciones de SPA-DEC-116; §3 las diez exclusiones; §7.1 los siete enunciados operativos de SPA-DEC-115. §23 reúne las fichas funcionales y §28 las verificaciones candidatas. Cada regla anterior mantiene identificador/procedencia; una aprobación general no aprueba automáticamente su traducción [T].
 
-Detalles aún no recuperados: campos y obligatoriedad de fichas (O-21/O-24/V-01), flujo oficial de cliente inexistente, numeración/código de expediente (O-19), permisos/errores precisos por operación, representación de visita múltiple y borrador/interrupción de sesión, transiciones/efectos de tratamiento, restricciones temporales y ajustes/consumos de paquetes. Firma en pantalla, versiones, expediente único y las capacidades de §2 ya no se califican como pendientes de inclusión. Las fichas indican lo conocido y el detalle pendiente sin inventar diseño visual.
+Detalles aún no recuperados: campos y obligatoriedad de fichas (O-21/O-24/V-01), flujo oficial de cliente inexistente, numeración/código de expediente (O-19), permisos/errores precisos por operación, persistencia/vínculos técnicos de visita–citas según SPA-ARQ-01 y mecanismos técnicos del ciclo clínico SPA-ARQ-03 (§12), transiciones/efectos de tratamiento, restricciones temporales y ajustes/consumos de paquetes. Firma en pantalla, versiones, expediente único y las capacidades de §2 ya no se califican como pendientes de inclusión. Las fichas indican lo conocido y el detalle pendiente sin inventar diseño visual.
 
 ## 1. Objetivo del módulo
 
@@ -125,8 +125,8 @@ Cuentas por Cobrar y los mecanismos oficiales de seguridad y auditoría. Parte E
 | Clientes y expedientes | Expediente único por cliente y empresa; antecedentes, valoraciones, alertas e historial; sin identidad BP paralela | §5/13/15 | Versiones de fichas, datos/obligatoriedad, numeración y políticas de alerta |
 | Empleados | Modelo ERP general reutilizable, vinculado con usuarios/sucursales; profesional separado del registrador | §6 | Directorio implementado/probado y contratos; no desarrollar Employee en Spa |
 | Tratamientos | Plan individual, multisesión, ampliaciones, suspensión, cancelación, cierre y seguimiento de resultados | §10/16 | Transiciones, roles, validaciones y efectos sobre cupos/comercial |
-| Sesiones | Registro técnico individual, formulario/borrador/finalización/interrupción/corrección; productos, incidencias, fotos, resultados y evolución | §12 | Atención efectiva vs borrador, sesión parcial, correcciones y consumo |
-| Agenda y visitas | Día/semana, sucursal/profesional; disponibilidad por servicio; horarios, bloqueos, descansos, preparación, traslados/conflictos, reprogramaciones; varios servicios/profesionales por visita, llegada y cambios | §7/8 | Cálculo y representación de restricciones y visita–cita; sin valores inventados |
+| Sesiones | Registro técnico individual, formulario/borrador/finalización/interrupción/corrección; productos, incidencias, fotos, resultados y evolución | §12 | Ciclo clínico SPA-ARQ-03 aprobado (§12); persistencia/concurrencia, permisos concretos y consumo O-13 pendientes |
+| Agenda y visitas | Día/semana, sucursal/profesional; disponibilidad por servicio; horarios, bloqueos, descansos, preparación, traslados/conflictos, reprogramaciones; varios servicios/profesionales por visita, llegada y cambios | §7/8 | Modelo conceptual resuelto SPA-ARQ-01; cálculo de restricciones, esquema y vínculos técnicos pendientes, sin valores inventados |
 | Paquetes | Individuales/combinados, vigencia, cupos/cantidades, ampliaciones/sustituciones, saldo en sesiones; contrato desde factura autorizada | §11 | Reglas de ampliación/sustitución/consumo, vigencia concreta, NC/crédito |
 | Consentimientos | Por procedimiento, firma en pantalla, versiones y autorizaciones específicas | §17 | Evidencia técnica/validez legal, menores, retiro y conservación |
 | Ventas y cobros | Servicios, facturas, CxC/cobros y ventas de productos mediante procesos oficiales; movimientos comerciales independientes de clínica | §19/20 | Contratos públicos, tratamiento NC/crédito/saldos; O-14 sigue abierta |
@@ -202,6 +202,8 @@ Una funcionalidad no autorizada **no está definitivamente excluida**: puede inc
 
 ## 4. Dependencias y límites con otros módulos
 
+**Referencia normativa principal de SPA-ARQ-08 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Texto literal y límites: [REG §19](SPA-V1.1-APPROVED-DECISIONS-01.md#19-spa-arq-08--integraciones-con-erp-zh). §4.2 define fronteras funcionales; la tabla y §4.1 conservan evidencia técnica previa, sin nueva inspección de código ni contratos implementados.
+
 Capacidades verificadas [E] que condicionan el contrato. Que existan no las convierte en decisiones de Spa.
 
 | Módulo | Capacidad vigente | Límite o consecuencia para Spa | Estado |
@@ -237,7 +239,24 @@ La revisión documental previa registró estos resultados; se conservan como evi
 | V-01/02/06/09 | Fichas originales, directorio implementado, asesoría jurídica y vigencia oficial no disponibles como evidencia cerrada | Permanecen pendientes, respectivamente |
 
 
+### 4.2 Ocho fronteras funcionales aprobadas SPA-ARQ-08
+
+| Regla | Integración | Obligación aprobada y límite |
+|---|---|---|
+| 1 | Clientes/BP | BusinessPartner oficial con rol Customer, sin catálogo paralelo ni duplicar nombre/identificación/información comercial cuya fuente sea BP. BP conserva ámbito oficial tenant; expediente por empresa y aislamiento SPA-ARQ-06. Consultar por contratos autorizados del propietario. |
+| 2 | Profesionales/Empleados | Profesionales del módulo general de Empleados, mediante lectura oficial de identidad laboral/asignaciones/elegibilidad. Empleados posee fichas/asignaciones; SPA horarios/agenda/procedimientos/sesiones. Profesional y registrador distintos; sin Employee paralelo ni acceso clínico por permisos Empleados. IEmployeeDirectory pendiente de implementación bajo ADR-050/plan propio; no implementarlo por esta decisión. |
+| 3 | Servicios/Items | Items oficiales Service, precios/impuestos del ERP; SPA duración/preparación/condiciones y datos operativos. Sin catálogo comercial paralelo ni modificación inferida Items/Pricing. Relación servicio–procedimiento técnica pendiente; permitir individuales y paquetes combinados. |
+| 4 | Ventas/paquetes | Aplicar siete reglas intactas O-15 (§11.1): creación explícita tras validar factura autorizada, factura/línea, fuera de autorización Ventas, sin duplicados ni reversión de factura por fallo SPA, sin documentos financieros ni creación automática por SalesInvoiceAuthorizedEvent. Ampliación/sustitución/ajustes según SPA-ARQ-05 y documentos oficiales; fiscal/SRI, crédito y NC específicos pendientes. |
+| 5 | Caja/CxC | Consultar solo información comercial autorizada necesaria; cobros en Caja/procesos oficiales, cuentas/saldos monetarios en CxC. SPA derechos en sesiones, sin saldos monetarios, otra Caja/CxC/contabilidad ni cobro automático por atención. Anticipos transversal independiente DIR-SSOT-01; O-14 abierto, sin anticipos SPA. |
+| 6 | Inventario/productos | Productos utilizados documentados con fines técnicos/seguimiento sin Kardex automático. Venta física por procesos comerciales/inventario oficiales; sin inventario paralelo ni consumo automático de insumos. HX-05 preservada. |
+| 7 | Seguridad/auditoría | Reutilizar Identity/Access/Kernel/auditoría oficiales, sin usuarios/autenticación/permisos generales paralelos. Clínica y auditoría sensible conforme SPA-ARQ-06; extensiones deben integrarse sin cambios LOCKED/FROZEN inferidos. Admin sin acceso ordinario por su condición aprobado, mecanismo C-01/O-01 bloqueado; C-02/O-05 y demás pendientes intactos. |
+| 8 | Genérico/multiempresa | Módulo genérico ERP ZH para diferentes empresas del sector, sin dependencia de nombres comerciales. Respetar tenant/empresa/sucursal, contexto autorizado, expediente único cliente/empresa, derechos de paquete sin traslado entre empresas y elegibilidad/disponibilidad profesional. Interfaz denominada SPA. Gali Spa solo atribución de evidencia histórica; sin duplicar responsabilidades de otros módulos. |
+
+**Pendientes técnicos y autorización:** contratos autorizados de lectura/firmas, APIs, entidades/relaciones, índices/locks/algoritmos, revisión arquitectónica ADR-051 y evidencia de integración. No extender BP/Items/Pricing/Ventas/CxC ni cambiar Kernel LOCKED, auditoría FROZEN o IFileStorage por esta aprobación. No migraciones ni implementación de dependencias; fiscal/ley/O-14 no resueltos. ADR-051 PROPOSED / NO APROBADO, F0–F8 PENDING / NO AUTORIZADA.
+
 ## 5. BusinessPartner y clientes
+
+Aplicar §4.2 regla 1: identidad oficial BP Customer y lectura autorizada; no copia ni catálogo paralelo. Contexto de expediente por empresa sin cambiar scope BP tenant. Flujo de cliente inexistente/O-06 sigue pendiente.
 
 **Qué hace:** identifica a la persona atendida sin duplicar su identidad. **Estado de la sección:** el principio es VIGENTE-ERP/[R]; el flujo de cliente inexistente y los datos sin campo en BusinessPartner
 están PENDIENTES. **Implementable hoy:** no. **Bloqueos:** BL-09 (§29.1).
@@ -245,7 +264,7 @@ están PENDIENTES. **Implementable hoy:** no. **Bloqueos:** BL-09 (§29.1).
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-AR-01 | El cliente es un BusinessPartner con rol Customer; Spa referencia su identificador y no crea otro registro de identidad personal | VIGENTE-ERP | R; ADR-017 |
-| SPA-CARE-EXP-01 | Un expediente referencia un BP **activo** con rol Customer de la empresa; Spa lee nombre, identificación y contacto por proyección autorizada y no los copia | PROPUESTO | T |
+| SPA-CARE-EXP-01 | Identidad BP Customer y datos por contrato autorizado conforme §4.2 regla 1; pertenencia empresarial del expediente distinta de ámbito tenant BP. Condición activo y detalles de proyección aún candidatos | APROBADO frontera SPA-ARQ-08; mecanismo/condiciones adicionales PROPUESTOS | A + T |
 | SPA-FC-07 | Spa guarda solo la información específica de atención; qué datos se conservan como referencia histórica es pendiente | PROPUESTO / PENDIENTE | T, P |
 | SPA-CARE-EXP-09 | Si el BP se desactiva, el expediente se conserva y no se crean atenciones nuevas hasta reactivarlo | PROPUESTO | T |
 | SPA-CL-01 | El historial del cliente permite consultar su evolución sin mezclar registros de clientes distintos | PROPUESTO | F, T |
@@ -259,6 +278,8 @@ restringido (`CareRecordPersonalData`); B ampliar BP (módulo FROZEN, requiere A
 almacenamiento se decide sin copiar la identidad de BP.
 
 ## 6. Profesionales y Empleados
+
+SPA-ARQ-08 §4.2 regla 2 confirma propiedad laboral de Empleados y responsabilidades operativas SPA; IEmployeeDirectory sigue dependencia contractual pendiente bajo ADR-050, no implementación autorizada.
 
 **Qué hace:** identifica quién presta la atención y quién la registra, reutilizando Empleados. **Estado de la sección:** el núcleo está APROBADO (ADR-050); el contrato `IEmployeeDirectory` no existe.
 **Implementable hoy:** no (Empleados no está implementado). **Bloqueos:** BL-01, BL-09 (§29.1).
@@ -280,25 +301,32 @@ almacenamiento se decide sin copiar la identidad de BP.
 
 ## 7. Sucursales y disponibilidad
 
-**Qué hace:** determina cuándo un profesional puede atender en una sucursal. **Estado de la sección:** la pertenencia, búsqueda por servicio y restricciones están APROBADAS (ADR-050, SPA-DEC-115/116); solo cálculo, representación técnica y políticas no aportadas siguen pendientes. **Implementable hoy:** no. **Bloqueos:** BL-01, BL-09 (§29.1).
-
-| ID | Comportamiento contractual | Estado | Evid. |
-|---|---|---|---|
-| SPA-AG-01 a AG-03 / DUP-13 | Agenda, horarios y disponibilidad son de Spa. La disponibilidad combina horario del establecimiento, horario del profesional, elegibilidad informada por Empleados y ausencia de solape | pertenencia APROBADA; reglas PROPUESTAS | A (§13) + T |
-| SPA-OPS-AGE-04 | Un profesional está **disponible** en un instante si: (a) está dentro del horario de la sucursal; (b) dentro de su horario de trabajo; (c) `IEmployeeDirectory` lo informa activo y elegible para la sucursal; (d) no tiene otra cita activa que se solape | PROPUESTO | T |
-| SPA-OPS-AGE-03 | Horarios de establecimiento por sucursal como patrón de horas locales de la empresa; el instante UTC lo obtiene `ICompanyClock`; una hora inexistente por cambio de horario se rechaza. No hay precedente de horarios recurrentes (`V-05a`) | PROPUESTO | T, NV |
-| SPA-OPS-AGE-05 | Control de disponibilidad de cabinas/equipos excluido de V1.1; alternativa B del borrador no se adopta. Bloqueos de horarios/profesionales siguen incluidos | EXCLUSIÓN APROBADA; O-08 resuelta en ese alcance | A (SPA-DEC-116, HX-01) |
-| SPA-OPS-AGE-06 | Dos citas activas del mismo profesional no se solapan (condición de duplicidad). Si una cita puede comenzar cuando otra termina, o si se exige margen, es pendiente | PROPUESTO / PENDIENTE (`O-09`) | T, P |
-| SPA-AG-03 / SPA-OPS-AGE-02 (nota) | La disponibilidad laboral no se confunde con el acceso ERP: una cita no concede ni requiere acceso a una sucursal y el acceso a una sucursal no hace disponible a un profesional | APROBADO-DERIVADO | A-der (ADR-050 §6, §8) |
-| Descansos, bloqueos, preparación y traslados | Restricciones APROBADAS por SPA-DEC-115/116; no se inventan duración/tolerancia/margen ni su representación. Búsqueda sin confirmación automática | APROBADO objetivo; cálculo pendiente O-09 | A + P |
+**Referencia funcional principal de SPA-ARQ-04 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Texto literal y límites: [REG §15](SPA-V1.1-APPROVED-DECISIONS-01.md#15-spa-arq-04--agenda-y-disponibilidad). Complementa SPA-DEC-115/116 y SPA-ARQ-01/02/03 sin ampliar O-15/O-25. **Implementable hoy: no.** BL-01/09 y detalle técnico aplicable siguen pendientes.
 
 ### 7.1 SPA-DEC-115 — Búsqueda de disponibilidad por servicio
 
-**APROBADA; siete enunciados literales en REG §9.** Recepción introduce servicio, fecha y sucursal sin seleccionar profesional previamente. El mecanismo centralizado de la misma agenda considera habilitación de profesionales y horarios junto con descansos, bloqueos, preparación, traslados y restricciones aprobadas. Devuelve profesionales habilitados y horarios disponibles; recepción elige profesional/hora según conveniencia del cliente. **No confirma automáticamente la cita ni crea una segunda agenda o motor.**
+**APROBADA; siete enunciados literales conservados en REG §9.** Aplicar §7.2 regla 8 y sus restricciones mediante la misma agenda, sin segundo motor. Flujo: servicio/fecha/sucursal → alternativas → selección explícita de profesional y horario → operación de reserva según O-25. Sin resultados, informar ausencia de alternativas; confirmar exige revalidación conforme regla 9. Mensajes/códigos y política técnica de reconsulta siguen pendientes.
 
-Flujo principal: buscar → consultar alternativas del mismo motor → seleccionar explícitamente profesional/hora → continuar operación de reserva/cita según O-25. Excepciones: sin horarios o profesionales habilitados se informa ausencia de resultados; si cambia disponibilidad antes de reservar, revalidar con el mecanismo central. Este tratamiento de concurrencia es propuesta técnica; mensaje/código y política exacta de reconsulta pendientes, sin inventar plazos.
+### 7.2 Reglas aprobadas SPA-ARQ-04
 
-No se recuperaron de las decisiones anteriores los valores de descansos/preparación/traslado, prioridades, tolerancias, márgenes ni reglas para varias prestaciones. O-09/V-05 conserva ese detalle pendiente; no se reduce el objetivo aprobado ni se añade disponibilidad de cabinas/equipos.
+| Regla | Materia | Obligación funcional aprobada y límite |
+|---|---|---|
+| 1 | Horarios y elegibilidad | Respetar horarios de sucursal y profesionales, asignaciones vigentes y elegibilidad del módulo oficial de Empleados; acceso ERP a sucursal no equivale a disponibilidad laboral. |
+| 2 | Duración | Duración configurable por servicio/procedimiento; búsqueda utiliza duración efectiva. Producto comercial Item `Service`, sin otro catálogo; perfiles/procedimientos O-11 pendientes. |
+| 3 | Descansos, ausencias y bloqueos | Intervalos no disponibles y bloqueos autorizados impiden ofrecer horarios incompatibles; contemplar restricciones pertinentes de sucursal. Sin disponibilidad de cabinas/equipos (HX-01). |
+| 4 | Preparación | Preparación configurable por servicio/procedimiento reserva el intervalo necesario; sin margen universal. Valores y almacenamiento pendientes. |
+| 5 | Traslados | Considerar tiempo configurado entre sucursales para evitar compromisos incompatibles del profesional. Sin minutos predeterminados ni servicio externo de rutas; política de configuración y excepciones pendientes. |
+| 6 | Citas consecutivas | Permitidas sin solape ni incumplimiento de preparación, descanso, traslado u otras restricciones aplicables; sin márgenes adicionales. |
+| 7 | Varios servicios/profesionales | Aplicar SPA-ARQ-01: cada bloque valida al profesional correspondiente; varios bloques de un servicio no duplican prestación comercial. |
+| 8 | Búsqueda por servicio | Servicio, fecha y sucursal sin profesional inicial; mecanismo centralizado devuelve profesionales habilitados y horarios; selección explícita, sin crear ni confirmar cita. Conservar siete enunciados SPA-DEC-115 (§7.1). |
+| 9 | Reservas simultáneas | Revalidar al confirmar; dos operaciones concurrentes no pueden reservar compromisos incompatibles para el mismo profesional. Transacciones, locks, exclusión e índices PostgreSQL pendientes de ADR-051. |
+| 10 | Reprogramación | Revalidar nuevo horario; ante fallo conservar cita original y comunicar conflicto. Cambio válido conserva identidad/Programada, historial, usuario, cambios e indicador; sin consumo, conforme SPA-ARQ-02/O-25. |
+| 11 | Zona horaria | Presentar según configuración horaria oficial del ERP de empresa/sucursal y gestionar instantes consistentemente en UTC. Si no existe zona por sucursal ni ampliación aprobada, usar zona oficial de empresa; no crear configuración. Resolver técnicamente horas inexistentes/ambiguas sin reservas inconsistentes. |
+| 12 | Cambios e interrupciones | Conservar trazabilidad; interrupción clínica según SPA-ARQ-03 no libera automáticamente tiempo restante ni genera consumo. Estado final de cita interrumpida pendiente; sin ampliar cinco estados SPA-ARQ-02 ni aprobar liberación manual. |
+
+Trazabilidad de identificadores anteriores: SPA-AG-01..03/DUP-13 y SPA-OPS-AGE-04 corresponden a regla 1; SPA-OPS-AGE-03 a 11; SPA-OPS-AGE-05 a 3/HX-01; SPA-OPS-AGE-06 a 6/9; restricciones de descanso/preparación/traslado a 3–5. La pertenencia de agenda a Spa y la separación de acceso ERP/disponibilidad laboral se conservan. Las interfaces `IEmployeeDirectory`/`ICompanyClock`, recurrencias, algoritmos y estructuras de intervalos no se aprueban por esta decisión.
+
+**Pendientes técnicos y límites:** entidades/tablas, intervalos recurrentes, algoritmos, claves/locks, restricciones SQL y API; contratos con Empleados sin capacidades nuevas, política de configuración de traslados/excepciones, valores sin predeterminados, tratamiento técnico de horas inexistentes/ambiguas. Reasignación automática, liberación manual de tiempo y estados adicionales no están aprobados. O-09 queda parcialmente resuelta funcionalmente; O-11, estado final de cita interrumpida y políticas comerciales conservan su detalle abierto. No se autoriza implementación, recursos físicos, recordatorios ni reservas públicas.
 
 ## 8. Agenda, citas y reservas
 
@@ -318,46 +346,80 @@ Texto literal de los ocho enunciados ([registro](SPA-V1.1-APPROVED-DECISIONS-01.
 7. El **consumo comercial** se representa por un movimiento independiente del contrato, cuando corresponda.
 8. Se conserva la **trazabilidad** de reprogramaciones, cancelaciones y atenciones.
 
-**Fuera del alcance de aprobación de O-25, sin ser exclusiones globales:** ausencias con consumo, atención sin cita y efectos comerciales de cancelación siguen pendientes. Varios servicios/profesionales por visita y restricciones de agenda sí están aprobados por SPA-DEC-115/116; O-25 no los revoca. Cálculo exacto y representación visita–cita pendientes; cabinas/equipos excluidos HX-01.
+**Fuera del alcance de aprobación de O-25, sin ser exclusiones globales:** ausencias, atención sin cita y efectos comerciales de cancelación no fueron resueltos por O-25. Posteriormente SPA-ARQ-05 (§11.2 reglas 5/6) resuelve ausencia sin penalización/descuento automático y cancelaciones sin reversión automática; atención sin cita O-10 sigue pendiente. Varios servicios/profesionales por visita y restricciones de agenda sí están aprobados por SPA-DEC-115/116; O-25 no los revoca. SPA-ARQ-01 resuelve visita que agrupa citas/bloques; cálculo exacto y mecanismos técnicos pendientes; cabinas/equipos excluidos HX-01.
 
-### 8.2 Reglas de la cita (PROPUESTAS, compatibles con O-25)
+### 8.2 Reglas de la cita (aprobaciones delimitadas y mecanismos propuestos)
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
-| SPA-OPS-AGE-01 | Una cita pertenece a una empresa y una sucursal, referencia al cliente BP; debe admitir las prestaciones y profesionales de una visita múltiple aprobada. La propuesta anterior de un único profesional/servicio no es una cardinalidad definitiva; estructura, intervalos y duración conjunta pendientes | PROPUESTO | T |
-| SPA-OPS-AGE-02 | Estados candidatos: `Programada`, `Cancelada`, `Ausente`, `Atendida`. Llegada y cambios incluidos como capacidades por SPA-DEC-116; su estado técnico/confirmación manual pendientes. Recordatorios excluidos HX-02; búsqueda no confirma automáticamente | PROPUESTO | T |
-| SPA-OPS-AGE-07 | Reprogramar **mantiene la identidad de la cita** y registra un cambio (instante anterior y nuevo, autor, motivo); no consume saldo (`O-25` #5). Cancelar y crear otra rompe la trazabilidad y no se propone | PROPUESTO; efecto sobre saldo APROBADO | T + `O-25` |
+| SPA-OPS-AGE-01 | Visita: una o varias citas del mismo cliente para una ocasión en una sucursal. Cada cita es bloque de agenda con profesional e intervalo; visita admite varios servicios/profesionales y varios bloques de un servicio no duplican prestación comercial | APROBADO conceptual SPA-ARQ-01; esquema técnico pendiente | A + T |
+| SPA-OPS-AGE-02 | Estados operativos de cita: `Programada`, `En atención`, `Atendida`, `Cancelada`, `Ausente`. Llegada es evento de visita (fecha, hora, usuario); `Reprogramada` es evento/indicador visible, no sexto estado | APROBADO SPA-ARQ-02; mecanismos técnicos pendientes | A |
+| SPA-OPS-AGE-07 | Reprogramación válida conserva identidad y estado `Programada`; registrar fecha/hora anterior/nueva, profesional anterior/nuevo cuando corresponda, autor/momento. Mostrar indicador de reprogramación e historial; no consumo de saldo ni cancelación de la visita | APROBADO SPA-ARQ-02/O-25 y SPA-ARQ-04 §7.2 regla 10; mecanismos técnicos pendientes | A + P |
 | SPA-OPS-AGE-08 | Cancelar fija estado `Cancelada`, motivo, autor e instante; nunca elimina. Quién cancela y con qué anticipación es pendiente; no crea sesión realizada (`O-25` #6) | PROPUESTO / PENDIENTE | T, P |
-| SPA-OPS-AGE-09 | Ausencia: tras el inicio de la cita, un usuario autorizado la marca `Ausente`; no crea sesión realizada (`O-25` #6). **Su efecto sobre el saldo del paquete es pendiente** (`O-13`) | PROPUESTO / PENDIENTE | T, P |
-| SPA-OPS-AGE-10 | La atención efectivamente realizada es un registro distinto de la cita (sesión, §12); la cita pasa a `Atendida` solo cuando existe una sesión realizada vinculada, no por llegar la fecha | APROBADO en el modelo (`O-25` #3); estado `Atendida` PROPUESTO | T + `O-25` |
+| SPA-OPS-AGE-09 | Ausencia: tras el inicio de la cita, un usuario autorizado la marca `Ausente`; no crea sesión realizada (`O-25` #6). Aplicar §11.2 regla 5: sin descuento ni penalización comercial automática, cargo/factura/cobro | APROBADO efecto SPA-ARQ-05; momento/autorización técnica PROPUESTOS | A + T |
+| SPA-OPS-AGE-10 | Cada cita inicia y termina atención independientemente. `Atendida` exige atención efectiva documentada; una atención interrumpida no se considera automáticamente completada, ni se alcanza Atendida por llegar la fecha | APROBADO SPA-ARQ-02/O-25; ciclo clínico SPA-ARQ-03 §12, estado final de cita interrumpida pendiente | A + P |
 | SPA-OPS-AGE-11 | Atención sin cita previa: alternativas A admitirla creando cita y sesión juntas, B exigir cita siempre | PENDIENTE (`O-10`) | P |
 | SPA-OPS-AGE-12 | Todo cambio de estado, hora, profesional o sucursal queda en `AppointmentChange` y en Entity Audit | APROBADO en el principio de trazabilidad (`O-25` #8); mecanismo PROPUESTO | T |
-| SPA-OPS-AGE-13 | Cambiar el profesional de una cita revalida la disponibilidad (§7) y registra el cambio | PROPUESTO | T |
-| Transiciones | `Programada → Cancelada`, `→ Ausente`, `→ Atendida`; los tres destinos son finales en el borrador. Si una ausencia se revierte o una cancelada se reactiva es pendiente | PROPUESTO / PENDIENTE | T, P |
-| Servicios y profesionales por visita | Varios servicios y varios profesionales aprobados; pendiente relación técnica entre visita, cita y cada prestación, sin imponer 1:1 | APROBADO funcional; O-11 parcial | A (SPA-DEC-116) + P |
+| SPA-OPS-AGE-13 | Aplicar revalidación y conservación ante fallo de §7.2 regla 10; trazabilidad según SPA-ARQ-02 | APROBADO funcional SPA-ARQ-04; mecanismos pendientes | A + P |
+| Transiciones | Inicio y fin de atención independientes por cita; visita deriva su situación de las citas y finaliza cuando todas tienen estado final. Reprogramar válidamente conserva Programada; ni llegada ni reprogramación son estados nuevos. No se fija matriz adicional de excepciones/reversas o interrupciones | APROBADO SPA-ARQ-02 en su alcance; detalle no aportado pendiente | A + P |
+| Servicios y profesionales por visita | Visita agrupa una o varias citas; un servicio con varios profesionales puede usar varios bloques sin duplicar prestación comercial. Número de sesiones clínicas por prestación no decidido | APROBADO conceptual SPA-ARQ-01; O-11 solo detalle técnico | A + P |
 
-### 8.3 Flujos (PROPUESTOS)
+### 8.3 Flujos (reglas aprobadas y mecanismos propuestos)
+
+Aplicar §7.2 reglas 9/10/12: confirmación y reprogramación revalidan; fallo conserva original; interrupción no libera automáticamente el tiempo. Transacción y registro físico del flujo siguiente son candidatos técnicos.
 
 Reservar (cliente, servicio, sucursal, profesional, hora → comprobar disponibilidad → crear cita `Programada` y su primer registro de cambio, en una transacción); reprogramar; cancelar con motivo; marcar
-ausencia solo sobre una cita pasada `Programada`; atender (crear la sesión realizada y marcar la cita `Atendida`). Casos excepcionales: profesional no disponible, cliente o sucursal inactivos, solape por
+ausencia con mecanismo aún pendiente y efecto comercial aprobado §11.2 regla 5; cada cita inicia/finaliza atención independientemente (`En atención` / `Atendida`), con atención efectiva documentada para Atendida (SPA-ARQ-02). Interrumpir no completa automáticamente. Casos excepcionales: profesional no disponible, cliente o sucursal inactivos, solape por
 reserva simultánea, hora inexistente por cambio de horario.
 
 ### 8.4 Gestión de visitas y llegada
 
 SPA-DEC-116 aprueba visita con citas, varios servicios, varios profesionales, llegada, reprogramación/cancelación y cambios. Se presenta el contexto de cliente, sucursal, servicios/profesionales y horarios documentados, sin inventar un formulario original. Recepción selecciona y registra esos hechos; el motor único controla conflictos y conserva historial. La búsqueda no confirma la cita automáticamente.
 
-**Detalle pendiente:** si visita agrupa varias citas o una cita contiene prestaciones, si sus horarios se encadenan/superponen, registro/alcance de llegada, cambios parciales y estados colectivos. Los estados Programada/Cancelada/Ausente/Atendida son propuestas anteriores por cita, no ciclo definitivo de una visita múltiple. No se deduce un estado final por completar solo uno de varios servicios. Cancelar o ausentarse no genera sesión clínica; la atención efectiva sí se documenta separadamente (O-25). Flujos excepcionales: conflicto al modificar, profesional no habilitado o prestación interrumpida; efectos exactos pendientes, sin automatismos comerciales.
+**Modelo conceptual resuelto por SPA-ARQ-01 (§8.5):** visita agrupa una o varias citas/bloques de profesional e intervalo del mismo cliente y ocasión en una sucursal. **Detalle pendiente:** secuencia o solape de intervalos, esquema/vínculos de prestaciones, persistencia del evento de llegada, cambios parciales y presentación de la situación derivada. SPA-ARQ-02 aprueba los cinco estados de cita, inicio/fin independientes y visita derivada sin máquina de estados propia: finaliza al tener todas sus citas en estado final. Llegada lleva fecha/hora/usuario; no finaliza la visita por completar solo una cita. Cancelar o ausentarse no genera sesión clínica; la atención efectiva sí se documenta separadamente (O-25). Flujos excepcionales: conflicto al modificar, profesional no habilitado o prestación interrumpida; efectos exactos pendientes, sin automatismos comerciales.
+
+### 8.5 Modelo conceptual aprobado SPA-ARQ-01
+
+**APROBADO por el propietario el 2026-11-19.** Texto exacto y alcance: [REG §12](SPA-V1.1-APPROVED-DECISIONS-01.md#12-spa-arq-01--modelo-conceptual-de-visitas-citas-y-sesiones).
+
+La visita agrupa una o varias citas del mismo cliente para una ocasión de atención en una sucursal. Cada cita es un bloque de agenda con profesional e intervalo. La visita admite varios servicios y profesionales; un servicio que requiera varios profesionales puede utilizar varios bloques **sin duplicar la prestación comercial**. Cancelar una cita **no cancela automáticamente las demás** de la visita.
+
+Las sesiones realizadas se registran independientemente al documentar atención efectiva (§12). No se deriva una sesión por bloque ni se decide su número por prestación. Reservar y reprogramar no consumen saldo: consumo comercial independiente conforme a O-25. La aprobación no altera O-15 ni sus referencias factura/línea.
+
+Flujo documentado: agrupar citas/bloques bajo la visita del cliente/ocasión/sucursal; consultar o modificar la programación mediante la agenda; una cancelación afecta a la cita seleccionada sin propagar cancelación a las demás. Documentar atención efectiva crea el registro independiente correspondiente; no se fija cardinalidad clínica por esa secuencia.
+
+**Actualización SPA-ARQ-02 (§8.6):** estados de cita, llegada/reprogramación y situación derivada de visita aprobados expresamente, sin máquina de estados propia. **Pendientes:** sesiones clínicas por prestación, mecanismos técnicos de interrupciones/parciales/correcciones aprobadas en SPA-ARQ-03 (§12), correspondencia con agenda, tiempos de preparación, concurrencia, ausencias y efectos comerciales. Entidades/agregados físicos, relaciones persistidas, claves/API/DTO y algoritmos también requieren definición técnica; no se inventan aquí.
+
+Criterios candidatos de verificación documental/funcional futura: una visita conserva sus bloques por cliente/ocasión/sucursal; un servicio multiprofesional conserva una prestación comercial aunque use varios bloques; cancelar un bloque no cancela los restantes; programación y atención/consumo permanecen separados. Son criterios de comprobación del modelo aprobado, no pruebas ejecutadas ni aprobación de mecanismos técnicos.
+
+### 8.6 Estados, eventos y situación de visita aprobados SPA-ARQ-02
+
+**APROBADA 2026-11-19.** Enunciados completos y complemento del propietario: [REG §13](SPA-V1.1-APPROVED-DECISIONS-01.md#13-spa-arq-02--estados-de-citas-situación-de-visitas-y-reprogramación). Se conservan SPA-ARQ-01 y O-25.
+
+La cita tiene exactamente cinco estados operativos: `Programada`, `En atención`, `Atendida`, `Cancelada`, `Ausente`. Inicia y termina su atención independientemente de las demás citas. `Atendida` exige atención efectivamente realizada y documentada; una interrupción no se considera automáticamente completada. No se aprueban aquí transiciones clínicas ni un estado de interrupción.
+
+La llegada es **evento de visita** con fecha, hora y usuario. La situación general de la visita **se deriva de sus citas, sin máquina de estados independiente**; la visita finaliza cuando todas sus citas tienen estado final. Cancelar o modificar una cita no cancela automáticamente la visita ni sus otras citas y conserva la agrupación aprobada por SPA-ARQ-01. No se inventan etiquetas de situación ni reglas adicionales de reversa.
+
+**Reprogramación:** `Reprogramada` es evento de cambio e indicador visible, no sexto estado. Después de una reprogramación válida, la cita conserva identidad y `Programada`. Registrar fecha/hora anterior y nueva, profesional anterior/nuevo cuando corresponda, autor y momento del cambio. Mostrar en agenda que fue reprogramada y permitir consultar historial. Se mantiene la visita; no se deduce permiso para reprogramar desde cualquier estado ni nuevas condiciones de validez.
+
+Las transiciones de agenda no consumen saldo automáticamente; reprogramar no consume, conforme a O-25. Consumo y efectos comerciales permanecen independientes. **Pendientes expresos:** persistencia/concurrencia del ciclo clínico aprobado SPA-ARQ-03 (§12), estado final de cita interrumpida, mecanismos de ausencia/cancelación bajo SPA-ARQ-05 (§11; sin penalización automática V1.1) y concurrencia; tampoco se eligen tiempos de preparación o cardinalidad clínica por prestación.
+
+Los escenarios previos de aceptación (§28) se leen bajo esta aprobación: documentar una interrupción no habilita por sí solo Atendida ni finaliza automáticamente la visita; ciclo clínico aprobado SPA-ARQ-03 (§12), correspondencia final de agenda y efectos comerciales pendientes.
+
+Criterios candidatos de comprobación futura: cinco estados, sin `Reprogramada` como estado; evento de llegada con fecha/hora/usuario; inicio/fin independiente y Atendida respaldada por atención documentada; interrupción sin completado automático; situación derivada y fin de visita solo al terminar todas las citas; cancelación no propagada; reprogramación conserva identidad/Programada, metadatos completos, indicador e historial sin consumo. No son pruebas ejecutadas ni aprobación de mecanismos de persistencia/concurrencia.
 
 ## 9. Servicios y tratamientos
 
-**Qué hace:** define qué se vende y qué procedimiento se realiza. **Estado de la sección:** «servicio = Item `Service`» es VIGENTE-ERP; el resto PROPUESTO o PENDIENTE. **Implementable hoy:** no. **Bloqueos:** BL-01, BL-09 (§29.1).
+SPA-ARQ-08 §4.2 regla 3 aprueba integración con Items Service y propiedad ERP de precio/impuestos; configuración operativa SPA, relación servicio–procedimiento y contratos técnicos pendientes.
+
+**Qué hace:** define qué se vende y qué procedimiento se realiza. **Estado de la sección:** «servicio = Item `Service`» es VIGENTE-ERP; duración configurable aprobada SPA-ARQ-04 (§7.2 regla 2); resto PROPUESTO o PENDIENTE. **Implementable hoy:** no. **Bloqueos:** BL-01, BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
-| SPA-SV-01 / SPA-OPS-SRV-01 / DUP-14 | Todo servicio comercializable es un Item `Service` de la empresa; Spa no crea otro catálogo comercial. Precio e impuestos los resuelve el ERP | VIGENTE-ERP (Items) + PROPUESTO | E, T |
-| SPA-OPS-SRV-03 / SRV-04 | Duración (minutos enteros positivos), sucursales y condiciones de atención son **datos propios de Spa** (Items no los tiene); la cita guarda una instantánea de duración y nombre | PROPUESTO | T |
+| SPA-SV-01 / SPA-OPS-SRV-01 / DUP-14 | Todo servicio comercializable es un Item `Service` de la empresa; Spa no crea otro catálogo comercial. Precio e impuestos los resuelve el ERP | VIGENTE-ERP y APROBADO frontera SPA-ARQ-08 §4.2 regla 3; mecanismo pendiente | A + E/T |
+| SPA-OPS-SRV-03 / SRV-04 | Duración configurable conforme §7.2 regla 2; representación numérica, sucursales/condiciones propias e instantánea de duración/nombre siguen candidatos técnicos | APROBADO funcional SPA-ARQ-04 solo duración; mecanismo PROPUESTO | A + T |
 | SPA-OPS-SRV-02 | **Relación servicio ↔ procedimiento:** A perfil 1:1 por Item (`SpaServiceProfile`); B catálogo `Procedure` con relación N:M a Items (permite servicios compuestos) | PENDIENTE (`O-11`) | P |
-| Servicio comercial / procedimiento / tratamiento | El servicio es lo que se vende (Items); el procedimiento es lo que se realiza sobre la persona (Spa); tratamiento operativo ejecuta el plan individual/multisesión y su ciclo aprobado (§10); O-11 solo mantiene pendiente el modelado servicio–procedimiento y visita–prestaciones | PROPUESTO | T |
+| Servicio comercial / procedimiento / tratamiento | El servicio es lo que se vende (Items); el procedimiento es lo que se realiza sobre la persona (Spa); tratamiento operativo ejecuta el plan individual/multisesión y su ciclo aprobado (§10); O-11 solo mantiene pendiente el modelado servicio–procedimiento y vínculos técnicos entre prestación comercial y bloques de cita según SPA-ARQ-01 | PROPUESTO | T |
 | SPA-OPS-SRV-05 | Sucursales: por defecto atendible en todas las sucursales activas; restringir es una relación opcional. Qué se espera por defecto es pendiente | PROPUESTO / PENDIENTE | T, P |
 | SPA-OPS-SRV-09 | Un servicio o procedimiento inactivo no admite citas nuevas y se conserva en el historial; nunca se elimina | PROPUESTO | T |
 | SPA-OPS-SRV-10 | Condiciones de atención (precauciones, contraindicaciones, preparación): texto asociado al procedimiento; ningún campo es obligatorio por figurar en una ficha física | PROPUESTO | T |
@@ -381,14 +443,15 @@ SPA-DEC-116 aprueba visita con citas, varios servicios, varios profesionales, ll
 
 SPA-DEC-116 aprueba plan individual, tratamiento multisesión, sesiones previstas/contratadas y cupos, ampliación, suspensión, cancelación, cierre y seguimiento de resultados. El plan recoge lo previsto para la persona; el tratamiento operativo lleva su ejecución y ciclo. El paquete vendido representa derechos comerciales; no es el plan ni la sesión realizada.
 
-Flujo funcional: definir plan individual → organizar el tratamiento y sus sesiones previstas → documentar atenciones/evolución → ampliar, suspender, cancelar o cerrar según la situación real y las reglas de detalle por definir. La ampliación puede modificar sesiones previstas/cupos conforme a la política que falta precisar; no se deducen cantidades, equivalencias o movimientos por el nombre de la operación. Los efectos comerciales requieren contrato oficial y política aprobada; Spa no emite facturas propias. Excepciones: falta de cupo/respaldo, interrupción o cambio de profesional; no se elige política sin evidencia.
+Flujo funcional: definir plan individual → organizar el tratamiento y sus sesiones previstas → documentar atenciones/evolución → ampliar, suspender, cancelar o cerrar según la situación real y las reglas de detalle por definir. La ampliación comercial se rige por §11.2 regla 7; modificar sesiones clínicas previstas no concede derechos comerciales por sí mismo; no se deducen cantidades, equivalencias o movimientos por el nombre de la operación. Los efectos comerciales requieren contrato oficial y política aprobada; Spa no emite facturas propias. Excepciones: falta de cupo/respaldo, interrupción o cambio de profesional; no se elige política sin evidencia.
 
-**Pendiente exclusivamente de detalle:** condiciones/permisos de cada operación; origen/destino de estados; reanudación después de suspensión no aportada; cierre con sesiones pendientes, corrección de resultados, vínculo plan–tratamiento–contrato, unidad de cupo y efecto de ampliación/cancelación sobre derechos. Se reconocen operaciones aprobadas sin inventar un autómata ni nombres de clases/permisos. Las pruebas de aceptación de §28.4 cubren esas capacidades; transiciones y errores específicos se definirán antes de implementar.
+**Pendiente exclusivamente de detalle:** condiciones/permisos de cada operación; origen/destino de estados; reanudación después de suspensión no aportada; cierre con sesiones pendientes, corrección de resultados, vínculo plan–tratamiento–contrato, relación de sesiones clínicas previstas con cupos y detalles restantes de §11.3/11.4. Ampliación/cancelación comercial sigue §11, sin reinterpretar como pendiente lo aprobado. Se reconocen operaciones aprobadas sin inventar un autómata ni nombres de clases/permisos. Las pruebas de aceptación de §28.4 cubren esas capacidades; transiciones y errores específicos se definirán antes de implementar.
 
 ## 11. Paquetes comerciales
 
-**Qué hace:** controla los derechos de consumo de sesiones derivados de una compra, sin confundirlos con el plan de tratamiento ni crear documentos comerciales. **Estado de la sección:** el origen del
-contrato está **APROBADO** por O-15; paquetes individuales/combinados, vigencia, cupos, ampliaciones y sustituciones por SPA-DEC-116. Cálculo y políticas comerciales concretas siguen pendientes O-13. **Implementable hoy:** no. **Bloqueos:** BL-08, BL-09; BL-04 solo para funciones dependientes de anticipos (§29.1).
+Integración ERP según SPA-ARQ-08 §4.2 reglas 3–5; O-15/O-25 y reglas de SPA-ARQ-05 intactas, sin ampliar significado fiscal/SRI/crédito ni diseñar Anticipos.
+
+**Referencia funcional principal de SPA-ARQ-05 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Diez reglas literales y límites: [REG §16](SPA-V1.1-APPROVED-DECISIONS-01.md#16-spa-arq-05--tratamientos-y-paquetes-comerciales). Conserva O-15/O-25, SPA-DEC-116 y SPA-ARQ-01/02/03/04; no confunde derechos comerciales con plan, clínica ni disponibilidad profesional. **Implementable hoy: no.** O-13 parcialmente resuelta; BL-08/09 y pendientes concretos vigentes. Anticipos independiente O-14 (§20.4).
 
 ### 11.1 Decisión aprobada O-15 (alternativa A — creación explícita tras validar una factura autorizada)
 
@@ -405,72 +468,95 @@ Texto literal de los siete enunciados ([registro](SPA-V1.1-APPROVED-DECISIONS-01
 **No aprobado por O-15:** el estado electrónico SRI requerido para crear el contrato; el comportamiento de los contratos ante anulaciones o notas de crédito; la política frente a facturas a crédito
 pendientes de cobro; anticipos y prepagos (`O-14`); la necesidad y el diseño de una lista de facturas pendientes de generar contrato; qué significa «factura autorizada» para este fin.
 
-### 11.2 Reglas (PROPUESTAS, compatibles con O-15 y O-25)
+### 11.2 Reglas funcionales aprobadas SPA-ARQ-05
 
-| ID | Comportamiento contractual | Estado | Evid. |
-|---|---|---|---|
-| SPA-OPS-PKG-04 | El contrato referencia la factura (id y línea) y **no copia importes ni impuestos**; el documento comercial lo posee Ventas | APROBADO en la referencia (`O-15` #2); resto PROPUESTO | T |
-| SPA-OPS-PKG-03 / §4.9 | Un contrato se crea una sola vez por línea facturada: restricción única sobre factura y línea | APROBADO en el principio (`O-15` #4); mecanismo PROPUESTO | T |
-| SPA-OPS-PKG-01 | El saldo se modela como **libro append-only** (`PackageSessionLedger`: `Granted`, `Consumed`, `Restored`, `Expired`, `Adjusted`); los movimientos no se editan ni eliminan, se compensan | PROPUESTO (el consumo como movimiento independiente: APROBADO, `O-25` #7) | T |
-| SPA-OPS-PKG-02 | Una sesión consume como máximo una vez: único `(contract_id, session_id)` en movimientos de consumo | PROPUESTO | T |
-| SPA-OPS-PKG-05 | Cambio de profesional o sucursal en una sesión del contrato se rige por «Profesional» y «Sucursal» de §11.3 | PENDIENTE | P |
-| SPA-OPS-PKG-06 | Un contrato inactivo, vencido o devuelto no admite sesiones nuevas; sus movimientos se conservan. Las condiciones son pendientes | PROPUESTO / PENDIENTE | T, P |
-| SPA-OPS-PKG-07 | No se crea ningún anticipo ni prepago de cliente dentro de Spa | INSTRUCCIÓN DEL PROPIETARIO (`DIR-SSOT-01`) | T + DIR |
-| SPA-OPS-VTA-02 | El paquete se vende como Item `Service` por la facturación existente; Spa conserva el contrato y sus sesiones | PROPUESTO (compatible con `O-15`) | T |
-
-Modelo candidato: `PackageDefinition` (Item `Service` que se vende, servicios y cantidades, vigencia incluida, valores/reglas pendientes, estado), `PackageContract` (cliente, definición, fecha, factura id y línea, vigencia final con cálculo pendiente, estado), `PackageSessionLedger`. Estados del contrato candidatos: `Activo`, `Agotado`, `Vencido`, `Cancelado` (qué estados existen es pendiente). Permisos y errores en §21 y §26. El libro controla **cantidades de sesiones**, no importes: Spa no mantiene saldos monetarios (§20.4).
+| Regla | Materia | Alcance aprobado y límite |
+|---|---|---|
+| 1 | Composición | Paquetes individuales/combinados con servicios Items `Service` oficiales y cantidades independientes por servicio; sin intercambio libre. Sustitución autorizada distinta y trazable; sin duplicar catálogo. |
+| 2 | Vigencia | Configurable por paquete, comienza al crear contrato, sin plazo predeterminado. Vencido impide nuevas reservas vinculadas y consumos; identificar citas futuras existentes para revisión, sin cancelarlas automáticamente. Conservar derechos/movimientos e historia clínica; cálculo, estado y ejecución programada pendientes. |
+| 3 | Cupos y saldo | Saldo desde movimientos trazables. Distinguir contratadas por servicio, consumidas, disponibles, programadas y realizadas clínicamente. Programar/reprogramar valida cupo por servicio, también concurrentemente: no comprometer más sesiones futuras que disponibles. La cita ocupa temporalmente capacidad de programación, sin descontar saldo ni generar `Consumed`; reserva lógica, saldo derivado y locks pendientes. |
+| 4 | Consumo | Finalizada puede originar consumo mediante movimiento comercial independiente sujeto a reglas autorizadas; nunca por sí sola automáticamente. Borrador, programación y reprogramación no consumen. Parcial/interrumpida exige resolución comercial autorizada previa; no duplicar ante reintentos. Acciones, permisos e idempotencia técnica pendientes. |
+| 5 | Ausencias | Ausencia trazable no descuenta automáticamente ni genera sesión clínica, cargo, factura o cobro. V1.1 no incorpora penalización comercial automática por inasistencia; alternativa resuelta sin inferir otras penalizaciones. |
+| 6 | Cancelaciones | Cancelar antes de consumir no descuenta; reprogramar tampoco. Cancelación posterior o modificación clínica no revierte consumo confirmado: corrección mediante compensación autorizada con motivo, autor y trazabilidad. Separar cita, tratamiento, contrato y documento comercial; sin cancelación automática de contrato ni devolución monetaria inferida. |
+| 7 | Ampliaciones | Operación explícita autorizada con respaldo de documento comercial oficial; conserva contrato/historial, identifica servicio/cantidad y referencia documento. Movimientos trazables sin modificar históricos; Spa no crea factura/CxC/cobro/asiento. Relación con nuevas líneas pendiente; sin ampliaciones gratuitas ni saldo sin respaldo. |
+| 8 | Sustituciones | Operación explícita por usuario autorizado, equivalencia definida, servicios/cantidades, motivo y trazabilidad. Sin conversión arbitraria ni alterar clínica histórica/movimientos confirmados. Equivalencias exactas y necesidad de documento adicional pendientes. |
+| 9 | Devoluciones | NC/anulaciones solo en Ventas/procesos oficiales; Spa no emite/modifica documentos. Identificar contrato/sesiones, revisar derechos consumidos/pendientes y ajustar mediante operación autorizada con referencia y trazabilidad. No revertir clínica real. Fiscal/SRI, crédito, economía y decisiones específicas pendientes; sin devolución monetaria paralela. |
+| 10 | Profesionales y sucursales | Uso con distintos profesionales habilitados y sucursales de la misma empresa, respetando vigencia, servicios, especialidad, disponibilidad, condiciones, permisos/restricciones y SPA-ARQ-04. Prohibido consumo entre empresas; movilidad no concede acceso clínico irrestricto ni nuevas capacidades Empleados. |
 
 ### 11.3 Las doce preguntas contractuales (`SPA-PQ-01`)
 
-SPA-DEC-116 aprueba capacidades; O-15/O-25 resuelven origen y no consumo por reservar/reprogramar. Las alternativas de R2 se conservan solo cuando siguen compatibles; no se ofrece «sin vigencia» ni paquete solo individual como alcance vigente.
+Las alternativas históricas se actualizan conforme a SPA-ARQ-05; los mecanismos permanecen candidatos. O-13 no se cierra integralmente.
 
-| Tema | Pregunta | Estado | Alternativas (sin elegir) |
-|---|---|---|---|
-| Venta | Qué origina un paquete | **RESUELTA por `O-15`** (creación explícita tras validar una factura autorizada) | La alternativa «evento de autorización» queda no aprobada |
-| Composición | Qué servicios y cantidades | Individuales/combinados y cupos APROBADOS; cantidades/equivalencias y sustitución concreta pendientes O-13 | Definición cerrada de servicios y cantidades fijas / definición con sesiones intercambiables entre servicios (complica el saldo; no se impone intercambiabilidad libre por tener paquete combinado) |
-| Uso | Cuándo una sesión se considera consumida | PENDIENTE (`O-13`); el consumo comercial es un movimiento independiente «cuando corresponda» (`O-25` #7) | Al realizarse / al realizarse o registrarse ausencia |
-| Saldo | Cómo calcular pendientes | PENDIENTE | Derivado del libro (evita desincronización) / almacenado y actualizado bajo lock (mejora la lectura). Reservar **no consume** (`O-25` #5); si las programadas apartan saldo sigue pendiente |
-| Vigencia | Cómo aplicar su vigencia | Capacidad APROBADA por SPA-DEC-116; plazo, inicio, extensión y efecto pendientes O-13 | Con vigencia y movimiento `Expired` exige cálculo o job de vencimiento (parámetro de negocio no recuperado); no se elige vencimiento automático, job ni expiración de derechos |
-| Reprogramación | Si afecta al saldo | **RESUELTA por `O-25` #5:** reprogramar no consume saldo | La alternativa «afecta según anticipación» queda no aprobada |
-| Ausencia | Si descuenta una sesión | PENDIENTE (`O-13`) | No descuenta / descuenta |
-| Cancelación | Qué ocurre con el saldo | PENDIENTE (`O-13`) | Se restituye / se restituye según anticipación |
-| Devolución | Relación con documentos comerciales | PENDIENTE (`O-13`; trato de líneas `Service` en devoluciones `V-03a` parcial) | La devolución cancela el contrato y sus sesiones no consumidas / no lo afecta y se ajusta manualmente |
-| Transferencia | Si cambia el beneficiario | PENDIENTE | No transferible / transferible con trazabilidad |
-| Profesional | Si puede variar entre sesiones | PENDIENTE | Puede variar / fijo salvo autorización |
-| Sucursal | Si se usa en varias sucursales | PENDIENTE | Cualquiera de la empresa / solo la de contratación |
+| Tema | Estado funcional vigente | Pendiente real o alternativa descartada |
+|---|---|---|
+| Venta | RESUELTA O-15; siete enunciados intactos §11.1 | SRI/crédito y alcance de factura autorizada pendientes; evento automático no aprobado |
+| Composición | RESUELTA regla 1: servicios/cantidades independientes, individuales/combinados | Intercambio libre descartado; sustitución según regla 8 |
+| Uso | PARCIAL regla 4: movimiento independiente, no automático; parcial requiere resolución autorizada | Acciones/permisos y resolución comercial de cada parcial; no consumo automático por ausencia |
+| Saldo | PARCIAL regla 3: movimientos trazables por servicio y capacidad temporal de programación sin consumo | Algoritmo, reserva lógica, saldos derivados, locks y persistencia pendientes; sobreprogramación prohibida |
+| Vigencia | PARCIAL regla 2: configurable desde creación; vencimiento bloquea nuevas reservas/consumos, revisa citas sin cancelación automática | Plazo, cálculo/mecanismo, estados/jobs y extensión resultante de ampliación pendientes |
+| Reprogramación | RESUELTA O-25 y reglas 2/3: no consume; validar vigencia/cupo y disponibilidad §7 | Implementación concurrente y conservación ante fallo; sin separar motor de paquetes |
+| Ausencia | RESUELTA para V1.1 regla 5: sin penalización comercial automática ni descuento automático | No crear cargos/facturas/cobros ni sesión clínica; no reabrir alternativa automática |
+| Cancelación | PARCIAL regla 6: sin descuento previo ni reversión automática de consumo confirmado | Compensación autorizada trazable; detalles económicos/técnicos pendientes, sin devolución inferida |
+| Devolución | PARCIAL regla 9: NC/anulación oficial y revisión/ajuste autorizado, clínica preservada | Tratamiento fiscal/SRI/crédito y ajustes económicos específicos; no cancelación automática del contrato |
+| Transferencia | ABIERTA: cambio de beneficiario no aprobado | No elegir transferible/no transferible por inferencia |
+| Profesional | RESUELTA regla 10: puede variar dentro de condiciones oficiales | Contratos técnicos con Empleados sin ampliación inferida |
+| Sucursal | RESUELTA regla 10: diferentes sucursales de la misma empresa bajo restricciones | Consumo entre empresas prohibido; mecanismos de aislamiento y concurrencia pendientes |
 
-### 11.4 Cupos, ampliaciones y sustituciones — APROBADO funcional
+### 11.4 Cupos, ampliaciones y sustituciones — alcance y mecanismos
 
-El usuario consulta paquete individual/combinado, cantidades/cupos y vigencia y puede gestionar ampliaciones y sustituciones, capacidades históricas aprobadas. El sistema conserva saldo expresado en sesiones y movimientos comerciales independientes de la atención clínica (O-25); el contrato nace explícitamente de factura/línea según O-15, sin automatismo de Ventas.
+Aplicar reglas 3/7/8 de §11.2 como definición normativa. Agenda conserva su motor central §7: disponibilidad profesional y saldo comercial son independientes, pero la cita vinculada exige validar cupo y vigencia sin movimiento de consumo. Varios bloques de un servicio (SPA-ARQ-01) no duplican prestación ni derechos; su representación de cupos es diseño pendiente, sin inferir una sesión comercial por bloque.
 
-Pendientes: unidades/equivalencias por servicio, quién amplía/sustituye y cuándo, necesidad de nueva línea facturada para nuevos derechos, trazabilidad del ajuste, vigencia resultante, límites y tratamiento de saldo usado/devuelto. Ni «combinado» implica sustitución irrestricta ni «ampliación» autoriza otorgar derechos sin respaldo. Conservar la política concreta como O-13, sin declarar pendientes las capacidades.
+Trazabilidad anterior preservada: SPA-OPS-PKG-04 referencia factura/línea (O-15); no copiar importes/impuestos sigue propuesta. SPA-OPS-PKG-03/§4.9 exige evitar duplicados, índice candidato. SPA-OPS-PKG-01 propone `PackageSessionLedger` append-only y tipos `Granted`, `Consumed`, `Restored`, `Expired`, `Adjusted`: nombres/tipos/modelo físico no aprobados por SPA-ARQ-05. SPA-OPS-PKG-02: no duplicar consumo aprobado; llave `(contract_id, session_id)` candidata. SPA-OPS-PKG-05 aplica regla 10; SPA-OPS-PKG-06 aplica vencimiento regla 2, otras condiciones de contrato inactivo/devuelto no inferidas. SPA-OPS-PKG-07 conserva DIR-SSOT-01; SPA-OPS-VTA-02 usa Items `Service` oficiales sin nuevo catálogo, contratos comerciales técnicos pendientes.
+
+`PackageDefinition`, `PackageContract`, `PackageSessionLedger`, estados `Activo`/`Agotado`/`Vencido`/`Cancelado`, permisos/errores §21/26 y mecanismos de compensación son candidatos técnicos. El libro representa cantidades, no saldos monetarios. Pendientes: algoritmo/reserva lógica/concurrencia/idempotencia, vencimiento/jobs, equivalencias exactas y documento adicional de sustitución, referencias de nuevas líneas y vigencia tras ampliación, transferencia, resoluciones de parciales, compensaciones económicas y fiscal/SRI/crédito; no autoriza diseño de Anticipos, seguridad, firma o conservación legal.
 
 ## 12. Sesiones realizadas y consumo
 
-**Qué hace:** documenta la atención efectivamente prestada y, cuando corresponda, su consumo comercial. **Estado de la sección:** el modelo de atención/consumo está APROBADO por O-25; formulario técnico, borrador, finalización, interrupción, corrección, productos/resultados/incidencias/fotos/evolución por SPA-DEC-116; campos [F] y efectos exactos pendientes. **Implementable hoy:** no. **Bloqueos:** BL-01, BL-05, BL-08, BL-09 (§29.1).
-
-| ID | Comportamiento contractual | Estado | Evid. |
-|---|---|---|---|
-| SPA-AT-06 | La sesión realizada es un registro independiente de la cita, creado al documentar una atención efectivamente realizada; cancelar o ausentarse no la crea | APROBADO (`O-25` #3, #6) | `O-25` |
-| SPA-AT-06 (complemento) | No se registra como realizada por haber llegado la fecha programada | PROPUESTO | T |
-| SPA-AT-02 | La sesión registra fecha, procedimiento, productos, aparatología, zona, evolución, observaciones, reacciones posteriores, próxima sesión sugerida y firma o identificación | PLANIFICACIÓN HISTÓRICA RECUPERADA | F |
-| SPA-AT-07 | Una atención realizada conserva referencias estables a la persona, al profesional (`EmployeeId`), a la sucursal y al tratamiento; estados oficiales, correcciones, anulaciones y restricciones comerciales son pendientes | PROPUESTO / PENDIENTE | T, P |
-| SPA-CARE-CNS-06 | Una sesión que requiere consentimiento de procedimiento vigente no se registra como realizada sin él; si se admite excepción o consentimiento verbal es pendiente | PROPUESTO / PENDIENTE | T, P |
-| SPA-CARE-CNS-05 | Una sesión interrumpida se registra con instante y motivo y no se marca como realizada por completo; su efecto sobre paquete o cobro, y si genera sesión realizada parcial, son pendientes | PROPUESTO / PENDIENTE | T, P |
-| SPA-OPS-PKG-01 / G-14 | **Consumo comercial** = movimiento `Consumed` del libro del contrato (independiente de la sesión realizada). «Consumida» no es sinónimo de «realizada» | APROBADO en la independencia (`O-25` #7); definición de «consumida» PENDIENTE (`O-13`) | T, P |
-| Contadores | Contratadas = Σ `Granted`; Programadas = citas activas vinculadas al contrato; Realizadas = sesiones realizadas registradas; Consumidas = Σ `Consumed` − Σ `Restored`; Pendientes = Contratadas − Consumidas | PROPUESTO (Consumidas y Pendientes PENDIENTES) | T, P |
-| SPA-OPS-VTA-04 | Registrar una sesión no genera factura, cobro ni movimiento contable | PROPUESTO (compatible con `O-15` #6) | T |
-| SPA-AT-03 | Las fotografías de seguimiento se vinculan a la sesión o valoración (§18) | PLANIFICACIÓN HISTÓRICA RECUPERADA | F |
+**Referencia funcional principal de SPA-ARQ-03 — APROBADA por el propietario el 2026-11-19.** Ocho reglas y modelo conceptual literales: [REG §14](SPA-V1.1-APPROVED-DECISIONS-01.md#14-spa-arq-03--ciclo-de-atención-clínica). Este ciclo documenta atención clínica; no sustituye visita/citas SPA-ARQ-01, los cinco estados de cita SPA-ARQ-02 (§8.6), ni el consumo comercial independiente O-25. No es implementación autorizada; siguen BL-01/02/03/05/06/08/09 y los detalles técnicos pertinentes de BL-10.
 
 ### 12.1 Formulario, borrador, finalización, interrupción y corrección
 
-**Capacidades APROBADAS por SPA-DEC-116.** El usuario prepara el formulario técnico, guarda borrador, registra productos/incidencias/resultados/evolución y profesional/registrador, documenta la atención y puede finalizar, interrumpir o corregir conforme a reglas por precisar. Las fotografías se vinculan privadamente según finalidad/consentimiento. Borrador no acredita atención prestada ni consumo.
+| Regla SPA-ARQ-03 | Comportamiento funcional aprobado | Límite exacto |
+|---|---|---|
+| 1 — Borradores | Preparar, guardar y editar formulario clínico incompleto; continuar su preparación sin acreditar sesión realizada | Guardar borrador no es atención completada ni consumo comercial; mínimos de datos y persistencia técnicos pendientes |
+| 2 — Inicio | Al comenzar atención efectiva, registrar fecha/hora de inicio, profesional responsable y usuario ERP registrador separados, en el cliente/empresa/sucursal/contexto correctos | No confundir disponibilidad, llegada o mera programación con inicio clínico; directorio Empleados aún dependencia |
+| 3 — Finalización | Acción explícita del profesional autorizado; conservar procedimientos, observaciones, productos usados, incidencias, resultados y evolución efectivamente documentados según servicio | No genera por sí misma factura, cobro, asiento ni movimiento de inventario; validaciones técnicas de finalización pendientes |
+| 4 — Interrupción | Si un procedimiento iniciado se detiene, registrar motivo, momento y trabajo efectivamente realizado | Atención interrumpida no se marca completada; no inventar reapertura ni estado adicional |
+| 5 — Atención parcial | Conservar atención efectiva parcial como registro clínico del expediente, diferenciada de sesión completada | No confundirla con cita programada/cancelada/ausente; número de sesiones clínicas por prestación y correspondencia final con agenda pendientes |
+| 6 — Correcciones | Corregir registros clínicos finalizados solo mediante operación autorizada con motivo, autor, fecha y trazabilidad de versiones | Versiones sujetas a política legal pendiente: C-02 no resuelto. Corrección no es nueva atención efectiva ni consumo adicional; mecanismo técnico no aprobado |
+| 7 — Evolución | Toda atención documentada integra seguimiento del tratamiento, también interrupciones con atención parcial | Distinguir evolución de sesiones completadas frente a parciales; no generar diagnóstico automático ni resultado inexistente |
+| 8 — Consumo independiente | Consumo comercial separado del registro clínico según O-25. Borrador no consume; Finalizada o parcial no determinan automáticamente cantidad a descontar | SPA-ARQ-05 §11.2 reglas 4–6 precisa consumo/ausencia/cancelación; O-13 conserva detalles comerciales/técnicos. No inferir descuento de sesión completa ni sesiones gratuitas |
 
-**Cuestión concreta con O-25:** cómo representar formulario borrador e interrupción parcial sin tratar la programación como sesión realizada. No se obliga a crear una Session realizada al reservar, llegar o guardar un formulario incompleto. El detalle de si el borrador es preparación separada, versión o estado técnico queda propuesto; tampoco se decide si atención parcial crea sesión realizada parcial. O-25 conserva que cancelar/ausentarse no crea sesión clínica y que consumo comercial es movimiento independiente.
+### 12.2 Ciclo conceptual del registro clínico
 
-Flujos y excepciones: preparar/guardar → documentar atención efectiva → finalizar; interrumpir deja constancia del hecho; corregir conserva trazabilidad. Mínimos del borrador, autor autorizado, momento de finalización, correcciones/versiones y efecto en cita/cupo/consumo quedan pendientes, con errores/permisos exactos por definir. La capacidad no vuelve a estar pendiente por esos detalles. No se facturan ni cobran sesiones automáticamente.
+| Concepto aprobado | Significado |
+|---|---|
+| Borrador | Formulario editable sin atención acreditada |
+| En atención | Atención efectiva iniciada y en documentación |
+| Finalizada | Atención completada y documentada mediante acción explícita del profesional autorizado |
+| Interrumpida | Atención iniciada y detenida, con motivo, momento y alcance real documentados; no completada |
+
+Se puede preparar/guardar/editar el borrador; cuando comienza atención efectiva se registra su inicio; una atención iniciada se finaliza explícitamente o se documenta su interrupción. Estas operaciones describen el ciclo aprobado, no una matriz adicional de reaperturas/reversas. Correcciones posteriores mantienen trazabilidad, sin nueva atención o consumo. No crear estados adicionales, anulaciones clínicas o transiciones de reapertura no aprobadas. No confundir Finalizada clínica con Atendida de agenda por mera equivalencia de nombres.
+
+### 12.3 Consistencia con agenda, consentimiento y seguridad
+
+SPA-ARQ-01/02 y O-25 permanecen intactas. La programación no acredita atención y cancelar/ausentarse no crea sesión clínica. **Pendiente explícito:** estado final de agenda de una cita cuyo procedimiento se interrumpe. Una parcial interrumpida no asigna automáticamente Atendida ni un sexto estado de cita; la finalización de visita sigue derivándose de sus citas bajo SPA-ARQ-02. El número de bloques/profesionales tampoco decide número de registros clínicos por prestación.
+
+Atender exige respetar autorizaciones, permisos y consentimientos aplicables; SPA-ARQ-03 no aprueba excepciones. Siguen abiertos validez jurídica de firma en pantalla, menores, conservación/eliminación y C-02, acceso excepcional Admin, cifrado/claves y auditoría técnica definitiva. La operación de corrección autorizada no convierte la conservación de versiones en prohibición absoluta de eliminación legal.
+
+**Pendientes técnicos:** persistir borradores y registros, mínimos/validaciones por operación, mecanismos de autorización/versión, concurrencia/finalización y consistencia transaccional con agenda. **Alcance comercial vigente:** §11.2 reglas 4–6 resuelve no consumo automático, ausencia sin penalización automática y cancelación sin reversión automática; O-13 conserva detalles de §11.3/11.4. O-14 no se modifica. El ciclo funcional y conservación de parcial ya están aprobados y no vuelven a presentarse como alternativas por resolver.
+
+### 12.4 Trazabilidad y datos anteriores conservados
+
+SPA-AT-06/07 y O-25: atención documentada independiente de cita, no por llegar la fecha; ahora se distinguen completada/parcial conforme a SPA-ARQ-03. SPA-AR-03, SPA-SG-02 y SPA-CARE-EXP-05: profesional responsable/registrador separados, según ADR-050. SPA-CARE-CNS-05: interrupción/registro parcial resueltos funcionalmente en §12.1; efecto de paquete según §11.2 regla 4 (resolución autorizada de parcial) y estado final de cita aún pendiente. SPA-CARE-CNS-06 conserva dependencia de consentimiento aplicable, sin aprobar excepción. SPA-OPS-VTA-04: sin efectos comerciales/contables por registrar clínica. SPA-AT-03: fotografías de seguimiento vinculadas a valoración/atención privada (§18).
+
+SPA-AT-02 conserva datos recuperados [F], sin declararlos obligatorios por aparecer en fichas: fecha, procedimiento, productos/aparatología, zona, evolución/observaciones, reacciones posteriores, próxima sesión sugerida y firma/identificación. Obligatoriedad/versión de fichas siguen O-21/O-24/V-01. SPA-OPS-PKG-01/G-14 conserva consumo como movimiento independiente; consumo sujeto a §11.2 regla 4 y detalles restantes O-13. Contadores candidatos anteriores: contratadas = Σ Granted; programadas = citas activas del contrato; consumidas = Σ Consumed − Σ Restored; pendientes = contratadas − consumidas. El contador de realizadas debe distinguir las completadas de las parciales según el criterio aún por concretar, sin equipararlo al consumo ni fijar saldo por clínica.
 
 ## 13. Expedientes estéticos
+
+SPA-ARQ-07 integra valoraciones/mediciones, consentimientos y fotos en el expediente conforme §14–18; no altera unicidad/scopes ni permisos de SPA-ARQ-06. Correcciones según §17.1, sin clínica por mero borrador ni consumo comercial.
+
+Aplicar §21.1 reglas 1/2/4/7/8 como referencia SPA-ARQ-06: expediente por cliente/empresa con sucursal por registro, autorización clínica contextual y corrección/conservación controladas; mecanismos y ley pendientes.
 
 **Qué hace:** conserva de forma longitudinal la información específica de atención de una persona. **Estado de la sección:** expediente único por cliente y empresa, antecedentes/alertas/valoraciones/historial APROBADOS por SPA-DEC-116; profesional/registrador por ADR-050. Campos [F] siguen sin contraste (`V-01`). **Implementable hoy:** no. **Bloqueos:** BL-03, BL-05, BL-09 (§29.1).
 
@@ -482,9 +568,9 @@ Flujos y excepciones: preparar/guardar → documentar atención efectiva → fin
 | SPA-CARE-EXP-03 | Código del caso: significado no recuperado (por tratamiento, por persona o por trabajo académico) | PENDIENTE (`O-19`) | P |
 | SPA-CARE-EXP-04 | Expediente único por cliente y empresa; no varios por caso o sucursal | APROBADO; O-20 resuelta | A (SPA-DEC-116) |
 | SPA-FC-03 / SPA-CARE-EXP-07 | Antecedentes: en cada categoría se distingue «sin responder», «no», «sí» y texto libre; «sin responder» no equivale a «no». Qué preguntas son obligatorias, opcionales o condicionales es pendiente | PROPUESTO / PENDIENTE (`O-21`) | F, T |
-| SPA-CARE-EXP-06 / SPA-FC-08 / DUP-06 | Los antecedentes se guardan como **versiones append-only**: corregir crea una versión nueva con autor, fecha y motivo; la anterior se conserva con acceso restringido y no se muestra como vigente. Si una rectificación obliga a ocultar la versión inexacta es `L-NV` | PROPUESTO | T |
-| SPA-CARE-EXP-08 | Un expediente nunca se elimina; puede inactivarse. Quién lo cierra y qué impide cerrarlo es pendiente. **Conflicto con la eliminación legal:** `C-02` (§29) | PROPUESTO / BLOQUEADO | T |
-| SPA-CARE-EXP-10 | El expediente es de empresa; la sucursal es atributo de cada atención. El acceso entre sucursales es pendiente | PROPUESTO / PENDIENTE (`O-02`) | T, P |
+| SPA-CARE-EXP-06 / SPA-FC-08 / DUP-06 | Aplicar §21.1 regla 7: corrección trazable y versión sustituida restringida/no vigente. Append-only y almacenamiento de versiones siguen candidatos sujetos a C-02/O-05 | APROBADO objetivo SPA-ARQ-06; mecanismo/ley pendientes | A + T |
+| SPA-CARE-EXP-08 | No eliminación arbitraria; aplicar §21.1 regla 7 y C-02: objetivo aprobado, procedimiento/validación legal pendientes, sin prohibición absoluta que resuelva derechos por sí sola. Inactivación/cierre y sus condiciones siguen candidatos | PROPUESTO / BLOQUEADO | T |
+| SPA-CARE-EXP-10 | Expediente de empresa, sucursal por atención; acceso intersucursal según §21.1 regla 4 | APROBADO funcional SPA-ARQ-06; autorización técnica O-02 pendiente | A + P |
 | SPA-CARE-EXP-05 | Cada valoración y sesión referencia al profesional responsable, al usuario registrador y a la sucursal | APROBADO (la distinción); campos PROPUESTOS | A |
 
 **Alertas incluidas (SPA-DEC-116):** el expediente conserva alertas junto con antecedentes y valoración, planes/tratamientos, sesiones/evolución, medidas, fotos privadas, consentimientos e historial. No se recuperaron categorías, niveles, origen manual/automático, obligatoriedad ni bloqueos derivados: no inventarlos ni declarar pendiente la capacidad. Consulta sin duplicar identidad de BusinessPartner; privacidad y controles oficiales.
@@ -501,40 +587,56 @@ inactivar. La lista de clientes no muestra información clínica (§21).
 
 ## 14. Valoración facial
 
-**Qué hace:** registra la valoración estética inicial del rostro. **Estado de la sección:** campos y valores recuperados de la ficha [F] sin contraste; obligatoriedad PENDIENTE (`O-21`). **Implementable
+**Qué hace:** registra la valoración estética inicial del rostro. **Estado de la sección:** contenido funcional SPA-ARQ-07 aprobado (§14.1), campos adicionales [F] preservados sin contraste V-01; obligatoriedad específica pendiente O-21. **Implementable
 hoy:** no. **Bloqueos:** BL-01, BL-05, BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-FC-04 / SPA-CARE-FAC-01 | La valoración pertenece a un expediente y fija fecha de negocio (`DateOnly`), profesional responsable, usuario registrador y sucursal | PROPUESTO | F, T |
-| SPA-CARE-FAC-03 | Una valoración estética **no** se rotula ni exporta como diagnóstico médico; «diagnóstico médico previo» es información declarada, no un diagnóstico de Spa | PLANIFICACIÓN HISTÓRICA RECUPERADA | F |
-| SPA-CARE-FAC-04 | Fototipo cutáneo: un valor de Fitzpatrick I a VI o «sin evaluar» | PROPUESTO | F, T |
-| SPA-CARE-FAC-02 | Una valoración es un registro con versiones append-only; corregir crea una versión nueva con autor, fecha y motivo | PROPUESTO | T |
+| SPA-CARE-FAC-03 | Una valoración estética **no** se rotula ni exporta como diagnóstico médico; «diagnóstico médico previo» es información declarada, no un diagnóstico de Spa | APROBADO no diagnóstico automático §14.1; alcance de rótulo/exportación histórico | A + F |
+| SPA-CARE-FAC-04 | Fototipo cutáneo: un valor de Fitzpatrick I a VI o «sin evaluar» | APROBADO Fitzpatrick I–VI cuando evaluado (§14.1); representación sin evaluar candidata | A + F/T |
+| SPA-CARE-FAC-02 | Una valoración es un registro con versiones append-only; corregir crea una versión nueva con autor, fecha y motivo | APROBADO corrección trazable §17.1; append-only candidato sujeto C-02 | A + T |
 | SPA-CARE-FAC-06 | Mínimos de integridad: solo los de la regla de lectura 3 (§0.3); los campos clínicos son opcionales hasta decidir lo contrario | PROPUESTO / PENDIENTE (`O-21`) | T, P |
 | SPA-CARE-FAC-07 | Si la ficha antigua y la actualizada difieren, la versión digital no asume equivalencia; el contraste de versiones es previo al contrato | PENDIENTE (`O-24`) | P |
 
 Campos recuperados [F] (ninguno declarado obligatorio): motivo de consulta; condición de piel (normal, seca, grasa, mixta); sensibilidad; fototipo; alteraciones observadas (manchas, acné, deshidratación y
 otras); zona y tiempo de evolución; exposición solar y protección; observaciones del profesional; diagnóstico médico previo; objetivo del tratamiento; procedimiento, productos y equipos previstos;
-precauciones; decisión (proceder, adaptar, posponer). La evolución se registra por sesión (§12), no en la valoración. Estados: `Registrada` y versiones (`Corregida`). Cierre y borrador son pendientes. **Flujos (PROPUESTOS):** registrar la valoración inicial (guardarla incompleta como borrador es una alternativa pendiente), registrar la decisión y corregir con motivo. Permisos `spa.assessments.create`, `spa.assessments.update` y de consulta `spa.records.view`; errores sin catálogo recuperado (§26).
+precauciones; decisión (proceder, adaptar, posponer). La evolución se registra por sesión (§12), no en la valoración. Estados técnicos candidatos: `Registrada` y versiones (`Corregida`); cierre pendiente. Borrador aprobado en §14.1, sin aprobar estados físicos. **Flujo funcional y mecanismos candidatos:** preparar/guardar/continuar valoración incompleta según §14.1, registrar decisión y corregir según §17.1. Permisos `spa.assessments.create`, `spa.assessments.update` y de consulta `spa.records.view`; errores sin catálogo recuperado (§26).
+
+### 14.1 SPA-ARQ-07 — Valoración facial y borradores (reglas 1/5)
+
+**APROBADA**, texto literal en [REG §18](SPA-V1.1-APPROVED-DECISIONS-01.md#18-spa-arq-07--valoraciones-consentimientos-y-fotografías). La valoración permite antecedentes relevantes, tipo/condición de piel, sensibilidad, Fitzpatrick I–VI cuando se evalúe, alteraciones observadas, precauciones/contraindicaciones y objetivos; conserva los campos adicionales anteriores. Sin diagnóstico médico automático ni obligatoriedad universal: requisitos específicos dependen de procedimiento/reglas aprobadas.
+
+Permitir guardar valoraciones incompletas como borradores y continuarlas. Guardar no acredita atención realizada ni genera consumo; coherencia con SPA-ARQ-03 sin equiparar borrador de valoración y sesión clínica finalizada. Persistencia, mínimos/validaciones por procedimiento y estados técnicos siguen pendientes. Correcciones §17.1; seguridad §21.4.
 
 ## 15. Valoración corporal
 
-**Qué hace:** registra la valoración corporal, sus mediciones y su comparación. **Estado de la sección:** campos [F] sin contraste; escala numérica de las mediciones PENDIENTE de revisión arquitectónica
+**Qué hace:** registra la valoración corporal, sus mediciones y su comparación. **Estado de la sección:** medidas/unidades/finalidad/comparación SPA-ARQ-07 aprobadas (§15.1), campos adicionales [F] sin contraste; escala numérica PENDIENTE de revisión arquitectónica
 (`V-04`, `O-22`). **Implementable hoy:** no. **Bloqueos:** BL-01, BL-05, BL-07, BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-FC-05 / SPA-CARE-COR-01 | La valoración corporal pertenece a un expediente y fija fecha de negocio, profesional responsable, usuario registrador y sucursal | PROPUESTO | F, T |
-| SPA-FC-06 / SPA-CARE-COR-02 | Una medición es un conjunto (`BodyMeasurementSet`) con fecha de negocio (`DateOnly`) y tipo `Inicial`, `Control` o `Final`; cada medida es opcional dentro del conjunto | PROPUESTO | F, T |
-| SPA-CARE-COR-03 | Un conjunto no se sobrescribe: corregirlo crea otro conjunto o una versión nueva con motivo, autor y fecha | PROPUESTO | T |
+| SPA-FC-06 / SPA-CARE-COR-02 | Una medición es un conjunto (`BodyMeasurementSet`) con fecha de negocio (`DateOnly`) y tipo `Inicial`, `Control` o `Final`; cada medida es opcional dentro del conjunto | APROBADO finalidad/opcionalidad §15.1; BodyMeasurementSet/DateOnly candidatos | A + F/T |
+| SPA-CARE-COR-03 | Un conjunto no se sobrescribe: corregirlo crea otro conjunto o una versión nueva con motivo, autor y fecha | APROBADO trazabilidad §17.1; conjunto/versionado físico candidato | A + T |
 | SPA-CARE-COR-04 | Las diferencias entre conjuntos son **derivadas en lectura** y no se almacenan | PROPUESTO | T |
-| SPA-CARE-COR-05 / SPA-INV-10 | Los valores numéricos y fechas respetan los estándares oficiales; «no medida» se distingue de cero. **El estándar de precisión no tiene una clase para medidas de peso o contorno**: una columna decimal nueva exige coincidir con una fila de la tabla de escalas o pasar revisión arquitectónica formal. No se propone escala | PENDIENTE (`O-22`, `V-04`) | T, NV |
+| SPA-CARE-COR-05 / SPA-INV-10 | Los valores numéricos y fechas respetan los estándares oficiales; «no medida» se distingue de cero. **El estándar de precisión no tiene una clase para medidas de peso o contorno**: una columna decimal nueva exige coincidir con una fila de la tabla de escalas o pasar revisión arquitectónica formal. No se propone escala | APROBADO no medida ≠ cero §15.1; precisión/escala PENDIENTE O-22/V-04 | A + T/NV |
 | SPA-CARE-COR-06 / COR-07 | Frecuencia de medición, vínculo obligatorio u opcional con una sesión, número de controles y unicidad del «final»: no recuperados | PENDIENTE (`O-22`) | P |
 
 Mediciones [F]: peso (kg); brazo derecho e izquierdo, abdomen alto, medio (a la altura del ombligo) y bajo, cadera, muslo derecho e izquierdo (cm). Otros campos [F]: zona corporal, motivo, objetivos
 (relajación, reducción, tonificación u otros), hallazgos iniciales, procedimiento, aparatología, precauciones, decisión. La tabla comparativa es de solo lectura; una gráfica es pendiente. **Flujos (PROPUESTOS):** registrar la valoración inicial y la medición `Inicial` → registrar controles → registrar la medición `Final` → consultar la comparación. Estados: `Registrada` y versiones; la comparación no es un estado. Permisos en §21.2; errores sin catálogo recuperado (§26).
 
+### 15.1 SPA-ARQ-07 — Medidas y finalidad (reglas 2/3)
+
+**APROBADO:** peso en kilogramos; brazo derecho/izquierdo, abdomen superior/medio/inferior, cadera y muslo derecho/izquierdo en centímetros. Denominaciones ya documentadas: abdomen alto = superior, medio a altura del ombligo e inferior = bajo; conservar las tres, nunca sustituirlas por una única «cintura». Campos adicionales anteriores preservados.
+
+Identificar finalidad Inicial, Control o Final; conservar fecha, contexto de expediente y profesional responsable. Campos no medidos pueden quedar vacíos: **no medida no equivale a cero**. Sin todas las medidas obligatorias, cantidad fija de controles ni valores/rangos/decimales inferidos. Precisión/escala requieren estándar oficial/revisión V-04 antes de persistir; frecuencia concreta y final único siguen sin decidir. Comparación §16; borradores §14.1; correcciones §17.1.
+
 ## 16. Seguimiento y evolución
+
+**SPA-ARQ-07 regla 4 — APROBADA:** consultar cronológicamente valoraciones y mediciones, distinguiendo Inicial/Control/Final; mostrar variaciones documentadas solo cuando haya valores comparables. No inventar valores/resultados ante mediciones faltantes, atribuir automáticamente cambios a un procedimiento ni emitir diagnóstico médico. Cálculo en lectura o almacenamiento son candidatos técnicos.
+
+**SPA-ARQ-03, regla 7 — APROBADA:** aplicar §12.1: toda atención efectivamente documentada integra el seguimiento, incluidas interrupciones con atención parcial; distinguir evolución completa y parcial. Correcciones autorizadas siguen §12 sin nueva atención ni consumo. Presentación y almacenamiento son detalles técnicos, no aprobación de estados nuevos.
 
 **Qué hace:** permite comparar la evolución de una persona a lo largo de sus atenciones. **Estado de la sección:** seguimiento/evolución APROBADOS como alcance por SPA-DEC-116; datos [F] y mecanismos de comparación conservan su evidencia y detalle pendiente. **Implementable hoy:** no. **Bloqueos:** BL-05, BL-09 (§29.1).
 
@@ -552,11 +654,11 @@ Mediciones [F]: peso (kg); brazo derecho e izquierdo, abdomen alto, medio (a la 
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
-| SPA-CN-06 / SPA-CARE-CNS-01 / SPA-INV-05 / DUP-04 | Las autorizaciones de procedimiento, de fotografías de seguimiento, de publicación promocional y de uso académico son **independientes**: aceptar una no implica aceptar otra, y la finalidad se verifica contra la autorización vigente en el momento del uso | PROPUESTO | F, T |
-| SPA-CN-01 | Consentimiento por procedimiento y firma en pantalla APROBADOS; información/decisión de fichas y mecanismo de evidencia por contrastar | APROBADO procedimiento/firma; campos y mecanismo pendientes | A (SPA-DEC-116) + F/T |
-| SPA-CN-02 / SPA-CN-03 | Fotografías de seguimiento y publicación promocional son autorizaciones diferenciadas; la primera no autoriza publicación | PLANIFICACIÓN HISTÓRICA RECUPERADA | F |
+| SPA-CN-06 / SPA-CARE-CNS-01 / SPA-INV-05 / DUP-04 | Aplicar §17.1: procedimiento, seguimiento y promoción independientes; académico no aprobado, O-17 abierto | APROBADO tres finalidades SPA-ARQ-07; mecanismo/vigencia pendientes | A + P |
+| SPA-CN-01 | Documento previo y registro de procedimiento/versión/decisión/firma/identificación-trazabilidad según §17.1 | APROBADO funcional SPA-ARQ-07; captura/autenticidad/ley pendientes | A + P |
+| SPA-CN-02 / SPA-CN-03 | Fotografías de seguimiento y publicación promocional son autorizaciones diferenciadas; la primera no autoriza publicación | APROBADO SPA-ARQ-07 §17.1 | A + F |
 | SPA-CARE-CNS-02 | Versiones de consentimiento incluidas; entidades `ConsentDefinition`/`ConsentRecord`, vínculo al texto presentado e inmutabilidad como diseño técnico | APROBADO versiones; modelo PROPUESTO | A (SPA-DEC-116) + T |
-| SPA-CARE-CNS-03 | Un registro no se edita ni elimina; un cambio de decisión es un registro nuevo o un retiro con fecha, motivo y autor | PROPUESTO | T |
+| SPA-CARE-CNS-03 | Corrección/decisión/retiro según §17.1; inmutabilidad absoluta no resuelve eliminación legal C-02 | APROBADO trazabilidad; registro nuevo/almacenamiento candidatos | A + T |
 | SPA-CN-05 / SPA-CARE-CNS-04 | **Retiro:** una autorización retirada deja de habilitar usos futuros; no revierte atenciones ni documentos ya emitidos; el material ya publicado fuera del ERP no es controlable por el ERP. Efectos sobre sesiones y material publicado: pendientes. La persona puede detener una sesión | PROPUESTO / PENDIENTE | F, T, P |
 | SPA-CN-04 / SPA-CARE-CNS-07 | **Uso académico:** autorización separada solo si el propietario confirma que pertenece al producto; hasta entonces no se implementa ni se asume | PENDIENTE (`O-17`) | F, P |
 | SPA-CARE-CNS-08 | Quién consiente: la persona atendida; representante o menores no recuperado | PENDIENTE (`O-18`) | P |
@@ -564,19 +666,31 @@ Mediciones [F]: peso (kg); brazo derecho e izquierdo, abdomen alto, medio (a la 
 **O-16 parcialmente resuelta:** firma en pantalla y versiones APROBADAS; no se ofrecen documento escaneado o aceptación sin firma como sustitutos de ese requisito. Falta mecanismo de captura/identidad/autenticidad y evidencia, reglas de vigencia por procedimiento y conservación legal. Las alternativas previas de hash/metadatos o referencia de versión siguen propuestas de evidencia, no aprobaciones jurídicas. La validez legal de cada firma **no está verificada** (`L-INT-05`). Texto de consentimiento y entidades `ConsentWithdrawal` y `SessionInterruption` (§24). Estados: registro `Vigente` o
 `Retirado`; definición `Vigente` o `Reemplazada`. **Flujos (PROPUESTOS):** presentar la versión vigente → registrar la decisión y la evidencia → habilitar la atención; retirar; registrar la interrupción de una sesión. Permisos `spa.consents.manage` y `spa.consents.templates`; errores sin catálogo recuperado (§26).
 
+### 17.1 SPA-ARQ-07 — Consentimiento, finalidades y correcciones (reglas 6/7/9)
+
+Cuando el procedimiento requiera consentimiento, presentar su documento antes de realizar la atención. Registrar procedimiento, versión presentada, decisión de persona autorizada, firma en pantalla e identificación/trazabilidad aplicables. Firma en pantalla ya aprobada SPA-DEC-116; autenticidad, validez jurídica, vigencia e identificación específica pendientes; no equivale automáticamente a firma electrónica certificada. No habilitar atención que requiere consentimiento sin uno válido según reglas aplicables; no inventar vigencias ni excepciones.
+
+Autorizaciones independientes: realizar procedimiento, capturar/utilizar fotos de seguimiento y utilizar fotos/información promocional. Aceptar una no implica las demás; respetar finalidad al consultar/usar material. **Académico O-17 sigue abierto y no se incorpora como capacidad aprobada**; menores/representantes O-18 pendientes.
+
+Valoraciones, mediciones y consentimientos conservan correcciones/cambios con autor, momento y motivo; no sobrescribir silenciosamente evidencia anterior ni presentar sustituido como vigente. Retiro/rectificación respeta finalidad y ley; conservación/rectificación/supresión/anonimización definitiva requiere validación jurídica, sin conservación indefinida de datos legalmente suprimibles (C-02/O-05, §21.1/22). Versionado físico, evidencia de firma y procedimientos definitivos no aprobados.
+
 ## 18. Fotografías y archivos
+
+**SPA-ARQ-07 regla 8 — APROBADA:** vincular fotografías a expediente y, cuando corresponda, valoración/sesión. Registrar fecha de captura, contexto de atención, finalidad, autorización aplicable y profesional/usuario responsable según corresponda. Privadas bajo SPA-ARQ-06 (§21), sin enlaces públicos permanentes ni publicación automática; finalidad según §17.1. Almacenamiento físico, cifrado/claves y mecanismos definitivos pendientes ADR-051.
+
+Aplicar §21.1 reglas 5/6/7/8 para auditoría, privacidad, cifrado adecuado y claves, aislamiento y gestión legal. El diseño técnico/operativo de protección permanece pendiente; IFileStorage/LocalFileStorage/scripts intactos, sin sistema nuevo de backups.
 
 **Qué hace:** conserva fotografías de seguimiento con su finalidad y autorización y controla quién las ve. **Estado de la sección:** fotografías privadas, acceso y trazabilidad APROBADOS por SPA-DEC-116; mecanismos de almacenamiento dependen de decisiones abiertas
 (`O-03`, `O-04`, `O-05`). **Implementable hoy:** no. **Bloqueos:** BL-02, BL-03, BL-06, BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
-| SPA-CARE-FOT-01 | Una fotografía pertenece a un expediente y a una atención (sesión o valoración) y guarda quién la tomó y quién la registró | PROPUESTO | T |
+| SPA-CARE-FOT-01 | Metadatos/asociaciones según §18 regla 8, vínculo a valoración/sesión cuando corresponda | APROBADO SPA-ARQ-07; modelo físico pendiente | A + P |
 | SPA-CARE-FOT-02 / SPA-SEC-INV-03 | Archivo privado APROBADO; adaptador `ICareFileStore` sobre `IFileStorage`, identificador, ruta del servidor y endpoint autorizado son mecanismos candidatos; sin URL pública | APROBADO privacidad; mecanismo PROPUESTO | A (SPA-DEC-116) + T |
-| SPA-CARE-FOT-03 / SPA-SEC-INV-02 | La finalidad es una **verificación de autorización en el momento del uso**: ver en seguimiento exige el consentimiento de seguimiento vigente; publicidad, el promocional; académico, el suyo. Ninguna fotografía se sirve sin autorización, consentimiento vigente y registro de acceso | PROPUESTO | T |
-| SPA-CARE-FOT-04 | Ninguna fotografía se publica, exporta ni comparte automáticamente; toda exportación es una acción explícita con permiso propio | PROPUESTO | T |
+| SPA-CARE-FOT-03 / SPA-SEC-INV-02 | Respetar finalidad/autorización §17.1 y acceso privado §18/21; académico sigue O-17, no capacidad aprobada | APROBADO funcional SPA-ARQ-07; mecanismos/ley pendientes | A + P |
+| SPA-CARE-FOT-04 | Ninguna fotografía se publica, exporta ni comparte automáticamente; toda exportación es una acción explícita con permiso propio | APROBADO no publicación automática SPA-ARQ-07 §18; exportación/compartir y permiso específicos candidatos | A + T |
 | SPA-CARE-FOT-05 | Las fotografías no aparecen en listados ni en la agenda; solo dentro del expediente y con permiso | PROPUESTO | T |
-| SPA-CARE-FOT-06 / SPA-SEC-AUD-01 | Cada consulta o exportación queda en el registro de accesos (§22) | PROPUESTO | T, NV |
+| SPA-CARE-FOT-06 / SPA-SEC-AUD-01 | Cada consulta o exportación queda en el registro de accesos (§22) | APROBADO acceso sensible auditable §21.1 regla 5; detalle exportación/mecanismo candidato | A + T |
 | SPA-CARE-FOT-07 / SPA-SEC-INV-04 | Las fotografías se desactivan lógicamente; no se invoca `DeleteAsync` sobre ellas salvo el procedimiento de eliminación legal aprobado | PROPUESTO / BLOQUEADO (`C-02`) | T |
 | SPA-CARE-FOT-08 | Retiro de la autorización de seguimiento: conservar y bloquear, anonimizar o eliminar | PENDIENTE (`O-05`) | P |
 | SPA-CARE-FOT-09 a FOT-10 | Metadatos del dispositivo, formatos, tamaño máximo, compresión y número de fotografías por atención: no recuperados | PENDIENTE | P |
@@ -585,7 +699,7 @@ Mediciones [F]: peso (kg); brazo derecho e izquierdo, abdomen alto, medio (a la 
 
 **Protección técnica (mecanismos de R4 §5 no aprobados; objetivo de archivos privados sí aprobado por SPA-DEC-116):** `LocalFileStorage` sobrescribe, borra físicamente, no valida contención de ruta ni cifra, y comparte volumen con certificados y keyring; Spa no
 lo modifica. Recomendación técnica no aprobada: referencias privadas, lectura autorizada y auditada, rutas del servidor, hash SHA-256 del contenido, ausencia de borrado físico, y protección/cifrado de los respaldos existentes con
-clave separada solo si se aprueba ese detalle, sin desarrollar sistema nuevo (HX-03) (`SPA-SEC-INV-05`); muy recomendable antes de datos reales de salud: cifrado de aplicación por archivo con cifrado de sobre y clave maestra externa. Cifrado de campos clínicos: segunda etapa.
+clave separada solo si se aprueba ese detalle, sin desarrollar sistema nuevo (HX-03) (`SPA-SEC-INV-05`); objetivo de cifrado adecuado aprobado en §21.1 regla 6; cifrado de aplicación por archivo, cifrado de sobre y clave maestra externa siguen candidatos. Cifrado de campos clínicos y su secuencia de adopción pendientes de revisión, sin diferir protección necesaria para operar datos reales.
 Cifrado de disco y publicación del directorio de archivos: `V-07` (verificación con infraestructura). Decisión `O-04`.
 
 Alternativas de protección por capa (sin elegir; R4 §5.3–5.4): transporte, TLS en la terminación del despliegue (pendiente en el runbook); archivos en reposo, A cifrado de disco/volumen de infraestructura (no verificado), B cifrado de aplicación por archivo con clave de datos por archivo y clave maestra, C almacén de objetos con cifrado del servidor (futuro); campos clínicos, A sin cifrado de campo (permisos y auditoría), B cifrado de columnas con conversor de EF (se pierde búsqueda y orden), C cifrado de disco del servidor de base de datos; claves, A Data Protection con keyring en el mismo volumen, B clave maestra en gestor de secretos o KMS externo, C clave por expediente (permite borrado criptográfico); respaldos, cifrado con clave guardada aparte o sin cifrar (hoy). El keyring comparte volumen y respaldo con los archivos, por lo que cifrar con él no protegería el respaldo: la clave maestra debe vivir separada de datos y respaldos. Perder las claves implica perder los datos (custodia, rotación e identificador de versión por objeto). No modificar `IFileStorage`/`LocalFileStorage`: adaptador propio `ICareFileStore`.
@@ -594,15 +708,19 @@ Alternativas de protección por capa (sin elegir; R4 §5.3–5.4): transporte, T
 
 ## 19. Equipos e insumos
 
+Aplicar SPA-ARQ-08 §4.2 regla 6: registro técnico sin Kardex automático y venta física oficial. Campos/detalles y eventuales operaciones adicionales O-12 no resueltos por esta aprobación.
+
 **Qué hace:** documenta los productos y equipos usados en cada atención. **Estado de la sección:** productos usados y venta de productos oficiales incluidos por SPA-DEC-116; registro documental [F], **sin descuento automático de Kardex** (HX-05). **Implementable hoy:** no. **Bloqueos:** BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-IN-01 | Productos utilizados incluidos por SPA-DEC-116; formularios registran productos/equipos usados, sin calendario de disponibilidad ni Kardex automático | APROBADO productos; campos [F] sin contraste | A + F |
-| SPA-IN-02 / SPA-OPS-SRV-07 / DUP-12 | El registro de insumos es documental y no genera movimientos de inventario; cualquier movimiento exige un contrato aprobado. Alternativas sin elegir: A registro documental por sesión; B lista sugerida por procedimiento; C salida manual con los ajustes de inventario existentes; D consumo automático expresamente excluido (HX-05, N-04) | PENDIENTE (`O-12`) | T, P |
+| SPA-IN-02 / SPA-OPS-SRV-07 / DUP-12 | El registro de insumos es documental y no genera movimientos de inventario; cualquier movimiento exige un contrato aprobado. Alternativas sin elegir: A registro documental por sesión; B lista sugerida por procedimiento; C salida manual con los ajustes de inventario existentes; D consumo automático expresamente excluido (HX-05, N-04) | APROBADO documental/sin Kardex §4.2 regla 6; listas sugeridas/salida manual adicional O-12 pendientes | A + T/P |
 | SPA-OPS-SRV-08 / SPA-IN-03 | Aparatología: texto o referencia de identificación por procedimiento y por sesión; sin módulo de activos (N-05) | PROPUESTO | T |
 
 ## 20. Integración con Ventas, Caja y CxC
+
+SPA-ARQ-08 §4.2 reglas 4/5 fija propietarios y consultas autorizadas sin documentos financieros ni saldo monetario SPA. Anticipos §20.4 permanece proceso transversal independiente, O-14 abierto.
 
 **Qué hace:** relaciona la atención y el paquete con los documentos comerciales sin duplicarlos. **Estado de la sección:** integración de servicios, facturas, CxC/cobros y venta oficial de productos APROBADA por SPA-DEC-116; frontera y origen del contrato por O-15; anticipos y prepagos PENDIENTES (`O-14`). **Implementable hoy:** no. **Bloqueos:** BL-09 y pendientes específicos de O-15; BL-04 solo para funciones dependientes de anticipos (§29.1).
 
@@ -613,7 +731,7 @@ Alternativas de protección por capa (sin elegir; R4 §5.3–5.4): transporte, T
 | Vender un servicio | **Sí:** factura con Item `Service` sin bodega; la factura nace ligada a una sesión de caja (`CashSession`, de Caja; distinta de la sesión realizada de Spa) | Spa referencia la factura; no toca Caja |
 | Pago parcial al facturar | **Sí:** medios no-Crédito y el saldo como CxC | Nada nuevo |
 | Cobrar un saldo posterior | **Sí:** cobro aplicado a una CxC existente | Nada nuevo |
-| Devolver o anular una venta | **Sí**, con las reglas de Ventas (un solo camino: anular o devolver; un comprobante autorizado por el SRI no se anula, se corrige con Nota de Crédito) | El efecto sobre el contrato es pendiente (`O-13`) |
+| Devolver o anular una venta | **Sí**, con las reglas de Ventas (un solo camino: anular o devolver; un comprobante autorizado por el SRI no se anula, se corrige con Nota de Crédito) | Aplicar §11.2 regla 9: revisión/ajuste autorizado; efectos específicos fiscales/crediticios y económicos pendientes |
 | Facturar por sesión | No | N-01 |
 | Anticipo o prepago de cliente; cobro sin CxC; saldo a favor | **No** (solo existe anticipo de **proveedor**, ADR-035) | N-02 |
 | Reembolso de devolución | Solo en efectivo o contra CxC | N-03 |
@@ -624,11 +742,11 @@ Alternativas de protección por capa (sin elegir; R4 §5.3–5.4): transporte, T
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-OPS-VTA-01 / SPA-AR-05 / SPA-INV-08 | Spa **no** crea facturas, CxC, cobros ni asientos contables | APROBADO (`O-15` #6) | `O-15` |
-| SPA-OPS-VTA-01 (complemento) | Spa referencia documentos de Ventas y CxC por identificador y no registra movimientos de Caja (X-08) | PROPUESTO | T |
-| SPA-OPS-VTA-02 / SPA-OPS-PKG-04 | El paquete se vendería como Item `Service` (PROPUESTO); el contrato se crea explícitamente tras validar una factura autorizada, referenciando factura y línea (§11) | APROBADO solo origen/referencia (`O-15` #1, #2); venta como Item PROPUESTA | T + `O-15` |
+| SPA-OPS-VTA-01 (complemento) | Spa referencia documentos de Ventas y CxC por identificador y no registra movimientos de Caja (X-08) | APROBADO frontera SPA-ARQ-08 §4.2 regla 5; contratos técnicos pendientes | A + T |
+| SPA-OPS-VTA-02 / SPA-OPS-PKG-04 | El paquete utiliza Items `Service` oficiales conforme §11.2 regla 1; el contrato se crea explícitamente tras validar una factura autorizada, referenciando factura y línea (§11) | APROBADO origen/referencia O-15 y uso Items `Service` SPA-ARQ-05; mecanismo pendiente | T + `O-15` |
 | §11.1 #3, #5 | La creación es una operación propia de Spa, fuera de la transacción de autorización de Ventas; un fallo de Spa no revierte la factura | APROBADO (`O-15` #3, #5) | `O-15` |
 | SPA-OPS-VTA-05 / SPA-VT-01 | El profesional que presta el servicio y el usuario que registra u opera la transacción se identifican por separado; vendedor y cobrador son pendientes | APROBADO-DERIVADO + PENDIENTE | A-der |
-| SPA-OPS-VTA-06 | La devolución o anulación comercial no modifica el libro de sesiones por sí sola; la acción sobre el contrato es explícita y sigue la política de `SPA-PQ-01` | PROPUESTO / PENDIENTE (`O-13`) | T, P |
+| SPA-OPS-VTA-06 | Aplicar §11.2 regla 9: documento oficial, revisión de derechos y ajuste autorizado trazable sin revertir clínica real | APROBADO funcional SPA-ARQ-05; detalle fiscal/económico/técnico pendiente | A + P |
 | Validación de la creación | Cliente del contrato igual al de la factura; factura autorizada; línea no vinculada antes. Errores `SPA_INVOICE_NOT_AUTHORIZED`, `SPA_INVOICE_CUSTOMER_MISMATCH`, `SPA_INVOICE_LINE_ALREADY_LINKED` | PROPUESTO | T |
 | Estado SRI, anulaciones/NC, facturas a crédito, lista de pendientes | Condiciones de creación y efectos posteriores | PENDIENTE (`O-15` §2.5; `O-13`, `O-14`) | P |
 
@@ -652,21 +770,26 @@ Alcance: esta directriz fija la **propiedad** del proceso; **no** decide si el p
 
 ## 21. Seguridad y privacidad
 
-**Qué hace:** limita quién puede ver y hacer qué con datos de salud, fotografías y consentimientos. **Estado de la sección:** lo aprobado se limita a que Empleados, Access y las asignaciones **no** dan acceso
-clínico (ADR-050); permisos oficiales, aislamiento/auditoría/archivos privados incluidos por SPA-DEC-116; política Admin/sucursales, cifrado y catálogo de claves concretas siguen propuestos o pendientes. **Implementable hoy:** no. **Bloqueos:** BL-02, BL-09 (§29.1).
+Integración oficial SPA-ARQ-08 §4.2 reglas 7/8, sujeta a SPA-ARQ-06: sin usuarios/autenticador/permisos generales paralelos; C-01/C-02 y LOCKED/FROZEN conservan sus gates.
 
-### 21.1 Reglas
+**Referencia normativa principal de SPA-ARQ-06 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Ocho reglas literales y límites: [REG §17](SPA-V1.1-APPROVED-DECISIONS-01.md#17-spa-arq-06--expedientes-y-seguridad). Complementa SPA-DEC-116 y SPA-ARQ-01..05, ADR-050 y O-15/O-25 sin alterar scopes oficiales. **Implementable hoy: no.** C-01 y C-02 permanecen visibles; BL-02/03/06/09. Protección y auditoría disponibles y validadas antes de operar datos clínicos reales; ninguna fase autorizada.
 
-| ID | Comportamiento contractual | Estado | Evid. |
-|---|---|---|---|
-| SPA-SG-01 / SPA-INV-04 / SPA-CARE-SEG-01 / SPA-CARE-SEG-02 / SPA-SEC-INV-07 / DUP-03 | Ningún permiso `employees.*` o `access.*` ni una asignación laboral a una sucursal concede acceso a expedientes, valoraciones, consentimientos o fotografías; Spa declara permisos propios en el Kernel y ningún perfil existente los recibe automáticamente | APROBADO / APROBADO-DERIVADO | A (ADR-050 §6, §8, §13) |
-| SPA-CARE-SEG-03 / SPA-SG-04 | Los permisos de Spa se declaran solo en el Kernel con la convención `modulo.recurso.accion` | PROPUESTO | T |
-| SPA-SG-03 | Las fichas contienen antecedentes de salud, información corporal, fotografías y consentimientos: confidencialidad explícita; la política de lectura, edición, fotografías, exportación, auditoría, retención y corrección está pendiente | PROPUESTO / PENDIENTE | F, P |
-| SPA-SG-05 / SPA-SEC-INV-12 | Aislamiento por tenant y empresa (entidades `ICompanyOperationalEntity`, filtro fail-closed) en lecturas, exportaciones y registros de acceso; la sucursal es un filtro del recurso | VIGENTE-ERP + PROPUESTO | E, T |
-| SPA-SG-06 / SPA-CARE-SEG-05 / SPA-CARE-FOT-05 / DUP-15 | Las proyecciones, listados y la agenda no exponen datos clínicos ni fotografías; estos solo se ven dentro del expediente y con permiso | PROPUESTO | T |
-| SPA-SEC-INV-09 | El acceso excepcional exige motivo y queda marcado para revisión | PROPUESTO (solo si se aprueba la alternativa D) | T |
-| SPA-SEC-R-01 / SPA-CARE-SEG-04 | **Acceso del rol Admin a datos clínicos.** El autorizador resuelve el bypass del Admin antes de la clave de permiso; excepcionarlo modifica el contrato LOCKED. Alternativas: A aceptar el bypass (control solo por auditoría de lecturas); B permisos «sellados» sin bypass (cambia Kernel, Access, sesión, navegación y frontend; revisión arquitectónica expresa); C concesión de acceso clínico propia de Spa (`CareAccessGrant`) exigida además del permiso; D acceso excepcional con motivo («break-glass»: el Admin sin concesión accede con motivo obligatorio, registro reforzado y notificación a un responsable; variante de C). Consecuencias: A deja el control solo en la confianza y la auditoría; B cumple la exclusión estricta pero modifica el contrato LOCKED y puede verse como segunda fuente de «Admin»; C reduce el acceso accidental pero no impide que un Admin se otorgue una concesión sin segunda persona; D hace visible y justificado el acceso. Recomendación técnica no aprobada: C + D, con B como cambio futuro | **BLOQUEADO** (`C-01`, `O-01`) | T, P |
-| SPA-SEC-R-08 | **Acceso entre sucursales:** A expediente de empresa visible a todo usuario con el permiso; B limitado a sucursales con `CompanyUserBranch` (patrón `IBranchAccessGuard`); C la sucursal de cada atención limita solo esa atención | PENDIENTE (`O-02`) | P |
+### 21.1 Ocho reglas funcionales aprobadas
+
+| Regla | Materia | Alcance aprobado y límites |
+|---|---|---|
+| 1 | Expediente único | Un expediente Spa por cliente/empresa; atenciones de sucursales de esa empresa integran el mismo expediente, conservando sucursal de cada valoración/atención/sesión/registro. Reutilizar BusinessPartner, sin duplicar identidad ni cambiar su ámbito tenant; expediente diferenciado por empresa aunque BP compartido. |
+| 2 | Acceso profesional | Solo usuarios expresamente autorizados para consultar/modificar clínica según sus facultades, incluida corrección. Ventas, Empleados y asignaciones laborales no conceden acceso clínico. Profesional responsable y usuario registrador separados. Integración con Identity/Access/Kernel oficiales, sin autenticador/autorizador paralelo. |
+| 3 | Administrador | Gestionar usuarios/roles/permisos no concede acceso clínico ordinario por condición Admin. Acceso excepcional exige justificación, autorización por política controlada, identificación, auditoría y alcance delimitado. **C-01/O-01: POLÍTICA FUNCIONAL APROBADA — MECANISMO TÉCNICO BLOQUEADO HASTA AUTORIZACIÓN ESPECIAL.** Bypass actual requiere revisión especial LOCKED; permisos spa.* no lo resuelven; sin seleccionar permisos sellados/concesiones/acceso excepcional. |
+| 4 | Entre sucursales | Acceso a expediente de otras sucursales de la misma empresa solo cuando función/permisos lo justifiquen y bajo contexto/política autorizados. Ni asignación laboral ni trabajar en varias sucursales concede acceso general. Sucursal de atención conservada; autorización técnica intersucursal pendiente. |
+| 5 | Auditoría | Registrar consultas, creación, modificación, corrección, acceso a fotos y consentimientos; usuario, fecha/hora, expediente/recurso, operación, empresa/sucursal cuando corresponda, resultado y motivo cuando aplique. **Sin contenido clínico sensible en logs.** Infraestructura oficial FROZEN; extensión Spa de consultas exitosas solo alternativa de estudio; modo síncrono/asíncrono/mixto y errores pendientes. |
+| 6 | Archivos privados | Documentos/fotos/archivos clínicos privados, acceso autorizado sin enlaces públicos permanentes; protección en transmisión/almacenamiento, cifrado adecuado bajo diseño aprobado y claves protegidas, acceso trazable/aislado por empresa, asociación expediente/atención/finalidad/autorización cuando corresponda. Cifrado, claves, almacenamiento/descifrado/restauración/backups pendientes de revisión técnica/operativa; sin modificar IFileStorage/LocalFileStorage/scripts ni crear sistema de respaldo. |
+| 7 | Corrección y conservación | Corrección autorizada trazable, versiones sustituidas restringidas y nunca vigentes tras rectificación. Contemplar plazos legalmente aplicables y rectificación/supresión/anonimización jurídicamente procedentes mediante ejecución controlada/auditable. **C-02/O-05: OBJETIVO FUNCIONAL APROBADO — PROCEDIMIENTO Y VALIDACIÓN LEGAL PENDIENTES.** No borrado físico general ni versiones eliminadas indiscriminadamente; regla de no borrado no resuelve derechos por sí sola; sin afirmar cumplimiento ecuatoriano. |
+| 8 | Protección empresarial | Validar contexto empresarial en toda operación y relaciones BP/Employee/sucursal/consentimiento/sesión/archivo conforme propietarios/scopes oficiales. Impedir consulta cruzada por error y edición/corrección/descarga sin autorización/alcance válidos; usuario multiempresa opera en contexto autorizado. Agenda/listados operativos no exponen clínica; respetar aislamiento tenant/empresa sin cambiar ámbito BP. |
+
+**Trazabilidad anterior:** SPA-SG-01/SPA-INV-04/SPA-CARE-SEG-01/02/SPA-SEC-INV-07/DUP-03 aplican regla 2; SPA-SG-03 reglas 2/5/7; SPA-SG-05/SPA-SEC-INV-12 regla 8; SPA-SG-06/SPA-CARE-SEG-05/SPA-CARE-FOT-05/DUP-15 regla 8; SPA-SEC-INV-09 regla 3; SPA-SEC-R-01/SPA-CARE-SEG-04 C-01/regla 3; SPA-SEC-R-08 regla 4. SPA-CARE-SEG-03/SPA-SG-04, convención de permisos y catálogo siguiente siguen mecanismos candidatos, no nueva aprobación de claves.
+
+**Alternativas técnicas pendientes:** permisos sellados (B), concesiones clínicas (C) y acceso excepcional (D) requieren revisión/autorización sin seleccionar C+D por recomendación heredada; aceptar acceso ordinario por bypass (A) no satisface el objetivo aprobado. `CareAccessGrant`, doble control, notificaciones y revisión posterior no quedan aprobados por mención. Entre sucursales, ni acceso general por permiso aislado ni `CompanyUserBranch`/`IBranchAccessGuard` como criterio suficiente se adoptan por inferencia; diseñar según regla 4. Seguridad, confiabilidad de lecturas, cifrado/claves, almacenamiento, conservación y validación legal siguen §22/29/30 y ADR-051. No autoriza modificar LOCKED/FROZEN ni nuevos permisos efectivos.
 
 ### 21.2 Catálogo unificado de permisos candidatos (30)
 
@@ -695,6 +818,12 @@ verificó); administrar claves de cifrado (operación de infraestructura, no per
 El Kernel solo admite claves nuevas; ningún perfil existente las recibe; la regla anti-escalamiento de perfiles y membresías sigue vigente. Cambiar el bypass del Admin, el autorizador o la navegación exige
 autorización arquitectónica explícita (X-09).
 
+### 21.4 SPA-ARQ-07 — Protección y validación (regla 10)
+
+Aplicar permisos clínicos, aislamiento tenant/empresa, autorización intersucursal, protección sensible, auditoría de acceso/cambios, privacidad/consentimiento y profesional separado de usuario registrador conforme §21.1. Sin datos clínicos reales hasta condiciones necesarias de seguridad/cumplimiento resueltas y verificadas. No ampliar módulos FROZEN/CLOSED ni LOCKED.
+
+SPA-ARQ-07 no resuelve precisión/escala, requisitos jurídicos de firma, menores/representantes, plazos de conservación, cifrado/claves definitivos, eliminación legal ni originales no contrastados. V-01/04/06/07/08/09, C-01/C-02 conservan los aspectos pendientes; reglas aprobadas no vuelven a propuesta por faltar mecanismo.
+
 ## 22. Auditoría y conservación
 
 **Qué hace:** deja rastro de quién hizo o consultó qué, y define cuánto se conserva. **Estado de la sección:** auditoría/protección incluidas por SPA-DEC-116, mecanismos y conservación pendientes; la tensión entre el no borrado y la eliminación legal está
@@ -702,11 +831,15 @@ autorización arquitectónica explícita (X-09).
 
 ### 22.1 Auditoría
 
+Correcciones de valoraciones/mediciones/consentimientos SPA-ARQ-07 según §17.1; protección §21.4. Auditoría no sustituye validación jurídica ni autoriza conservación indefinida.
+
+Obligación funcional aprobada: §21.1 regla 5; las filas siguientes distinguen trazabilidad exigida de mecanismos candidatos (append-only, granularidad, entidad, modo y comportamiento ante errores). Infraestructura oficial FROZEN intacta.
+
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
 | SPA-AU-01 | La auditoría de escrituras usa Entity Audit oficial (`AuditRecordBase`, `AuditActor`, `IAuditService`); sin sistema paralelo; cada entidad de Spa añade la suya | PROPUESTO | T, E |
-| SPA-AU-02 | Operaciones a auditar: creación de expediente; modificación de valoración; registro o corrección de sesión; aceptación o retiro de consentimiento; cambios de agenda; consulta o exportación de imágenes; cambios en asignaciones operativas de atención | PROPUESTO (el principio de trazabilidad de reprogramaciones, cancelaciones y atenciones: APROBADO, `O-25` #8) | T |
-| SPA-SEC-AUD-01 / SPA-SEC-INV-01 / DUP-05 | Toda lectura exitosa de detalle de un expediente, valoración, antecedentes, consentimiento o fotografía, toda descarga y exportación deja un registro append-only con usuario, empresa, recurso, operación, instante y resultado, **sin contenido clínico** | PROPUESTO | T |
+| SPA-AU-02 | Operaciones a auditar: creación de expediente; modificación de valoración; registro o corrección de sesión; aceptación o retiro de consentimiento; cambios de agenda; consulta o exportación de imágenes; cambios en asignaciones operativas de atención | APROBADO alcance sensible §21.1 regla 5 y trazabilidad O-25; detalle técnico/granularidad restante PROPUESTO | T |
+| SPA-SEC-AUD-01 / SPA-SEC-INV-01 / DUP-05 | Toda lectura exitosa de detalle de un expediente, valoración, antecedentes, consentimiento o fotografía, toda descarga y exportación deja un registro append-only con usuario, empresa, recurso, operación, instante y resultado, **sin contenido clínico** | APROBADO obligación/metadatos sin clínica §21.1 regla 5; append-only y granularidad técnica candidatos | A + T |
 | SPA-SEC-AUD-02 a AUD-06 / SPA-SEC-INV-06 | Un listado registra una entrada por solicitud; los accesos denegados se registran (`Denied`); el registro es append-only, su consulta exige permiso propio y se registra a su vez; el acceso excepcional exige motivo y revisión; no hay contenido clínico ni nombres de archivo | PROPUESTO | T |
 | SPA-SEC-AUD-07 | Plazo de conservación del registro de accesos | PENDIENTE (`O-03`) | P |
 | Entidad | `CareAccessLog` (hereda de `AuditRecordBase`; propia de Spa; sin modificar la infraestructura FROZEN). **Unifica** el `PhotoAccessLog` de R3 (§B-05) | PROPUESTO | T |
@@ -714,11 +847,13 @@ autorización arquitectónica explícita (X-09).
 
 ### 22.2 Conservación, corrección y eliminación
 
+Aplicar §21.1 regla 7. **C-02/O-05: OBJETIVO FUNCIONAL APROBADO — PROCEDIMIENTO Y VALIDACIÓN LEGAL PENDIENTES.** La obligación aprobada no selecciona eliminación física/criptográfica, anonimización ni plazos; no-borrado no resuelve derechos jurídicos.
+
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
-| SPA-SEC-RET-01 / DUP-07 | Ningún borrado físico fuera de un procedimiento de eliminación legal aprobado. **No existe redacción canónica única**: R3 dice «nunca se elimina»; R4 propone un procedimiento controlado | **BLOQUEADO** (`C-02`, `O-05`) | T |
+| SPA-SEC-RET-01 / DUP-07 | Objetivo funcional §21.1 regla 7 aprobado: corrección/conservación y medidas legales controladas; procedimiento y validación legal pendientes. No elegir prohibición absoluta ni borrado físico general por jerarquía técnica | **BLOQUEADO** (`C-02`, `O-05`) | T |
 | SPA-SEC-RET-02 | El procedimiento exige permiso propio, solicitud registrada con fecha y titular, aprobación, y deja un registro del hecho sin datos personales | PROPUESTO (condicionado a `O-05`) | T |
-| SPA-SEC-RET-03 | Los antecedentes corregidos conservan sus versiones anteriores con acceso restringido, sin mostrarse como vigentes | PROPUESTO | T |
+| SPA-SEC-RET-03 | Aplicar §21.1 regla 7: trazabilidad de corrección, acceso restringido a sustituido y versión anterior no vigente | APROBADO objetivo; persistencia/plazos/ley pendientes | A + P |
 | SPA-SEC-RET-04 | Un retiro de consentimiento suspende el uso futuro; las atenciones ya realizadas siguen su plazo de conservación | PROPUESTO | T |
 | SPA-SEC-RET-05 | Los respaldos con datos eliminados siguen un ciclo de rotación documentado; con borrado criptográfico la clave eliminada cubre los respaldos | PROPUESTO | T |
 | SPA-SEC-RET-06 | Plazos de conservación por tipo de dato | PENDIENTE (`L-NV`) | P |
@@ -765,6 +900,18 @@ evidencia demostrable; registrar solicitudes de derechos con plazo de 15 días; 
 Reglas PROPUESTAS: usar los componentes y patrones oficiales ([frontend](../architecture/frontend.md)) y el componente decimal oficial; ocultar acciones sin permiso (la autoridad es el backend); indicar cuándo un dato
 es sensible; no mostrar datos clínicos en listados, notificaciones ni agenda; adaptación móvil según las reglas de diseño existentes; sin sistemas paralelos de navegación, avisos ni validaciones.
 
+**Lectura de las fichas conservadas:** las 19 fichas siguientes mantienen su texto previo. Sus menciones a reglas clínicas pendientes quedan actualizadas por la aprobación expresa SPA-ARQ-03 en §12; solo persisten los detalles técnicos, legales, comerciales y de correspondencia con agenda allí delimitados. No se modifica su estructura, diseño ni alcance.
+
+**Actualización SPA-ARQ-04:** las 19 fichas se conservan literalmente. Sus menciones previas de contigüidad/restricciones pendientes se leen conforme a §7.2: consecutivas compatibles y obligaciones funcionales ya aprobadas; solo detalle técnico o políticas no aportadas permanecen pendientes.
+
+**Actualización SPA-ARQ-05:** las 19 fichas se preservan literalmente; sus alternativas comerciales previas se leen bajo §11.2/11.3. Ausencia automática, composición/intercambio, vigencia, movilidad y cupos ya no son alternativas funcionales abiertas en el alcance aprobado; solo subsiste el detalle real señalado en §11.
+
+**Actualización SPA-ARQ-06:** las 19 fichas se conservan literalmente; menciones previas de política Admin/sucursales/auditoría/privacidad/conservación pendientes se leen bajo §21.1 y §30: objetivos funcionales aprobados, mecanismos y validación jurídica pendientes, C-01 técnico bloqueado y C-02 no cerrado.
+
+**Actualización SPA-ARQ-07:** fichas preservadas literalmente; sus referencias anteriores a borradores, valoración, mediciones, autorizaciones y correcciones se leen conforme §14.1/15.1/16/17.1/18/21.4. No volver a proponer lo aprobado; precisión, ley, mecanismos y contraste originales conservan pendientes expresos.
+
+**Actualización SPA-ARQ-08:** las 19 fichas se preservan literalmente; sus estados previos de integración se leen conforme §4.2. Fronteras funcionales aprobadas, contratos/mecanismos pendientes; Gali Spa solo identifica evidencia histórica, nunca dependencia del producto genérico SPA.
+
 ### 23.1 Fichas de pantallas y superficies funcionales
 
 Estas fichas conservan los diez elementos anteriores y explicitan flujos principales/excepcionales y reglas de negocio. **La estructura de presentación es evidencia de lo documentado, no una maqueta nueva ni un diseño original certificado.** Los datos [F]/[R] son planificación histórica recuperada; los controles, estados, permisos y disposiciones [T] conservan su condición de propuesta. SPA-DEC-115/116 aprueban las capacidades indicadas; O-15/O-25 conservan sus enunciados literales (§8.1/11.1). «No recuperado» conserva el pendiente, no excluye la función. En cada ficha, errores = §26 y aceptación = escenarios candidatos, sin ejecución ni aprobación implícita.
@@ -777,16 +924,16 @@ Procedencia: R1 SPA-AG-01/03; R2 §2.6/2.12; contrato §7/8.
 |---|---|
 | Objetivo | Organizar citas y localizar disponibilidad. |
 | Presentación documentada | Día/semana y filtros por sucursal/profesional APROBADOS (SPA-DEC-116); búsqueda por servicio sin profesional inicial (115). Sin columnas, colores o gestos originales recuperados. |
-| Datos visibles | Cliente, servicios/profesionales de la visita, sucursal, horarios, estado y vínculo de paquete; sin clínica/fotos. Representación de cada prestación pendiente. |
+| Datos visibles | Cliente, servicios/profesionales de la visita, sucursal, horarios, estado, indicador visible de reprogramación con acceso a historial y vínculo de paquete; sin clínica/fotos. Vínculo técnico de cada prestación con los bloques aprobado conceptualmente por SPA-ARQ-01, persistencia pendiente. |
 | Acciones del usuario | Buscar disponibilidad, seleccionar explícitamente profesional/hora, reservar, registrar llegada, reprogramar/cambiar/cancelar, marcar ausencia y documentar atención; no confirmación automática. |
-| Comportamiento del sistema | Revalida disponibilidad, conserva identidad e historial; cita y sesión realizada separadas (O-25). Reservar/reprogramar no consume. |
+| Comportamiento del sistema | Revalida disponibilidad; reprogramación válida conserva identidad/Programada y registra horas/profesionales anterior y nuevo cuando corresponda, autor/momento; indicador e historial en agenda. Sin consumo automático por transiciones; cita y atención independientes. |
 | Validaciones y errores | Activos y elegibles, horario, duración positiva y sin solape; hora inválida o colisión se rechazan (§26). Anticipación/contigüidad O-09. |
 | Permisos | spa.agenda.view/create/update/cancel/mark-absent; catálogo candidato. employees.view no basta; sucursales O-02. |
-| Estados y transiciones | Llegada/cambios incluidos; Programada → Cancelada/Ausente/Atendida son estados candidatos por cita, sin cierre de visita colectiva por inferencia. O-25 separa sesión clínica. |
+| Estados y transiciones | SPA-ARQ-02: Programada, En atención, Atendida, Cancelada, Ausente; inicio/fin por cita independiente. Reprogramación válida conserva Programada; evento/indicador Reprogramada sin sexto estado. Visita derivada, finaliza con todas las citas en estado final. |
 | Integraciones | BP, Employee por IEmployeeDirectory, Branch, Item; contrato de paquete opcional. |
 | Criterios de aceptación | PT-14 y SPA-AC-25-01/07: una reserva concurrente válida, trazabilidad y ningún consumo por reservar/reprogramar. |
 | Flujos principales y excepcionales | Buscar por servicio o filtrar agenda → seleccionar profesional/hora → reservar/reprogramar; si cambia disponibilidad o hay conflicto, revalidar y no confirmar automáticamente. |
-| Reglas de negocio | SPA-DEC-115/116 y O-25; motor único, selección explícita, visita múltiple, sin sesión clínica por ausencia/cancelación. |
+| Reglas de negocio | SPA-DEC-115/116, SPA-ARQ-01 y O-25: visita agrupa citas/bloques; cancelar una cita no cancela automáticamente las demás; varios bloques no duplican prestación; reserva/reprogramación sin consumo. |
 
 #### Pantalla 02 — Horarios y disponibilidad
 
@@ -1095,8 +1242,8 @@ Procedencia: SPA-DEC-116 agrupación visitas; contrato §8.4.
 | Acciones del usuario | Organizar varios servicios/profesionales, registrar llegada, reprogramar, cancelar y gestionar cambios. |
 | Comportamiento del sistema | Conserva historial y previene conflictos con motor central; llegada no genera atención ni consumo automático. |
 | Flujos principales y excepcionales | Planificar con selección explícita → registrar llegada/cambios → documentar atención aparte; conflicto parcial o profesional no disponible requiere política pendiente. |
-| Estados y transiciones | Llegada/cambio/cancelación incluidos; estados de visita y relación con estados de cada cita/prestación pendientes. |
-| Reglas de negocio | O-25 separa cita/atención/consumo; multiplicidad aprobada no impone cita única ni una sola Session por visita. |
+| Estados y transiciones | SPA-ARQ-02: situación general derivada de citas, sin máquina de estados de visita; finaliza al tener todas las citas en estado final. Llegada es evento con fecha/hora/usuario; modificar/cancelar una cita no cancela automáticamente toda la visita. |
+| Reglas de negocio | SPA-ARQ-01: visita del mismo cliente/ocasión/sucursal agrupa una o varias citas, cada una con profesional/intervalo; múltiples bloques sin duplicar prestación comercial. Cancelación de una cita sin cancelación automática de las demás; sesiones clínicas independientes y cardinalidad por prestación pendiente. |
 | Integraciones | Agenda/disponibilidad, expediente, Employee, servicios, sesiones y contrato de paquete cuando proceda. |
 | Permisos | Permisos oficiales de agenda y operaciones contenedoras; llegada/cambios parciales sin clave definitiva recuperada. |
 | Validaciones y errores | Habilitación, solapes/restricciones por prestación y trazabilidad; orden/simultaneidad/duración conjunta/errores pendientes. |
@@ -1147,7 +1294,7 @@ exclusivamente sesión realizada (§0.3).
 
 | Grupo | Entidades candidatas | Referencias a módulos oficiales (sin copiar sus datos) |
 |---|---|---|
-| Agenda y visitas | `Appointment`, `AppointmentChange` (append-only), representación de visita y prestaciones/profesionales pendiente; horarios y restricciones sin calendario de cabinas/equipos HX-01 | `BusinessPartner`, `Employee`, `Branch`, `Item` |
+| Agenda y visitas | Visita → una o varias citas del mismo cliente/ocasión/sucursal; cita → bloque profesional/intervalo (SPA-ARQ-01). `Appointment`, `AppointmentChange`, agregados/tablas y vínculos de prestación son candidatos técnicos; sin calendario de cabinas/equipos HX-01 | `BusinessPartner`, `Employee`, `Branch`, `Item` |
 | Servicios | `SpaServiceProfile` o `Procedure` (`O-11`); relaciones opcionales servicio–sucursal y servicio–especialidad | `Item`; especialidades de Empleados |
 | Plan y tratamiento operativo | Plan individual y ejecución multisesión/cupos/ampliación/suspensión/cancelación/cierre; nombres/agregados pendientes, sin fusionar con paquete | Expediente, procedimiento |
 | Paquetes | `PackageDefinition`, `PackageContract`, `PackageSessionLedger` | Factura (id y línea) de Ventas |
@@ -1159,7 +1306,7 @@ exclusivamente sesión realizada (§0.3).
 
 Relaciones: un cliente (BP) tiene un expediente único por empresa (SPA-DEC-116; O-20 resuelta); el expediente contiene valoraciones, sesiones realizadas, consentimientos y fotografías; una cita (resultado de una reserva) puede dar lugar
 a una sesión realizada; una sesión sugerida de un paquete es una cita vinculada al contrato (`O-25` #4); el contrato referencia una línea de factura (`O-15` #2); el consumo es un movimiento del libro del contrato
-que referencia contrato y, según el caso, cita o sesión. Profesional (`EmployeeId`) y usuario registrador (usuario ERP) se guardan siempre por separado. El modelo debe admitir varios profesionales/prestaciones por visita sin imponer su agrupación técnica; borradores no equivalen a atenciones realizadas. Operación inicial/lista/reportes reutilizan esos procesos, sin otro módulo por característica.
+que referencia contrato y, según el caso, cita o sesión. Profesional (`EmployeeId`) y usuario registrador (usuario ERP) se guardan siempre por separado. SPA-ARQ-01 fija visita que agrupa una o varias citas/bloques; varios bloques de un servicio no duplican prestación comercial. Esquema/vínculos persistidos y número de sesiones clínicas por prestación pendientes; borradores no equivalen a atenciones realizadas. Operación inicial/lista/reportes reutilizan esos procesos, sin otro módulo por característica.
 
 ## 25. API y contratos de aplicación
 
@@ -1197,15 +1344,17 @@ usar el envelope oficial de la API.
 
 ## 27. Reglas de concurrencia
 
-**Estado:** PROPUESTO; verificaciones técnicas pendientes antes de programar. Con visita múltiple, definir intervalos por prestación/profesional y orden de locks; la fórmula de exclusión ilustrativa no impone un solo profesional por visita. Expediente único requiere índice/clave scoped por cliente/empresa a comprobar en PostgreSQL, no O-20 pendiente.
+SPA-ARQ-05 §11.2 reglas 3/4/7 exige impedir sobreprogramación por servicio en operaciones concurrentes, separar ocupación de capacidad de `Consumed`, evitar consumos duplicados y conservar movimientos históricos. Su cálculo/reserva lógica, transacciones, locks, índices e idempotencia siguen candidatos técnicos; el esquema siguiente no los aprueba.
 
-| Tema | Regla propuesta | Evidencia |
+**Obligación funcional aprobada:** aplicar §7.2 reglas 9/10: revalidación y prevención de compromisos incompatibles concurrentes; fallo de reprogramación conserva original. **Mecanismos siguientes PROPUESTOS / NO APROBADOS:** locks, orden, transacciones, índices y exclusiones requieren revisión ADR-051 y PostgreSQL real en una fase futura autorizada. SPA-ARQ-01/02/03 y expediente único conservan su alcance; ninguna fórmula SQL ilustrativa constituye diseño aprobado.
+
+| Tema | Mecanismo candidato o estado delimitado | Evidencia |
 |---|---|---|
 | Citas del mismo profesional | Restricción `EXCLUDE USING gist (professional_id WITH =, tstzrange(start_utc, end_utc) WITH &&) WHERE (activa)`; reutiliza el patrón de `accounting_periods` (que usa `daterange`; **no hay precedente de `tstzrange`**, `V-05b`) | [NV] |
 | Reserva y reprogramación | Advisory lock transaccional por profesional (patrón `AccountingOperationalPolicyRepository`) y token de versión (`xmin`) | [E] el patrón; el diseño [NV] |
 | Consumo de sesiones | Advisory lock por contrato en una transacción; idempotencia por `(contract_id, session_id)` (`SPA-OPS-PKG-02`) | T |
 | Creación del contrato | Único por factura y línea; el fallo no revierte la autorización (`O-15` #4, #5) | APROBADO el principio; mecanismo T |
-| Saldo | Sin saldo negativo salvo política expresa | PENDIENTE |
+| Saldo y capacidad de programación | Aplicar §11.2 regla 3: no sobreprogramar por servicio; algoritmo de saldo/reserva lógica y mecanismos físicos pendientes | APROBADO funcional; mecanismo T |
 | Perfil de servicio | `UNIQUE (company_id, item_id)`; versión optimista | T |
 | Número de ficha y expediente | Número único por empresa pendiente O-19; expediente único por cliente/empresa aprobado O-20, mecanismo de unicidad por verificar bajo concurrencia | A + T |
 | Archivos | Rutas generadas por el servidor para que dos subidas simultáneas no se sobrescriban (`SPA-SEC-T-07`) | T |
@@ -1227,7 +1376,7 @@ exigen PostgreSQL real y almacenamiento aislado. De los 102 identificadores, 80 
 | PT-06 | Aislamiento por tenant y empresa | §21, §27 | SPA-SEC-INV-12, SPA-INV-10 | `SPA-T-16`, `SPA-CARE-T-EXP-07`, `SPA-CARE-T-SEG-08`, `SPA-OPS-T-AGE-09`, `SPA-SEC-T-14` | `SPA-CARE-T-FOT-07` | Sin decisión pendiente específica |
 | PT-07 | Valoraciones facial y corporal | §14, §15 | SPA-FC-04, SPA-FC-05, SPA-CARE-FAC-01 a FAC-07, SPA-CARE-COR-01, COR-03, COR-04 | `SPA-T-06`, `SPA-T-07`, `SPA-CARE-T-FAC-01`, `SPA-CARE-T-COR-01` | `SPA-CARE-T-FAC-03`, `SPA-CARE-T-FAC-04`, `SPA-CARE-T-FAC-05`, `SPA-CARE-T-COR-03` | Contenido [F] sin contraste (V-01); obligatoriedad pendiente (O-21) |
 | PT-08 | Mediciones, unidades, precisión y fechas | §15 | SPA-FC-06, SPA-CARE-COR-05, SPA-INV-10 | `SPA-T-08` | `SPA-CARE-T-COR-04`, `SPA-CARE-T-COR-05`, `SPA-CARE-T-COR-06` | Requiere revisión arquitectónica del gate decimal (V-04; O-22) |
-| PT-09 | Sesiones y atención | §8, §12 | SPA-AT-02, SPA-AT-04, SPA-AT-06, SPA-AT-07, SPA-CARE-CNS-05, SPA-CARE-CNS-06 | `SPA-T-09`, `SPA-OPS-T-VTA-02` | `SPA-CARE-T-CNS-05`, `SPA-CARE-T-CNS-06` | Terminología **resuelta por `O-25`** (2026-11-18); políticas de saldo y ausencia abiertas (O-13) |
+| PT-09 | Sesiones y atención | §8, §12 | SPA-AT-02, SPA-AT-04, SPA-AT-06, SPA-AT-07, SPA-CARE-CNS-05, SPA-CARE-CNS-06 | `SPA-T-09`, `SPA-OPS-T-VTA-02` | `SPA-CARE-T-CNS-05`, `SPA-CARE-T-CNS-06` | Terminología **resuelta por `O-25`** (2026-11-18); saldo/programación y ausencia funcionalmente precisados por SPA-ARQ-05 §11; detalles O-13 pendientes |
 | PT-10 | Consentimientos y autorizaciones independientes | §17 | SPA-CN-01 a CN-06, SPA-INV-05, SPA-CARE-CNS-01 a CNS-08 | `SPA-T-10`, `SPA-T-11`, `SPA-CARE-T-CNS-01`, `SPA-CARE-T-FOT-01`, `SPA-SEC-T-12` | `SPA-CARE-T-CNS-02`, `SPA-CARE-T-CNS-03`, `SPA-CARE-T-CNS-04`, `SPA-CARE-T-CNS-07`, `SPA-CARE-T-FOT-02` | Firma en pantalla/versiones incluidas; mecanismo/conservación, menores/académico pendientes O-16..18/V-06 |
 | PT-11 | Fotografías y almacenamiento | §18 | SPA-FO-01, SPA-CARE-FOT-01 a FOT-11, SPA-SEC-INV-02, SPA-SEC-INV-03, SPA-SEC-INV-05 | `SPA-SEC-T-06`, `SPA-SEC-T-07`, `SPA-SEC-T-08`, `SPA-SEC-T-09` | `SPA-CARE-T-FOT-03`, `SPA-CARE-T-FOT-06` | Cifrado y claves pendientes (O-04) |
 | PT-12 | Corrección, retención y eliminación | §22 | SPA-FC-08, SPA-INV-06, SPA-SEC-RET-01 a RET-06, SPA-SEC-INV-04 | `SPA-CARE-T-EXP-03`, `SPA-SEC-T-10`, `SPA-SEC-T-11` | `SPA-CARE-T-FAC-02`, `SPA-CARE-T-COR-02`, `SPA-CARE-T-FOT-05`, `SPA-CARE-T-FOT-08` | **Abierto** (C-02; O-05, O-07) |
@@ -1292,8 +1441,8 @@ Los enunciados funcionales están aprobados; **estos 16 escenarios son propuesta
 | SPA-AC-H-03 | SPA-DEC-116 clientes | Un expediente por cliente/empresa; antecedentes/alertas/valoraciones/planes/sesiones/medidas/fotos/consentimientos/historial sin copiar identidad BP; duplicado concurrente a probar en PostgreSQL |
 | SPA-AC-H-04 | SPA-DEC-116 tratamientos | Admitir plan individual/multisesión y sesiones previstas/cupos; distinguirlo de paquete y atención realizada |
 | SPA-AC-H-05 | SPA-DEC-116 tratamientos | Ampliar/suspender/cancelar/cerrar y consultar resultados con trazabilidad, según condiciones/efectos por definir; sin factura/consumo automático |
-| SPA-AC-H-06 | SPA-DEC-116 sesiones + O-25 | Preparar borrador y finalizar/interrumpir/corregir atención sin certificar realización o consumo por mero borrador; productos/incidencias/resultados/evolución y responsables conservados; sesión parcial según regla pendiente |
-| SPA-AC-H-07 | SPA-DEC-116 visitas | Gestionar varios servicios y profesionales por visita sin imponer cardinalidad técnica 1:1 |
+| SPA-AC-H-06 | SPA-DEC-116 sesiones + O-25 | Preparar borrador y finalizar/interrumpir/corregir atención sin certificar realización o consumo por mero borrador; productos/incidencias/resultados/evolución y responsables conservados; parcial conservada según SPA-ARQ-03 §12; estado final de cita y efectos comerciales pendientes |
+| SPA-AC-H-07 | SPA-DEC-116 visitas + SPA-ARQ-01 | Visita del mismo cliente/ocasión/sucursal agrupa una o varias citas, cada una con profesional/intervalo; servicio con varios profesionales puede usar varios bloques sin duplicar prestación comercial; sin inferir número de sesiones clínicas |
 | SPA-AC-H-08 | SPA-DEC-115/116 + O-25 | Llegada/reprogramación/cambios trazables con prevención de conflictos; no confirmar por búsqueda ni generar sesión clínica por llegada/ausencia/cancelación; concurrencia PostgreSQL futura |
 | SPA-AC-H-09 | SPA-DEC-116 consentimiento | Firmar en pantalla por procedimiento con versión y autorizaciones diferenciadas; no sustituir requisito por otra alternativa ni inferir certificación jurídica |
 | SPA-AC-H-10 | SPA-DEC-116 paquetes + O-15/O-25 | Gestionar individual/combinado, vigencia/cupos/ampliación/sustitución y saldo en sesiones; contrato explícito factura/línea y movimiento independiente; efectos comerciales exactos según O-13 |
@@ -1304,22 +1453,120 @@ Los enunciados funcionales están aprobados; **estos 16 escenarios son propuesta
 | SPA-AC-H-15 | SPA-DEC-116 integración/seguridad | Servicios/productos, facturas/CxC/cobros usan módulos oficiales; Employee reutilizado, profesional/registrador distintos; permisos/aislamiento/auditoría/archivos privados sin motores paralelos |
 | SPA-AC-H-16 | SPA-DEC-116 exclusiones HX-01..10 | Ninguna fase añade disponibilidad cabinas/equipos, recordatorios automáticos, sistema nuevo de backups, reservas públicas, Kardex automático de aplicados, nómina/RRHH completo, app móvil independiente, offline, diagnóstico automático/IA, dashboard analítico adicional o contabilidad paralela |
 
+### 28.5 Criterios de aceptación de SPA-ARQ-03
+
+Ocho especificaciones de **pruebas futuras, no ejecutadas**. Verifican reglas aprobadas de §12; no aprueban esquema ni mecanismos técnicos, no resuelven C-02/O-13 ni el estado final de cita interrumpida. Los escenarios anteriores se interpretan bajo §12, conservando sus identificadores y evidencia histórica.
+
+| ID candidato nuevo | Escenario | Criterio de aceptación futuro |
+|---|---|---|
+| SPA-AC-ARQ03-01 | Guardar y continuar un formulario incompleto | Borrador permanece editable; no acredita sesión realizada ni completada y no registra consumo comercial |
+| SPA-AC-ARQ03-02 | Iniciar atención efectiva | Se registra fecha/hora de inicio y profesional responsable/usuario ERP registrador separadamente, para cliente/empresa/sucursal/contexto correctos |
+| SPA-AC-ARQ03-03 | Finalizar atención efectiva | Requiere acción explícita del profesional autorizado; conserva procedimientos/observaciones/productos/incidencias/resultados/evolución según servicio. Sin factura/cobro/asiento/movimiento de inventario por finalizar clínica |
+| SPA-AC-ARQ03-04 | Detener un procedimiento iniciado | Se conservan motivo, momento y trabajo realmente realizado; Interrumpida no queda completada automáticamente ni asigna Atendida a la cita por inferencia |
+| SPA-AC-ARQ03-05 | Registrar atención efectiva parcial | Registro clínico conservado en expediente, distinguible de completada y de cita programada/cancelada/ausente; sin sexto estado de cita ni reapertura clínica inventados |
+| SPA-AC-ARQ03-06 | Corregir un registro finalizado | Solo operación autorizada, con motivo/autor/fecha y trazabilidad de versiones sujeta a política legal pendiente C-02; no nueva atención efectiva ni consumo adicional |
+| SPA-AC-ARQ03-07 | Consultar seguimiento del tratamiento | Incluye todas las atenciones documentadas, también interrupciones con parcial; distingue evolución completa de parcial sin fusionarlas |
+| SPA-AC-ARQ03-08 | Preparar, finalizar, interrumpir y corregir clínica | Ninguna operación clínica determina por sí misma consumo comercial. Borrador no consume; finalizada/parcial no fijan cantidad; sin descuento completo ni gratuidad inferidos, políticas O-13 pendientes |
+
+### 28.6 Criterios futuros de SPA-ARQ-04
+
+Especificaciones de pruebas futuras, **no resultados ejecutados**. Referencia normativa: §7.2. No aprueban mecanismos técnicos.
+
+| Caso | Regla | Criterio de aceptación futuro |
+|---|---|---|
+| SPA-AC-ARQ04-01 | 1 — Horarios | Buscar excluye intervalos fuera de horario de sucursal/profesional o asignación/elegibilidad laboral; acceso ERP por sí solo no habilita disponibilidad. |
+| SPA-AC-ARQ04-02 | 2 — Duración | Con servicios de distinta duración configurada, ofrecer solo intervalos suficientes para la duración efectiva, sin segundo catálogo comercial. |
+| SPA-AC-ARQ04-03 | 3 — Descansos/ausencias/bloqueos | Excluir intervalos incompatibles con indisponibilidad del profesional y restricciones de sucursal; sin recursos físicos. |
+| SPA-AC-ARQ04-04 | 4 — Preparación | Con preparaciones configuradas diferentes, reservar el intervalo necesario por servicio; sin margen universal añadido. |
+| SPA-AC-ARQ04-05 | 5 — Traslado | Con tiempo configurado entre sucursales, impedir compromisos incompatibles; sin minutos ni rutas externas inferidos. |
+| SPA-AC-ARQ04-06 | 6 — Consecutivas | Aceptar citas consecutivas compatibles y rechazar las que incumplan solape, preparación, descanso o traslado; sin margen adicional. |
+| SPA-AC-ARQ04-07 | 7 — Multiprofesional | Validar cada bloque de la visita con su profesional, conservar agrupación y no duplicar prestación comercial. |
+| SPA-AC-ARQ04-08 | 8 — Búsqueda | Servicio/fecha/sucursal sin profesional inicial devuelve alternativas del motor único; selección explícita sin crear/confirmar cita. |
+| SPA-AC-ARQ04-09 | 9 — Concurrencia | Dos confirmaciones concurrentes incompatibles para el mismo profesional no se consolidan ambas; mecanismo PostgreSQL pendiente de diseño y prueba real. |
+| SPA-AC-ARQ04-10 | 10 — Reprogramación | Si nuevo horario deja de estar disponible, conservar íntegra cita original y comunicar conflicto; cambio válido conserva identidad/Programada e historial/indicador, sin consumo. |
+| SPA-AC-ARQ04-11 | 11 — Tiempo | Presentar con configuración oficial existente y UTC consistente; usar zona empresa si sucursal no dispone de configuración aprobada. Horas inexistentes/ambiguas no producen reservas inconsistentes. |
+| SPA-AC-ARQ04-12 | 12 — Interrupción | Documentar interrupción conforme §12 conserva trazabilidad y no libera automáticamente tiempo restante ni genera consumo; sin asignar estado final pendiente ni sexto estado. |
+
+### 28.7 Criterios futuros de SPA-ARQ-05
+
+Diez especificaciones de pruebas futuras, **no resultados ejecutados**. Referencia funcional §11; no aprueban mecanismos técnicos ni cierran O-13 integralmente.
+
+| Caso | Regla | Criterio de aceptación futuro |
+|---|---|---|
+| SPA-AC-ARQ05-01 | 1 — Composición | Paquete combinado conserva cantidades por servicio; rechazar intercambio libre/no autorizado, sin duplicar Items. |
+| SPA-AC-ARQ05-02 | 2 — Vigencia | Vigencia configurable desde creación: vencido rechaza nueva reserva vinculada y consumo; identifica citas futuras para revisión sin cancelarlas ni borrar historia. |
+| SPA-AC-ARQ05-03 | 3 — Cupos | Mostrar contratadas/consumidas/disponibles/programadas/realizadas separadas; rechazar programación/reprogramación sobre cupo por servicio también concurrente, sin `Consumed` por reservar. |
+| SPA-AC-ARQ05-04 | 4 — Consumo | Finalizada no descuenta automáticamente; parcial requiere resolución autorizada. Borrador/programación/reprogramación no consumen; reintento no duplica movimiento independiente. |
+| SPA-AC-ARQ05-05 | 5 — Ausencia | Registrar ausencia trazable sin descuento/penalización automática, cargo/factura/cobro o sesión clínica. |
+| SPA-AC-ARQ05-06 | 6 — Cancelación | Cancelar antes de consumo no descuenta; después no revierte consumo confirmado ni al corregir clínica; compensar solo mediante operación autorizada trazable. |
+| SPA-AC-ARQ05-07 | 7 — Ampliación | Rechazar ampliación sin documento comercial oficial; autorizada conserva contrato y movimientos previos, identifica servicio/cantidad/documento sin facturar en Spa. |
+| SPA-AC-ARQ05-08 | 8 — Sustitución | Rechazar sustitución sin autorización/equivalencia definida; registrar servicios/cantidades/motivo sin alterar clínica ni movimientos confirmados; documento adicional según política pendiente. |
+| SPA-AC-ARQ05-09 | 9 — NC/anulación | Documento solo oficial Ventas; identificar derechos afectados y ajuste autorizado trazable, sin modificar historia clínica ni devolución monetaria paralela. |
+| SPA-AC-ARQ05-10 | 10 — Movilidad | Permitir profesionales/sucursales habilitados de misma empresa bajo vigencia, servicio, permisos y disponibilidad; rechazar consumo entre empresas distintas. |
+
+### 28.8 Criterios futuros de SPA-ARQ-06
+
+Ocho requisitos para pruebas futuras, **no resultados ejecutados**. Referencia normativa §21.1. C-01 exige autorización arquitectónica especial y C-02 procedimiento/validación legal; ningún criterio aprueba sus mecanismos.
+
+| Caso | Regla | Criterio de aceptación futuro |
+|---|---|---|
+| SPA-AC-ARQ06-01 | 1 | Un expediente por cliente/empresa integra sucursales conservando contexto de cada registro; rechazar duplicado por sucursal y separar expedientes de empresas aunque BP compartido, sin duplicar identidad. |
+| SPA-AC-ARQ06-02 | 2 | Denegar consulta/modificación/corrección sin facultades clínicas expresas aunque existan permisos Ventas/Empleados o asignación laboral; profesional/registrador diferenciados. |
+| SPA-AC-ARQ06-03 | 3 | Admin gestiona permisos sin acceso clínico ordinario por su condición; acceso excepcional solo justificado, autorizado, identificado, auditado y delimitado. Verificación efectiva bloqueada hasta autorización especial/revisión LOCKED; no basta spa.*. |
+| SPA-AC-ARQ06-04 | 4 | Denegar acceso intersucursal no justificado por función/permisos/contexto; permitir solo bajo política autorizada, sin acceso general por trabajar en varias sucursales. |
+| SPA-AC-ARQ06-05 | 5 | Registrar consultas/creación/modificación/corrección y acceso a fotos/consentimientos con metadatos de regla 5; comprobar ausencia de contenido clínico sensible en logs. Modo/confiabilidad/errores aún por aprobar. |
+| SPA-AC-ARQ06-06 | 6 | Denegar fotos/archivos sin autorización o contexto válido, sin enlaces públicos permanentes, con protección/cifrado/claves y trazabilidad bajo diseño aprobado; aislamiento entre empresas y asociación aplicable. |
+| SPA-AC-ARQ06-07 | 7 | Corrección autorizada trazable no muestra versión anterior como vigente y restringe sustituido; medidas legalmente exigibles solo bajo procedimiento controlado/auditable validado; rechazar borrado indiscriminado, sin certificar cumplimiento. |
+| SPA-AC-ARQ06-08 | 8 | Rechazar consulta cruzada por error y edición/corrección/descarga de otra empresa sin autorización/alcance válidos; validar referencias y usuario multiempresa en contexto autorizado, sin cambiar scope BP ni exponer clínica en agenda. |
+
+### 28.9 Criterios futuros de SPA-ARQ-07
+
+Diez especificaciones para pruebas futuras, **no ejecutadas**; una por regla de §14.1/15.1/16/17.1/18/21.4. Gates técnicos/legales siguen pendientes.
+
+| Caso | Regla | Criterio futuro |
+|---|---|---|
+| SPA-AC-ARQ07-01 | 1 | Documentar datos faciales de §14.1, incluidos adicionales anteriores; permitir omitir no obligatorios según procedimiento, Fitzpatrick I–VI cuando evaluado, sin diagnóstico automático. |
+| SPA-AC-ARQ07-02 | 2 | Registrar peso kg y contornos cm con tres niveles abdominales y lados; no sustituir por cintura ni imponer rangos/decimales sin V-04. |
+| SPA-AC-ARQ07-03 | 3 | Inicial/Control/Final con fecha/expediente/profesional; vacíos distintos de cero, sin todas medidas obligatorias ni número fijo de controles. |
+| SPA-AC-ARQ07-04 | 4 | Consulta cronológica y variaciones solo con valores comparables; mediciones faltantes no generan valores ni atribución causal/diagnóstico. |
+| SPA-AC-ARQ07-05 | 5 | Guardar/continuar valoración incompleta sin acreditar atención ni consumo; no equiparar borrador con sesión finalizada ni exigir campos universales. |
+| SPA-AC-ARQ07-06 | 6 | Procedimiento que requiere consentimiento no se atiende sin uno válido; presentar documento previo y registrar versión/decisión/firma/identificación-trazabilidad bajo reglas aplicables, sin certificación inferida. |
+| SPA-AC-ARQ07-07 | 7 | Autorización de procedimiento/seguimiento no habilita promoción; rechazar uso promocional sin autorización específica; académico permanece O-17 no aprobado. |
+| SPA-AC-ARQ07-08 | 8 | Foto con fecha/contexto/finalidad/autorización/responsable y asociaciones aplicables; denegar acceso no autorizado, sin URL pública permanente ni publicación automática. |
+| SPA-AC-ARQ07-09 | 9 | Rechazar corrección sin autor/momento/motivo/trazabilidad; versión sustituida no vigente ni sobrescrita silenciosamente; retiro/rectificación y supresión sujetos a validación legal, no conservación indefinida inferida. |
+| SPA-AC-ARQ07-10 | 10 | Denegar acceso cruzado entre empresas o sin autorización clínica; respetar tenant/empresa/intersucursal, auditoría y protección, profesional/registrador separados; pendientes técnicos/legales no aprobados por el caso. |
+
+### 28.10 Criterios futuros de SPA-ARQ-08
+
+Ocho especificaciones de pruebas futuras, **no ejecutadas**; referencia normativa §4.2. No aprueban APIs ni mecanismos o implementación de dependencias.
+
+| Caso | Regla | Criterio futuro |
+|---|---|---|
+| SPA-AC-ARQ08-01 | 1 | Cliente BP Customer por contrato autorizado, sin crear catálogo paralelo ni duplicar identidad/comercio; contexto empresa del expediente separado de scope tenant BP. |
+| SPA-AC-ARQ08-02 | 2 | Consultar identidad/asignación/elegibilidad solo por contrato oficial de Empleados; rechazar acceso laboral sin contrato autorizado y Employee paralelo. IEmployeeDirectory pendiente, no implementarlo por el caso. |
+| SPA-AC-ARQ08-03 | 3 | Usar Items Service y precio/impuestos oficiales, permitir individuales/combinados con datos operativos SPA; rechazar duplicación de catálogo y extensión inferida Items/Pricing. |
+| SPA-AC-ARQ08-04 | 4 | Contrato explícito factura/línea tras validar autorizada, fuera de transacción Ventas, sin duplicados/reversión por fallo SPA; rechazar creación por SalesInvoiceAuthorizedEvent, sin resolver fiscal/crédito/NC. |
+| SPA-AC-ARQ08-05 | 5 | Consultar información autorizada necesaria de Caja/CxC; rechazar cobros/CxC/asientos/saldos monetarios generados desde SPA o anticipos propios; O-14 abierto. |
+| SPA-AC-ARQ08-06 | 6 | Registrar productos aplicados técnicamente no mueve Kardex; venta física sigue procesos oficiales, rechazar consumo automático e inventario paralelo (HX-05). |
+| SPA-AC-ARQ08-07 | 7 | Permisos generales/Empleados/Ventas no dan acceso clínico; integrar Identity/Access/Kernel/auditoría oficiales sin paralelo ni tocar LOCKED/FROZEN. C-01/C-02 siguen gates, sin dar por probado bypass resuelto. |
+| SPA-AC-ARQ08-08 | 8 | SPA genérico sin marca como dependencia, interfaz SPA; denegar expedientes/paquetes de otra empresa fuera de alcance autorizado y traslado de derechos entre empresas; validar tenant/empresa/sucursal/elegibilidad, sin cliente clínico duplicado. |
+
 ## 29. Dependencias bloqueantes
 
 ### 29.1 Bloqueos técnicos, legales y de autorización
 
 | ID | Pendiente concreto | Afecta | Condición de resolución |
 |---|---|---|---|
-| BL-01 | Employee/directorio todavía no implementados; firmas y elegibilidad histórica por verificar | Profesionales, disponibilidad, atenciones | EMP-E6b bajo plan/autorización propios; no crear Employee Spa |
-| BL-02 | Admin, sucursales, controles/permisos exactos, registro de lecturas y cifrado | Clínica, archivos y consultas | O-01..04; revisión expresa si toca LOCKED. Seguridad funcional incluida, mecanismo no aprobado |
-| BL-03 | Conservación/no borrado, retiro y posible eliminación legal | Antecedentes, sesiones, consentimientos y fotos | O-05/O-07; no elegir excepción o plazo sin respaldo |
+| BL-01 | Employee/directorio todavía no implementados; firmas y elegibilidad histórica por verificar | Profesionales, disponibilidad, atenciones | SPA-ARQ-08 confirma dependencia, no implementación; EMP-E6b bajo plan/autorización propios, contrato IEmployeeDirectory verificado; no Employee Spa |
+| BL-02 | Mecanismos de acceso Admin/intersucursal, lecturas y protección §21.1 | Clínica, archivos y consultas | SPA-ARQ-06 funcional aprobada; C-01/O-01 mecanismo BLOQUEADO HASTA AUTORIZACIÓN ESPECIAL LOCKED; O-02..04 técnicos/operativos pendientes, FROZEN intacta |
+| BL-03 | Conservación/no borrado, retiro y posible eliminación legal | Antecedentes, sesiones, consentimientos y fotos | C-02/O-05 OBJETIVO FUNCIONAL APROBADO — PROCEDIMIENTO Y VALIDACIÓN LEGAL PENDIENTES; O-07, sin borrado general ni plazo inventado |
 | BL-04 | Anticipos/prepagos transversales sin diseño | Solo operaciones que dependan de anticipos | O-14 ABIERTA; origen de contrato ya resuelto O-15 |
-| BL-05 | Contraste de formularios/versiones y detalles anteriores no recuperados | Campos/validaciones y reglas concretas | O-24/V-01 y evidencia histórica SPA-DEC-001..114. **No bloquea aprobación general de alcance: O-23 cerrada en inclusión** |
+| BL-05 | Contraste de formularios/versiones y detalles anteriores no recuperados | Campos/validaciones y reglas concretas | SPA-ARQ-07 contenido aprobado; O-24/V-01 y obligatoriedad específica O-21/evidencia histórica pendientes. **No bloquea aprobación general de alcance: O-23 cerrada en inclusión** |
 | BL-06 | Validez jurídica aplicable, firma/menores/plazos e imágenes | Protección de datos y evidencia | O-07/O-16/O-18, V-06/V-09; firma en pantalla ya incluida, no se sustituye por otra alternativa |
-| BL-07 | Política/escala numérica corporal | Medidas y comparación | O-22/V-04, revisión arquitectónica formal |
-| BL-08 | Políticas exactas de cupos/consumo/ampliación/sustitución/vigencia/devolución | Tratamientos, paquetes, sesiones | O-13 y pendientes O-15; capacidades aprobadas, efectos no inventados |
-| BL-09 | Aprobación técnica integral de contrato/ADR y autorización de fases | Toda implementación | ADR-051 PROPOSED; plan preparado sin fases autorizadas; no reabrir inclusión funcional |
-| BL-10 | Representación visita–cita múltiple, borrador/interrupción y cálculo de restricciones | Agenda, visitas, sesiones y concurrencia | Resolver detalle con ambas evidencias SPA-DEC-115/116 y O-25; V-05 y pruebas PostgreSQL futuras |
+| BL-07 | Precisión/escala numérica corporal tras SPA-ARQ-07 (medidas/unidades/finalidad aprobadas) | Medidas y comparación | O-22/V-04, revisión arquitectónica formal |
+| BL-08 | Detalle técnico y comercial restante de §11.3/11.4 tras SPA-ARQ-05 | Tratamientos, paquetes, sesiones | O-13 y pendientes O-15; capacidades aprobadas, efectos no inventados |
+| BL-09 | Aprobación técnica integral de contrato/ADR y autorización de fases | Toda implementación | ADR-051 PROPOSED; fronteras SPA-ARQ-08 funcionalmente aprobadas, contratos técnicos pendientes; plan sin fases ni preparación de código autorizadas; no reabrir inclusión funcional |
+| BL-10 | Modelo conceptual visita–citas resuelto SPA-ARQ-01; pendientes esquema/vínculos, presentación técnica de la situación derivada SPA-ARQ-02, cardinalidad clínica por prestación, persistencia/concurrencia del ciclo SPA-ARQ-03 y estado final de cita interrumpida, cálculo de restricciones | Agenda, visitas, sesiones y concurrencia | Detalle técnico sin reabrir modelo aprobado; V-05 y pruebas PostgreSQL futuras; sin inferir tiempos, mecanismos de parcial, estado final de cita interrumpida o ausencias |
 
 ### 29.2 Distinción de aprobación y ejecución
 
@@ -1336,7 +1583,7 @@ Las capacidades de §2 y exclusiones de §3 están aprobadas. Ninguna fase es im
 | Consentimiento/firma en pantalla y fotos privadas | APROBADO SPA-DEC-116 | No | BL-02/03/05/06/09 |
 | Integraciones comerciales oficiales | APROBADO SPA-DEC-116; frontera O-15/DIR | No | BL-08/09, lectura/estado SRI/crédito; O-14 cuando corresponda |
 | Panel, espera, reportes básicos y responsive | APROBADO SPA-DEC-116 | No | BL-02/09, detalle de consultas/interfaz y lista; sin dashboard adicional |
-| Seguridad, auditoría y conservación | Objetivos incluidos; mecanismos/ley pendientes | No | BL-02/03/06/09 |
+| Seguridad, auditoría y conservación | SPA-ARQ-06 funcional APROBADA; C-01 técnico bloqueado y C-02 procedimiento/ley pendientes | No | BL-02/03/06/09 |
 
 ## 30. Estado de decisiones y evidencia pendiente
 
@@ -1346,6 +1593,14 @@ Las capacidades de §2 y exclusiones de §3 están aprobadas. Ninguna fase es im
 |---|---|---|
 | SPA-DEC-115 | APROBADA histórica: búsqueda por servicio/fecha/sucursal sin profesional previo; selección explícita y motor único, sin confirmar automáticamente | [REG §9](SPA-V1.1-APPROVED-DECISIONS-01.md) |
 | SPA-DEC-116 | APROBADA histórica: once áreas, siete agrupaciones y diez exclusiones; orden de fases preliminar | [REG §10](SPA-V1.1-APPROVED-DECISIONS-01.md) |
+| SPA-ARQ-01 | APROBADA 2026-11-19: visita agrupa citas/bloques, servicio multiprofesional sin duplicación comercial, sesiones realizadas independientes y cancelación no propagada | [REG §12](SPA-V1.1-APPROVED-DECISIONS-01.md#12-spa-arq-01--modelo-conceptual-de-visitas-citas-y-sesiones) |
+| SPA-ARQ-02 | APROBADA 2026-11-19: cinco estados de cita, llegada como evento, inicio/fin independientes, situación derivada y finalización de visita; reprogramación evento/indicador, identidad/Programada e historial, sin consumo automático | REG §13; contrato §8.6 |
+| SPA-ARQ-03 | APROBADA 2026-11-19: ciclo clínico Borrador/En atención/Finalizada/Interrumpida, parcial conservada, corrección autorizada/versiones bajo C-02, evolución completa/parcial y consumo independiente | REG §14; referencia funcional principal §12 |
+| SPA-ARQ-04 | APROBADA 2026-11-19: doce reglas funcionales de agenda/disponibilidad; mecanismos técnicos no aprobados | REG §15; referencia principal §7.2 |
+| SPA-ARQ-05 | APROBADA 2026-11-19: diez reglas de tratamientos/paquetes; O-13 parcialmente resuelta, mecanismos no aprobados | REG §16; referencia principal §11 |
+| SPA-ARQ-06 | APROBADA 2026-11-19: ocho reglas de expedientes/seguridad; O-01..05 parcialmente resueltas, C-01 y C-02 visibles | REG §17; referencia normativa §21 |
+| SPA-ARQ-07 | APROBADA 2026-11-19: diez reglas de valoraciones/consentimientos/fotografías; mecanismos/ley/originales pendientes | REG §18; §14–18/21 |
+| SPA-ARQ-08 | APROBADA 2026-11-19: ocho fronteras funcionales ERP; contratos/mecanismos pendientes, sin extensiones ni preparación de código autorizadas | REG §19; referencia normativa §4 |
 | O-25 | APROBADA: cita distinta de sesión realizada y consumo independiente; sin consumir por reservar/reprogramar | REG §1, literal preservado §8.1 |
 | O-15 | APROBADA: creación explícita desde factura/línea, fuera de autorización Ventas; sin duplicados/documentos propios | REG §2, literal preservado §11.1 |
 | DIR-SSOT-01 | INSTRUCCIÓN DEL PROPIETARIO: Anticipos como proceso transversal, no diseño financiero ni cierre O-14 | REG §7; contrato §20.4 |
@@ -1359,30 +1614,30 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 
 | O | Estado vigente | Detalle aún pendiente o cierre respaldado |
 |---|---|---|
-| O-01 | ABIERTA | Admin y mecanismo de acceso clínico; no cambiar bypass LOCKED sin revisión |
-| O-02 | ABIERTA | Visibilidad entre sucursales; expediente único por empresa no implica acceso irrestricto |
-| O-03 | ABIERTA en mecanismo | Auditoría incluida; modo de escritura, errores y retención de lecturas pendientes |
-| O-04 | ABIERTA en mecanismo | Archivos privados incluidos; cifrado/claves/custodia y uso protegido de backups existentes por definir; sistema nuevo de respaldo excluido |
-| O-05 | ABIERTA | Conservación/eliminación legal y excepción a no borrado; sin plazos inventados |
+| O-01 | POLÍTICA FUNCIONAL APROBADA — MECANISMO TÉCNICO BLOQUEADO HASTA AUTORIZACIÓN ESPECIAL | C-01/SPA-ARQ-06 §21.1 regla 3; Admin sin acceso clínico ordinario, excepcional controlado. Bypass requiere revisión especial LOCKED; no cerrado |
+| O-02 | POLÍTICA FUNCIONAL APROBADA — MECANISMO TÉCNICO PENDIENTE | Regla 4: acceso intersucursal por función/permisos/contexto justificados, sin acceso general por asignación laboral |
+| O-03 | OBLIGACIÓN FUNCIONAL APROBADA — MECANISMO PENDIENTE | Regla 5: consultas y operaciones sensibles auditadas sin clínica; persistencia/confiabilidad, modo/errores/retención pendientes; infraestructura FROZEN |
+| O-04 | PROTECCIÓN FUNCIONAL APROBADA — DISEÑO TÉCNICO/OPERATIVO PENDIENTE | Regla 6: privado/cifrado adecuado/claves/aislamiento; cifrado, almacenamiento, descifrado/restauración/backups por revisar sin sistema nuevo |
+| O-05 | OBJETIVO FUNCIONAL APROBADO — PROCEDIMIENTO Y VALIDACIÓN LEGAL PENDIENTES | C-02/regla 7: corrección/versiones, restricción y medidas legales controladas; sin borrado físico general ni cumplimiento certificado |
 | O-06 | ABIERTA | Datos propios de edad/nacimiento/emergencia; no duplicar BP |
 | O-07 | ABIERTA | Validación jurídica aplicable, no sustituida por aprobación funcional |
 | O-08 | RESUELTA para recursos físicos | Control de disponibilidad de cabinas/equipos EXCLUIDO por SPA-DEC-116 HX-01; no añadirlo como alternativa pendiente |
-| O-09 | PARCIALMENTE RESUELTA | Descansos/bloqueos/preparación/traslados y conflictos incluidos; valores, cálculo/representación, tolerancias/anticipación y confirmación manual pendientes; búsqueda nunca confirma automáticamente; recordatorios excluidos |
+| O-09 | PARCIALMENTE RESUELTA | SPA-ARQ-04 §7.2 resuelve horarios, duración, restricciones, consecutivas, revalidación/conflictos, UTC y no liberación automática; valores, configuración/representación, algoritmos/locks, traslados/excepciones y detalles no aportados pendientes; sin márgenes nuevos ni confirmación por búsqueda; recordatorios excluidos |
 | O-10 | ABIERTA | Atención sin cita previa; llegada aprobada no equivale a aprobar walk-in |
-| O-11 | PARCIALMENTE RESUELTA | Varios servicios/profesionales por visita APROBADOS; relación visita–cita–prestaciones y servicio–procedimiento pendientes |
+| O-11 | PARCIALMENTE RESUELTA | Varios servicios/profesionales por visita APROBADOS; agrupación visita–citas aprobada SPA-ARQ-01; esquema/vínculos de prestación y relación servicio–procedimiento pendientes |
 | O-12 | PARCIALMENTE RESUELTA | Registro técnico de productos y venta oficial incluidos; descuento Kardex automático EXCLUIDO; campos/cantidades o ajustes manuales requieren regla propia |
-| O-13 | PARCIALMENTE RESUELTA | Paquetes individuales/combinados, vigencia/cupos/ampliaciones/sustituciones incluidos; reglas concretas de consumo, equivalencias, límites, vigencia, cancelación/ausencia, transferencia y devolución pendientes; Venta O-15 y Reprogramación O-25 resueltas |
+| O-13 | PARCIALMENTE RESUELTA | SPA-ARQ-05 §11 resuelve composición por servicio sin intercambio libre, vigencia desde creación, cupos programados sin consumo y prevención de exceso, consumo independiente/no duplicado, ausencia sin penalización automática, cancelación/compensación, ampliación respaldada, requisitos de sustitución, revisión por NC y movilidad intraempresa. Pendientes: mecanismos, equivalencias/documento adicional, transferencia, vigencia tras ampliación, parciales/compensaciones económicas y fiscal/SRI/crédito. No cierre integral |
 | O-14 | ABIERTA | Anticipos/prepagos: proceso transversal independiente, sin diseño autorizado |
 | O-15 | APROBADA | Origen y frontera del contrato preservados; significado de autorizada/SRI, NC/crédito y lista de pendientes fuera de esa aprobación |
-| O-16 | PARCIALMENTE RESUELTA | Por procedimiento, firma en pantalla, versiones/autorizaciones específicas APROBADAS; captura/autenticidad, evidencia, vigencias y conservación jurídica pendientes |
-| O-17 | ABIERTA | Alcance académico concreto no recuperado; no asumir inclusión por «autorizaciones específicas» |
-| O-18 | ABIERTA | Menores/representantes, verificación y evidencia jurídica |
+| O-16 | PARCIALMENTE RESUELTA | SPA-ARQ-07 §17.1: documento previo si requerido, procedimiento/versión/decisión/firma e identificación/trazabilidad y finalidades independientes; autenticidad, vigencia, identidad específica y validez jurídica pendientes |
+| O-17 | ABIERTA | SPA-ARQ-07 no incorpora uso académico; finalidad no aprobada, sin inferir inclusión |
+| O-18 | ABIERTA | Menores/representantes, identificación y evidencia jurídica no resueltos por SPA-ARQ-07 |
 | O-19 | ABIERTA | Numeración y significado de código del caso; no permite varios expedientes por empresa |
 | O-20 | RESUELTA | Expediente único por cliente y empresa, SPA-DEC-116; exclusión de duplicados por caso/sucursal |
-| O-21 | ABIERTA en datos | Obligatoriedad/campos/validaciones de formularios, no inclusión de valoración o alertas |
-| O-22 | ABIERTA en detalle | Escalas/frecuencia/control de medidas y clasificación numérica; no inclusión de mediciones |
+| O-21 | PARCIALMENTE RESUELTA | SPA-ARQ-07 §14.1/15.1: contenido y borradores aprobados, sin obligatoriedad universal; mínimos/validaciones por procedimiento pendientes |
+| O-22 | PARCIALMENTE RESUELTA | Medidas/unidades, Inicial/Control/Final, vacío distinto de cero y comparación aprobados SPA-ARQ-07; escala/precisión V-04, rangos, frecuencia concreta/final único pendientes; sin cantidad fija de controles |
 | O-23 | CERRADA EN INCLUSIÓN FUNCIONAL GENERAL | SPA-DEC-116 recuperada con declaración expresa de alcance y exclusiones; no cierra técnica/ley/implementación. Fichas separadas O-24/V-01, detalles históricos restantes §30.3 |
-| O-24 | ABIERTA | Versiones vigentes y contraste directo de fichas originales V-01; no se cierra por recuperación de 115/116 |
+| O-24 | ABIERTA | Originales/versiones V-01 sin contraste; SPA-ARQ-07 aprueba contenido funcional pero no certifica equivalencia/inspección |
 | O-25 | APROBADA | Reserva/cita/atención/consumo y trazabilidad preservados; no revoca multiplicidad de visita aprobada históricamente |
 
 ### 30.3 Evidencia restante y tensiones delimitadas
@@ -1390,9 +1645,9 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 - **Historial:** SPA-DEC-115/116 recuperadas según contenido aportado en REG; no se recuperaron los textos SPA-DEC-001..114. Solo los detalles que dependan de ellos se mantienen por verificar; no se invalida alcance general.
 - **Formularios:** O-24/V-01 y obligatoriedad O-21; no se presume equivalencia de versiones ni inspección de originales.
 - **Técnica y legal:** directorio real V-02, devolución Service completa V-03a, precisión V-04, tiempo/concurrencia V-05, asesoría V-06/vigencia V-09 e infraestructura V-07/08 siguen según evidencia disponible.
-- **Tensión concreta visita/cita:** multiplicidad por visita aprobada; representación de varias citas o prestaciones dentro de una cita no decidida. O-25 conserva cita distinta de atención y no consumo por programar.
-- **Tensión concreta borrador/interrupción:** capacidades aprobadas; falta representar preparación no realizada y atención parcial, sus transiciones/efectos en cita/cupo. No se crea sesión clínica por ausencia/cancelación ni se inventa consumo.
-- **Comercial:** origen O-15 intacto; detalle de autorizada/SRI/crédito/NC, saldos/ajustes y efectos de ampliación/sustitución pendientes. Anticipos O-14 sigue separado.
+- **Modelo visita/cita resuelto:** SPA-ARQ-01 fija visita → una o varias citas del mismo cliente/ocasión/sucursal y cita → bloque de profesional/intervalo. Varios bloques no duplican la prestación comercial; cancelación de una cita no cancela automáticamente las demás. Situación de visita derivada aprobada SPA-ARQ-02; cardinalidad clínica, esquema/vínculos y concurrencia siguen pendientes; O-25 intacta.
+- **Ciclo clínico resuelto por SPA-ARQ-03:** aplicar §12. Pendientes solo mecanismos técnicos, estado final de agenda de cita interrumpida, cardinalidad clínica por prestación, política legal C-02 y efectos comerciales O-13; no inferir Atendida, gratuidad o consumo.
+- **Comercial:** origen O-15 intacto; detalle de autorizada/SRI/crédito/NC, reglas funcionales de paquetes aprobadas SPA-ARQ-05 §11; pendientes algoritmo, equivalencias/documento adicional, fiscal/crédito y ajustes económicos específicos. Anticipos O-14 sigue separado.
 - **Sin revocación inferida:** ninguna evidencia aportada revoca expresamente O-15/O-25 ni las capacidades históricas. Las fronteras de procesos oficiales, exclusiones y detalle pendiente se conservan conjuntamente.
 - **Aprobaciones técnicas y ejecución:** contrato central sin aprobación técnica integral, ADR-051 PROPOSED / NO APROBADO y plan sin fase autorizada. Revisión del propietario pendiente; no comenzar desarrollo.
 
@@ -1423,7 +1678,7 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 | B-06 | R2, R3 y R4 usaban 30 nombres de permiso con seis repetidos | Catálogo único de 30 nombres (§21.2); sin renombrar | 4 (NORM §3) |
 | B-07 | R1 «plan de atención» y la estructura del encargo «plan de tratamiento» | «Plan de tratamiento»; «plan de atención» es sinónimo histórico | 4 (`G-07`) |
 | B-08 | R2 §4.4 define «Realizadas» como «sesiones con estado realizado» | Realizadas = sesiones realizadas registradas; no hay estado «programada» en la sesión | 1 (`O-25` #3, #4) |
-| B-09 | R3 `SPA-CARE-CNS-05` (sesión interrumpida «no realizada por completo») frente a `O-25` #3 | Interrupción/borrador/finalización/corrección incluidos por SPA-DEC-116; representación de preparación o atención parcial y sus efectos pendientes junto con O-25 | — |
+| B-09 | R3 `SPA-CARE-CNS-05` (sesión interrumpida «no realizada por completo») frente a `O-25` #3 | Interrupción/borrador/finalización/corrección incluidos por SPA-DEC-116; ciclo/atención parcial resueltos por SPA-ARQ-03 §12; persistencia, correspondencia final con cita y efectos comerciales pendientes, O-25 intacta | — |
 | B-10 | R3 `SPA-CARE-EXP-08` («nunca se elimina») frente a R4 `SPA-SEC-RET-01` (procedimiento de eliminación) | No se resuelve en silencio: BL-03 | 1 vs legal |
 | B-11 | Los borradores dicen «ninguna regla está aprobada» aunque `O-25` y `O-15` lo estén después | Las reglas afectadas se marcan con su aprobación (§8, §11, §12, §20); los cuerpos históricos se preservan y sus entradas remiten al contrato | 1 |
 | B-12 | R1 §16 afirma que las exclusiones de V1.1 no están recuperadas | SPA-DEC-116 recuperó diez exclusiones expresas HX-01..10; las alternativas previas incompatibles dejan de ser candidatas | — |
@@ -1444,6 +1699,7 @@ Sección principal del contrato donde se consolida cada regla, invariante, riesg
 |---|---|
 | §1, §2 | `SPA-AL-01` |
 | §1, §6 | `SPA-AL-02` |
+| §8.5, §12, §24, §30 | `SPA-ARQ-01` (REG §12; modelo conceptual aprobado) |
 | §2, §3, §7.1, §23, §28.4, §30 | `SPA-DEC-115`, `SPA-DEC-116` (evidencia histórica recuperada REG §9/10) |
 | §4, §15 | `SPA-INV-10` |
 | §5 | `SPA-AR-01`, `SPA-CARE-EXP-01`, `SPA-INV-01`, `SPA-SEC-INV-11`, `SPA-CARE-EXP-09`, `SPA-SEC-R-07` |
@@ -1559,7 +1815,7 @@ separación de permisos de Spa, Empleados y Access (SPA-SG-01); la matriz de con
 
 Complementa §28: aquí están los enunciados para no consultar borradores al entender el comportamiento previsto. **Son propuestas de verificación, no pruebas ejecutadas ni aprobaciones.** Se conserva el identificador y se distingue la expansión de sufijos de R3. Una condición dependiente de O-xx queda condicionada a su resolución; ninguna prueba convierte una propuesta en requisito aprobado.
 
-Lectura actual: donde una fuente decía sesión programada se aplica O-25 (cita); ninguna ausencia crea sesión clínica. O-15 fija creación explícita y transacción separada. Cualquier criterio histórico de no eliminación está condicionado a O-05/C-02; no lo resuelve este catálogo. Los 13 casos SPA-AC de §28.3 son adicionales.
+Lectura actual: SPA-ARQ-05 §11 actualiza los efectos comerciales de los escenarios históricos sin alterar su literalidad; ausencia sin descuento/penalización automática, cancelación sin reversión automática y cupos programados sin consumo. Donde una fuente decía sesión programada se aplica O-25 (cita); ninguna ausencia crea sesión clínica. O-15 fija creación explícita y transacción separada. Cualquier criterio histórico de no eliminación está condicionado a O-05/C-02; no lo resuelve este catálogo. Los 13 casos SPA-AC de §28.3 son adicionales.
 
 | Identificador | Escenario preservado | Procedencia | Literalidad |
 |---|---|---|---|
@@ -1764,7 +2020,7 @@ Distingue los conceptos que los documentos usan de forma entrelazada. **Todas la
 | G-11 | **Sesión programada** | Sesión prevista dentro de un plan o paquete que aún no se realiza. **Alternativa A (APROBADA por `O-25`, 2026-11-18):** no es entidad propia, es una cita vinculada al plan o contrato. ~~Alternativa B: entidad propia con estado~~ (no aprobada). | La sesión realizada | Spa | `SPA-AT-06`, `SPA-OPS-AGE-10` | **A (aprobada por `O-25`)**; políticas de saldo abiertas (O-13) |
 | G-12 | **Atención** | El hecho de prestar un procedimiento a un cliente en un momento determinado. Se documenta mediante una sesión realizada. | La cita (programación) ni la sesión (registro) | Spa | `SPA-OPS-AGE-10`, `SPA-AT-06` | T |
 | G-13 | **Sesión realizada** | Registro documentado de una atención efectivamente prestada (fecha, procedimiento, profesional, observaciones, reacciones, evolución). No se registra como realizada por haber llegado la fecha. | La sesión programada ni la consumida | Spa | `SPA-AT-02`, `SPA-AT-06`, `SPA-AT-07` | F + T |
-| G-14 | **Sesión consumida** | Sesión que descuenta saldo de un paquete (movimiento de consumo del libro). **No equivale a «realizada»:** si una ausencia consume o no es una pregunta pendiente. | La sesión realizada | Spa (libro del contrato) | `SPA-OPS-PKG-01`, §4.4 de R2 | T + P; propuesta de R2 (O-13) |
+| G-14 | **Sesión consumida** | Sesión que descuenta saldo de un paquete (movimiento de consumo del libro). **No equivale a «realizada»:** ausencia sin descuento automático ni penalización comercial automática V1.1 conforme SPA-ARQ-05 §11.2 regla 5. | La sesión realizada | Spa (libro del contrato) | `SPA-OPS-PKG-01`, §4.4 de R2 | T + P; propuesta de R2 (O-13) |
 | G-15 | **Consentimiento** | Autorización registrada, con tipo (procedimiento, fotografías de seguimiento, publicación promocional, uso académico pendiente), versión del texto, decisión, fecha y evidencia. Cada tipo es independiente. | Una firma sola ni una fotografía | Spa | `SPA-CN-01` a `CN-06`, `SPA-CARE-CNS-01` | F + T |
 
 ### 2.1 Relaciones entre conceptos (propuesta)
