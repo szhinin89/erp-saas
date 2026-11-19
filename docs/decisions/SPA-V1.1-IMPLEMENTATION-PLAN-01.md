@@ -76,3 +76,228 @@ ADR §5.10–5.15 concentra una opción técnica preferente por AT-01..12, contr
 | F8 | Implementaciones previas autorizadas/gates PASS y evidencia técnica/operativa real, no sustituida por este diseño. |
 
 Todos los estados siguen **PENDING / NO AUTORIZADA**, ADR-051 **PROPOSED / NO APROBADO**. Próxima acción propuesta: revisión conjunta de la selección y autorización especial acotada de C-01; validaciones externas y dependencia Empleados se tramitan por sus propios alcances. No se autoriza preparar código, modificar módulos protegidos o migraciones, ni cambiar STATUS/WORK_QUEUE en esta operación.
+
+## 7. Especificación operativa por fase
+
+**Estado: PROPUESTA DE EJECUCIÓN — NO AUTORIZADA.** Desarrolla la secuencia de §2 hasta el nivel necesario para que otro agente desarrolle cada fase sin repetir la planificación. No cambia fases, decisiones aprobadas ni exclusiones. Cada fase conserva **PENDING / NO AUTORIZADA** y exige autorización expresa con su lista exacta de archivos (§1). Comportamiento: [contrato §31](SPA-V1.1-CONTRACT-SPEC-01.md#31-especificación-operativa-por-área-funcional) y [§23.4](SPA-V1.1-CONTRACT-SPEC-01.md#234-especificación-operativa-de-las-19-fichas-selección-técnica-recomendada); modelo, API y algoritmos: [ADR §5.16–5.26](ADR-051-spa-v1.1-architecture.md#516--526-diseño-técnico-implementable-selección-recomendada-spa-sel). Condiciones externas `COND-nn`: [contrato §31.15](SPA-V1.1-CONTRACT-SPEC-01.md#3115-condiciones-externas-y-protegidas-no-cumplidas). **Las rutas de archivos son candidatas, no existen y no deben presentarse como existentes**; raíces candidatas: `backend/src/ERP.Domain/Modules/Spa/`, `backend/src/ERP.Application/Modules/Spa/UseCases/`, `backend/src/ERP.Infrastructure/Persistence/Spa/`, `backend/src/ERP.API/Controllers/Spa/Spa<Área>Controller.cs`, `frontend/src/modules/spa/`. Todo cambio de esquema se integra en la baseline única (AT-12) con autorización separada.
+
+### 7.1 Entregas internas y orden de construcción (resolución de dependencias circulares)
+
+Las fases conservan su numeración y alcance; las entregas internas permiten construir un subalcance antes de completar la fase que lo contiene, sin alterar funcionalidades aprobadas.
+
+| Entrega | Contenido | Fase madre | Requiere antes | Qué resuelve |
+|---|---|---|---|---|
+| F1.a | Adaptador consumidor de `IEmployeeDirectory` + doble de pruebas | F1 | COND-02 para uso real | Profesional/registrador separados |
+| F1.b | `SpaPermissions` candidatas, clasificación clínica y `ISpaClinicalAccessGuard` | F1 | COND-01 (autorización especial) para activar | Admin sin acceso ordinario |
+| F1.c | `CareAccessAttempt`/`CareAccessLog` y flujo durable previo a entrega | F1 | F1.b | Auditoría de lecturas |
+| F1.d | `ICareFileStore` cifrado sobre `IFileStorage` | F1 | COND-09 para datos reales | Archivos privados |
+| F2.a | `CareRecord`, antecedentes, alertas | F2 | F1.b–c | Expediente único |
+| F2.b | Valoración facial | F2 | F2.a | — |
+| F2.c | Valoración corporal y medidas | F2 | F2.a, COND-05 | Precisión |
+| F4.a | Consentimientos (textos, versiones, registro, firma, retiro) | F4 | F1.d, F2.a | **Evita el ciclo F3↔F4**: el consentimiento existe antes de habilitar atenciones |
+| F3.a | Perfiles de servicio y procedimientos | F3 | F1.a | Servicios antes de agendar |
+| F3.b | Planes y prestaciones | F3 | F2.a, F3.a | — |
+| F5.a | Horarios, excepciones, bloqueos, traslados y búsqueda de disponibilidad | F5 | F1.a, F3.a | Motor antes de pantallas clínicas |
+| F5.b | Reserva de visitas/citas, ocupación, exclusión GiST, contrato de aplicación `IPackageCommitmentService` **declarado sin implementación**: la reserva vinculada a paquete responde `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` hasta F6.c; la reserva independiente funciona sin él | F5 | F5.a | **Evita el ciclo F5↔F6** sin simular derechos: no existe reserva con paquete antes de F6.c |
+| F3.c | Sesiones (borrador, finalizar, interrumpir, corregir) con exigencia de consentimiento; **`start` se habilita al entregar F5.c** (cita obligatoria mientras O-10 siga abierta) y hasta entonces responde `SPA_APPOINTMENT_REQUIRED` | F3 | F4.a, F2.a, F3.b | Atención solo con consentimiento válido y cita; ninguna sesión se opera sin esas capacidades |
+| F5.c | Ciclo de la cita: llegada, reprogramación, cancelación, ausencia, inicio de atención (habilita `start` de F3.c), cierre administrativo | F5 | F5.b, F3.c | Vínculo agenda–clínica |
+| F5.d | Lista de espera | F5 | F5.a | — |
+| F4.b | Fotografías | F4 | F1.d, F4.a, F3.c (fotos de sesión) | Fotos de valoración pueden salir tras F2 |
+| F6.a | Verificación/implementación autorizada de lectores comerciales | F6 | COND-03 | Lecturas oficiales |
+| F6.b | Definiciones y contrato desde factura | F6 | F6.a | O-15 |
+| F6.c | Libro, lotes, compromisos; aporta la implementación real de `IPackageCommitmentService` (comprobación de vigencia, servicio y cupo) y habilita la reserva vinculada; las reglas de reserva de F5.b no cambian | F6 | F6.b, F5.b | Cupo sin sobreprogramar |
+| F6.d | Ampliación, sustitución, compensación, ajuste, transferencia | F6 | F6.c; COND-07 para sustitución/transferencia | — |
+| F6.e | Vista comercial por prestación | F6 | F6.a, F3.b | §10.2 regla 10 |
+| F7.a–c | Panel, reportes R1–R7, revisión responsive | F7 | F2–F6 según dato | — |
+| F8 | Recorridos E2E y cierre | F8 | F1–F7 | — |
+
+Secuencia lineal sugerida: F0 → F1.a–d → F2.a → F4.a → F3.a → F5.a → F2.b → F3.b → F5.b → F3.c → F5.c → F5.d → F4.b → F2.c (cuando COND-05) → F6.a–e → F7 → F8. El orden es una propuesta; cada entrega se autoriza por separado.
+
+### 7.2 SPA-F0 — Arquitectura y contratos
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Obtener la aprobación técnica y los gates que permitan autorizar F1; dejar verificadas las dependencias reales |
+| 2 Funcionalidades | Ninguna de producto. Decisión sobre ADR-051, verificación de contratos propietarios (BP, Items/Pricing, Ventas, CxC, `ICompanyClock`, `IUnitOfWork`, `IFileStorage`, `IAuditService`), decisión sobre lectores comerciales, lista exacta de archivos de F1 |
+| 3 Entidades y casos de uso | Ninguno implementado; confirma el modelo ADR §5.16 y los casos de uso §5.17 |
+| 4 Backend y API | Ninguno |
+| 5 Pantallas y frontend | Ninguno |
+| 6 Integraciones | Verificar con los propietarios si `GetSalesInvoiceByIdQuery` basta (COND-03); estado de EMP-E1..E6b (COND-02) |
+| 7 Dependencias | Autorización de preparación documental/lectura |
+| 8 Seguridad | Presentar la solicitud de autorización especial C-01 con el impacto exacto del ADR §5.13 |
+| 9 Pruebas unitarias | No aplica |
+| 10 Pruebas de integración | No aplica |
+| 11 E2E | No aplica |
+| 12 Escenarios negativos | Verificación documental: ninguna propuesta modifica FROZEN/LOCKED/CLOSED sin su gate; sin contradicciones contrato–ADR–plan–registro |
+| 13 Criterios de salida | (a) decisión expresa del propietario sobre ADR-051 con reservas registradas; (b) lista exacta de rutas y objetos de esquema de F1; (c) respuesta a COND-01 (autorizada o diferida) y COND-03; (d) STATUS/WORK_QUEUE actualizados por el propietario; (e) guardrail documental y `git diff --check` en verde |
+| 14 Fuera | Código, migraciones, Empleados, cambios de módulos protegidos |
+| 15 Autorizaciones / validaciones | COND-13; COND-01 (solicitud) |
+
+### 7.3 SPA-F1 — Empleados y base segura
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Disponer de identidad profesional oficial, autorización clínica, auditoría durable y almacenamiento privado antes de cualquier dato clínico |
+| 2 Funcionalidades | F1.a–F1.d; consulta de accesos (Pantalla 14, pestaña Accesos); sin contenido clínico |
+| 3 Entidades y casos de uso | `CareAccessAttempt`, `CareAccessLog`, `spa_care_files`, `ISpaClinicalAccessGuard`, `ICareFileStore`; consulta `ListAccessLog`; (concesiones `spa_access_grants` solo si COND-01 autoriza) |
+| 4 Backend y API | Tablas/configuración `spa_care_access_logs`, `spa_care_files`; `GET /spa/audit/access-log`; registro de códigos `SPA_ACCESS_DENIED`, `SPA_FILE_*`; **ningún endpoint clínico** |
+| 5 Pantallas y frontend | Shell `/spa` con entradas condicionadas por permiso y Pantalla 14 (Accesos) |
+| 6 Integraciones | `IEmployeeDirectory` (EMP-E6b), `IAuditService`/`EfAuditWriter`, `IFileStorage`, Identity/Access (solo lectura hasta COND-01) |
+| 7 Dependencias | F0; EMP-E6b implementado y probado bajo el plan de Empleados; COND-01 para activar la clasificación clínica real |
+| 8 Reglas de seguridad | Admin sin acceso ordinario; backend/recurso decide; sin autoautorización; excepción temporal por otra persona; auditoría durable antes de entregar; denegación segura; `AesGcm` con DEK por archivo y KEK custodiada aparte; ruta nunca arbitraria; sin `DeleteAsync` |
+| 9 Pruebas unitarias | Decisiones del guard (permitido/denegado/excepción vigente/vencida/autoaprobación); cifrado ida y vuelta, detección de manipulación (tag/AAD), contención de rutas; validación de tamaño/tipo |
+| 10 Pruebas de integración | PostgreSQL real: intento + log confirmados **antes** de devolver el DTO; denegación persistida en transacción separada; fallo de log → no entrega; aislamiento por empresa; almacenamiento aislado con fallo de clave; arquitectura: sin `DeleteAsync` sobre archivos clínicos, claves clínicas clasificadas |
+| 11 E2E | Intento de acceso de Admin sin concesión → 403 y registro; usuario con permiso accede y queda registro |
+| 12 Escenarios negativos | API directa, MediatR, descarga, reportes, menú, cambio de empresa, operador global, autoescalamiento de perfiles/memberships, ID de otra empresa → 404 |
+| 13 Criterios de salida | Guard y log verificados con PostgreSQL real; archivos cifrados verificados; pruebas negativas de COND-01 en verde **o** funcionalidad clínica explícitamente desactivada; gate PASS del propietario |
+| 14 Fuera | Contenido clínico, sistema nuevo de respaldos, cambios a `IFileStorage`/`LocalFileStorage`/scripts, Employee propio |
+| 15 Autorizaciones / validaciones | COND-01, COND-02, COND-09, COND-10, COND-06 (diseño), COND-13 |
+
+### 7.4 SPA-F2 — Expediente y valoraciones
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Expediente único por cliente y empresa con antecedentes, alertas y valoraciones faciales/corporales versionadas |
+| 2 Funcionalidades | Contrato §31.2, §31.8, §31.9; seguimiento parcial (Pantalla 10: valoraciones y medidas) |
+| 3 Entidades y casos de uso | `CareRecord`, `HistoryRevision/Answer/Category`, `CareAlert`, `Assessment`, `AssessmentRevision`, `FacialFindings`, `BodyMeasurementSet`; OpenCareRecord, SetCareRecordActive, ReviseMedicalHistory, Add/DeactivateCareAlert, SaveAssessmentDraft, RegisterAssessment, ReviseAssessment, CompareMeasurements, consultas |
+| 4 Backend y API | Rutas ADR §5.18 de expedientes y valoraciones; unicidad `(tenant, company, BP)`; revisiones con puntero vigente; lectura detallada audita antes de responder |
+| 5 Pantallas y frontend | Pantallas 05, 06, 07, 10 (parcial), módulo `frontend/src/modules/spa/` con pestañas del expediente |
+| 6 Integraciones | `GetBusinessPartnerQuery`/`...RolesQuery`, directorio, guard y log de F1 |
+| 7 Dependencias | F1 completa (guard, log; archivos no requeridos); COND-05 para F2.c; COND-12 solo si se decide capturar nacimiento/emergencia |
+| 8 Reglas de seguridad | Todo acceso clínico por guard; sin clínica en listados; corrección con motivo/autor; versiones sustituidas restringidas; sin datos clínicos reales hasta COND-10 |
+| 9 Pruebas unitarias | Validadores (fototipo, categorías, motivo de corrección), transiciones Borrador→Registrada, diferencias solo con valores comparables, nulo ≠ cero |
+| 10 Pruebas de integración | PostgreSQL real: apertura concurrente → un solo expediente; revisión inmutable; aislamiento entre empresas; `xmin` en borrador; auditoría durable de lectura |
+| 11 E2E | Abrir expediente → antecedentes → valoración facial incompleta (borrador) → registrar → corregir |
+| 12 Escenarios negativos | BP inactivo/sin rol Customer; cliente de otra empresa; Admin sin concesión; corregir sin motivo; fototipo 7; valor corporal negativo; persistir medidas sin gate (rechazado por bandera) |
+| 13 Criterios de salida | `SPA-AC-OP-01.x`, `08.x`, `09.x` y `SPA-AC-UI-05/06/07` en verde; AC-ARQ06-01/05/08 y ARQ07-01/02/03/09/10; F2.c solo con COND-05 resuelta |
+| 14 Fuera | Fecha de nacimiento/contacto de emergencia (O-06), numeración de ficha (O-19), gráficas, diagnóstico automático, ampliar BP |
+| 15 Autorizaciones / validaciones | COND-05, COND-06 (corrección/conservación), COND-12, COND-10 |
+
+### 7.5 SPA-F3 — Servicios, tratamientos y sesiones
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Configurar servicios, planificar tratamientos y documentar sesiones con el ciclo clínico aprobado |
+| 2 Funcionalidades | Contrato §31.4, §31.5, §31.6 (y registro documental de productos/equipos, Pantalla 13) |
+| 3 Entidades y casos de uso | `SpaServiceProfile`, `Procedure`, vínculos, `TreatmentPlan`, `PlanProvision`, `ServiceProvision`, `ClinicalSession`, `ClinicalRevision`, `SessionMaterial`; casos ADR §5.17 «Servicios», «Tratamientos», «Sesiones» |
+| 4 Backend y API | Rutas `service-profiles`, `procedures`, `treatment-plans`, `sessions`; matriz de transición ADR §5.23; `StartSession` exige consentimiento válido (F4.a) y cita Programada (F5.c; sin cita no se habilita) |
+| 5 Pantallas y frontend | Pantallas 03, 08, 09, 10, 13; Lista→Editor en servicios; planes y sesiones como pestañas del expediente |
+| 6 Integraciones | `GetItemByIdQuery`, `IPricingResolver` (lectura), directorio, consentimientos (F4.a), vínculo de referencia al contrato (sin lógica de cupo) |
+| 7 Dependencias | F1, F2.a; F3.a necesita F1.a; F3.c necesita **F4.a**; vínculo a cita se completa en F5.c |
+| 8 Reglas de seguridad | Datos clínicos por guard; sesión con responsable y registrador separados; sin consumo ni factura por finalizar; correcciones como revisión |
+| 9 Pruebas unitarias | Matrices de transición; validación de perfil; reglas «borrador no consume», «interrumpida conserva parcial», «corrección no crea atención» |
+| 10 Pruebas de integración | PostgreSQL real: unicidad perfil/Item; `xmin` en borrador; inicio con/sin consentimiento; revisión numerada única; materiales sin movimiento de inventario (consulta de Kardex sin cambios) |
+| 11 E2E | Configurar servicio → plan → sesión borrador → iniciar (con consentimiento) → interrumpir → corregir; cerrar plan con pendientes |
+| 12 Escenarios negativos | Product como servicio; servicio inactivo; iniciar sin consentimiento; finalizar sin permiso; corregir sin motivo; editar sesión finalizada directamente; cierre de plan sin confirmación |
+| 13 Criterios de salida | `SPA-AC-OP-03.x`, `05.x`, `06.x`; AC-ARQ03-01..08; PT-15; plan sin contrato válido; ninguna sesión habilitada sin consentimiento aplicable |
+| 14 Fuera | Consumo comercial (F6), cita↔sesión completa (F5.c), Kardex automático, calendario de equipos, walk-in sin decisión O-10 |
+| 15 Autorizaciones / validaciones | COND-06 (versionado/conservación), COND-04 (consentimiento aplicable), COND-10 |
+
+### 7.6 SPA-F4 — Consentimientos y fotografías
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Registrar consentimientos con firma en pantalla por finalidad y conservar fotografías privadas comparables |
+| 2 Funcionalidades | Contrato §31.10 (F4.a) y §31.11 (F4.b) |
+| 3 Entidades y casos de uso | `ConsentDefinition/Version/Record/Withdrawal`, `CareFile`, `CarePhoto`, `PhotoComparison`; Upsert/Publish/Record/Withdraw consentimiento, UploadPhoto, OpenPhoto, DeactivatePhoto, CreatePhotoComparison |
+| 4 Backend y API | Rutas ADR §5.18 de consentimientos y fotografías; contenido por descarga autorizada con `no-store`; firma almacenada por `ICareFileStore` |
+| 5 Pantallas y frontend | Pantallas 11 y 12; lienzo de firma y visor/comparador como componentes nuevos justificados |
+| 6 Integraciones | `ICareFileStore`, guard/log (F1), expediente (F2), sesiones (F3.c, para fotos de sesión) |
+| 7 Dependencias | F4.a: F1.d, F2.a. F4.b: F4.a; fotos de sesión: F3.c; COND-09 antes de archivos reales |
+| 8 Reglas de seguridad | Archivo privado cifrado, id opaco, sin URL pública, auditoría durable previa a servir, no-publicación automática, finalidades independientes, sin uso académico |
+| 9 Pruebas unitarias | Una versión vigente por definición; hash del texto; independencia de finalidades; firma obligatoria si Otorga; validación tamaño/tipo |
+| 10 Pruebas de integración | Almacenamiento aislado: cifrado en disco, descarga solo autorizada, fallo de log → no entrega, otra empresa → 404; PostgreSQL real: unicidad de versión vigente, retiro |
+| 11 E2E | Presentar consentimiento → firmar → atención habilitada → subir foto → comparar → desactivar |
+| 12 Escenarios negativos | Subir foto sin consentimiento de seguimiento; firma vacía; versión inexistente; retirar dos veces; descarga con ruta manipulada; menor de edad (no soportado, COND-04) |
+| 13 Criterios de salida | `SPA-AC-OP-10.x`, `11.x`; AC-ARQ07-04..06; ningún dato real hasta COND-04/06/09/10 |
+| 14 Fuera | Uso académico, representante/menores, validez jurídica certificada, publicación/exportación automática, backups nuevos |
+| 15 Autorizaciones / validaciones | COND-04, COND-06, COND-09, COND-10 |
+
+### 7.7 SPA-F5 — Agenda, visitas y lista de espera
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Un motor único de disponibilidad para búsqueda y reserva, con visitas múltiples y concurrencia segura |
+| 2 Funcionalidades | Contrato §31.3 (agenda), §31.7; Pantallas 01, 02, 16, 17, 18 |
+| 3 Entidades y casos de uso | Reglas de horario, excepciones, bloqueos, traslados, `Visit`, `Appointment`, `ServiceProvision`, ocupaciones, cambios, lista de espera; casos ADR §5.17 «Disponibilidad», «Agenda», «Lista de espera» |
+| 4 Backend y API | Rutas ADR §5.18; algoritmo ADR §5.20 (locks ordenados, revalidación, exclusión GiST, rollback de reprogramación); `btree_gist` en la baseline |
+| 5 Pantallas y frontend | Calendario día/semana, drawers de cita/visita, búsqueda, administración de horarios, lista de espera |
+| 6 Integraciones | Directorio, `ICompanyClock`, Branch, Items/perfil, `IPackageCommitmentService` (sin implementación hasta F6.c: error explícito, no simulación), sesiones (F5.c) |
+| 7 Dependencias | F1.a, F3.a; F5.c necesita F3.c; paquetes opcionales hasta F6 |
+| 8 Reglas de seguridad | Agenda sin clínica; permisos operativos; ocupación y cambios auditados |
+| 9 Pruebas unitarias | Cálculo de ventanas (horario ∩ sucursal − descansos ± excepciones − bloqueos), preparación, traslado: misma sucursal sin traslado / sucursal distinta configurado, insuficiente y no configurado (no se ofrece en búsqueda ni se acepta en reserva con la misma función), contigüidad `[)`, horas inexistentes/ambiguas, matriz de transición de cita |
+| 10 Pruebas de integración | **PostgreSQL real obligatorio:** reservas simultáneas, orden de locks sin deadlock, exclusión GiST sin lock, rollback atómico de reprogramación, visita multiprofesional atómica, cierre administrativo libera solo lo futuro |
+| 11 E2E | Buscar → elegir → reservar → llegada → iniciar atención → cierre; reprogramar con conflicto; lista de espera → reserva |
+| 12 Escenarios negativos | Profesional no asignado/inactivo; fuera de horario; solape; traslado sin configurar; servicio inactivo; ausencia sin penalización; cancelar un bloque no cancela los demás; versión obsoleta → 409; reserva con `packageContractId` antes de F6.c → `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` sin crear cita, compromiso ni derecho; reserva independiente sin paquete → válida |
+| 13 Criterios de salida | `SPA-AC-OP-07.x`, `02.x`; SPA-AC-ARQ04-01..12; PT-14, AC-25-01..07; H-01/02/07/08/12 |
+| 14 Fuera | Cabinas/equipos, recordatorios, reservas públicas, reasignación automática, estados nuevos, penalización por ausencia |
+| 15 Autorizaciones / validaciones | COND-02; verificación PostgreSQL autorizada; configuración de traslados la define el negocio (sin predeterminados) |
+
+### 7.8 SPA-F6 — Paquetes e integración comercial
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Derechos por servicio con libro trazable y contrato explícito desde factura, sin duplicar Ventas/CxC |
+| 2 Funcionalidades | Contrato §31.12, §31.13; Pantalla 04 y vista comercial de Pantalla 08 |
+| 3 Entidades y casos de uso | Definiciones, `PackageContract`, lotes, movimientos, compromisos, asignaciones; DefinePackage, CreateContractFromInvoice, ResolveCommitment, Compensate, Extend, Substitute, Transfer, Adjust, consultas |
+| 4 Backend y API | Rutas ADR §5.18 de paquetes; lock contrato/servicio; `clientRequestId` + índice único; libro sin UPDATE/DELETE |
+| 5 Pantallas y frontend | Pantalla 04 (definiciones, contratos, libro, asistente desde factura) |
+| 6 Integraciones | `ISalesEntitlementReader` o `GetSalesInvoiceByIdQuery`, `GetReceivableByInvoiceQuery`, `IReceivableCollectionReader`, Items; agenda (implementación real de `IPackageCommitmentService` que habilita la reserva vinculada de F5.b) |
+| 7 Dependencias | F1, F3, F5; F4 según consentimiento; COND-03 antes de F6.b |
+| 8 Reglas de seguridad | Permisos de Ventas/Finance del consumidor; sin `finance.collections.reverse`; scope de sucursal original; sin consumo entre empresas |
+| 9 Pruebas unitarias | Saldo = derechos − consumos netos − compromisos; idempotencia; sobrecompensación; vigencia por lote; equivalencia de sustitución |
+| 10 Pruebas de integración | PostgreSQL real: contrato único por línea, programación concurrente sin exceder el cupo, consumo idempotente, fallo de Spa sin efecto en la factura, compromisos Held→Consumed/Released |
+| 11 E2E | Factura autorizada → contrato → reserva vinculada → atención → resolución → consumo → compensación |
+| 12 Escenarios negativos | Factura no autorizada; cliente distinto; línea ya vinculada; vencido; sin saldo; sustitución sin equivalencia; ampliación sin documento; transferencia sin respaldo (bloqueada); cuota pendiente sin suspensión automática |
+| 13 Criterios de salida | `SPA-AC-OP-12.x`, `13.x`; SPA-AC-ARQ05-01..10, SPA-AC-ARQ08-01..08; AC-15-01..06; PT-16/17 |
+| 14 Fuera | Facturas/cobros/CxC/asientos propios, evento creador, saldo monetario, Anticipos (O-14), Kardex automático |
+| 15 Autorizaciones / validaciones | COND-03, COND-07, COND-08, COND-11 |
+
+### 7.9 SPA-F7 — Operación y reportes
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Presentar la jornada y el seguimiento operativo con consultas básicas |
+| 2 Funcionalidades | Contrato §31.14; Pantallas 15 y 19 |
+| 3 Entidades y casos de uso | GetPanel, ListFollowUp, GetOperationalReport R1–R7; sin entidades nuevas |
+| 4 Backend y API | `GET /spa/panel`, `/spa/follow-up`, `/spa/reports/{kind}` sobre agregados propios |
+| 5 Pantallas y frontend | Panel y reportes; revisión responsive de todo el módulo (computadora/tablet/celular) |
+| 6 Integraciones | Agenda, sesiones, paquetes, lecturas comerciales |
+| 7 Dependencias | F2–F6 según cada consulta |
+| 8 Reglas de seguridad | Sin clínica; permiso del dato de origen; sin exportación |
+| 9 Pruebas unitarias | Cálculo de conteos y filtros; omisión por permiso |
+| 10 Pruebas de integración | Conteos = datos de origen; aislamiento entre empresas |
+| 11 E2E | Recorrido del panel a cada proceso; responsive en tres anchos |
+| 12 Escenarios negativos | Usuario sin permiso; empresa distinta; filtros extremos; sin datos |
+| 13 Criterios de salida | `SPA-AC-OP-14.x`, `SPA-AC-UI-15/19`; H-11..15; sin gráficos ni métricas inventadas |
+| 14 Fuera | Dashboard analítico, exportaciones, indicadores calculados no aprobados |
+| 15 Autorizaciones / validaciones | Ninguna adicional |
+
+### 7.10 SPA-F8 — Pruebas integrales y sincronización documental
+
+| Elemento | Especificación |
+|---|---|
+| 1 Objetivo | Validar el alcance aprobado completo y preparar el cierre |
+| 2 Funcionalidades | Recorridos recepción → disponibilidad → visita → expediente/valoración → consentimiento → sesión → evolución; venta → contrato → movimientos; panel/espera/reportes; exclusiones |
+| 3 Entidades y casos de uso | Ninguna nueva |
+| 4 Backend y API | Correcciones focales surgidas de las pruebas, solo con autorización |
+| 5 Pantallas y frontend | Revisión funcional/responsive de las 19 pantallas |
+| 6 Integraciones | Todas las anteriores |
+| 7 Dependencias | F1–F7 con gates PASS |
+| 8 Reglas de seguridad | Pruebas negativas completas de COND-01 y de aislamiento; verificación de las diez exclusiones |
+| 9 Pruebas unitarias | Regresión de las de fases previas relacionadas con cualquier corrección |
+| 10 Pruebas de integración | PostgreSQL real focal: concurrencia, unicidad, aislamiento, idempotencia; almacenamiento aislado |
+| 11 E2E | Los recorridos de «2 Funcionalidades» en navegador real, con denegaciones (Admin sin concesión, otra empresa) |
+| 12 Escenarios negativos | Catálogo SPA-AC-ARQ04..08, TEC02/03 y los `SPA-AC-OP`/`UI` completos |
+| 13 Criterios de salida | Evidencia de capacidades y exclusiones; guardrails documentales y de arquitectura; SSOT de Spa creada **solo** con lo implementado y probado; CLOSED únicamente tras gate, staging y commit del propietario |
+| 14 Fuera | Nuevas funcionalidades, fases no autorizadas |
+| 15 Autorizaciones / validaciones | COND-04, COND-06, COND-08, COND-09, COND-10 deben estar resueltas para operar datos reales; sin ellas el módulo solo puede ejecutarse con datos de prueba |
+
+### 7.11 Qué debe verificar cualquier agente antes de empezar una fase
+
+1. Autorización expresa de la fase y lista exacta de rutas (existentes, nuevas, protegidas).
+2. Que las rutas candidatas de este plan existan o no; ninguna se presenta como existente sin comprobarlo.
+3. Estado de las `COND-nn` aplicables a la fase (§7.2–7.10 fila 15) y que no se ejecuta lo «prohibido mientras esté pendiente» (contrato §31.15).
+4. Lectura previa de `CLAUDE.md`, STATUS, FEATURES, WORK_QUEUE y ADR-040/041; auditoría de reutilización de UI declarada.
+5. Estrategia de esquema AT-12 (baseline única, objetos raw preservados) con autorización separada.
+6. PostgreSQL desechable disponible para las pruebas de concurrencia; prohibido ejecutar la suite completa.

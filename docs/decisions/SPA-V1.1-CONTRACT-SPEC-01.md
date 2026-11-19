@@ -898,7 +898,7 @@ Integración oficial SPA-ARQ-08 §4.2 reglas 7/8, sujeta a SPA-ARQ-06: sin usuar
 
 ### 21.2 Catálogo unificado de permisos candidatos (30)
 
-Ninguno existe en el Kernel ni está aprobado. Una operación tiene un solo nombre; los seis nombres repetidos entre borradores tienen un significado único (`C-09` cerrado en nombres).
+Ninguno existe en el Kernel ni está aprobado. **Catálogo operativo ampliado recomendado** (cubre los nombres que esta tabla deja pendientes —consultar sesiones/valoraciones/consentimientos, planes, visitas, lista de espera, panel, reportes, desactivar fotografías—): ADR §5.21 (SPA-SEL-06), también candidato y sin aprobación. Una operación tiene un solo nombre; los seis nombres repetidos entre borradores tienen un significado único (`C-09` cerrado en nombres).
 
 | Familia | Permisos candidatos | Sección |
 |---|---|---|
@@ -996,7 +996,7 @@ Accesos sensibles registrados con persistencia durable comprobada **antes de ent
 
 ## 23. Pantallas y experiencia de usuario
 
-**Estado de la sección:** capacidades y responsive APROBADOS por SPA-DEC-115/116; composición visual exacta pendiente (`SPA-UX-01`), sin modificar `MENU_MAP.md`. **Implementable hoy:** no.
+**Estado de la sección:** capacidades y responsive APROBADOS por SPA-DEC-115/116; composición visual resuelta con patrones oficiales en §23.4 como selección técnica recomendada (`SPA-UX-01`; no es aprobación del propietario), sin modificar `MENU_MAP.md`. **Implementable hoy:** no.
 
 | Superficie funcional incluida (presentación técnica por definir) | Función | Sección |
 |---|---|---|
@@ -1406,9 +1406,327 @@ Procedencia: SPA-DEC-116 gestión operativa; encargo §4.2.
 | Validaciones y errores | Scope, finalidad y auditoría; fórmulas/filtros/errores de reportes por definir. |
 | Criterios de aceptación | SPA-AC-H-13: consultas operativas sin inventar métricas, sin analítica adicional y sin fuga de datos entre empresas. |
 
+### 23.4 Especificación operativa de las 19 fichas (selección técnica recomendada)
+
+**Estado:** completa las 19 fichas **sin modificarlas**: sus textos previos y sus aprobaciones permanecen y esta sección resuelve lo que quedaba como «pendiente de diseño» con patrones existentes del Dashboard ERP ZH. **Es selección técnica recomendada (SPA-SEL-04, ADR §5.19), no aprobación del propietario**; ningún elemento de aquí cambia un alcance aprobado, añade una funcionalidad excluida (§3.1.1) ni crea una regla de negocio nueva (cuando un valor de negocio no está aprobado se dice «sin valor predeterminado»). Rutas y componentes son candidatos hasta la autorización de la fase (plan §7). Errores: catálogo §31.16. Aceptación: IDs `SPA-AC-UI-nn` candidatos; son pruebas futuras, no ejecutadas.
+
+**Alcance de las preferencias visuales:** distribución, orden de pestañas, rejilla de 5 minutos de la agenda, tarjetas del panel y demás detalles de presentación son **selecciones técnicas recomendadas por el agente**, no obligaciones ni aprobaciones del propietario; solo los datos, acciones, reglas y alcance ya aprobados son vinculantes. Las 19 pantallas cubren únicamente capacidades de SPA-DEC-116.
+
+**Convenciones comunes a las 19 pantallas** (se citan como «CC»):
+- **Estructura:** viven dentro del shell oficial (`AppLayout` → `<Outlet />`), una sola `H1`, `document.title` sin datos de personas; patrón Lista→Editor (`ConfigTabsLayout`/`items-catalog.css`) en configuración; `ZHTabBar` en contenedores con varias secciones; `ZHDataTable` para tablas; `ZHBtn`/`ZHField`/`ZhDecimalInput`/`CustomerPicker`/`ItemLookupPicker` para entrada; `ZHModal`/`ZHConfirmModal`/`ZHPromptModal`/`ZHDrawer` para diálogos (motivos obligatorios con `ZHPromptModal`).
+- **Formularios:** `useForm` + `zodResolver` + `FormProvider` + `applyServerErrors`; validación en cliente es ayuda, la API decide; campos clínicos opcionales salvo los marcados; fechas de negocio `YYYY-MM-DD`; instantes UTC «Z» mostrados en la zona de empresa con los helpers oficiales; nunca `toLocaleString` en números.
+- **Estados de UI:** `cargando` (indicador de carga existente), `vacío` (mensaje + acción primaria permitida), `error` (envelope normalizado + reintentar), `sin permiso` (ruta protegida por `RouteAccessGuard`; la API devuelve 403/404 sin revelar), `conflicto` (409 → mensaje «el dato cambió», recargar sin perder lo escrito), `guardando` (botón deshabilitado, `clientRequestId` estable por intento).
+- **Responsive (SPA-DEC-116 incluye computadora, tablet y celular):** ≥ breakpoint de escritorio vigente de `zh-ui.css`: rejilla completa; tablet: drawers a ancho contraíble y tablas con desplazamiento interno; celular: una columna, tablas `ZHDataTable` con scroll interno, diálogos `ZHModal` a pantalla completa, acciones principales fijas al pie; **nunca desbordamiento horizontal de página**; sin breakpoints nuevos. Excepciones por pantalla se indican.
+- **Privacidad:** agenda, listados, notificaciones y paneles no muestran datos clínicos ni fotos; los datos sensibles llevan indicador visual «Dato sensible»; las pestañas clínicas solo se montan si el permiso lo permite y cada apertura genera el intento de acceso auditado (§22.4).
+- **Mensajes:** únicamente el sistema de mensajes visuales oficial (`message.*`), sin avisos propios.
+
+#### 23.4.01 Pantalla 01 — Agenda principal y cita
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Organizar las citas del día/semana y localizar disponibilidad. |
+| Datos visibles | Rejilla día/semana por sucursal y profesional; bloque de cita: hora, cliente (nombre oficial), servicios, profesional, sucursal, estado (5), insignia «Reprogramada», insignia de paquete, insignia «llegó»; bloques de ausencia/bloqueo; sin clínica |
+| Campos editables | En el drawer de cita: servicios (`ItemLookupPicker` solo Service con perfil activo), profesional, hora, motivo (cancelar/reprogramar/ausencia), paquete vinculado (selector de contratos vigentes del cliente; **no se monta hasta entregar F6.c**, el backend rechaza el vínculo antes) |
+| Acciones y navegación | `Buscar disponibilidad` → Pantalla 16; seleccionar celda libre abre el drawer prellenado; `Reservar`, `Reprogramar`, `Cancelar`, `Marcar ausencia`, `Registrar llegada` (→ Pantalla 17), `Iniciar atención` (→ Pantalla 09), `Cierre administrativo`, `Ver historial`; filtros sucursal/profesional/fecha; ir a expediente (si tiene permiso clínico) |
+| Estados de UI | CC; conflicto 409 mantiene el drawer y recarga la disponibilidad; semana en celular = selector de día + lista por profesional |
+| Validaciones y errores | `SPA_APPOINTMENT_OVERLAP`, `SPA_PROFESSIONAL_UNAVAILABLE`, `SPA_OUTSIDE_BUSINESS_HOURS`, `SPA_TRAVEL_TIME_NOT_CONFIGURED`, `SPA_APPOINTMENT_INVALID_STATE`, `SPA_CONCURRENT_MODIFICATION`, `SPA_PACKAGE_NO_BALANCE`, `SPA_PACKAGE_EXPIRED`, `SPA_CLIENT_INACTIVE` |
+| Permisos | `spa.agenda.view/create/update/cancel/mark-absent`; iniciar atención/cierre: `spa.sessions.create/manage` |
+| Integraciones | `CustomerPicker` (BP), directorio de Empleados, Branch, Items, contratos de paquete |
+| Estados y transiciones | Cita: Programada, En atención, Atendida, Cancelada, Ausente (ADR §5.23; estados finales sin reversa); llegada y reprogramación son eventos con insignia, no estados; UI: drawer abierto/cerrado, guardando, conflicto. |
+| Responsive y recuperación | Celular: lista del día agrupada por profesional y selector de día en lugar de la semana; tableta: semana con desplazamiento interno. Recuperación: 409 recarga la disponibilidad sin perder lo escrito; error de red → reintentar con el mismo `clientRequestId`. |
+| Pruebas | `SPA-AC-UI-01`: sin permiso no aparecen acciones; conflicto 409 conserva los datos y no reserva; reprogramar muestra insignia e historial; PT-14, AC-25-01/07 |
+
+#### 23.4.02 Pantalla 02 — Horarios y disponibilidad
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Establecer franjas atendibles, descansos, excepciones, bloqueos y traslados por sucursal y profesional. |
+| Datos visibles | Pestañas: Profesionales (reglas semanales Work/Break por sucursal con vigencia), Sucursal (apertura/cierre semanal), Excepciones y bloqueos (por fecha local y por intervalo), Traslados (matriz sucursal origen→destino en minutos) |
+| Campos editables | Día ISO, hora inicio/fin (hora de pared de la empresa), vigencia desde/hasta, tipo (Trabajo/Descanso), motivo, fecha, tipo de excepción (Cerrado/Reemplazo), intervalo de bloqueo, minutos de traslado |
+| Acciones y navegación | Guardar reglas, crear/quitar excepción, crear/anular bloqueo, guardar traslado; «Citas por revisar» (listado de citas futuras afectadas) → Pantalla 01 |
+| Estados de UI | CC; muestra la zona horaria de la empresa en el encabezado; solape de reglas marcado en la fila |
+| Validaciones y errores | `SPA_SCHEDULE_OVERLAP`, `SPA_INVALID_DATETIME`; inicio < fin; el profesional debe estar asignado a la sucursal (directorio); sin valores predeterminados de horarios, descansos ni traslados |
+| Permisos | `spa.agenda.view` (lectura de horarios), `spa.availability.manage` |
+| Integraciones | Branch, `ICompanyClock`, directorio de Empleados |
+| Estados y transiciones | Reglas con vigencia; bloqueo Activo/Anulado; excepción por fecha; sin máquina de estados propia. |
+| Responsive y recuperación | Pestañas `ZHTabBar`; en celular cada regla se edita en un `ZHModal` a pantalla completa. Recuperación: solape → resaltar la fila afectada y conservar el formulario. |
+| Pruebas | `SPA-AC-UI-02`: guardar con solape se rechaza; un par de traslado sin configurar produce el aviso al reservar; PT-14 |
+
+#### 23.4.03 Pantalla 03 — Servicios y tratamientos
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Configurar las condiciones operativas del servicio comercial sin duplicar el catálogo. |
+| Datos visibles | Lista: Item Service (nombre/código oficial), estado del perfil, duración, preparación, sucursales, especialidades, procedimientos; precio/impuesto en solo lectura vía resolutor oficial |
+| Campos editables | Duración (min), preparación antes/después (min, opcional), sucursales (vacío = todas), especialidades (catálogo de Empleados), procedimientos vinculados y su orden, precauciones/contraindicaciones/preparación del procedimiento |
+| Acciones y navegación | Lista → Editor; `Configurar servicio` (elige Item Service sin perfil), `Activar/Desactivar`, `Crear procedimiento`; historial de cambios del perfil |
+| Estados de UI | CC; servicio inactivo se muestra atenuado; no se ofrece en agenda |
+| Validaciones y errores | `SPA_ITEM_NOT_SERVICE`, `SPA_SERVICE_INACTIVE`, `SPA_SERVICE_ALREADY_CONFIGURED`, duración > 0 |
+| Permisos | `spa.services.view/manage` |
+| Integraciones | Items/Pricing (lectura), Empleados (especialidades), Branch |
+| Estados y transiciones | Perfil: Activo ↔ Inactivo (nunca eliminar). |
+| Responsive y recuperación | Lista → Editor: en celular el editor ocupa toda la pantalla y la lista se oculta. Recuperación: validación de servidor mapeada a campos con `applyServerErrors`. |
+| Pruebas | `SPA-AC-UI-03`: Product rechazado; inactivo no aparece en búsqueda; PT-15 |
+
+#### 23.4.04 Pantalla 04 — Paquetes y contratos
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Definir paquetes y gestionar contratos, saldo y movimientos derivados de documentos oficiales. |
+| Datos visibles | Pestaña Definiciones (nombre, servicios y cantidades, vigencia o «sin vencimiento»); pestaña Contratos (cliente, factura/línea, vigencia, estado, saldos: contratadas/programadas/consumidas/disponibles por servicio, compromisos retenidos); detalle con libro de movimientos y lotes; estado de cobro leído de CxC (solo lectura) |
+| Campos editables | Definición: nombre, ítems (`ItemLookupPicker` Service) y cantidades enteras, vigencia (elección explícita: días o «sin vencimiento»); contrato: seleccionar factura autorizada del cliente y línea(s); ampliación/sustitución/transferencia/ajuste: servicio, cantidad, motivo, documento/línea de respaldo, destinatario |
+| Acciones y navegación | `Nueva definición`, `Crear contrato desde factura` (asistente: cliente → factura → líneas → confirmar), `Resolver compromiso` (consumir/liberar), `Compensar`, `Ampliar`, `Sustituir`, `Transferir` (bloqueada por COND-07), `Ajustar`, `Cancelar contrato`; enlace a la factura en Ventas |
+| Estados de UI | CC; `ZHConfirmModal` antes de cada movimiento; saldo se muestra como cantidades, nunca como dinero |
+| Validaciones y errores | `SPA_INVOICE_NOT_AUTHORIZED`, `SPA_INVOICE_CUSTOMER_MISMATCH`, `SPA_INVOICE_LINE_ALREADY_LINKED`, `SPA_PACKAGE_NO_BALANCE`, `SPA_PACKAGE_ALREADY_CONSUMED`, `SPA_PACKAGE_EXPIRED`, `SPA_PACKAGE_INACTIVE`, `SPA_SUBSTITUTION_NOT_EQUIVALENT`, `SPA_COMPENSATION_EXCEEDS_CONSUMED`; sin ampliaciones gratuitas |
+| Permisos | `spa.packages.view/manage/consume/adjust`; lectura comercial exige además el permiso de Ventas/CxC aplicable verificado en F6 |
+| Integraciones | `ISalesEntitlementReader` o `GetSalesInvoiceByIdQuery`, `GetReceivableByInvoiceQuery`, `IReceivableCollectionReader` (candidatos), Items |
+| Estados y transiciones | Contrato: Activo, Agotado/Vencido (derivados), Cancelado; compromiso: Retenido → Consumido o Liberado; definición editable con `xmin`. |
+| Responsive y recuperación | Asistente de creación en pasos de una columna; tablas con desplazamiento interno. Recuperación: reintento idempotente de cualquier movimiento; `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` antes de F6.c deja la reserva vinculada a paquete no disponible. |
+| Pruebas | `SPA-AC-UI-04`: contrato duplicado por línea rechazado; falla de Spa no afecta la factura; reintento con el mismo `clientRequestId` no duplica; AC-15-01..06, AC-25-03/04/06 |
+
+#### 23.4.05 Pantalla 05 — Expediente principal del cliente
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Conservar el expediente único del cliente en la empresa y dar acceso autorizado a sus secciones. |
+| Datos visibles | Encabezado: nombre oficial del cliente (BP), número de ficha si existe, estado, sucursal de última atención, alertas activas; pestañas (CC): General, Antecedentes, Valoraciones, Plan, Sesiones, Seguimiento, Consentimientos, Fotografías |
+| Campos editables | Antecedentes por categoría (Sin responder/No/Sí + nota), alertas (texto), estado Activo/Inactivo; fecha de nacimiento y contacto de emergencia **no se capturan** hasta cerrar O-06 |
+| Acciones y navegación | Búsqueda de cliente con `CustomerPicker` → `Abrir expediente` si no existe; si el cliente no existe en BP: aviso con acceso al alta oficial de MasterData (Spa no crea BP); `Revisar antecedentes` (nueva revisión con motivo), `Agregar/Desactivar alerta`, `Inactivar` |
+| Estados de UI | CC; la lista de clientes del módulo nunca muestra datos clínicos; expediente inactivo es de solo lectura y no admite atenciones nuevas |
+| Validaciones y errores | `SPA_CARE_RECORD_EXISTS` (devuelve el existente), `SPA_CLIENT_INACTIVE`, `SPA_CORRECTION_REASON_REQUIRED`, `SPA_ACCESS_DENIED`; «Sin responder» ≠ «No» |
+| Permisos | `spa.records.view/manage`, `spa.history.view/update` (clínicos); acceso intersucursal según guard |
+| Integraciones | BP (query oficial), directorio de Empleados (responsable de revisión), auditoría de acceso |
+| Estados y transiciones | Expediente: Activo ↔ Inactivo; revisiones de antecedentes: vigente/no vigente. |
+| Responsive y recuperación | Pestañas `ZHTabBar` con distribución responsive; alertas activas fijas en el encabezado. Recuperación: 403 muestra «sin acceso» genérico y el acceso queda registrado. |
+| Pruebas | `SPA-AC-UI-05`: un solo expediente por cliente y empresa; Admin sin concesión no entra; otra empresa no ve el expediente; AC-ARQ06-01..08 |
+
+#### 23.4.06 Pantalla 06 — Valoración facial
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Registrar la valoración estética facial sin diagnóstico automático. |
+| Datos visibles | Lista de valoraciones faciales (fecha, profesional, sucursal, estado Borrador/Registrada, revisión vigente) y formulario con los campos de §14 |
+| Campos editables | Todos los de §14 (ninguno obligatorio): motivo, condición de piel, sensibilidad, fototipo Fitzpatrick I–VI o «sin evaluar», alteraciones, zona/evolución, exposición solar, observaciones, diagnóstico médico previo (declarado), objetivo, procedimiento/productos/equipos previstos, precauciones/contraindicaciones, decisión (proceder/adaptar/posponer); fecha de negocio, profesional responsable (directorio) |
+| Acciones y navegación | `Guardar borrador`, `Registrar`, `Corregir` (nueva revisión con motivo), ver revisiones; desde la pestaña Valoraciones |
+| Estados de UI | CC; borrador visible con etiqueta; revisión anterior marcada «No vigente» y restringida |
+| Validaciones y errores | Fototipo ∈ 1..6 o vacío; `SPA_CORRECTION_REASON_REQUIRED`, `SPA_CONCURRENT_MODIFICATION`; sin diagnóstico automático ni rótulo médico |
+| Permisos | `spa.assessments.view/create/update` |
+| Integraciones | Directorio (profesional), Branch, expediente |
+| Estados y transiciones | Borrador → Registrada; corrección = revisión. |
+| Responsive y recuperación | Formulario de una columna con secciones plegables. Recuperación: borrador conservado ante conflicto; recarga mostrando la revisión vigente. |
+| Pruebas | `SPA-AC-UI-06`: borrador incompleto se guarda y no cuenta como atención ni consumo; corregir conserva la revisión previa; AC-ARQ07-01/03 |
+
+#### 23.4.07 Pantalla 07 — Valoración corporal y mediciones
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Registrar la valoración corporal y comparar medidas Inicial/Control/Final. |
+| Datos visibles | Datos generales (zona, motivo, objetivos, hallazgos, procedimiento/aparatología, precauciones, decisión) y tabla comparativa de conjuntos Inicial/Control/Final con diferencias calculadas solo donde hay dos valores |
+| Campos editables | Peso (kg) y brazo D/I, abdomen alto/medio/bajo, cadera, muslo D/I (cm) con `ZhDecimalInput`; finalidad del conjunto; fecha de negocio |
+| Acciones y navegación | `Guardar borrador`, `Registrar conjunto`, `Corregir` (revisión con motivo), `Comparar`; sin gráfica (no aprobada) |
+| Estados de UI | CC; celda no medida muestra «—», nunca 0; diferencia vacía si falta un valor |
+| Validaciones y errores | Valores ≥ 0, punto decimal, escala **según el gate V-04**; mientras V-04 esté abierta la persistencia de medidas está bloqueada (COND-05) y la pantalla se entrega sin el bloque de mediciones |
+| Permisos | `spa.assessments.view/create/update` |
+| Integraciones | Expediente, directorio |
+| Estados y transiciones | Borrador → Registrada; conjunto de medidas inmutable; corrección = revisión. |
+| Responsive y recuperación | Tabla comparativa con desplazamiento interno y entrada numérica táctil. Recuperación: valor inválido marcado por campo; ningún valor se completa con 0. |
+| Pruebas | `SPA-AC-UI-07`: no medida ≠ cero; diferencia solo con valores comparables; corrección no sobrescribe; AC-ARQ07-02/03 |
+
+#### 23.4.08 Pantalla 08 — Plan de tratamiento
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Planificar y seguir tratamientos individuales o multisesión. |
+| Datos visibles | Plan: objetivo, decisión, estado, prestaciones (servicio, procedimiento, sesiones previstas, intervalo sugerido, cuidados/precauciones/derivación) y **vista comercial derivada por prestación**: propuesto/contratado/facturado/pagado/reservado/realizado/derechos restantes con enlaces a contrato y factura |
+| Campos editables | Objetivo, decisión (proceder/adaptar/posponer: no ejecuta acciones), prestaciones (`ItemLookupPicker` Service + procedimiento), sesiones previstas (entero > 0), intervalo sugerido, notas |
+| Acciones y navegación | `Crear plan`, `Ampliar`, `Suspender`/`Reanudar` (DP-01), `Cancelar`, `Cerrar` (resultado final; confirmación si hay sesiones previstas pendientes), `Reservar sesión` (→ Pantalla 16 con la prestación), `Ver contrato` (→ Pantalla 04) |
+| Estados de UI | CC; transiciones de 4 estados según ADR §5.23 (ampliar/suspender/cancelar/cerrar aprobados; reanudar y no reabrir = DP-01/DP-02 recomendados); porcentaje de facturación **no** se muestra |
+| Validaciones y errores | `SPA_PLAN_INVALID_STATE`, `SPA_PLAN_CLOSE_PENDING_SESSIONS_CONFIRM`; ampliar el plan no crea derechos comerciales; vínculo a contrato solo por referencia explícita |
+| Permisos | `spa.treatment-plans.view/manage` (clínicos); la sección comercial exige lectura de Ventas/CxC |
+| Integraciones | Items, contratos de paquete, lectores comerciales |
+| Estados y transiciones | Plan: Activo, Suspendido, Cancelado, Cerrado, con historial de eventos (ADR §5.23); reanudar y no reabrir = DP-01/DP-02 recomendados. |
+| Responsive y recuperación | Prestaciones como tarjetas apiladas en celular. Recuperación: confirmación explícita al cerrar con pendientes. |
+| Pruebas | `SPA-AC-UI-08`: plan sin contrato es válido; ampliar no altera el contrato; vista comercial sin vincular por BP; AC-TEC03-01..05 |
+
+#### 23.4.09 Pantalla 09 — Registro de sesión realizada
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Documentar la atención realizada de forma independiente de la cita y del consumo. |
+| Datos visibles | Estado (Borrador/En atención/Finalizada/Interrumpida), fecha/hora de inicio y fin, profesional responsable y registrador, cita vinculada, procedimiento, productos/aparatología (subpanel de la Pantalla 13), incidencias, resultados, evolución/reacciones, zona, próxima sesión sugerida, fotos autorizadas, revisiones |
+| Campos editables | Todos los de contenido; `performedWork` obligatorio al interrumpir; motivo de interrupción; motivo de corrección |
+| Acciones y navegación | `Guardar borrador`, `Iniciar atención` (profesional responsable ≠ registrador conservados), `Finalizar`, `Interrumpir`, `Corregir`, `Cierre administrativo` de la cita (con referencia a esta sesión), `Resolver cupo` (→ Pantalla 04) |
+| Estados de UI | CC; si falta consentimiento aplicable el botón Iniciar queda deshabilitado con el motivo; sesión interrumpida muestra «Atención parcial» |
+| Validaciones y errores | `SPA_CONSENT_REQUIRED`, `SPA_SESSION_INVALID_STATE`, `SPA_APPOINTMENT_REQUIRED` (se exige cita mientras O-10 siga abierta), `SPA_CONCURRENT_MODIFICATION`; finalizar/interrumpir no crea consumo, factura ni inventario |
+| Permisos | `spa.sessions.create/view/manage`; consumo: `spa.packages.consume` |
+| Integraciones | Agenda (cita), Consentimientos, Paquetes (solo vínculo), directorio |
+| Estados y transiciones | Borrador → En atención → Finalizada o Interrumpida; corrección = revisión sin reabrir (ADR §5.23). |
+| Responsive y recuperación | Acciones principales fijas al pie; guardado de borrador explícito (no se asume autoguardado). Recuperación: conflicto `xmin` recarga conservando el texto escrito. |
+| Pruebas | `SPA-AC-UI-09`: borrador no consume; interrumpida conserva parcial y no libera agenda; corregir no crea atención ni consumo; AC-ARQ03-01..08 |
+
+#### 23.4.10 Pantalla 10 — Seguimiento y evolución
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Consultar la evolución cronológica del cliente. |
+| Datos visibles | Línea de tiempo cronológica del expediente: valoraciones, sesiones (completas y parciales diferenciadas), mediciones Inicial/Control/Final, resultado final, fotos comparables autorizadas |
+| Campos editables | Ninguno (solo lectura); las notas se registran en la sesión |
+| Acciones y navegación | Filtrar por tipo/fecha; abrir la sesión/valoración de origen; comparar conjuntos de medidas; abrir comparación de fotos (Pantalla 12) |
+| Estados de UI | CC; secciones sin permiso se omiten sin revelarlas |
+| Validaciones y errores | No se inventan valores faltantes ni se atribuyen cambios a un procedimiento |
+| Permisos | Los del recurso mostrado (`spa.sessions.view`, `spa.assessments.view`, `spa.photos.view`) |
+| Integraciones | Sesiones, valoraciones, fotografías |
+| Estados y transiciones | Sin estados propios; refleja los de cada origen. |
+| Responsive y recuperación | Línea de tiempo vertical en una columna. Recuperación: sección sin permiso omitida; error parcial reintentable. |
+| Pruebas | `SPA-AC-UI-10`: orden cronológico; parcial ≠ completa; ausencia de valores no genera diferencias; AC-ARQ07-02 |
+
+#### 23.4.11 Pantalla 11 — Consentimientos
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Presentar el consentimiento por procedimiento, registrar la decisión y firma, y gestionar versiones y retiro. |
+| Datos visibles | Por expediente: lista de registros (procedimiento/finalidad, versión presentada, decisión, estado Vigente/Retirado, fecha, quién capturó) y, para administración, definiciones y versiones de texto |
+| Campos editables | Registro: versión presentada (la vigente), decisión (Otorga/Rechaza), firma en pantalla (lienzo táctil/ratón), nota; retiro: motivo; administración: texto de la versión (inmutable al publicar) |
+| Acciones y navegación | `Presentar consentimiento` (muestra texto, exige leer hasta el final), `Firmar y registrar`, `Retirar`, `Publicar nueva versión`; finalidades separadas: Procedimiento, Fotos de seguimiento, Promoción (cada una su propio registro) |
+| Estados de UI | CC; lienzo de firma a ancho completo en celular; «Limpiar firma»; firma obligatoria cuando la decisión es Otorga |
+| Validaciones y errores | `SPA_SIGNATURE_REQUIRED`, `SPA_CONSENT_VERSION_NOT_FOUND`, `SPA_CONSENT_ALREADY_WITHDRAWN`; la persona que decide es la atendida (representante y menores no soportados hasta O-18, COND-04); uso académico no existe |
+| Permisos | `spa.consents.view/manage/templates` |
+| Integraciones | Expediente, `ICareFileStore` (firma), auditoría |
+| Estados y transiciones | Definición: Vigente/Reemplazada; registro: Vigente/Retirado. |
+| Responsive y recuperación | Lienzo de firma a ancho completo con scroll de página bloqueado durante el trazo. Recuperación: firma no enviada se puede limpiar y repetir; nada se confirma sin archivo guardado. |
+| Pruebas | `SPA-AC-UI-11`: aceptar una finalidad no habilita otra; versión sustituida no figura como vigente; retiro bloquea usos futuros sin revertir lo realizado; AC-ARQ07-04..06 |
+
+#### 23.4.12 Pantalla 12 — Visor y comparación de fotografías
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Subir, ver y comparar fotografías privadas. |
+| Datos visibles | Miniaturas (solo con permiso; carga por descarga autorizada), por foto: fecha de captura, zona/ángulo (nota), finalidad, consentimiento aplicable, profesional/registrador, sucursal, nota de condiciones comparables, estado; sin ruta física ni nombre de archivo |
+| Campos editables | Archivo (formato/tamaño permitidos por configuración), finalidad, zona, ángulo, nota de captura, vínculo a valoración o sesión |
+| Acciones y navegación | `Subir`, `Ver`, `Comparar` (2..n fotos, lado a lado), `Exportar` (acción explícita con permiso propio), `Desactivar`; sin publicación |
+| Estados de UI | CC; visor en `ZHModal` pantalla completa en celular; miniaturas no cacheadas entre usuarios (`no-store`) |
+| Validaciones y errores | `SPA_PHOTO_CONSENT_MISSING`, `SPA_FILE_TOO_LARGE`, `SPA_FILE_TYPE_NOT_ALLOWED`, `SPA_ACCESS_DENIED`; tamaño/formatos: valores de configuración sin predeterminado inventado |
+| Permisos | `spa.photos.view/create/manage`, `spa.records.export` |
+| Integraciones | `ICareFileStore`, consentimientos, auditoría durable |
+| Estados y transiciones | Fotografía: Activa ↔ Inactiva (nunca eliminar). |
+| Responsive y recuperación | Visor a pantalla completa; comparación apilada en celular. Recuperación: fallo de registro de acceso muestra error sin entregar la imagen. |
+| Pruebas | `SPA-AC-UI-12`: sin consentimiento de seguimiento no se sube; cada apertura deja registro antes de mostrar; no hay URL pública; AC-ARQ07-06 |
+
+#### 23.4.13 Pantalla 13 — Productos, insumos y equipos
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Documentar productos y equipos usados sin mover inventario. |
+| Datos visibles | Subpanel de la Pantalla 09 y del procedimiento: productos usados, aparatología/equipos (texto o referencia), cantidad informativa opcional |
+| Campos editables | Descripción, `Item` de producto opcional (referencia informativa), cantidad informativa opcional |
+| Acciones y navegación | Agregar/quitar línea en la sesión en borrador; enlace a la venta oficial de productos en Ventas (con permiso de Ventas) |
+| Estados de UI | CC; etiqueta fija «Registro documental, no descuenta inventario» |
+| Validaciones y errores | Sin movimiento de inventario ni Kardex automático (HX-05); sin calendario de equipos (HX-01) |
+| Permisos | Los de la sesión contenedora (`spa.sessions.create/manage`) |
+| Integraciones | Items (lectura), Ventas (enlace) |
+| Estados y transiciones | Editable mientras la sesión sea Borrador o En atención; sin estados propios. |
+| Responsive y recuperación | Líneas apiladas en celular. Recuperación: línea inválida marcada, resto conservado. |
+| Pruebas | `SPA-AC-UI-13`: registrar un producto no genera movimiento de inventario; PT-15 |
+
+#### 23.4.14 Pantalla 14 — Consulta de cambios y accesos
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Consultar cambios y accesos sin contenido clínico. |
+| Datos visibles | Dos pestañas: Cambios (Entity Audit del expediente: actor, instante, entidad, operación, motivo) y Accesos (`CareAccessLog`: actor, instante, recurso, acción, resultado Permitido/Denegado/Fallido, sucursal, correlación); nunca contenido clínico ni nombres de archivo |
+| Campos editables | Ninguno; filtros de fecha, actor, tipo de recurso, resultado |
+| Acciones y navegación | Filtrar y paginar; abrir el expediente de origen solo si el usuario tiene acceso; no hay editar/borrar/exportar |
+| Estados de UI | CC |
+| Validaciones y errores | `SPA_ACCESS_DENIED`; la consulta del registro se registra a su vez |
+| Permisos | `spa.audit.view`, `spa.access-log.view` (clínicos) |
+| Integraciones | Auditoría oficial FROZEN (solo lectura), `CareAccessLog` |
+| Estados y transiciones | Sin estados; solo lectura. |
+| Responsive y recuperación | Filtros en `ZHDrawer`; tabla con desplazamiento interno. Recuperación: 403 genérico; la consulta queda registrada. |
+| Pruebas | `SPA-AC-UI-14`: denegaciones registradas; consultar el registro deja registro; sin contenido clínico; PT-05/06/12 |
+
+#### 23.4.15 Pantalla 15 — Panel inicial de Spa
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Mostrar la jornada y dar acceso a los procesos de Spa. |
+| Datos visibles | Tarjetas operativas de la jornada (fecha y sucursal elegidas): citas de hoy por estado (conteos), visitas con llegada pendiente de atención, lista de espera activa (conteo), «Citas por revisar», tratamientos con seguimiento pendiente (conteo), accesos directos; **sin gráficos, KPI ni porcentajes** (HX-10) |
+| Campos editables | Selector de sucursal y fecha |
+| Acciones y navegación | Cada tarjeta abre Agenda (01), Visitas (17), Lista de espera (18), Reportes (19), Planes (08), Servicios (03); solo se muestran tarjetas con permiso |
+| Estados de UI | CC; tarjeta sin permiso se omite; error parcial por tarjeta no bloquea el resto |
+| Validaciones y errores | Conteos calculados en backend sobre datos autorizados; sin clínica |
+| Permisos | `spa.agenda.view` + permiso de cada destino (el panel no tiene clave propia) |
+| Integraciones | Consultas de Agenda, espera y planes |
+| Estados y transiciones | Sin estados propios. |
+| Responsive y recuperación | Tarjetas en una columna. Recuperación: error por tarjeta, resto visible. |
+| Pruebas | `SPA-AC-UI-15`: conteos coinciden con la agenda; no existen métricas inventadas; sin fuga entre empresas; SPA-AC-H-11 |
+
+#### 23.4.16 Pantalla 16 — Búsqueda de disponibilidad por servicio
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Encontrar profesional y horario para un servicio sin profesional previo. |
+| Datos visibles | Resultados por profesional elegible con sus horarios libres (hora local de la empresa) para el servicio, fecha y sucursal elegidos; duración efectiva y preparación informativas |
+| Campos editables | Cliente (`CustomerPicker`), servicio(s) (`ItemLookupPicker`), sucursal, fecha, paquete vinculado (opcional) |
+| Acciones y navegación | `Buscar`, `Elegir horario` (selección explícita; **no confirma**), `Reservar` (llama a `ReserveVisit`, revalida), `Agregar otro servicio` (visita múltiple), `Anotar en lista de espera` si no hay resultados (→ 18) |
+| Estados de UI | CC; sin resultados: mensaje y acción de lista de espera; si al reservar cambió la disponibilidad: mensaje + nueva búsqueda automática de la misma consulta, sin reservar |
+| Validaciones y errores | `SPA_SERVICE_INACTIVE`, `SPA_PROFESSIONAL_UNAVAILABLE`, `SPA_APPOINTMENT_OVERLAP`, `SPA_PACKAGE_NO_BALANCE`/`EXPIRED` |
+| Permisos | `spa.agenda.view` para buscar y `spa.agenda.create` para reservar |
+| Integraciones | Motor único de agenda, directorio, Items, paquetes |
+| Estados y transiciones | Búsqueda sin estado persistido; el resultado es válido hasta reservar y se revalida. |
+| Responsive y recuperación | Resultados como lista por profesional. Recuperación: disponibilidad cambiada → nueva búsqueda automática sin reservar. |
+| Pruebas | `SPA-AC-UI-16`: buscar no crea cita; elegir no confirma; reservar revalida; SPA-AC-H-01/02 |
+
+#### 23.4.17 Pantalla 17 — Visitas y llegada
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Coordinar varios servicios y profesionales de una visita y registrar llegada. |
+| Datos visibles | Visita: cliente, sucursal, fecha, citas/bloques con prestación, profesional, hora y estado; evento de llegada (hora y usuario); situación general **derivada** («sin iniciar», «en curso», «finalizada» como texto calculado, no un estado almacenado) |
+| Campos editables | Añadir cita/servicio/profesional a la visita, motivos de cancelación/reprogramación |
+| Acciones y navegación | `Registrar llegada`, `Agregar servicio`, `Reprogramar`/`Cancelar` una cita (no cancela las demás), `Iniciar atención` por cita (→ 09), ver historial |
+| Estados de UI | CC; la visita se marca finalizada solo cuando todas sus citas están en estado final |
+| Validaciones y errores | `SPA_APPOINTMENT_INVALID_STATE`, `SPA_APPOINTMENT_OVERLAP`, `SPA_CONCURRENT_MODIFICATION`; llegada duplicada es idempotente |
+| Permisos | `spa.agenda.view/update/cancel` (llegada y cambios con `spa.agenda.update`) |
+| Integraciones | Agenda, directorio, sesiones, paquetes (vínculo) |
+| Estados y transiciones | Situación de visita derivada (sin máquina de estados); estados de cada cita según ADR §5.23. |
+| Responsive y recuperación | Citas de la visita apiladas. Recuperación: 409 recarga la visita; llegada repetida idempotente. |
+| Pruebas | `SPA-AC-UI-17`: llegada no crea sesión ni consumo; cancelar un bloque no cancela los demás; SPA-AC-H-07/08 |
+
+#### 23.4.18 Pantalla 18 — Lista de espera y consultas operativas
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Conservar demanda pendiente y apoyar el seguimiento operativo. |
+| Datos visibles | Entradas activas: cliente (nombre oficial mínimo), servicio, sucursal, rango de fechas deseado, nota, antigüedad (orden cronológico informativo), estado; consulta «Citas por revisar» |
+| Campos editables | Cliente, servicio, sucursal, fechas deseadas, nota |
+| Acciones y navegación | `Anotar`, `Retirar` (motivo), `Buscar horario` (abre 16 con los datos), `Marcar reservada` automáticamente al reservar desde la entrada; sin asignación ni prioridad automática |
+| Estados de UI | CC |
+| Validaciones y errores | `SPA_WAITLIST_DUPLICATE`; sin notificaciones automáticas (HX-02) |
+| Permisos | altas `spa.agenda.create`, retiros `spa.agenda.cancel`, lectura `spa.agenda.view` |
+| Integraciones | Agenda, BP, Items |
+| Estados y transiciones | Entrada Activa → Cerrada (Reservada, Retirada o Cancelada); sin prioridad automática. |
+| Responsive y recuperación | Lista apilada. Recuperación: duplicado activo muestra la entrada existente. |
+| Pruebas | `SPA-AC-UI-18`: duplicado activo rechazado; reservar cierra la entrada como «Reservada»; sin asignación automática; SPA-AC-H-12 |
+
+#### 23.4.19 Pantalla 19 — Reportes básicos y seguimiento operativo
+
+| Elemento | Especificación operativa |
+|---|---|
+| Propósito | Consultar reportes operativos básicos y seguimiento de tratamientos. |
+| Datos visibles | Catálogo cerrado de consultas básicas (tablas, sin gráficos): **R1** citas por período/estado/profesional/sucursal; **R2** ausencias y cancelaciones con motivo; **R3** sesiones realizadas por servicio/profesional (completas vs parciales); **R4** contratos de paquete: vigentes, por vencer, vencidos, saldos en cantidades; **R5** seguimiento de planes (sesiones previstas vs realizadas); **R6** lista de espera activa; **R7** «Citas por revisar» |
+| Campos editables | Filtros: período (fecha de negocio), sucursal, profesional, servicio, estado |
+| Acciones y navegación | Aplicar filtros, ordenar, paginar; abrir el registro de origen según permiso; **sin exportación** (no aprobada) |
+| Estados de UI | CC |
+| Validaciones y errores | Agregados sin identificar contenido clínico; saldo de paquete en cantidades, nunca monetario; sin porcentajes sin comparables |
+| Permisos | `spa.reports.view` + permiso del dato de origen |
+| Integraciones | Agenda, sesiones, paquetes, lecturas comerciales cuando aplique |
+| Estados y transiciones | Sin estados propios. |
+| Responsive y recuperación | Tablas con desplazamiento interno; filtros en `ZHDrawer`. Recuperación: filtro sin resultados muestra estado vacío con restablecer. |
+| Pruebas | `SPA-AC-UI-19`: cada reporte coincide con los datos de origen; filtros no cruzan empresas; sin exportar; SPA-AC-H-13 |
+
 ## 24. Entidades y relaciones
 
-**Lectura vigente del modelo técnico:** ADR §5.11 contiene la descomposición preferente recomendada para revisión. La tabla siguiente conserva nombres candidatos históricos y trazabilidad; no compite con ADR ni reabre las alternativas allí seleccionadas. Ninguna clase/tabla existe por documentarla.
+**Modelo físico candidato detallado (tablas, claves, unicidades, versionado):** [ADR §5.16](ADR-051-spa-v1.1-architecture.md#516--526-diseño-técnico-implementable-selección-recomendada-spa-sel) (SPA-SEL-01, recomendación). **Lectura vigente del modelo técnico:** ADR §5.11 contiene la descomposición preferente recomendada para revisión. La tabla siguiente conserva nombres candidatos históricos y trazabilidad; no compite con ADR ni reabre las alternativas allí seleccionadas. Ninguna clase/tabla existe por documentarla.
 
 **Estado de la sección:** todas las entidades son **candidatas**, ninguna existe y su separación definitiva en tablas y agregados requiere aprobación. Los nombres siguen los borradores; `Session` significa
 exclusivamente sesión realizada (§0.3).
@@ -1433,7 +1751,7 @@ que referencia contrato y, según el caso, cita o sesión. Profesional (`Employe
 
 **Integraciones F0:** ADR §5.12 selecciona consultas públicas existentes y dos lectores propietarios candidatos; cada llamada interna exige autorización explícita porque no ejecuta atributos del controlador. Contratos/rutas nuevos sin implementación o aprobación automática.
 
-**Estado de la sección:** `SPA-API-01` [T]; **ninguna ruta, endpoint ni DTO está aprobado.** Cada operación deberá declarar permiso, scope, validación, errores, transacción, concurrencia, respuesta y pruebas, y
+**Estado de la sección:** `SPA-API-01` [T]; **ninguna ruta, endpoint ni DTO está aprobado.** Rutas, métodos, peticiones/respuestas, permisos e idempotencia candidatos: ADR §5.17–5.18 (SPA-SEL-02/03, recomendación no aprobada). Cada operación deberá declarar permiso, scope, validación, errores, transacción, concurrencia, respuesta y pruebas, y
 usar el envelope oficial de la API.
 
 | Dominio | Capacidades conceptuales | Permiso candidato (§21.2) |
@@ -1453,7 +1771,7 @@ usar el envelope oficial de la API.
 
 ## 26. Validaciones y errores
 
-**Estado:** todo PROPUESTO. Los códigos viven en `ApiResponseCodes` y `MessageCatalog`; el HTTP lo deriva la categoría (`Validation` 422, `BusinessRule` 400, `Duplicate` 409, `NotFound` 404,
+**Estado:** todo PROPUESTO; catálogo consolidado de códigos por categoría en §31.16. Los códigos viven en `ApiResponseCodes` y `MessageCatalog`; el HTTP lo deriva la categoría (`Validation` 422, `BusinessRule` 400, `Duplicate` 409, `NotFound` 404,
 `Authorization` 403) [E].
 
 | Área | Validaciones candidatas | Errores candidatos (categoría) |
@@ -1467,7 +1785,7 @@ usar el envelope oficial de la API.
 
 ## 27. Reglas de concurrencia
 
-**Selección técnica F0 recomendada:** ADR §5.11 concreta locks transaccionales, orden total, xmin/exclusión e idempotencia; fragmentos siguientes permanecen evidencia ilustrativa, no alternativas igualmente abiertas. Mecanismo recomendado sujeto a aprobación/validación PostgreSQL futura.
+**Algoritmo operativo completo (ventanas, traslados, reserva atómica, reprogramación, cierre administrativo, pruebas PostgreSQL):** ADR §5.20 (SPA-SEL-05, recomendación). **Selección técnica F0 recomendada:** ADR §5.11 concreta locks transaccionales, orden total, xmin/exclusión e idempotencia; fragmentos siguientes permanecen evidencia ilustrativa, no alternativas igualmente abiertas. Mecanismo recomendado sujeto a aprobación/validación PostgreSQL futura.
 
 **Dirección APROBADA SPA-TEC-01.4/01.5:** §7.3/11.5 establece transacción/revalidación, bloqueos por profesional sin sucursal, orden multiprofesional, libro/idempotencia/cupo por prestación. SQL/índices/exclusiones/locks siguientes solo ilustrativos hasta verificación/aprobación física; no implementación.
 
@@ -1803,6 +2121,320 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 - **Comercial:** origen O-15 intacto; detalle de autorizada/SRI/crédito/NC, reglas funcionales de paquetes aprobadas SPA-ARQ-05 §11; pendientes algoritmo, equivalencias/documento adicional, fiscal/crédito y ajustes económicos específicos. Anticipos O-14 sigue separado.
 - **Sin revocación inferida:** ninguna evidencia aportada revoca expresamente O-15/O-25 ni las capacidades históricas. Las fronteras de procesos oficiales, exclusiones y detalle pendiente se conservan conjuntamente.
 - **Aprobaciones técnicas y ejecución:** contrato central sin aprobación técnica integral, ADR-051 PROPOSED / NO APROBADO y plan sin fase autorizada. Revisión del propietario pendiente; no comenzar desarrollo.
+
+## 31. Especificación operativa por área funcional
+
+**Estado:** completa el contrato para su futura implementación **sin alterar** las decisiones aprobadas (SPA-DEC-115/116, SPA-ARQ-01..08, SPA-TEC-01..03, O-15, O-25), las 19 fichas ni las diez exclusiones (§3.1.1). Cada fila condensa y operacionaliza reglas ya existentes en §5–§22; **los detalles que no estaban aprobados se resuelven con un patrón estándar y se marcan «selección recomendada» (SPA-SEL-nn, [ADR §5.16–5.26](ADR-051-spa-v1.1-architecture.md#516--526-diseño-técnico-implementable-selección-recomendada-spa-sel))**: no son aprobaciones del propietario. Rutas, tablas, DTO y permisos son candidatos hasta la autorización de la fase. Los criterios `SPA-AC-OP-nn.m` son pruebas futuras, no ejecutadas. Los asuntos protegidos o legales no se dan por cumplidos: §31.15.
+
+### 31.1 Perfiles operativos y matriz de permisos
+
+Los perfiles siguientes son **composiciones sugeridas de permisos** sobre los perfiles de acceso oficiales de cada empresa (no crean roles, usuarios ni autenticación paralelos). Los permisos clínicos exigen concesión explícita; ser Admin, tener `employees.*` o estar asignado a una sucursal no los concede.
+
+| Perfil sugerido | Puede (permisos candidatos) | No puede |
+|---|---|---|
+| Recepción / agenda | `spa.agenda.view/create/update/cancel/mark-absent`, lectura de clientes (MasterData) | Ver clínica, fotos, consentimientos; consumir cupos |
+| Profesional | Recepción en solo lectura de su agenda; `spa.records.view`, `spa.history.view`, `spa.assessments.view/create/update`, `spa.treatment-plans.view/manage`, `spa.sessions.view/create`, `spa.consents.view/manage`, `spa.photos.view/create` | Corregir sesiones finalizadas, cierre administrativo, ajustar paquetes |
+| Responsable clínico | Profesional + `spa.sessions.manage` (finalizar, interrumpir, corregir, cierre administrativo), `spa.history.update`, `spa.photos.manage` | Definir paquetes, ver registro de accesos |
+| Coordinación comercial | `spa.packages.view/manage/consume/adjust`, `spa.reports.view`, lectura de Ventas/CxC | Ver clínica |
+| Administración de Spa | `spa.services.view/manage`, `spa.availability.manage`, `spa.consents.templates`, `spa.reports.view` | Acceso clínico por ser administrador |
+| Auditoría | `spa.audit.view`, `spa.access-log.view` | Modificar datos; cada consulta queda registrada |
+
+### 31.2 Clientes y expedientes
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Conservar un expediente clínico-estético único por cliente y empresa, sin duplicar la identidad de BusinessPartner |
+| Datos de entrada | BP del cliente (selección oficial), antecedentes por categoría (Sin responder/No/Sí + nota), alertas (texto), motivo de corrección |
+| Datos que se guardan | `CareRecord` (BP, empresa, estado, número de ficha opcional), revisiones de antecedentes, alertas, sucursal de cada registro, auditoría de cambios y accesos. Nombre/contacto se leen de BP en cada consulta |
+| Acciones | Abrir, consultar, listar por cliente, revisar antecedentes, añadir/desactivar alertas, inactivar/reactivar; correcciones autorizadas |
+| Flujo principal | Buscar cliente → abrir expediente (si no existe) → registrar antecedentes iniciales (opcional) → trabajar desde las pestañas |
+| Flujos alternativos | Cliente inexistente: remitir al alta oficial de MasterData, sin crear BP en Spa; expediente ya existente: devolver el existente; BP inactivo: expediente consultable, sin atenciones nuevas hasta reactivar; acceso de otra sucursal: según guard intersucursal |
+| Validaciones | BP activo con rol Customer; un expediente por `(tenant, empresa, BP)`; «Sin responder» ≠ «No»; motivo obligatorio en toda corrección; sin campos clínicos obligatorios (O-21) |
+| Estados y transiciones | Activo ↔ Inactivo (nunca eliminar); cada revisión de antecedentes es inmutable y la vigente es una sola |
+| Reglas clínicas | Alertas sin niveles, categorías ni bloqueos automáticos (no recuperados); fecha de nacimiento y contacto de emergencia no se capturan hasta O-06; número de ficha sin secuencia hasta O-19 |
+| Usuarios y permisos | `spa.records.view/manage`, `spa.history.view/update`; Admin sin acceso ordinario (COND-01) |
+| Integraciones | `GetBusinessPartnerQuery`, `GetBusinessPartnerRolesQuery` (con permiso MasterData vigente), directorio de Empleados, auditoría |
+| Errores y fallos | `SPA_CARE_RECORD_EXISTS`, `SPA_CLIENT_INACTIVE`, `SPA_CORRECTION_REASON_REQUIRED`, `SPA_ACCESS_DENIED`; si falla el registro de auditoría no se entrega el contenido |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** expediente (sin identidad copiada), listado por cliente, historial de revisiones. **Responsable de cada dato:** identidad y contacto = MasterData (BP); antecedentes, alertas, estado y sucursal por registro = Spa; permisos y usuario = Identity/Access; auditoría = infraestructura oficial. **Dependencias:** F1 (guard, log), F2.a; BP y Empleados. **Pruebas:** `SPA-AC-OP-01.x`, PT-01/05/12. |
+| Criterios de aceptación | `SPA-AC-OP-01.1` dos aperturas concurrentes producen un solo expediente; `01.2` otra empresa no ve el expediente; `01.3` corregir conserva la revisión previa como no vigente; `01.4` el listado de clientes no muestra clínica; `01.5` Admin sin concesión recibe denegación y queda registrada |
+
+### 31.3 Profesionales
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Identificar quién presta y quién registra cada atención reutilizando el directorio oficial de Empleados |
+| Datos de entrada | `EmployeeId` elegido desde el directorio (nunca texto libre); usuario ERP autenticado como registrador |
+| Datos que se guardan | `EmployeeId` responsable y `UserId` registrador por separado en citas, valoraciones y sesiones; especialidades requeridas por servicio (referencias); horarios propios de Spa por profesional/sucursal |
+| Acciones | Consultar profesionales elegibles por sucursal/servicio/fecha; configurar horarios y bloqueos (Pantalla 02); consultar citas por revisar |
+| Flujo principal | Búsqueda/reserva → directorio devuelve elegibles → motor aplica horarios y restricciones → selección explícita |
+| Flujos alternativos | Profesional deja de estar activo/asignado: citas futuras **no se alteran**, aparecen en «Citas por revisar» para reasignación manual; profesional inactivo histórico sigue visible en atenciones pasadas |
+| Validaciones | Activo en la fecha, asignado a la sucursal, especialidad exigida por el perfil (si existe); profesional ≠ registrador conservados aunque coincidan en persona |
+| Estados | Los de Empleados (Spa no los modifica) |
+| Reglas | Cargo/profesión nulos no implican elegibilidad; `employees.view` no concede acceso clínico ni de agenda; Spa no crea Employee |
+| Usuarios y permisos | `spa.agenda.view` (consulta), `spa.availability.manage`; datos laborales por permisos de Empleados |
+| Integraciones | `IEmployeeDirectory` (COND-02: no implementado): `GetByIdAsync`, `ListAsync`, `IsActiveOnAsync`, `GetBranchAssignmentsAsync`, `IsEligibleForBranchAsync`, `GetLinkedUserAsync` |
+| Errores y fallos | `SPA_PROFESSIONAL_UNAVAILABLE`; directorio no disponible → la operación se rechaza con error controlado (no se reserva sin validar) |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** profesionales elegibles y sus franjas libres. **Responsable de cada dato:** ficha laboral, asignaciones, especialidades y actividad = Empleados; horarios, bloqueos, ocupación y disponibilidad = Spa; usuario registrador = Identity. **Dependencias:** COND-02, F1.a, F5. **Pruebas:** `SPA-AC-OP-02.x`, PT-02. |
+| Criterios de aceptación | `SPA-AC-OP-02.1` profesional no asignado no se ofrece; `02.2` responsable y registrador se guardan distintos; `02.3` cambio laboral posterior no modifica atenciones pasadas ni citas futuras; `02.4` no existe tabla Employee en Spa |
+
+### 31.4 Servicios
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Configurar las condiciones operativas del servicio comercial (Item Service) sin otro catálogo |
+| Datos de entrada | Item Service activo de la empresa; duración, preparación, sucursales, especialidades, procedimientos |
+| Datos que se guardan | `SpaServiceProfile`, procedimientos y vínculos, historial; precio e impuesto no se copian |
+| Acciones | Configurar, activar/desactivar, vincular procedimientos, consultar |
+| Flujo principal | Elegir Item Service sin perfil → completar duración y condiciones → activar |
+| Flujos alternativos | Item ya configurado → abrir su editor; Item no Service/inactivo → rechazo; desactivar con citas futuras → permitido, esas citas se listan para revisión y el servicio deja de ofrecerse |
+| Validaciones | Naturaleza Service, activo, de la empresa; duración > 0; preparación ≥ 0 o vacía; especialidades existentes |
+| Estados | Activo ↔ Inactivo; nunca eliminar |
+| Reglas | Sucursales: vacío = sin restricción (SPA-SEL-02, el valor por defecto no estaba aprobado); duración efectiva = la del perfil (sin sumar procedimientos); sin valores predeterminados de duración o preparación |
+| Usuarios y permisos | `spa.services.view/manage` |
+| Integraciones | `GetItemByIdQuery`, `IPricingResolver` (lectura), Empleados (especialidades) |
+| Errores y fallos | `SPA_ITEM_NOT_SERVICE`, `SPA_SERVICE_INACTIVE`, `SPA_SERVICE_ALREADY_CONFIGURED`, `SPA_SERVICE_NOT_FOUND` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** perfil de servicio y lista de procedimientos. **Responsable de cada dato:** Item, precio e impuesto = Items/Pricing; duración, preparación, procedimientos y restricciones = Spa; especialidades = Empleados. **Dependencias:** F1.a, F3.a. **Pruebas:** `SPA-AC-OP-03.x`, PT-15. |
+| Criterios de aceptación | `SPA-AC-OP-03.1` Product rechazado; `03.2` inactivo no se ofrece en búsqueda; `03.3` historial de citas conserva la duración vigente al reservar; `03.4` no se duplica precio ni impuesto |
+
+### 31.5 Planes
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Describir lo previsto para la persona: tratamientos individuales y multisesión |
+| Datos de entrada | Expediente, objetivo, decisión, prestaciones (servicio, procedimiento, sesiones previstas, intervalo sugerido, cuidados) |
+| Datos que se guardan | `TreatmentPlan`, `PlanProvision`, referencias opcionales a contrato/prestación; sin importes ni estados financieros |
+| Acciones | Crear, ampliar, suspender, reanudar (DP-01), cancelar, cerrar, corregir con motivo, consultar vista comercial derivada |
+| Flujo principal | Valoración → crear plan con prestaciones (nace Activo) → reservar sesiones → documentar → cerrar con resultado final |
+| Flujos alternativos | Plan sin contrato (válido); varios contratos/facturas por plan; cerrar con sesiones pendientes → confirmación explícita; cancelar no cancela contratos ni citas |
+| Validaciones | Sesiones previstas entero > 0; transiciones del ADR §5.23; motivo obligatorio al suspender/cancelar |
+| Estados y transiciones | Activo, Suspendido, Cancelado, Cerrado (sin Borrador): ampliar, suspender, cancelar y cerrar (aprobados); reanudar = DP-01 y no reabrir Cancelado/Cerrado = DP-02, ambos recomendación sin aprobar (ADR §5.23); historial append-only de eventos; la reanudación conserva la suspensión previa |
+| Reglas | Plan ≠ paquete ≠ sesión; cerrar/cancelar/suspender no altera sesiones realizadas, facturas, contratos, saldo ni compromisos y no cancela citas (pasan a «Citas por revisar», DP-03); ampliar el plan no concede derechos comerciales; la decisión proceder/adaptar/posponer no ejecuta acciones; nunca vincular por coincidencia de BP |
+| Usuarios y permisos | `spa.treatment-plans.view/manage` (clínicos); vista comercial exige lectura de Ventas/CxC |
+| Integraciones | Items, `PackageContract`, lectores comerciales |
+| Errores y fallos | `SPA_PLAN_INVALID_STATE`, `SPA_PLAN_CLOSE_PENDING_SESSIONS_CONFIRM` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** plan, prestaciones, historial de eventos y vista comercial derivada. **Responsable de cada dato:** plan y prestaciones = Spa; contratos = Spa (Paquetes); facturas y pagos = Ventas/CxC (solo lectura). **Dependencias:** F2.a, F3.b; F6.e para la vista comercial. **Pruebas:** `SPA-AC-OP-05.x`, AC-TEC03-01..05. |
+| Criterios de aceptación | `SPA-AC-OP-05.1` plan sin contrato guarda y consulta; `05.2` ampliar no cambia el libro; `05.3` cerrar con pendientes exige confirmación; `05.4` vista comercial muestra propuesto/contratado/facturado/pagado/reservado/realizado/derechos por prestación sin porcentaje |
+
+### 31.6 Sesiones
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Documentar cada atención efectivamente realizada, de forma independiente de la cita y del consumo comercial |
+| Datos de entrada | Expediente, prestación, cita (si existe), procedimiento, productos/equipos, incidencias, resultados, evolución, próxima sesión sugerida; motivo/alcance al interrumpir; motivo al corregir |
+| Datos que se guardan | `ClinicalSession`, revisiones, materiales documentales; inicio/fin, responsable, registrador, sucursal |
+| Acciones | Guardar borrador, iniciar, finalizar, interrumpir, corregir (revisión), cierre administrativo de la cita, consultar evolución |
+| Flujo principal | Cita Programada → Iniciar atención (consentimiento válido si aplica) → documentar → Finalizar → (opcional) resolución de cupo en Paquetes |
+| Flujos alternativos | Interrupción: motivo, momento y trabajo realizado, queda Interrumpida (parcial); cierre administrativo → cita Atendida sin falsificar la clínica; atención sin cita: no habilitada (O-10 abierta; recomendación conservadora: se exige cita hasta que el propietario decida) |
+| Validaciones | Responsable (directorio) y registrador separados; consentimiento aplicable vigente; solo borrador editable; correcciones con motivo/autor |
+| Estados y transiciones | Borrador → En atención → Finalizada/Interrumpida; corregir = revisión, no reapertura (ADR §5.23) |
+| Reglas | Borrador, programación y reprogramación no consumen; finalizar/interrumpir no factura, cobra, contabiliza ni mueve inventario; evolución diferencia completa y parcial |
+| Usuarios y permisos | `spa.sessions.create/view/manage` (clínicos); consumo `spa.packages.consume` |
+| Integraciones | Agenda, consentimientos, paquetes (referencia), Items (materiales informativos), directorio |
+| Errores y fallos | `SPA_CONSENT_REQUIRED`, `SPA_SESSION_INVALID_STATE`, `SPA_APPOINTMENT_REQUIRED`, `SPA_CONCURRENT_MODIFICATION`; si la escritura de auditoría falla, no se confirma la lectura ni se entrega contenido |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** sesión, revisiones y evolución. **Responsable de cada dato:** contenido clínico = Spa; profesional = Empleados; registrador = Identity; consumo comercial = Spa (Paquetes, operación separada). **Dependencias:** F3.b, F4.a, F5.c (para iniciar). **Pruebas:** `SPA-AC-OP-06.x`, AC-ARQ03-01..08. |
+| Criterios de aceptación | `SPA-AC-OP-06.1` borrador sin atención ni consumo; `06.2` iniciar sin consentimiento requerido se rechaza; `06.3` interrumpir conserva parcial y no libera agenda; `06.4` cierre administrativo deja la sesión Interrumpida; `06.5` corregir crea revisión sin nueva atención |
+
+### 31.7 Agenda
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Programar visitas con uno o varios servicios y profesionales mediante un único motor de disponibilidad, sin recursos físicos |
+| Datos de entrada | Cliente, servicio(s), sucursal, fecha, profesional y hora elegidos explícitamente, paquete opcional; horarios, descansos, bloqueos y traslados (administración) |
+| Datos que se guardan | `Visit`, eventos de llegada, `Appointment`, `ServiceProvision`, enlaces, `AppointmentOccupancy`, `AppointmentChange`, reglas de horario, excepciones, bloqueos, traslados, lista de espera |
+| Acciones | Buscar disponibilidad; reservar; registrar llegada; reprogramar; cancelar; marcar ausencia; iniciar atención; cierre administrativo; anotar en lista de espera; consultar día/semana e historial |
+| Flujo principal | Buscar por servicio/fecha/sucursal → resultados por profesional → selección explícita → reserva con revalidación transaccional (ADR §5.20) → visita y citas Programadas |
+| Flujos alternativos | Sin resultados → lista de espera; disponibilidad cambió → 409 y nueva búsqueda sin reservar; reprogramación fallida → cita original intacta; cancelar un bloque no cancela los demás; profesional/cliente/sucursal inactivo → rechazo; hora inexistente por cambio horario → descartada de la rejilla |
+| Validaciones | Servicio con perfil activo; profesional elegible y activo; dentro de horarios/descansos/bloqueos; sin solape (incluye preparación) en todas las sucursales de la empresa; traslado entre sucursales distintas configurado para las citas vecinas inmediatas del día (misma sucursal: sin traslado; par ausente: el hueco no se ofrece y la reserva se rechaza, sin minutos inventados); vigencia y cupo del paquete (sin consumir); contigüidad `[inicio, fin)` permitida |
+| Estados y transiciones | Programada, En atención, Atendida, Cancelada, Ausente (matriz ADR §5.23); llegada y reprogramación son eventos; visita derivada |
+| Reglas | Reserva independiente sin paquete siempre válida; reserva vinculada a paquete requiere comprobación real de vigencia, servicio y cupo y, sin la capacidad F6.c, se rechaza (`SPA_PACKAGE_CAPABILITY_UNAVAILABLE`) sin crear derechos; reservar/reprogramar no consumen; cancelar/ausentarse no crean sesión; ausencia sin penalización ni descuento automático; interrupción no libera tiempo (solo el cierre administrativo); varios bloques de un servicio = una prestación y un compromiso; sin cabinas/equipos, recordatorios ni reservas públicas |
+| Usuarios y permisos | `spa.agenda.view/create/update/cancel/mark-absent`, `spa.availability.manage` |
+| Integraciones | Directorio de Empleados, Branch, `ICompanyClock`, Items, paquetes, BP |
+| Errores y fallos | `SPA_APPOINTMENT_OVERLAP`, `SPA_PROFESSIONAL_UNAVAILABLE`, `SPA_OUTSIDE_BUSINESS_HOURS`, `SPA_TRAVEL_TIME_NOT_CONFIGURED`, `SPA_INVALID_DATETIME`, `SPA_APPOINTMENT_INVALID_STATE`, `SPA_CONCURRENT_MODIFICATION`, `SPA_WAITLIST_DUPLICATE` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** resultados de disponibilidad, visita/citas, historial de cambios. **Responsable de cada dato:** cliente = BP; profesional y asignación = Empleados; zona horaria = Company; servicio = Items; horarios, citas, ocupación y lista de espera = Spa. **Dependencias:** F5.a–d, F3.a; F6.c solo para reservas vinculadas a paquete. **Pruebas:** `SPA-AC-OP-07.x`, SPA-AC-ARQ04-01..12, PT-14. |
+| Criterios de aceptación | `SPA-AC-OP-07.1` dos reservas simultáneas del mismo profesional: una gana, la otra 409; `07.2` reprogramación fallida conserva la original; `07.3` visita multiprofesional atómica; `07.4` traslado sin configurar rechaza el encadenamiento entre sucursales; `07.5` ausencia no crea sesión ni descuento; `07.6` cerrar administrativamente libera solo el tiempo futuro; `07.7` la búsqueda no crea citas |
+
+### 31.8 Valoración facial
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Registrar la valoración estética facial inicial y sus revisiones, sin diagnóstico médico automático |
+| Datos de entrada | Campos de §14 (todos opcionales), fecha de negocio, profesional responsable |
+| Datos que se guardan | `Assessment` (Facial), revisiones, hallazgos tipados, estado Borrador/Registrada |
+| Acciones | Guardar borrador, registrar, corregir con motivo, consultar revisiones |
+| Flujo principal | Crear valoración → completar (puede quedar incompleta como borrador) → Registrar |
+| Flujos alternativos | Continuar un borrador; corregir una registrada (nueva revisión); decisión «posponer» no genera acciones |
+| Validaciones | Fototipo 1..6 o vacío; motivo obligatorio al corregir; `xmin` en borrador |
+| Estados y transiciones | Borrador → Registrada; corrección = revisión (la anterior pasa a no vigente y restringida) |
+| Reglas | Valoración estética, no diagnóstico; «diagnóstico médico previo» es información declarada; guardar no acredita atención ni consume; sin obligatoriedad universal (O-21) |
+| Usuarios y permisos | `spa.assessments.view/create/update` |
+| Integraciones | Expediente, directorio |
+| Errores y fallos | `SPA_ASSESSMENT_NOT_FOUND`, `SPA_CORRECTION_REASON_REQUIRED`, `SPA_CONCURRENT_MODIFICATION` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** valoración facial y revisiones. **Responsable de cada dato:** contenido y fecha = Spa; profesional = Empleados; registrador = Identity. **Dependencias:** F2.a, F2.b. **Pruebas:** `SPA-AC-OP-08.x`, AC-ARQ07-01/03. |
+| Criterios de aceptación | `SPA-AC-OP-08.1` borrador incompleto se guarda; `08.2` corrección conserva la revisión previa; `08.3` ninguna etiqueta de diagnóstico se genera |
+
+### 31.9 Valoración corporal
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Registrar valoración corporal y mediciones comparables Inicial/Control/Final |
+| Datos de entrada | Datos generales (§15), peso (kg) y contornos (cm) opcionales, finalidad, fecha |
+| Datos que se guardan | `Assessment` (Body), revisiones, `BodyMeasurementSet` (nulos distintos de cero) |
+| Acciones | Guardar borrador, registrar conjunto, corregir, comparar |
+| Flujo principal | Valoración inicial + conjunto Inicial → conjuntos Control → conjunto Final → comparación en lectura |
+| Flujos alternativos | Medidas parciales (válido); varios controles sin límite impuesto; corrección = revisión |
+| Validaciones | Valores ≥ 0 con `ZhDecimalInput`; escala según el gate V-04; abdomen alto/medio/bajo nunca fusionados en «cintura» |
+| Estados y transiciones | Borrador → Registrada; corrección = revisión |
+| Reglas | No medida ≠ cero; diferencias calculadas en lectura solo con valores comparables; sin valores/rangos inferidos; sin gráfica (no aprobada) |
+| Usuarios y permisos | `spa.assessments.view/create/update` |
+| Integraciones | Expediente, directorio |
+| Errores y fallos | `SPA_MEASUREMENT_INVALID`, `SPA_CORRECTION_REASON_REQUIRED`; persistencia bloqueada por COND-05 |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** valoración corporal, conjuntos de medidas y comparación derivada. **Responsable de cada dato:** medidas y contenido = Spa; profesional = Empleados. **Dependencias:** F2.c, COND-05. **Pruebas:** `SPA-AC-OP-09.x`, AC-ARQ07-02/03. |
+| Criterios de aceptación | `SPA-AC-OP-09.1` vacío no se guarda como 0; `09.2` diferencia ausente si falta un valor; `09.3` corregir no sobrescribe; `09.4` persistencia no se activa sin el gate V-04 |
+
+### 31.10 Consentimientos
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Conservar evidencia de que la persona fue informada y decidió, por finalidad |
+| Datos de entrada | Versión vigente del texto, decisión, firma en pantalla, motivo de retiro |
+| Datos que se guardan | Definiciones y versiones inmutables (texto + hash), `ConsentRecord` (versión presentada, decisión, hash y archivo de firma, instante, usuario que capturó), retiros |
+| Acciones | Administrar textos, publicar versión, presentar y registrar, retirar, consultar |
+| Flujo principal | Procedimiento que lo requiere → presentar versión vigente → persona decide y firma → registro Vigente → habilita la atención |
+| Flujos alternativos | Rechaza (queda registro, no se habilita); retiro → deja de habilitar usos futuros sin revertir lo realizado; nueva versión → registros previos siguen ligados a la versión que firmaron |
+| Validaciones | Una versión vigente por definición; firma obligatoria si Otorga; finalidades Procedimiento/Fotos de seguimiento/Promoción independientes; sin finalidad académica |
+| Estados | Definición Vigente/Reemplazada; registro Vigente/Retirado |
+| Reglas | No equivale automáticamente a firma electrónica certificada; no se atiende a menores ni se captura representante hasta COND-04; `valid_until` vacío = sin vencimiento declarado (vigencia no aprobada) |
+| Usuarios y permisos | `spa.consents.view/manage/templates` |
+| Integraciones | Expediente, `ICareFileStore`, sesiones, fotografías, auditoría |
+| Errores y fallos | `SPA_SIGNATURE_REQUIRED`, `SPA_CONSENT_VERSION_NOT_FOUND`, `SPA_CONSENT_ALREADY_WITHDRAWN`, `SPA_CONSENT_REQUIRED` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** definiciones, versiones, registros y retiros. **Responsable de cada dato:** textos, versiones y decisión = Spa; archivo de firma = `ICareFileStore` (Spa); identidad de la persona = BP. **Dependencias:** F1.d, F2.a, F4.a, COND-04. **Pruebas:** `SPA-AC-OP-10.x`, AC-ARQ07-04..06. |
+| Criterios de aceptación | `SPA-AC-OP-10.1` sin consentimiento requerido no se inicia la atención; `10.2` otorgar una finalidad no otorga otra; `10.3` el texto firmado no cambia tras publicar otra versión; `10.4` retiro bloquea usos futuros |
+
+### 31.11 Fotografías
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Conservar fotografías de seguimiento privadas, con finalidad y autorización, y compararlas |
+| Datos de entrada | Archivo, finalidad, zona/ángulo, nota de condiciones, vínculo a valoración/sesión |
+| Datos que se guardan | Metadatos (`CarePhoto`), archivo cifrado con id opaco (`spa_care_files`), consentimiento aplicable, grupos de comparación |
+| Acciones | Subir, ver, comparar, exportar (explícito), desactivar |
+| Flujo principal | Verificar consentimiento de seguimiento → subir → cifrar y guardar → consultar con auditoría durable previa |
+| Flujos alternativos | Sin consentimiento → rechazo; fallo de auditoría → no se entrega el archivo; fallo de tag/clave → no se descifra; foto desactivada → no visible en uso ordinario |
+| Validaciones | Tamaño/formato dentro de la configuración; ruta generada por servidor; descarga nunca por ruta arbitraria; finalidad respetada |
+| Estados | Activa ↔ Inactiva (sin borrado físico) |
+| Reglas | Sin URL pública, publicación ni exportación automática; no aparecen en listados ni agenda; retiro del consentimiento: política de conservar/bloquear/anonimizar/eliminar pendiente (COND-06) |
+| Usuarios y permisos | `spa.photos.view/create/manage`, `spa.records.export` |
+| Integraciones | `ICareFileStore` sobre `IFileStorage`, consentimientos, auditoría |
+| Errores y fallos | `SPA_PHOTO_CONSENT_MISSING`, `SPA_FILE_TOO_LARGE`, `SPA_FILE_TYPE_NOT_ALLOWED`, `SPA_ACCESS_DENIED` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** metadatos y contenido autorizado por descarga. **Responsable de cada dato:** metadatos y finalidad = Spa; bytes cifrados = `ICareFileStore` sobre `IFileStorage`; autorización = Identity/Access. **Dependencias:** F1.d, F4.a, F4.b, COND-09. **Pruebas:** `SPA-AC-OP-11.x`, PT-04/10/11. |
+| Criterios de aceptación | `SPA-AC-OP-11.1` sin consentimiento no se sube; `11.2` el registro de acceso se confirma antes de entregar bytes; `11.3` ninguna respuesta incluye ruta/URL permanente; `11.4` otra empresa no accede; `11.5` el contenido en disco está cifrado |
+
+### 31.12 Paquetes
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Controlar derechos de sesiones por servicio derivados de documentos comerciales oficiales |
+| Datos de entrada | Definición (servicios/cantidades/vigencia), factura y línea(s), cita vinculada, motivos y respaldos de movimientos |
+| Datos que se guardan | `PackageDefinition`, `PackageContract` (factura/línea únicos), lotes, movimientos append-only, compromisos, asignaciones de beneficiario |
+| Acciones | Definir, crear contrato, programar con cupo, resolver compromiso (consumir/liberar), compensar, ampliar, sustituir, transferir (excepcional), ajustar, cancelar, consultar saldo/libro |
+| Flujo principal | Factura autorizada → crear contrato (explícito) → reservar citas vinculadas (compromiso de cupo) → atención finalizada → resolución autorizada → movimiento `Consumed` |
+| Flujos alternativos | Cita cancelada antes de consumir → libera el cupo; reprogramación conserva compromiso; parcial/interrumpida → cupo retenido hasta resolución; ausencia → sin descuento, compromiso retenido hasta resolución manual; vencimiento → sin nuevas reservas/consumos, citas futuras a revisión manual; compensación posterior mediante movimiento nuevo |
+| Validaciones | Cliente del contrato = cliente de la factura; línea no vinculada; saldo = derechos vigentes − consumos netos − compromisos; idempotencia por `clientRequestId`/clave de origen; sobrecompensación imposible; sustitución solo con equivalencia y respaldo documentados; ampliación solo con documento/línea oficial; sin consumo entre empresas |
+| Estados y transiciones | Contrato Activo → Agotado/Vencido (derivados) o Cancelado (autorizado); compromiso Retenido → Consumido/Liberado |
+| Reglas | Reservar/reprogramar no consumen; finalizar no consume por sí solo; cuotas pendientes no suspenden derechos; ampliar no prolonga vigencia original; ampliaciones gratuitas inexistentes; transferencia no mueve el expediente; sin dinero en el libro |
+| Usuarios y permisos | `spa.packages.view/manage/consume/adjust` |
+| Integraciones | Ventas (factura/línea/ajustes), Items, agenda, sesiones; consultas CxC |
+| Errores y fallos | `SPA_INVOICE_NOT_AUTHORIZED`, `SPA_INVOICE_CUSTOMER_MISMATCH`, `SPA_INVOICE_LINE_ALREADY_LINKED`, `SPA_PACKAGE_NO_BALANCE`, `SPA_PACKAGE_ALREADY_CONSUMED`, `SPA_PACKAGE_EXPIRED`, `SPA_PACKAGE_INACTIVE`, `SPA_SUBSTITUTION_NOT_EQUIVALENT`, `SPA_COMPENSATION_EXCEEDS_CONSUMED`; un error de Spa jamás revierte la factura |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** contrato, lotes, libro, saldo y compromisos. **Responsable de cada dato:** servicios = Items; factura y línea = Ventas; derechos, libro y compromisos = Spa; cobro = CxC. **Dependencias:** F5.b, F6.a–d, COND-03/07/08. **Pruebas:** `SPA-AC-OP-12.x`, AC-ARQ05-01..10, PT-16/17. |
+| Criterios de aceptación | `SPA-AC-OP-12.1` segundo contrato para la misma línea → 409; `12.2` dos programaciones concurrentes no exceden el cupo; `12.3` reintento de consumo no duplica; `12.4` cancelar antes de consumir libera cupo y no descuenta; `12.5` vencido bloquea reservas; `12.6` sustitución sin equivalencia se rechaza; `12.7` el libro no admite UPDATE/DELETE |
+
+### 31.13 Integración comercial
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Relacionar plan → prestación → contrato → factura/línea → pagos/cuotas sin duplicar Ventas ni CxC |
+| Datos de entrada | Ids de factura y línea; consulta por contrato/prestación |
+| Datos que se guardan | Solo referencias (ids) y el estado de las entidades de Spa |
+| Acciones | Crear contrato desde factura; consultar por prestación: propuesto, contratado, facturado, pagado, reservado, realizado, derechos restantes; abrir la factura en Ventas |
+| Flujo principal | Ventas autoriza la factura (sin intervención de Spa) → usuario con permiso crea el contrato en Spa → lecturas oficiales mantienen el estado comercial |
+| Flujos alternativos | Spa no disponible/falla → la factura queda intacta; NC/anulación en Ventas → Spa consulta y un usuario autorizado ajusta derechos con referencia, sin revertir clínica; crédito pendiente → consulta de cuotas, sin suspensión automática |
+| Validaciones | Autorizada (según COND-08), mismo cliente, línea libre; permisos de lectura de Ventas/CxC del consumidor; scope de sucursal original |
+| Estados | Los de Ventas/CxC (solo lectura) |
+| Reglas | No evento creador; no facturas, cobros, CxC ni asientos en Spa; no porcentaje facturado sin comparables; Anticipos (O-14) independiente |
+| Usuarios y permisos | `spa.packages.manage` + permiso de Ventas (`SalesPermissions.View`) y de Finance (lectura, sin `reverse`) |
+| Integraciones | `GetSalesInvoiceByIdQuery`/`ISalesEntitlementReader`, `GetSalesReturnByIdQuery`, `GetReceivableByInvoiceQuery`, `IReceivableCollectionReader` (candidatos, COND-03) |
+| Errores y fallos | `SPA_INVOICE_*`, `SPA_COMMERCIAL_READ_UNAVAILABLE` (lectura oficial no disponible: error controlado, sin inferir) |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** vista comercial por prestación y contrato creado. **Responsable de cada dato:** facturas, NC y pagos = Ventas/CxC; referencias y derechos = Spa. **Dependencias:** F6.a, F6.b, F6.e, COND-03/08. **Pruebas:** `SPA-AC-OP-13.x`, AC-ARQ08-01..08. |
+| Criterios de aceptación | `SPA-AC-OP-13.1` crear contrato no altera la factura; `13.2` fallo de Spa no revierte la autorización; `13.3` mostrar pagos no exige `finance.collections.reverse`; `13.4` ninguna tabla monetaria en Spa |
+
+### 31.14 Operación
+
+| Elemento | Especificación |
+|---|---|
+| Objetivo | Operar la jornada: panel, agenda diaria/semanal, lista de espera, seguimiento y reportes básicos |
+| Datos de entrada | Sucursal, fecha, filtros |
+| Datos que se guardan | Solo lista de espera (propia); panel y reportes son consultas sobre datos de origen |
+| Acciones | Consultar panel y reportes R1..R7 (Pantalla 19), gestionar espera, revisar citas por revisar |
+| Flujo principal | Abrir panel → acceder al proceso → resolver desde la pantalla de origen |
+| Flujos alternativos | Sin permiso → tarjeta/consulta omitida; error parcial → el resto se muestra; sin datos → estado vacío |
+| Validaciones | Scope tenant/empresa/sucursal; permiso del dato de origen; sin clínica |
+| Estados | Los de cada proceso de origen; espera Activa/Cerrada |
+| Reglas | Sin dashboard analítico, KPI, gráficos, exportación, recordatorios ni reservas públicas (HX-02/04/10) |
+| Usuarios y permisos | `spa.agenda.view`, `spa.reports.view`, `spa.agenda.create/cancel` (lista de espera) |
+| Integraciones | Agenda, sesiones, paquetes, lecturas comerciales |
+| Errores y fallos | `SPA_ACCESS_DENIED`, `SPA_WAITLIST_DUPLICATE` |
+| Salidas, responsable de cada dato y dependencias | **Salidas:** panel, reportes R1–R7, lista de espera. **Responsable de cada dato:** cada dato pertenece a su proceso de origen; lista de espera = Spa. **Dependencias:** F5.d, F7 y los procesos consultados. **Pruebas:** `SPA-AC-OP-14.x`, H-11..15. |
+| Criterios de aceptación | `SPA-AC-OP-14.1` conteos del panel coinciden con la agenda; `14.2` reportes no cruzan empresas; `14.3` sin exportación; `14.4` ningún dato clínico en consultas operativas |
+
+### 31.15 Condiciones externas y protegidas no cumplidas
+
+Ninguna se da por cumplida. «Prohibido mientras esté pendiente» es la restricción que aplica a cualquier agente. Cada condición bloquea **solo** la superficie indicada; el resto del diseño avanza.
+
+| ID | Qué debe verificarse | Quién autoriza o valida | Funcionalidad afectada | Fase | Prohibido mientras esté pendiente | Evidencia que permite considerarla cumplida |
+|---|---|---|---|---|---|---|
+| COND-01 | Revisión arquitectónica especial del contrato LOCKED Identity/Access/Kernel y ejecución de la propuesta ADR §5.13 (clasificación sin bypass, guard, concesiones, anti-autoescalamiento) con pruebas negativas | Propietario + arquitecto (autorización especial expresa) | Toda la clínica, auditoría de accesos, Admin excepcional | F1 | Modificar Kernel/Access/Session/Navigation o sus consumidores; asignar o mostrar claves clínicas; habilitar rutas clínicas con datos reales | Acta de autorización especial del propietario, cambios revisados y pruebas negativas de ADR §5.13 (API directa, MediatR, descarga, reportes, menú, autoescalamiento) en verde sobre PostgreSQL real |
+| COND-02 | `IEmployeeDirectory` implementado y probado (EMP-E1..E6b) con firmas finales | Propietario (plan/autorización de Empleados, ADR-050) | Profesionales, disponibilidad, agenda, atenciones | F1 (consumo), F5 | Crear entidad Employee o directorio paralelo; reservar sin validar contra el directorio | EMP-E6b cerrado con gate PASS del propietario y firmas de `IEmployeeDirectory` publicadas con sus pruebas |
+| COND-03 | Si `GetSalesInvoiceByIdQuery` basta o se requiere `ISalesEntitlementReader`; `IReceivableCollectionReader`; permisos de lectura de Finance | Propietario + autorización protegida de Ventas/Finance (FROZEN) | Crear contrato desde factura; consulta de abonos | F0 (verificar), F6 | Editar Ventas/CxC; conceder `finance.collections.reverse`; leer repositorios internos | Decisión escrita del propietario de Ventas/Finance (el DTO existente basta o se autoriza el lector) y lector implementado y probado por su propietario |
+| COND-04 | Validez jurídica de la firma en pantalla; menores y representante (O-18); finalidad académica no aprobada (O-17) | Asesor legal designado por el propietario (V-06/V-09) | Consentimientos, atención a menores | F4 | Declarar validez legal; atender menores con consentimiento propio; capturar representante o uso académico | Dictamen escrito del asesor legal designado sobre firma en pantalla, menores/representante y finalidades |
+| COND-05 | Gate formal de precisión para kg/cm (V-04; `numeric(10,2)` es candidato) | Propietario + arquitecto (revisión del estándar de datos) | Persistencia de medidas corporales | F2 | Persistir medidas como definitivas; modificar `data-standards.md` | Aprobación arquitectónica formal registrada en el estándar de datos (escala y rango de kg y cm) |
+| COND-06 | Procedimiento y plazos de conservación, corrección, supresión y anonimización (C-02/O-05) | Asesor legal + propietario | Retiro de consentimiento/fotos, supresión, plazos | F1 (diseño), F4 | Borrado físico, `DeleteAsync` sobre archivos clínicos, plazos inventados | Procedimiento y plazos validados por el asesor legal y aprobados por el propietario |
+| COND-07 | Equivalencias, documentos adicionales y requisitos jurídicos de transferencia excepcional | Propietario comercial + asesor legal | Sustitución y transferencia de derechos | F6 | Ejecutar sustituciones/transferencias sin equivalencia y respaldo documentados | Documento aprobado de equivalencias y de transferibilidad con dictamen legal |
+| COND-08 | Significado de «factura autorizada», estado SRI exigido, crédito pendiente y efectos de NC/anulación | Propietario + responsable fiscal/contable | Elegibilidad de creación de contrato; ajustes por NC | F6 | Inferir reglas tributarias; activar la creación en producción sin política definida | Política escrita aprobada por el propietario y el responsable fiscal/contable |
+| COND-09 | Custodia de la KEK, recuperación, restauración y TLS productivos con evidencia operativa | Propietario / operación | Archivos clínicos, firmas, fotografías | F1, F4 | Datos reales en archivos; afirmar cifrado productivo; modificar scripts de respaldo | Runbook operativo con prueba de restauración de datos y claves y TLS verificado, firmado por el propietario |
+| COND-10 | Salida de seguridad operativa: protección y auditoría validadas antes de datos reales | Propietario (gate) | Cualquier dato clínico real | F1, F8 | Cargar datos clínicos reales | Informe de verificación de COND-01, COND-06 y COND-09 más gate PASS del propietario |
+| COND-11 | Anticipos de Clientes (O-14) como proceso transversal | Propietario | Operaciones que dependan de anticipos | Fuera de V1.1 | Diseñar o implementar anticipos dentro de Spa | Diseño y autorización separados del proceso transversal (fuera del alcance de V1.1) |
+| COND-12 | Fecha de nacimiento y contacto de emergencia (O-06) | Propietario (ADR de BP si se amplía BP; FROZEN) | Datos personales adicionales | F2 | Ampliar BusinessPartner; capturarlos sin decisión | ADR de BusinessPartner aprobado y autorización del módulo FROZEN, o decisión expresa de no capturar esos datos |
+| COND-13 | Aprobación arquitectónica de ADR-051 y autorización expresa de cada fase con su lista exacta de archivos | Propietario | Todo el código | F0..F8 | Implementar cualquier fase | Decisión escrita del propietario sobre ADR-051 y autorización expresa de cada fase con su lista exacta de archivos |
+
+### 31.16 Catálogo consolidado de errores
+
+Todos los códigos se registran en `ApiResponseCodes`/`MessageCatalog` (categoría fija; el HTTP lo deriva la categoría). Mensajes `message.user` en español, sin datos clínicos ni de personas.
+
+| Categoría (HTTP) | Códigos |
+|---|---|
+| NotFound (404) | `SPA_APPOINTMENT_NOT_FOUND`, `SPA_SERVICE_NOT_FOUND`, `SPA_PACKAGE_NOT_FOUND`, `SPA_ASSESSMENT_NOT_FOUND`, `SPA_CONSENT_VERSION_NOT_FOUND`, `SPA_CARE_RECORD_NOT_FOUND`, `SPA_SESSION_NOT_FOUND` |
+| Validation (422) | `SPA_INVALID_DATETIME`, `SPA_MEASUREMENT_INVALID`, `SPA_CORRECTION_REASON_REQUIRED`, `SPA_SIGNATURE_REQUIRED`, `SPA_FILE_TOO_LARGE`, `SPA_FILE_TYPE_NOT_ALLOWED` |
+| BusinessRule (400) | `SPA_PROFESSIONAL_UNAVAILABLE`, `SPA_OUTSIDE_BUSINESS_HOURS`, `SPA_TRAVEL_TIME_NOT_CONFIGURED`, `SPA_APPOINTMENT_INVALID_STATE`, `SPA_SESSION_INVALID_STATE`, `SPA_PLAN_INVALID_STATE`, `SPA_PLAN_CLOSE_PENDING_SESSIONS_CONFIRM`, `SPA_SERVICE_INACTIVE`, `SPA_ITEM_NOT_SERVICE`, `SPA_CLIENT_INACTIVE`, `SPA_APPOINTMENT_REQUIRED`, `SPA_CONSENT_REQUIRED`, `SPA_PHOTO_CONSENT_MISSING`, `SPA_CONSENT_ALREADY_WITHDRAWN`, `SPA_PACKAGE_NO_BALANCE`, `SPA_PACKAGE_INACTIVE`, `SPA_PACKAGE_EXPIRED`, `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` (reserva vinculada a paquete antes de F6.c), `SPA_INVOICE_NOT_AUTHORIZED`, `SPA_INVOICE_CUSTOMER_MISMATCH`, `SPA_SUBSTITUTION_NOT_EQUIVALENT`, `SPA_COMPENSATION_EXCEEDS_CONSUMED`, `SPA_COMMERCIAL_READ_UNAVAILABLE` |
+| Duplicate (409) | `SPA_APPOINTMENT_OVERLAP`, `SPA_CONCURRENT_MODIFICATION`, `SPA_SCHEDULE_OVERLAP`, `SPA_SERVICE_ALREADY_CONFIGURED`, `SPA_CARE_RECORD_EXISTS`, `SPA_WAITLIST_DUPLICATE`, `SPA_PACKAGE_ALREADY_CONSUMED`, `SPA_INVOICE_LINE_ALREADY_LINKED` |
+| Authorization (403) | `SPA_ACCESS_DENIED` (genérico: nunca revela si el recurso existe ni de quién es) |
+
+### 31.17 Trazabilidad área → pantallas → fase → pruebas
+
+| Área | Pantallas | Fase | Pruebas |
+|---|---|---|---|
+| 31.2 Expedientes | 05, 14 | F1 base, F2 | `SPA-AC-OP-01.x`, `SPA-AC-UI-05/14` |
+| 31.3 Profesionales | 01, 02 | F1 (consumo), F5 | `SPA-AC-OP-02.x` |
+| 31.4 Servicios | 03, 13 | F3 | `SPA-AC-OP-03.x`, `SPA-AC-UI-03/13` |
+| 31.5 Planes | 08 | F3 | `SPA-AC-OP-05.x`, `SPA-AC-UI-08` |
+| 31.6 Sesiones | 09, 10, 13 | F3 | `SPA-AC-OP-06.x`, `SPA-AC-UI-09/10` |
+| 31.7 Agenda | 01, 02, 16, 17, 18 | F5 | `SPA-AC-OP-07.x`, `SPA-AC-UI-01/02/16/17/18` |
+| 31.8 Facial | 06 | F2 | `SPA-AC-OP-08.x`, `SPA-AC-UI-06` |
+| 31.9 Corporal | 07 | F2 | `SPA-AC-OP-09.x`, `SPA-AC-UI-07` |
+| 31.10 Consentimientos | 11 | F4a | `SPA-AC-OP-10.x`, `SPA-AC-UI-11` |
+| 31.11 Fotografías | 12 | F4b | `SPA-AC-OP-11.x`, `SPA-AC-UI-12` |
+| 31.12 Paquetes | 04 | F6 | `SPA-AC-OP-12.x`, `SPA-AC-UI-04` |
+| 31.13 Integración comercial | 04, 08 | F6 | `SPA-AC-OP-13.x` |
+| 31.14 Operación | 15, 18, 19 | F7 | `SPA-AC-OP-14.x`, `SPA-AC-UI-15/18/19` |
 
 ## Anexo A. Responsabilidad de cada documento
 
