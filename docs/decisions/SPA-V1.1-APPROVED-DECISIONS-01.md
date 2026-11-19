@@ -1288,3 +1288,403 @@ Las dependencias técnicas deberán resolverse dentro del proceso de revisión a
 ### 19.3 Fuente única y autorización
 
 Referencia normativa principal: [contrato §4](SPA-V1.1-CONTRACT-SPEC-01.md#4-dependencias-y-límites-con-otros-módulos). Registro conserva aprobaciones, ADR arquitectura y plan fases. Las fronteras aprobadas no implementan ni aprueban firmas de contratos de lectura, nuevas entidades/APIs, índices/locks o extensiones. IEmployeeDirectory sigue dependencia pendiente bajo ADR-050/plan propio; O-14 independiente y abierto; C-01/O-01 y C-02/O-05 visibles, fiscal/ley pendientes. ADR-051 PROPOSED / NO APROBADO; F0–F8 PENDING / NO AUTORIZADA. No preparación de código ni implementación de SPA o Empleados.
+
+## 20. SPA-TEC-01 — Nueve decisiones técnicas
+
+**APROBADA POR EL PROPIETARIO — 2026-11-19.** Fuente: autorización expresa de consolidación documental única. Texto aprobado y límites completos:
+
+## Nueve decisiones técnicas aprobadas
+
+### TEC-01.1 — Modelo de visitas, citas y prestaciones
+
+Aprobar la dirección arquitectónica:
+
+- Una visita puede agrupar varias citas.
+- Cada cita representa un bloque temporal de atención de un profesional.
+- Una prestación identificable se vincula a uno o varios bloques profesionales.
+- No duplicar una prestación comercial cuando intervienen varios profesionales.
+- Mantener la situación de visita derivada de sus citas.
+- Conservar llegada y reprogramación como eventos, no como estados adicionales.
+
+La selección definitiva de agregados, identificadores, claves y persistencia se realizará dentro del diseño técnico de ADR-051.
+
+No modificar los cinco estados de cita ya aprobados.
+
+### TEC-01.2 — Persistencia clínica
+
+Aprobar:
+
+- Borradores editables.
+- Inicio y cierre explícito de atención.
+- Interrupciones documentadas.
+- Diferenciación entre atención completa, parcial e interrumpida.
+- Correcciones versionadas y trazables.
+- Separación del registro clínico respecto al movimiento comercial de consumo.
+
+Conservar SPA-ARQ-03 y SPA-ARQ-07.
+
+El diseño físico y la retención/versionado sujetos a obligaciones legales permanecen pendientes de especificación técnica y validación aplicable.
+
+### TEC-01.3 — Modelo temporal de agenda
+
+Aprobar:
+
+- Horarios recurrentes.
+- Excepciones por fecha.
+- Intervalos UTC generados utilizando la zona horaria oficial de la empresa.
+- Reutilización de `CompanyTimeZone` e `ICompanyClock`, conforme a sus contratos reales.
+- Intervalos semiabiertos `[inicio, fin)` para permitir citas contiguas sin solape.
+- Preparación y traslados como restricciones adicionales de disponibilidad.
+
+No crear un sistema temporal paralelo.
+
+Respetar las reglas oficiales para horas ambiguas o inexistentes.
+
+### TEC-01.4 — Concurrencia de reservas
+
+Aprobar como dirección técnica:
+
+- Revalidación de disponibilidad en la transacción de reserva.
+- Bloqueos coordinados por profesional, sin incluir la sucursal en la identidad del recurso bloqueado.
+- Orden consistente de adquisición de bloqueos cuando participan varios profesionales.
+- Comprobación de preparación, traslados y ausencias.
+- Restricciones adicionales de PostgreSQL cuando sean compatibles con el esquema aprobado.
+- Reprogramación atómica: ante conflicto, conservar la cita original.
+
+No declarar `tstzrange`, índices, locks SQL o migraciones concretas como ya implementados.
+
+El mecanismo físico final requiere verificación y aprobación técnica específica.
+
+### TEC-01.5 — Libro de movimientos comerciales
+
+Aprobar:
+
+- Derechos separados por servicio.
+- Libro de movimientos trazables.
+- Operaciones idempotentes.
+- Consumos independientes del cierre clínico.
+- Compensaciones mediante nuevos movimientos, sin alterar históricos.
+- Reserva lógica de cupos programados sin marcarlos como consumidos.
+- Control de capacidad por prestación comercial, no por cantidad de profesionales.
+
+Mantener O-15/O-25 y SPA-ARQ-05.
+
+### TEC-01.6 — Auditoría clínica durable
+
+Aprobar:
+
+- Registrar accesos a información clínica sensible.
+- Persistencia durable y comprobada antes de entregar contenido protegido.
+- Si el registro obligatorio falla, no entregar dicho contenido.
+- Si se deniega un acceso, un fallo de auditoría nunca lo transforma en autorización.
+- Registrar metadatos necesarios sin copiar contenido clínico sensible.
+- Mantener los cambios clínicos dentro de una trazabilidad transaccional adecuada.
+
+**Condición técnica importante:** llamar a `EfAuditWriter.RecordAsync` no equivale por sí solo a haber confirmado una transacción.
+
+Seleccionar un mecanismo compatible con el sistema oficial de auditoría, sin modificar su contrato FROZEN por inferencia.
+
+### TEC-01.7 — Almacenamiento privado
+
+Aprobar como dirección técnica:
+
+- Adaptador específico de SPA sobre mecanismos oficiales autorizados.
+- Identificadores opacos.
+- Rutas controladas y validadas.
+- Acceso por recurso y autorización en cada descarga.
+- Prohibición de enlaces públicos permanentes.
+- Cifrado adecuado de archivos sensibles.
+- Gestión segura de claves y restauración.
+
+**No aprobar por inferencia un proveedor externo, un algoritmo concreto, un esquema definitivo de claves ni cambios de infraestructura compartida.**
+
+La custodia de claves, cifrado efectivo, recuperación, restauración y protección de respaldos siguen requiriendo diseño operativo y validación.
+
+No crear un sistema nuevo de respaldos.
+
+### TEC-01.8 — Integraciones oficiales
+
+Aprobar contratos mínimos de lectura con los módulos propietarios.
+
+- BusinessPartner conserva su ámbito real dentro del tenant.
+- Empleados conserva los datos laborales.
+- Items y Pricing conservan servicios, precios e impuestos.
+- Ventas conserva facturas y documentos comerciales.
+- Caja y CxC conservan pagos y saldos.
+- SPA conserva datos clínicos, agenda y derechos de sesiones.
+
+No acceder directamente a repositorios internos de otros módulos ni duplicar sus datos maestros.
+
+`IEmployeeDirectory` continúa como dependencia no implementada, sujeta a ADR-050.
+
+**Corrección del diagnóstico:** no afirmar que existe una bandera de habilitación Customer por empresa en BusinessPartner. El rol Customer es tenant-scoped; el expediente SPA sí conserva ámbito empresarial.
+
+### TEC-01.9 — Precisión de mediciones
+
+Aprobar como propuesta arquitectónica preferente:
+
+- Uso de tipos decimales anulables para mediciones opcionales.
+- Candidato `decimal?` en aplicación y `numeric(10,2)` en persistencia para kg y cm.
+- No equivalencia entre valor ausente y cero.
+- Comparaciones sin errores de representación binaria.
+
+**No declarar `numeric(10,2)` como estándar definitivo aprobado.**
+
+Debe completarse la revisión formal de precisión del dominio, resolución necesaria, almacenamiento y límites operativos antes de implementar.
+
+**Delimitación:** decisión funcional/dirección técnica aprobadas solo en su alcance; mecanismo detallado pendiente, autorización especial pendiente, validación jurídica/fiscal pendiente y dependencia no implementada se distinguen según cada regla. No cierre integral de C-01/C-02/O-13, no cierre O-14, no modificación LOCKED/FROZEN/CLOSED. ADR-051 PROPOSED / NO APROBADO; F0–F8 PENDING / NO AUTORIZADA. Ninguna implementación ni operación Git de escritura autorizada por esta entrada.
+
+## 21. SPA-TEC-02 — Seguridad Admin, cierre de citas interrumpidas y cupos
+
+**APROBADA POR EL PROPIETARIO — 2026-11-19.** Fuente: autorización expresa de consolidación documental única. Texto aprobado y límites completos:
+
+## Seguridad Admin, citas interrumpidas y cupos comerciales
+
+### TEC-02.A — Seguridad clínica y C-01
+
+Registrar seis reglas aprobadas:
+
+1. Admin no obtiene acceso clínico ordinario por su condición administrativa.
+2. El backend exige autorización clínica específica y evaluación del recurso protegido, incluso frente al bypass general.
+3. Los accesos excepcionales requieren motivo explícito y autorización de otra persona facultada. No se permite autoautorización.
+4. Las concesiones excepcionales son temporales, delimitadas por recurso y acción, y auditadas.
+5. Si no puede comprobarse la autorización o persistirse la auditoría obligatoria, se deniega la entrega del contenido sensible.
+6. La implementación requiere autorización especial para revisar el contrato LOCKED de Identity/Access/Kernel.
+
+**Diferenciar rigurosamente:**
+
+- Política funcional y dirección de seguridad: APROBADAS.
+- Revisión arquitectónica especial del contrato LOCKED: PENDIENTE.
+- Modificación del Kernel: NO AUTORIZADA.
+- Mecanismo específico de permisos sellados, concesiones y ejecución de excepciones: pendiente de diseño detallado.
+
+No declarar C-01 completamente CLOSED.
+
+Actualizar AT-11 y los apartados pertinentes de ADR-051.
+
+### TEC-02.B — Cierre de citas con atención interrumpida
+
+Registrar las reglas aprobadas:
+
+1. Mantener exclusivamente los cinco estados de cita existentes.
+2. La interrupción clínica no cierra automáticamente la cita.
+3. Un usuario autorizado podrá ejecutar un cierre administrativo explícito hacia `Atendida` cuando realmente haya existido atención, aunque el procedimiento no haya concluido.
+4. `Atendida` indica atención efectiva ocurrida y cierre administrativo, no necesariamente procedimiento clínico completado.
+5. El registro clínico conserva `Interrumpida` o su condición parcial. No cambiarlo artificialmente a `Finalizada`.
+6. Registrar responsable, fecha, motivo y referencia a la atención.
+7. Liberar la ocupación futura al cerrar administrativamente, sin alterar retroactivamente el intervalo original reservado ni borrar eventos de agenda.
+8. No generar consumo comercial automático.
+
+Actualizar la correspondencia previamente pendiente entre SPA-ARQ-02 y SPA-ARQ-03.
+
+No crear un sexto estado de cita.
+
+La implementación concreta de transiciones, permisos y efectos temporales sigue sujeta al diseño técnico y a las pruebas futuras.
+
+### TEC-02.C — Cupos de paquetes y atenciones parciales
+
+Registrar diez reglas:
+
+1. Los derechos se administran por servicio dentro de cada contrato.
+2. Cada prestación comercial programada reserva un cupo lógico; varios profesionales no multiplican la reserva.
+3. Cancelar antes de la atención libera el cupo cuando no existe consumo confirmado.
+4. Reprogramar conserva el compromiso comercial, evitando doble reserva.
+5. La atención completada permite una resolución de consumo autorizada y separada de su cierre clínico.
+6. La atención parcial o interrumpida no consume automáticamente.
+7. Mientras esté pendiente la resolución comercial, el cupo permanece retenido.
+8. Una resolución comercial autorizada puede consumir el derecho correspondiente o liberar el cupo, registrando responsable, motivo y evidencia.
+9. Los ajustes monetarios, notas de crédito y compensaciones económicas corresponden a los módulos comerciales oficiales.
+10. Los movimientos son trazables e idempotentes y no reescriben consumos anteriores.
+
+La decisión de consumo o liberación debe respetar las condiciones comerciales aplicables; no se permite convertir arbitrariamente una prestación parcial en una prestación completa.
+
+No interpretar estas reglas como permiso para facturar, cobrar o modificar CxC desde SPA.
+
+**Delimitación:** decisión funcional/dirección técnica aprobadas solo en su alcance; mecanismo detallado pendiente, autorización especial pendiente, validación jurídica/fiscal pendiente y dependencia no implementada se distinguen según cada regla. No cierre integral de C-01/C-02/O-13, no cierre O-14, no modificación LOCKED/FROZEN/CLOSED. ADR-051 PROPOSED / NO APROBADO; F0–F8 PENDING / NO AUTORIZADA. Ninguna implementación ni operación Git de escritura autorizada por esta entrada.
+
+## 22. SPA-TEC-03 — Tratamientos, paquetes y relación con Ventas
+
+**APROBADA POR EL PROPIETARIO — 2026-11-19.** Fuente: autorización expresa de consolidación documental única. Texto aprobado y límites completos:
+
+## Tratamientos, paquetes y relación con Ventas
+
+### 1. Principio arquitectónico aprobado
+
+SPA no tendrá facturación ni cobranza propia.
+
+La relación conceptual aprobada es:
+
+**Plan de tratamiento SPA → Prestaciones del plan → Contratos comerciales SPA → Facturas y líneas oficiales de Ventas → Información oficial de Caja/CxC.**
+
+La relación será explícita mediante identificadores y referencias válidas.
+
+No vincular automáticamente una factura a un plan únicamente por pertenecer al mismo BusinessPartner.
+
+Un plan puede existir antes de su contratación completa.
+
+Un plan puede relacionarse con varias facturas y varios contratos comerciales.
+
+Conservar separadas las situaciones:
+
+- Propuesto.
+- Contratado.
+- Facturado.
+- Pagado.
+- Realizado.
+
+No presentar pagos como sesiones consumidas ni reservas como sesiones realizadas.
+
+El contrato del paquete continúa sujeto a O-15: creación explícita después de validar una factura autorizada, con referencia a factura y línea y fuera de la transacción de autorización de Ventas.
+
+### 2. Diez reglas comerciales aprobadas
+
+#### Regla 1 — Sustitución de servicios
+
+Permitir sustituciones únicamente con autorización y equivalencia documentada.
+
+No convertir libremente sesiones de un servicio en otro.
+
+#### Regla 2 — Equivalencias
+
+Las equivalencias deberán constar en las condiciones comerciales aplicables o mediante autorización específica documentada.
+
+Sin equivalencia válida, no realizar la sustitución.
+
+#### Regla 3 — Historial de sustituciones
+
+Conservar:
+
+- Servicio original.
+- Servicio sustituto.
+- Cantidades.
+- Motivo.
+- Responsable y autorización.
+- Fecha.
+- Documento de respaldo.
+
+No sobrescribir ni eliminar derechos o movimientos anteriores para ocultar la sustitución.
+
+#### Regla 4 — Transferencia de beneficiario
+
+No permitir transferencias automáticas.
+
+Una transferencia excepcional requerirá:
+
+- Autorización.
+- Respaldo comercial.
+- Verificación del alcance de los derechos transferibles.
+- Revisión de identidad y consentimientos de las personas involucradas.
+
+Nunca trasladar el expediente clínico de un cliente a otro.
+
+La documentación jurídica específica permanece sujeta a validación.
+
+#### Regla 5 — Ampliaciones
+
+Permitir agregar servicios o sesiones mediante documentos comerciales oficiales válidos.
+
+Cada ampliación deberá conservar:
+
+- Referencia al contrato correspondiente.
+- Documento y línea de respaldo.
+- Derechos nuevos incorporados.
+- Historial de movimientos.
+
+No modificar retrospectivamente el contrato original para ocultar la ampliación.
+
+#### Regla 6 — Vigencia de ampliaciones
+
+Una ampliación no prolonga automáticamente la vigencia de los derechos originales.
+
+Toda extensión requiere aprobación expresa, registro y respaldo aplicable.
+
+Permitir controlar la vigencia correspondiente a los derechos incorporados, sin perder su procedencia.
+
+La estrategia exacta de persistencia y cálculo de vigencias continúa sujeta a diseño técnico.
+
+#### Regla 7 — Vencimientos
+
+Una vez vencidos los derechos:
+
+- No permitir nuevas reservas sobre ellos.
+- No permitir nuevos consumos ordinarios sobre ellos.
+- Identificar citas previamente programadas para revisión manual.
+- No cancelar automáticamente dichas citas.
+- Mantener el historial de compromisos y movimientos.
+
+Conservar SPA-ARQ-05.
+
+#### Regla 8 — Cambios comerciales
+
+Las devoluciones, notas de crédito y anulaciones se gestionan en Ventas.
+
+SPA podrá consultar los documentos oficiales vinculados y realizar, mediante autorización, los ajustes correspondientes a los derechos de atención.
+
+No modificar retrospectivamente el historial clínico.
+
+No generar documentos fiscales desde SPA.
+
+La política tributaria exacta y sus consecuencias monetarias requieren validación específica.
+
+#### Regla 9 — Facturación, pagos y cuotas
+
+SPA consultará por medio de contratos oficiales:
+
+- Facturas.
+- Líneas facturadas e Items asociados.
+- Estado comercial y fiscal disponible.
+- Pagos y abonos.
+- Cuotas y vencimientos cuando existan.
+- Saldos monetarios informados por CxC.
+
+No duplicar tablas financieras, calendarios de cuotas ni lógica de cobros.
+
+No reconstruir saldos monetarios mediante lógica paralela en SPA.
+
+La existencia de cuotas pendientes no suspende automáticamente derechos de sesiones. Cualquier restricción deberá estar fundada en una política comercial expresamente aprobada.
+
+Los estados y condiciones exactos de elegibilidad fiscal/SRI permanecen pendientes de validación.
+
+#### Regla 10 — Trazabilidad del plan
+
+Cada prestación del plan podrá vincularse con los contratos y documentos comerciales que realmente le correspondan.
+
+La interfaz operativa de SPA deberá permitir consultar:
+
+- Servicios propuestos.
+- Servicios contratados.
+- Documentos y líneas facturadas.
+- Estado de pagos disponible mediante el ERP.
+- Sesiones reservadas.
+- Sesiones realizadas.
+- Derechos restantes.
+
+Las consultas deben reutilizar contratos, permisos y navegación oficiales.
+
+No duplicar pantallas completas de Ventas o CxC.
+
+No inferir un porcentaje de facturación del plan cuando falten importes comparables o asignaciones verificables.
+
+La interfaz detallada será diseñada posteriormente con los componentes oficiales de ERP ZH.
+
+### 3. Preservar las fronteras de responsabilidad
+
+**SPA:** planificación clínica, agenda, atención, contratos de paquetes y derechos de sesiones.
+
+**Items:** productos y servicios comerciales oficiales.
+
+**Ventas:** facturas, líneas, impuestos, autorizaciones y notas de crédito.
+
+**Caja/CxC:** cobros, cuotas, pagos y saldos.
+
+**Contabilidad:** asientos y registros contables.
+
+**Inventario:** movimientos oficiales de existencias.
+
+**Anticipos de Clientes:** proceso transversal independiente conforme a DIR-SSOT-01.
+
+SPA no crea otro sistema financiero.
+
+**Delimitación:** decisión funcional/dirección técnica aprobadas solo en su alcance; mecanismo detallado pendiente, autorización especial pendiente, validación jurídica/fiscal pendiente y dependencia no implementada se distinguen según cada regla. No cierre integral de C-01/C-02/O-13, no cierre O-14, no modificación LOCKED/FROZEN/CLOSED. ADR-051 PROPOSED / NO APROBADO; F0–F8 PENDING / NO AUTORIZADA. Ninguna implementación ni operación Git de escritura autorizada por esta entrada.
+
+Referencia normativa: contrato §4.3/7.3/8.7/10.2/11.5/11.6/15.2/18.1/21.5/22.4/27; ADR explica direcciones y mecanismos pendientes; plan fases/dependencias. Las menciones previas de cuestiones pendientes conservan el alcance de la decisión original; SPA-TEC-01/02/03 aportan ahora resolución expresa parcial, sin alterar los enunciados SPA-ARQ ni O-15/O-25.
