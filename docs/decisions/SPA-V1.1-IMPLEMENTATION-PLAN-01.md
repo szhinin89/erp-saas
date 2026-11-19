@@ -1,6 +1,6 @@
 # SPA V1.1 — Plan de implementación por fases
 
-**PROPUESTO — ADR-051 PROPOSED / NO APROBADO — NO IMPLEMENTADO — NINGUNA FASE AUTORIZADA.** Fecha: 2026-11-18. Alcance funcional aprobado por SPA-DEC-115/116; este plan ordena trabajo futuro; **no autoriza comenzar ninguna fase**, ni siquiera la preparación de solo lectura, por existir. No autoriza implementar Empleados.
+**ADR-051 ACCEPTED / APROBADO (2026-11-19, REG §25) — NO IMPLEMENTADO — NINGUNA FASE AUTORIZADA.** Fecha: 2026-11-18. Alcance funcional aprobado por SPA-DEC-115/116; este plan ordena trabajo futuro; **no autoriza comenzar ninguna fase**, ni siquiera la preparación de solo lectura, por existir. No autoriza implementar Empleados.
 
 Arquitectura y justificación: [ADR-051](ADR-051-spa-v1.1-architecture.md). Comportamiento, pantallas y criterios: [contrato](SPA-V1.1-CONTRACT-SPEC-01.md). Aprobaciones literales: [registro](SPA-V1.1-APPROVED-DECISIONS-01.md). Estado: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este plan no es una SSOT ni replica el contrato.
 
@@ -75,11 +75,11 @@ ADR §5.10–5.15 concentra una opción técnica preferente por AT-01..12, contr
 | F7 | Consultas sobre procesos disponibles y permisos oficiales; no exige resolver Anticipos para reportes independientes. |
 | F8 | Implementaciones previas autorizadas/gates PASS y evidencia técnica/operativa real, no sustituida por este diseño. |
 
-Todos los estados siguen **PENDING / NO AUTORIZADA**, ADR-051 **PROPOSED / NO APROBADO**. Próxima acción propuesta: revisión conjunta de la selección y autorización especial acotada de C-01; validaciones externas y dependencia Empleados se tramitan por sus propios alcances. No se autoriza preparar código, modificar módulos protegidos o migraciones, ni cambiar STATUS/WORK_QUEUE en esta operación.
+Todos los estados siguen **PENDING / NO AUTORIZADA**, ADR-051 **ACCEPTED / APROBADO** (2026-11-19). Próxima acción posible: solicitar la autorización especial acotada de C-01 y la autorización expresa de F0; validaciones externas y dependencia Empleados se tramitan por sus propios alcances. No se autoriza preparar código, modificar módulos protegidos o migraciones, ni cambiar STATUS/WORK_QUEUE en esta operación.
 
 ## 7. Especificación operativa por fase
 
-**Estado: PROPUESTA DE EJECUCIÓN — NO AUTORIZADA.** Desarrolla la secuencia de §2 hasta el nivel necesario para que otro agente desarrolle cada fase sin repetir la planificación. No cambia fases, decisiones aprobadas ni exclusiones. Cada fase conserva **PENDING / NO AUTORIZADA** y exige autorización expresa con su lista exacta de archivos (§1). Comportamiento: [contrato §31](SPA-V1.1-CONTRACT-SPEC-01.md#31-especificación-operativa-por-área-funcional) y [§23.4](SPA-V1.1-CONTRACT-SPEC-01.md#234-especificación-operativa-de-las-19-fichas-selección-técnica-recomendada); modelo, API y algoritmos: [ADR §5.16–5.26](ADR-051-spa-v1.1-architecture.md#516--526-diseño-técnico-implementable-selección-recomendada-spa-sel). Condiciones externas `COND-nn`: [contrato §31.15](SPA-V1.1-CONTRACT-SPEC-01.md#3115-condiciones-externas-y-protegidas-no-cumplidas). **Las rutas de archivos son candidatas, no existen y no deben presentarse como existentes**; raíces candidatas: `backend/src/ERP.Domain/Modules/Spa/`, `backend/src/ERP.Application/Modules/Spa/UseCases/`, `backend/src/ERP.Infrastructure/Persistence/Spa/`, `backend/src/ERP.API/Controllers/Spa/Spa<Área>Controller.cs`, `frontend/src/modules/spa/`. Todo cambio de esquema se integra en la baseline única (AT-12) con autorización separada.
+**Estado: PLAN DE EJECUCIÓN ALINEADO CON ADR-051 ACCEPTED (SPA-SEL-01..12 aprobadas el 2026-11-19) — NINGUNA FASE AUTORIZADA.** Desarrolla la secuencia de §2 hasta el nivel necesario para que otro agente desarrolle cada fase sin repetir la planificación. No cambia fases, decisiones aprobadas ni exclusiones. Cada fase conserva **PENDING / NO AUTORIZADA** y exige autorización expresa con su lista exacta de archivos (§1). Comportamiento: [contrato §31](SPA-V1.1-CONTRACT-SPEC-01.md#31-especificación-operativa-por-área-funcional) y [§23.4](SPA-V1.1-CONTRACT-SPEC-01.md#234-especificación-operativa-de-las-19-fichas-selecciones-técnicas-aprobadas); modelo, API y algoritmos: [ADR §5.16–5.26](ADR-051-spa-v1.1-architecture.md#516--526-diseño-técnico-implementable-selecciones-spa-sel-aprobadas). Condiciones externas `COND-nn`: [contrato §31.15](SPA-V1.1-CONTRACT-SPEC-01.md#3115-condiciones-externas-y-protegidas-no-cumplidas). **Las rutas de archivos son candidatas, no existen y no deben presentarse como existentes**; raíces candidatas: `backend/src/ERP.Domain/Modules/Spa/`, `backend/src/ERP.Application/Modules/Spa/UseCases/`, `backend/src/ERP.Infrastructure/Persistence/Spa/`, `backend/src/ERP.API/Controllers/Spa/Spa<Área>Controller.cs`, `frontend/src/modules/spa/`. Todo cambio de esquema se integra en la baseline única (AT-12) con autorización separada.
 
 ### 7.1 Entregas internas y orden de construcción (resolución de dependencias circulares)
 
@@ -188,8 +188,8 @@ Secuencia lineal sugerida: F0 → F1.a–d → F2.a → F4.a → F3.a → F5.a �
 | 9 Pruebas unitarias | Matrices de transición; validación de perfil; reglas «borrador no consume», «interrumpida conserva parcial», «corrección no crea atención» |
 | 10 Pruebas de integración | PostgreSQL real: unicidad perfil/Item; `xmin` en borrador; inicio con/sin consentimiento; revisión numerada única; materiales sin movimiento de inventario (consulta de Kardex sin cambios) |
 | 11 E2E | Configurar servicio → plan → sesión borrador → iniciar (con consentimiento) → interrumpir → corregir; cerrar plan con pendientes |
-| 12 Escenarios negativos | Product como servicio; servicio inactivo; iniciar sin consentimiento; finalizar sin permiso; corregir sin motivo; editar sesión finalizada directamente; cierre de plan sin confirmación |
-| 13 Criterios de salida | `SPA-AC-OP-03.x`, `05.x`, `06.x`; AC-ARQ03-01..08; PT-15; plan sin contrato válido; ninguna sesión habilitada sin consentimiento aplicable |
+| 12 Escenarios negativos | Product como servicio; servicio inactivo; iniciar sin consentimiento; finalizar sin permiso; corregir sin motivo; editar sesión finalizada directamente; cierre de plan sin confirmación; **DP-01..03 (aprobadas):** reanudar conserva el evento `Suspended`; reabrir un plan Cancelado/Cerrado → `SPA_PLAN_INVALID_STATE`; suspender/cancelar/cerrar un plan no cancela citas, no modifica sesiones ni libera compromisos de cupo (las citas aparecen en «Citas por revisar») |
+| 13 Criterios de salida | `SPA-AC-OP-03.x`, `05.x`, `06.x`; AC-ARQ03-01..08; PT-15; plan sin contrato válido; DP-01..03 (aprobadas el 2026-11-19) verificados por pruebas de aceptación; ninguna sesión habilitada sin consentimiento aplicable |
 | 14 Fuera | Consumo comercial (F6), cita↔sesión completa (F5.c), Kardex automático, calendario de equipos, walk-in sin decisión O-10 |
 | 15 Autorizaciones / validaciones | COND-06 (versionado/conservación), COND-04 (consentimiento aplicable), COND-10 |
 
@@ -257,19 +257,19 @@ Secuencia lineal sugerida: F0 → F1.a–d → F2.a → F4.a → F3.a → F5.a �
 
 | Elemento | Especificación |
 |---|---|
-| 1 Objetivo | Presentar la jornada y el seguimiento operativo con consultas básicas |
-| 2 Funcionalidades | Contrato §31.14; Pantallas 15 y 19 |
+| 1 Objetivo | Presentar la jornada y el seguimiento operativo con consultas básicas **sin contenido clínico**, y verificar que el seguimiento clínico aprobado (evolución, Pantalla 10) solo se consulte por las consultas protegidas |
+| 2 Funcionalidades | Contrato §31.14; Pantallas 15 y 19 (operativas); verificación de la Pantalla 10 y de `GET /spa/care-records/{id}/evolution` (seguimiento clínico, entregado en F2/F3) |
 | 3 Entidades y casos de uso | GetPanel, ListFollowUp, GetOperationalReport R1–R7; sin entidades nuevas |
-| 4 Backend y API | `GET /spa/panel`, `/spa/follow-up`, `/spa/reports/{kind}` sobre agregados propios |
+| 4 Backend y API | `GET /spa/panel`, `/spa/follow-up` (seguimiento **operativo**: conteos y pendientes) y `/spa/reports/{kind}` sobre agregados propios, sin contenido clínico. El **seguimiento clínico** no usa estos endpoints: `GET /spa/care-records/{id}/evolution` con `spa.sessions.view`/`spa.assessments.view`/`spa.photos.view` según la sección, guard clínico e intento auditado (ADR §5.21) |
 | 5 Pantallas y frontend | Panel y reportes; revisión responsive de todo el módulo (computadora/tablet/celular) |
 | 6 Integraciones | Agenda, sesiones, paquetes, lecturas comerciales |
 | 7 Dependencias | F2–F6 según cada consulta |
-| 8 Reglas de seguridad | Sin clínica; permiso del dato de origen; sin exportación |
+| 8 Reglas de seguridad | Panel, seguimiento operativo y reportes: sin contenido clínico (solo agregados y referencias no clínicas); seguimiento clínico: únicamente consultas protegidas por permisos clínicos, guard de recurso y auditoría durable; permiso del dato de origen; sin exportación |
 | 9 Pruebas unitarias | Cálculo de conteos y filtros; omisión por permiso |
-| 10 Pruebas de integración | Conteos = datos de origen; aislamiento entre empresas |
+| 10 Pruebas de integración | Conteos = datos de origen; aislamiento entre empresas; la evolución clínica se entrega solo con permiso clínico, guard e intento auditado confirmado |
 | 11 E2E | Recorrido del panel a cada proceso; responsive en tres anchos |
-| 12 Escenarios negativos | Usuario sin permiso; empresa distinta; filtros extremos; sin datos |
-| 13 Criterios de salida | `SPA-AC-OP-14.x`, `SPA-AC-UI-15/19`; H-11..15; sin gráficos ni métricas inventadas |
+| 12 Escenarios negativos | Usuario sin permiso; empresa distinta; filtros extremos; sin datos; **autorización negativa del seguimiento clínico:** usuario con `spa.reports.view` o `spa.agenda.view` sin permiso clínico → 403 en `evolution`; Admin sin concesión → 403; permiso de una sola sección (p. ej. solo `spa.photos.view`) → las demás secciones omitidas; recurso de otra empresa → 404; fallo del registro de acceso → no se entrega; ningún reporte o panel contiene texto clínico, mediciones ni fotografías |
+| 13 Criterios de salida | `SPA-AC-OP-14.x`, `SPA-AC-UI-10/15/19`; H-11..15; pruebas de autorización negativa del seguimiento clínico en verde; sin gráficos ni métricas inventadas |
 | 14 Fuera | Dashboard analítico, exportaciones, indicadores calculados no aprobados |
 | 15 Autorizaciones / validaciones | Ninguna adicional |
 

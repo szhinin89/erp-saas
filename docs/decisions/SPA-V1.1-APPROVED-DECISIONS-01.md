@@ -1695,7 +1695,7 @@ Referencia normativa: contrato §4.3/7.3/8.7/10.2/11.5/11.6/15.2/18.1/21.5/22.4/
 
 **Dirección aprobada:** SPA-ARQ-01..08 y SPA-TEC-01..03 permanecen íntegras en §§12–22, junto a SPA-DEC-115/116, O-15/O-25 y DIR-SSOT-01. No se crea SPA-TEC-04 ni se atribuye aprobación de nuevos mecanismos al propietario.
 
-**Selección técnica recomendada y contrastada estáticamente:** [ADR-051 §5.10](ADR-051-spa-v1.1-architecture.md#510-selección-técnica-concentrada-f0--recomendación-verificada-no-aprobación-del-propietario) contiene matriz AT-01..12; §5.11 modelo/integridad/agenda/libro, §5.12 contratos mínimos, §5.13 propuesta protegida C-01, §5.14 auditoría/archivos y §5.15 precisión/esquema/gates. No es evidencia de implementación ni pruebas PostgreSQL/operativas. Contrato conserva comportamiento normativo; ADR arquitectura elegida como recomendación; plan dependencias y gates.
+**Selección técnica recomendada y contrastada estáticamente:** [ADR-051 §5.10](ADR-051-spa-v1.1-architecture.md#510-selección-técnica-concentrada-f0--contrastada-con-precedentes-aprobada-reg-25) contiene matriz AT-01..12; §5.11 modelo/integridad/agenda/libro, §5.12 contratos mínimos, §5.13 propuesta protegida C-01, §5.14 auditoría/archivos y §5.15 precisión/esquema/gates. No es evidencia de implementación ni pruebas PostgreSQL/operativas. Contrato conserva comportamiento normativo; ADR arquitectura elegida como recomendación; plan dependencias y gates.
 
 **Autorización especial pendiente:** clasificación clínica sin bypass/wildcard, concesiones y protección frente a autoescalamiento afectan Kernel/Access/sesión/menú/UI compartida. Impacto concreto y archivos en ADR §5.13; ni revisión especial del contrato LOCKED ni modificación protegida autorizadas por este encargo. C-01 no CLOSED. Lectores propietarios nuevos de Ventas y Finance solo firmas candidatas; implementar/extender módulos FROZEN exige su autorización propia.
 
@@ -1705,23 +1705,37 @@ Referencia normativa: contrato §4.3/7.3/8.7/10.2/11.5/11.6/15.2/18.1/21.5/22.4/
 
 **Estado:** ADR-051 PROPOSED / NO APROBADO. F0–F8 PENDING / NO AUTORIZADA. Selección concentrada preparada para revisión conjunta con reservas explícitas, sin aceptación integral, código, migraciones, staging, commit ni push. STATUS/WORK_QUEUE no se modifican en este encargo.
 
-## 24. Planificación completa de SPA V1.1 — selecciones SPA-SEL (recomendación, sin aprobación del propietario)
+## 24. Planificación completa de SPA V1.1 — selecciones SPA-SEL (propuestas el 2026-11-19; aprobadas, ver §25)
 
 **2026-11-19 — ENCARGO DE CIERRE DOCUMENTAL COMPLETO, SOLO DOCUMENTACIÓN.** El propietario ordenó completar la planificación de SPA V1.1 en los cuatro documentos oficiales, seleccionar soluciones concretas cuando los estándares y decisiones existentes lo permitan y registrarlas como selección técnica recomendada, **sin atribuirles aprobación inexistente**. Este apartado no registra ninguna decisión nueva del propietario: SPA-DEC-115/116, SPA-ARQ-01..08, SPA-TEC-01..03, O-15, O-25, DIR-SSOT-01, las 19 fichas y las diez exclusiones permanecen íntegras.
 
 | ID | Selección recomendada | Dónde está | Estado |
 |---|---|---|---|
-| SPA-SEL-01 | Modelo de datos físico candidato (tablas `spa_*`, claves, unicidades, FK compuestas, versionado) | ADR §5.16 | RECOMENDADA — pendiente de decisión del propietario |
-| SPA-SEL-02 | Casos de uso backend, resultados y errores; sucursales vacías = sin restricción; preparación NULL = sin preparación | ADR §5.17; contrato §31.4 | RECOMENDADA |
-| SPA-SEL-03 | API candidata `api/v1/spa/...` con las convenciones reales (envelope, permisos, idempotencia) | ADR §5.18 | RECOMENDADA |
-| SPA-SEL-04 | Frontend: módulo `modules/spa`, rutas, componentes reutilizados y nuevos justificados; especificación operativa de las 19 pantallas | ADR §5.19; contrato §23.4 | RECOMENDADA |
-| SPA-SEL-05 | Algoritmo de disponibilidad, traslados (par no configurado ⇒ rechazo), reserva atómica, locks ordenados, exclusión GiST, reprogramación y cierre administrativo | ADR §5.20 | RECOMENDADA |
-| SPA-SEL-06 | Catálogo de permisos `spa.*` sin duplicados (navegación / acciones / recursos sensibles), clasificación clínica y guard de recurso (la ejecución depende de COND-01) | ADR §5.21; contrato §31.1 | RECOMENDADA; ejecución BLOQUEADA hasta autorización especial |
-| SPA-SEL-07 | Verificación de contratos de integración reales y brechas (`ISalesEntitlementReader`, `IReceivableCollectionReader`, `IEmployeeDirectory`) | ADR §5.22 | RECOMENDADA; dependencias no implementadas |
-| SPA-SEL-08 | Matrices de transición de cita, sesión, plan (4 estados con historial de eventos) y contrato; pendientes con recomendación: DP-01 reanudar plan, DP-02 no reabrir planes finales, DP-03 citas y cupos asociados sin cambio automático | ADR §5.23; contrato §31 | RECOMENDADA; SPA-ARQ-02 no aprobó transiciones adicionales |
-| SPA-SEL-09 | Registro de errores `SPA_*` y traducción de concurrencia | ADR §5.24; contrato §31.16 | RECOMENDADA |
-| SPA-SEL-10 | Estrategia de pruebas técnicas por capa | ADR §5.25 | RECOMENDADA |
+| SPA-SEL-01 | Modelo de datos físico candidato (tablas `spa_*`, claves, unicidades, FK compuestas, versionado) | ADR §5.16 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-02 | Casos de uso backend, resultados y errores; sucursales vacías = sin restricción; preparación NULL = sin preparación | ADR §5.17; contrato §31.4 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-03 | API candidata `api/v1/spa/...` con las convenciones reales (envelope, permisos, idempotencia) | ADR §5.18 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-04 | Frontend: módulo `modules/spa`, rutas, componentes reutilizados y nuevos justificados; especificación operativa de las 19 pantallas | ADR §5.19; contrato §23.4 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-05 | Algoritmo de disponibilidad, traslados (par no configurado ⇒ rechazo), reserva atómica, locks ordenados, exclusión GiST, reprogramación y cierre administrativo | ADR §5.20 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-06 | Catálogo de permisos `spa.*` sin duplicados (navegación / acciones / recursos sensibles), clasificación clínica y guard de recurso (la ejecución depende de COND-01) | ADR §5.21; contrato §31.1 | **APROBADA 2026-11-19 (§25)**; ejecución BLOQUEADA hasta autorización especial (COND-01) |
+| SPA-SEL-07 | Verificación de contratos de integración reales y brechas (`ISalesEntitlementReader`, `IReceivableCollectionReader`, `IEmployeeDirectory`) | ADR §5.22 | **APROBADA 2026-11-19 (§25)**; dependencias no implementadas |
+| SPA-SEL-08 | Matrices de transición de cita, sesión, plan (4 estados con historial de eventos) y contrato; DP-01 reanudar plan, DP-02 no reabrir planes finales y DP-03 citas, clínica y compromisos sin cambio automático, aprobadas | ADR §5.23; contrato §31 | **APROBADA 2026-11-19 (§25)**; DP-01..03 aprobadas |
+| SPA-SEL-09 | Registro de errores `SPA_*` y traducción de concurrencia | ADR §5.24; contrato §31.16 | **APROBADA 2026-11-19 (§25)** |
+| SPA-SEL-10 | Estrategia de pruebas técnicas por capa | ADR §5.25 | **APROBADA 2026-11-19 (§25)** |
 | SPA-SEL-11 | Condiciones externas y protegidas COND-01..13 con verificación, responsable, fase y prohibiciones | ADR §5.26; contrato §31.15 | VIGENTES — ninguna cumplida |
-| SPA-SEL-12 | Entregas internas y orden de construcción que resuelven los ciclos F3↔F4 y F5↔F6 sin simular capacidades: la reserva vinculada a paquete responde `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` hasta F6.c y la atención no inicia sin cita hasta F5.c | Plan §7.1 | RECOMENDADA; fases siguen PENDING / NO AUTORIZADA |
+| SPA-SEL-12 | Entregas internas y orden de construcción que resuelven los ciclos F3↔F4 y F5↔F6 sin simular capacidades: la reserva vinculada a paquete responde `SPA_PACKAGE_CAPABILITY_UNAVAILABLE` hasta F6.c y la atención no inicia sin cita hasta F5.c | Plan §7.1 | **APROBADA 2026-11-19 (§25)**; fases siguen PENDING / NO AUTORIZADA |
 
 **Límites.** No se aprueba la modificación de Identity/Access/Kernel (C-01), no se implementa Empleados, no se declaran válidas la firma ni la atención a menores, no se fija política de conservación (C-02), no se infiere regla fiscal/SRI, no se afirma custodia operativa de claves, no se cambian módulos FROZEN/CLOSED y no se adopta `numeric(10,2)` como precisión definitiva. **ADR-051 permanece PROPOSED / NO APROBADO y SPA-F0..F8 PENDING / NO AUTORIZADA.** Ninguna operación Git de escritura queda autorizada por esta entrada.
+
+## 25. Aprobación arquitectónica de ADR-051, SPA-SEL-01..12 y DP-01..03
+
+**2026-11-19 — APROBACIÓN EXPRESA DEL PROPIETARIO** (instrucción «Registrar aprobación arquitectónica de SPA V1.1», que autoriza actualizar exclusivamente los cuatro documentos oficiales de SPA). Texto de la aprobación:
+
+1. **ADR-051** aprobado como arquitectura de referencia para SPA V1.1 → estado **ACCEPTED / APROBADO**.
+2. **SPA-SEL-01..12** aprobadas como selecciones técnicas de implementación, **sujetas a sus condiciones expresas** (COND-01..13, contrato §31.15).
+3. **DP-01:** se permite reanudar planes suspendidos, conservando el historial de suspensión.
+4. **DP-02:** no se permite reabrir planes cancelados o cerrados; cuando corresponda, se crea otro plan.
+5. **DP-03:** suspender, cancelar o cerrar un plan no cancela automáticamente citas, no modifica registros clínicos y no libera compromisos comerciales; las citas afectadas se identifican para revisión.
+
+**Límites expresos (esta aprobación NO autoriza):** implementar código de SPA o Empleados; ejecutar ninguna fase F0–F8; modificar Identity, Access o Kernel protegidos (C-01); modificar Ventas, CxC, MasterData, Items o infraestructura protegida; crear migraciones o modificar bases de datos; declarar cumplidas COND-01..13; considerar aprobada la precisión definitiva `numeric(10,2)`; declarar verificada la validez jurídica de firmas, menores, conservación o requisitos SRI. Cualquier cambio protegido y cada fase requieren autorización específica.
+
+**Efectos sobre este registro.** Las entradas fechadas anteriores que describen ADR-051 como «PROPOSED / NO APROBADO» o las selecciones como «recomendación sin aprobación» conservan su redacción como historia y quedan **superadas desde el 2026-11-19** por esta entrada; SPA-DEC-115/116, SPA-ARQ-01..08, SPA-TEC-01..03, O-15, O-25, las 19 fichas y las diez exclusiones no cambian. F0–F8 permanecen **PENDING / NO AUTORIZADA**. Ninguna operación Git de escritura queda autorizada por esta entrada.
