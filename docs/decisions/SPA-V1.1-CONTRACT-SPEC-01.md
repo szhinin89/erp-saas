@@ -202,6 +202,8 @@ Una funcionalidad no autorizada **no está definitivamente excluida**: puede inc
 
 ## 4. Dependencias y límites con otros módulos
 
+**Revisión concentrada F0 (recomendación técnica, no nueva aprobación):** [ADR-051 §5.10–5.15](ADR-051-spa-v1.1-architecture.md#510-selección-técnica-concentrada-f0--recomendación-verificada-no-aprobación-del-propietario) selecciona integraciones/modelo/seguridad. §5.12 del ADR inventaría proyecciones mínimas, consumidores y permisos; solo lectores nuevos candidatos Ventas/Finance donde falte superficie pública suficiente. No implementados ni acceso a repositorios internos ajenos. BP/Customer tenant sin bandera empresarial; IEmployeeDirectory bajo ADR-050 pendiente.
+
 **Referencia normativa principal de SPA-ARQ-08 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Texto literal y límites: [REG §19](SPA-V1.1-APPROVED-DECISIONS-01.md#19-spa-arq-08--integraciones-con-erp-zh). §4.2 define fronteras funcionales; la tabla y §4.1 conservan evidencia técnica previa, sin nueva inspección de código ni contratos implementados.
 
 Capacidades verificadas [E] que condicionan el contrato. Que existan no las convierte en decisiones de Spa.
@@ -306,6 +308,8 @@ SPA-ARQ-08 §4.2 regla 2 confirma propiedad laboral de Empleados y responsabilid
 **Verificación pendiente:** `V-02` (contrato `IEmployeeDirectory` real, EMP-E1 a E6b). **Bloqueo:** `D-01` (§29).
 
 ## 7. Sucursales y disponibilidad
+
+**Selección técnica F0 recomendada:** ADR §5.11 concreta horario/excepciones, ocupación y transacción/locks/exclusión GiST; la obligación aprobada sigue §7.3/8.7. No son capacidades ya implementadas ni SQL aprobado por el propietario.
 
 **Referencia funcional principal de SPA-ARQ-04 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Texto literal y límites: [REG §15](SPA-V1.1-APPROVED-DECISIONS-01.md#15-spa-arq-04--agenda-y-disponibilidad). Complementa SPA-DEC-115/116 y SPA-ARQ-01/02/03 sin ampliar O-15/O-25. **Implementable hoy: no.** BL-01/09 y detalle técnico aplicable siguen pendientes.
 
@@ -439,6 +443,8 @@ La correspondencia funcional antes pendiente queda resuelta expresamente; no sex
 
 ## 9. Servicios y tratamientos
 
+**Selección técnica F0 recomendada:** perfil por Item Service y catálogo Procedure con vínculos N:M operativos ordenados según ADR §5.11; duración efectiva explícita, sin composición comercial/cupo inferidos. O-11 pasa a representación recomendada para revisión, sin alterar Items.
+
 SPA-ARQ-08 §4.2 regla 3 aprueba integración con Items Service y propiedad ERP de precio/impuestos; configuración operativa SPA, relación servicio–procedimiento y contratos técnicos pendientes.
 
 **Qué hace:** define qué se vende y qué procedimiento se realiza. **Estado de la sección:** «servicio = Item `Service`» es VIGENTE-ERP; duración configurable aprobada SPA-ARQ-04 (§7.2 regla 2); resto PROPUESTO o PENDIENTE. **Implementable hoy:** no. **Bloqueos:** BL-01, BL-09 (§29.1).
@@ -447,8 +453,8 @@ SPA-ARQ-08 §4.2 regla 3 aprueba integración con Items Service y propiedad ERP 
 |---|---|---|---|
 | SPA-SV-01 / SPA-OPS-SRV-01 / DUP-14 | Todo servicio comercializable es un Item `Service` de la empresa; Spa no crea otro catálogo comercial. Precio e impuestos los resuelve el ERP | VIGENTE-ERP y APROBADO frontera SPA-ARQ-08 §4.2 regla 3; mecanismo pendiente | A + E/T |
 | SPA-OPS-SRV-03 / SRV-04 | Duración configurable conforme §7.2 regla 2; representación numérica, sucursales/condiciones propias e instantánea de duración/nombre siguen candidatos técnicos | APROBADO funcional SPA-ARQ-04 solo duración; mecanismo PROPUESTO | A + T |
-| SPA-OPS-SRV-02 | **Relación servicio ↔ procedimiento:** A perfil 1:1 por Item (`SpaServiceProfile`); B catálogo `Procedure` con relación N:M a Items (permite servicios compuestos) | PENDIENTE (`O-11`) | P |
-| Servicio comercial / procedimiento / tratamiento | El servicio es lo que se vende (Items); el procedimiento es lo que se realiza sobre la persona (Spa); tratamiento operativo ejecuta el plan individual/multisesión y su ciclo aprobado (§10); O-11 solo mantiene pendiente el modelado servicio–procedimiento y vínculos técnicos entre prestación comercial y bloques de cita según SPA-ARQ-01 | PROPUESTO | T |
+| SPA-OPS-SRV-02 | Perfil por Item Service y procedimientos operativos reutilizables mediante vínculo N:M ordenado, selección preferente ADR §5.11 | RECOMENDACIÓN TÉCNICA F0, no aprobación del propietario; implementación pendiente O-11 | T |
+| Servicio comercial / procedimiento / tratamiento | El servicio es lo que se vende (Items); el procedimiento es lo que se realiza sobre la persona (Spa); tratamiento operativo ejecuta el plan individual/multisesión y su ciclo aprobado (§10); O-11 tiene selección preferente recomendada de perfil/procedimiento en ADR §5.11; permanece pendiente aprobación/implementación del esquema y los vínculos técnicos entre prestación comercial y bloques de cita según SPA-ARQ-01 | PROPUESTO | T |
 | SPA-OPS-SRV-05 | Sucursales: por defecto atendible en todas las sucursales activas; restringir es una relación opcional. Qué se espera por defecto es pendiente | PROPUESTO / PENDIENTE | T, P |
 | SPA-OPS-SRV-09 | Un servicio o procedimiento inactivo no admite citas nuevas y se conserva en el historial; nunca se elimina | PROPUESTO | T |
 | SPA-OPS-SRV-10 | Condiciones de atención (precauciones, contraindicaciones, preparación): texto asociado al procedimiento; ningún campo es obligatorio por figurar en una ficha física | PROPUESTO | T |
@@ -485,6 +491,8 @@ Separar situaciones Propuesto, Contratado, Facturado, Pagado y Realizado: no son
 SPA-TEC-03 regla 10: consultar por prestación servicios propuestos/contratados, documentos/líneas, estado de pagos disponible en ERP, sesiones reservadas/realizadas y derechos restantes. Contratos/permisos/navegación oficiales, sin duplicar pantallas Ventas/CxC. No porcentaje facturado sin importes comparables/asignaciones verificables; UI detallada posterior con componentes oficiales. Reglas comerciales §11.6.
 
 ## 11. Paquetes comerciales
+
+**Selección técnica F0 recomendada:** ADR §5.11 concreta contrato/derechos por lote/vigencia, libro, compromiso por prestación y transferencia documentada sin mover expediente. §11.5/11.6 conserva reglas normativas, sin nueva regla fiscal ni documento financiero SPA.
 
 Integración ERP según SPA-ARQ-08 §4.2 reglas 3–5; O-15/O-25 y reglas de SPA-ARQ-05 intactas, sin ampliar significado fiscal/SRI/crédito ni diseñar Anticipos.
 
@@ -688,6 +696,8 @@ Permitir guardar valoraciones incompletas como borradores y continuarlas. Guarda
 
 ## 15. Valoración corporal
 
+**Gate F0:** numeric(10,2)/decimal? sigue recomendación preferente, no escala definitiva. ADR §5.15 contrasta estándar oficial y explica revisión formal pendiente; resolución de instrumento/rangos no probados.
+
 **Qué hace:** registra la valoración corporal, sus mediciones y su comparación. **Estado de la sección:** medidas/unidades/finalidad/comparación SPA-ARQ-07 aprobadas (§15.1), campos adicionales [F] sin contraste; escala numérica PENDIENTE de revisión arquitectónica
 (`V-04`, `O-22`). **Implementable hoy:** no. **Bloqueos:** BL-01, BL-05, BL-07, BL-09 (§29.1).
 
@@ -758,6 +768,8 @@ Autorizaciones independientes: realizar procedimiento, capturar/utilizar fotos d
 Valoraciones, mediciones y consentimientos conservan correcciones/cambios con autor, momento y motivo; no sobrescribir silenciosamente evidencia anterior ni presentar sustituido como vigente. Retiro/rectificación respeta finalidad y ley; conservación/rectificación/supresión/anonimización definitiva requiere validación jurídica, sin conservación indefinida de datos legalmente suprimibles (C-02/O-05, §21.1/22). Versionado físico, evidencia de firma y procedimientos definitivos no aprobados.
 
 ## 18. Fotografías y archivos
+
+**Selección técnica F0 recomendada:** ADR §5.14 concreta adaptador privado, autorización por objeto, rutas controladas y cifrado autenticado por archivo; algoritmo/clave/proveedor son propuesta nueva sin aprobación del propietario, operación/restauración pendientes, infraestructura intacta.
 
 **SPA-ARQ-07 regla 8 — APROBADA:** vincular fotografías a expediente y, cuando corresponda, valoración/sesión. Registrar fecha de captura, contexto de atención, finalidad, autorización aplicable y profesional/usuario responsable según corresponda. Privadas bajo SPA-ARQ-06 (§21), sin enlaces públicos permanentes ni publicación automática; finalidad según §17.1. Almacenamiento físico, cifrado/claves y mecanismos definitivos pendientes ADR-051.
 
@@ -861,6 +873,8 @@ Consultar facturas/líneas/Items, estado comercial/fiscal disponible, pagos/abon
 
 ## 21. Seguridad y privacidad
 
+**C-01:** propuesta exacta de archivos/contratos protegidos en ADR §5.13; clasificación sin bypass/wildcard más guard de recurso y concesiones. Es selección técnica recomendada, revisión especial LOCKED PENDIENTE y modificación Kernel NO AUTORIZADA. No cambia §21.5 ni atribuye una autorización nueva.
+
 Integración oficial SPA-ARQ-08 §4.2 reglas 7/8, sujeta a SPA-ARQ-06: sin usuarios/autenticador/permisos generales paralelos; C-01/C-02 y LOCKED/FROZEN conservan sus gates.
 
 **Referencia normativa principal de SPA-ARQ-06 — APROBADA POR EL PROPIETARIO el 2026-11-19.** Ocho reglas literales y límites: [REG §17](SPA-V1.1-APPROVED-DECISIONS-01.md#17-spa-arq-06--expedientes-y-seguridad). Complementa SPA-DEC-116 y SPA-ARQ-01..05, ADR-050 y O-15/O-25 sin alterar scopes oficiales. **Implementable hoy: no.** C-01 y C-02 permanecen visibles; BL-02/03/06/09. Protección y auditoría disponibles y validadas antes de operar datos clínicos reales; ninguna fase autorizada.
@@ -922,6 +936,8 @@ SPA-ARQ-07 no resuelve precisión/escala, requisitos jurídicos de firma, menore
 Política/dirección aprobadas; revisión especial pendiente, **modificación Kernel NO AUTORIZADA**. Permisos sellados/concesiones/ejecución excepcional aún diseño detallado, C-01 no CLOSED; sin sistema general paralelo. Auditoría durable §22.4.
 
 ## 22. Auditoría y conservación
+
+**Selección técnica F0 recomendada:** ADR §5.14 especifica intento/evento/handler/writer y commit síncrono antes de entrega; no basta RecordAsync ni un mensaje Outbox. Sin cambiar contratos FROZEN; ley/retención C-02 pendiente.
 
 **Qué hace:** deja rastro de quién hizo o consultó qué, y define cuánto se conserva. **Estado de la sección:** auditoría/protección incluidas por SPA-DEC-116, mecanismos y conservación pendientes; la tensión entre el no borrado y la eliminación legal está
 **BLOQUEADA**. **Implementable hoy:** no. **Bloqueos:** BL-02, BL-03, BL-06, BL-09 (§29.1).
@@ -1392,6 +1408,8 @@ Procedencia: SPA-DEC-116 gestión operativa; encargo §4.2.
 
 ## 24. Entidades y relaciones
 
+**Lectura vigente del modelo técnico:** ADR §5.11 contiene la descomposición preferente recomendada para revisión. La tabla siguiente conserva nombres candidatos históricos y trazabilidad; no compite con ADR ni reabre las alternativas allí seleccionadas. Ninguna clase/tabla existe por documentarla.
+
 **Estado de la sección:** todas las entidades son **candidatas**, ninguna existe y su separación definitiva en tablas y agregados requiere aprobación. Los nombres siguen los borradores; `Session` significa
 exclusivamente sesión realizada (§0.3).
 
@@ -1412,6 +1430,8 @@ a una sesión realizada; una sesión sugerida de un paquete es una cita vinculad
 que referencia contrato y, según el caso, cita o sesión. Profesional (`EmployeeId`) y usuario registrador (usuario ERP) se guardan siempre por separado. SPA-ARQ-01 fija visita que agrupa una o varias citas/bloques; varios bloques de un servicio no duplican prestación comercial. Esquema/vínculos persistidos y número de sesiones clínicas por prestación pendientes; borradores no equivalen a atenciones realizadas. Operación inicial/lista/reportes reutilizan esos procesos, sin otro módulo por característica.
 
 ## 25. API y contratos de aplicación
+
+**Integraciones F0:** ADR §5.12 selecciona consultas públicas existentes y dos lectores propietarios candidatos; cada llamada interna exige autorización explícita porque no ejecuta atributos del controlador. Contratos/rutas nuevos sin implementación o aprobación automática.
 
 **Estado de la sección:** `SPA-API-01` [T]; **ninguna ruta, endpoint ni DTO está aprobado.** Cada operación deberá declarar permiso, scope, validación, errores, transacción, concurrencia, respuesta y pruebas, y
 usar el envelope oficial de la API.
@@ -1446,6 +1466,8 @@ usar el envelope oficial de la API.
 | Consentimientos y fotografías | Consentimiento vigente para la finalidad; versión presentada existente; ruta generada por el servidor | Sin catálogo recuperado (PENDIENTE) |
 
 ## 27. Reglas de concurrencia
+
+**Selección técnica F0 recomendada:** ADR §5.11 concreta locks transaccionales, orden total, xmin/exclusión e idempotencia; fragmentos siguientes permanecen evidencia ilustrativa, no alternativas igualmente abiertas. Mecanismo recomendado sujeto a aprobación/validación PostgreSQL futura.
 
 **Dirección APROBADA SPA-TEC-01.4/01.5:** §7.3/11.5 establece transacción/revalidación, bloqueos por profesional sin sucursal, orden multiprofesional, libro/idempotencia/cupo por prestación. SQL/índices/exclusiones/locks siguientes solo ilustrativos hasta verificación/aprobación física; no implementación.
 
@@ -1673,6 +1695,10 @@ Ocho especificaciones de pruebas futuras, **no ejecutadas**; referencia normativ
 
 Criterios de datos reales sujetos a seguridad/ley, C-01/C-02 y autorizaciones; candidato numeric(10,2) no aprueba escala definitiva ni sustituye V-04.
 
+### 28.12 Verificación futura de la selección técnica F0
+
+Extender los criterios existentes de §28.11, sin ejecutarlos: API directa/MediatR/archivos/reportes/menú y autoescalamiento bajo C-01; commit durable real de lecturas y denegaciones independiente del rollback de negocio, sin reproducción supuesta por Outbox; aislamiento y autorización de consulta del log; locks ordenados y conflictos multiprofesionales/intersucursal; reprogramación rollback íntegro; sustitución/compensación/transferencia idempotentes por scope/lote sin sobrecompensación; integridad por empresa; descifrado rechaza tag/contexto incorrectos y rutas manipuladas; recuperación de claves y supresiones antes de reexponer respaldos; lectores nuevos preservan permisos/scope sin conceder reversión de cobros para leer abonos. Evidencia PostgreSQL/operativa posterior solo bajo autorización propia; precisión definitiva y legal no se prueban por inferencia.
+
 ## 29. Dependencias bloqueantes
 
 ### 29.1 Bloqueos técnicos, legales y de autorización
@@ -1766,6 +1792,8 @@ Se conservan los identificadores originales; no se cuenta toda cuestión como ab
 | O-25 | APROBADA | Reserva/cita/atención/consumo y trazabilidad preservados; no revoca multiplicidad de visita aprobada históricamente |
 
 ### 30.3 Evidencia restante y tensiones delimitadas
+
+**Revisión técnica concentrada F0 — selección recomendada, no aprobación nueva:** ADR §5.10–5.15 y REG §23 distinguen mecanismos preferentes contrastados estáticamente de dirección aprobada, autorización especial, validación externa y dependencia no implementada. No se incluye esta recomendación entre las aprobaciones del propietario ni se acepta integralmente el ADR.
 
 - **Historial:** SPA-DEC-115/116 recuperadas según contenido aportado en REG; no se recuperaron los textos SPA-DEC-001..114. Solo los detalles que dependan de ellos se mantienen por verificar; no se invalida alcance general.
 - **Formularios:** O-24/V-01 y obligatoriedad O-21; no se presume equivalencia de versiones ni inspección de originales.

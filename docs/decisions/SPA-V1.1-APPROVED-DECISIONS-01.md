@@ -1688,3 +1688,19 @@ SPA no crea otro sistema financiero.
 **Delimitación:** decisión funcional/dirección técnica aprobadas solo en su alcance; mecanismo detallado pendiente, autorización especial pendiente, validación jurídica/fiscal pendiente y dependencia no implementada se distinguen según cada regla. No cierre integral de C-01/C-02/O-13, no cierre O-14, no modificación LOCKED/FROZEN/CLOSED. ADR-051 PROPOSED / NO APROBADO; F0–F8 PENDING / NO AUTORIZADA. Ninguna implementación ni operación Git de escritura autorizada por esta entrada.
 
 Referencia normativa: contrato §4.3/7.3/8.7/10.2/11.5/11.6/15.2/18.1/21.5/22.4/27; ADR explica direcciones y mecanismos pendientes; plan fases/dependencias. Las menciones previas de cuestiones pendientes conservan el alcance de la decisión original; SPA-TEC-01/02/03 aportan ahora resolución expresa parcial, sin alterar los enunciados SPA-ARQ ni O-15/O-25.
+
+## 23. Revisión técnica concentrada F0 — registro de recomendación, sin nueva aprobación
+
+**2026-11-19 — AUTORIZACIÓN DE REVISIÓN Y DOCUMENTACIÓN EXCLUSIVAMENTE.** Encargo «Cierre técnico concentrado de ADR-051 — F0», base publicada eaba7dfd79a3912b56abd69f07878010ff18578a. El propietario permite seleccionar soluciones preferentes compatibles con patrones reales; exige: «No registrar como aprobada por el propietario una elección nueva que solo haya sido recomendada por el agente».
+
+**Dirección aprobada:** SPA-ARQ-01..08 y SPA-TEC-01..03 permanecen íntegras en §§12–22, junto a SPA-DEC-115/116, O-15/O-25 y DIR-SSOT-01. No se crea SPA-TEC-04 ni se atribuye aprobación de nuevos mecanismos al propietario.
+
+**Selección técnica recomendada y contrastada estáticamente:** [ADR-051 §5.10](ADR-051-spa-v1.1-architecture.md#510-selección-técnica-concentrada-f0--recomendación-verificada-no-aprobación-del-propietario) contiene matriz AT-01..12; §5.11 modelo/integridad/agenda/libro, §5.12 contratos mínimos, §5.13 propuesta protegida C-01, §5.14 auditoría/archivos y §5.15 precisión/esquema/gates. No es evidencia de implementación ni pruebas PostgreSQL/operativas. Contrato conserva comportamiento normativo; ADR arquitectura elegida como recomendación; plan dependencias y gates.
+
+**Autorización especial pendiente:** clasificación clínica sin bypass/wildcard, concesiones y protección frente a autoescalamiento afectan Kernel/Access/sesión/menú/UI compartida. Impacto concreto y archivos en ADR §5.13; ni revisión especial del contrato LOCKED ni modificación protegida autorizadas por este encargo. C-01 no CLOSED. Lectores propietarios nuevos de Ventas y Finance solo firmas candidatas; implementar/extender módulos FROZEN exige su autorización propia.
+
+**Validación externa pendiente:** C-02/conservación/supresión, firma y menores, fotografías/finalidades, fiscal/SRI/crédito/NC, operación de claves/TLS/cifrado/recuperación/backups. numeric(10,2) permanece propuesta preferente y exige gate formal del estándar: no se selecciona escala definitiva por inferencia.
+
+**Dependencia no implementada:** Empleados/IEmployeeDirectory EMP-E6b bajo ADR-050/plan propios y dos lectores comerciales candidatos estrictamente necesarios donde las lecturas existentes no cubren el contexto autorizado. No Employee ni identidad/finanzas paralelas.
+
+**Estado:** ADR-051 PROPOSED / NO APROBADO. F0–F8 PENDING / NO AUTORIZADA. Selección concentrada preparada para revisión conjunta con reservas explícitas, sin aceptación integral, código, migraciones, staging, commit ni push. STATUS/WORK_QUEUE no se modifican en este encargo.
