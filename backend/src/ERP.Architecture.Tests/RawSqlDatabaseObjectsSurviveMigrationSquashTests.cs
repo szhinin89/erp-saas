@@ -73,6 +73,18 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
                 "ALTER TABLE accounting_periods ADD CONSTRAINT ex_accounting_periods_company_no_overlap EXCLUDE USING gist (",
                 "company_id WITH =, daterange(start_date, end_date, '[]') WITH &&",
             ],
+            // EMP-E2 (ADR-050): sin períodos laborales solapados por empleado (INV-05) ni asignaciones
+            // solapadas por empleado y sucursal (INV-07); rango cerrado (fechas inclusivas). EF no modela EXCLUDE.
+            ["ex_employee_employment_periods_no_overlap"] =
+            [
+                "ALTER TABLE employee_employment_periods ADD CONSTRAINT ex_employee_employment_periods_no_overlap EXCLUDE USING gist (",
+                "employee_id WITH =, daterange(start_date, end_date, '[]') WITH &&",
+            ],
+            ["ex_employee_branch_assignments_no_overlap"] =
+            [
+                "ALTER TABLE employee_branch_assignments ADD CONSTRAINT ex_employee_branch_assignments_no_overlap EXCLUDE USING gist (",
+                "employee_id WITH =, branch_id WITH =, daterange(start_date, end_date, '[]') WITH &&",
+            ],
             // ADR-043: cursor durable de los jobs recurrentes (BackgroundJobProgress). Tabla sin
             // entidad EF; solo existe como raw SQL.
             ["background_job_progress"] =

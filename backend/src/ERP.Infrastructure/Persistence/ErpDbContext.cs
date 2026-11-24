@@ -325,6 +325,26 @@ public class ErpDbContext : DbContext
     public DbSet<ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration> ItemSpecialTaxConfigurations =>
         Set<ERP.Domain.Modules.Items.Entities.ItemSpecialTaxConfiguration>();
 
+    // ── Employees BC (EMP-E2: base técnica no operativa) ──────────────────
+    public DbSet<ERP.Domain.Modules.Employees.Entities.Employee> Employees =>
+        Set<ERP.Domain.Modules.Employees.Entities.Employee>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.EmployeeEmploymentPeriod> EmployeeEmploymentPeriods =>
+        Set<ERP.Domain.Modules.Employees.Entities.EmployeeEmploymentPeriod>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.EmployeeBranchAssignment> EmployeeBranchAssignments =>
+        Set<ERP.Domain.Modules.Employees.Entities.EmployeeBranchAssignment>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.JobPosition> EmployeeJobPositions =>
+        Set<ERP.Domain.Modules.Employees.Entities.JobPosition>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.Profession> EmployeeProfessions =>
+        Set<ERP.Domain.Modules.Employees.Entities.Profession>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.Specialty> EmployeeSpecialties =>
+        Set<ERP.Domain.Modules.Employees.Entities.Specialty>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.EmployeeSpecialty> EmployeeSpecialtyLinks =>
+        Set<ERP.Domain.Modules.Employees.Entities.EmployeeSpecialty>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.EmployeeAudit> EmployeeAudits =>
+        Set<ERP.Domain.Modules.Employees.Entities.EmployeeAudit>();
+    public DbSet<ERP.Domain.Modules.Employees.Entities.EmployeeCatalogAudit> EmployeeCatalogAudits =>
+        Set<ERP.Domain.Modules.Employees.Entities.EmployeeCatalogAudit>();
+
     // ── Pricing BC ────────────────────────────────────────────────────────
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();

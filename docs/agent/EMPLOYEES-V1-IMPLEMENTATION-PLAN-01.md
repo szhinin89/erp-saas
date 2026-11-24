@@ -135,7 +135,8 @@ cargo, profesión y especialidades. **Fuera de esta fase:** baja y reincorporaci
 su operación completa exige el cierre atómico de asignaciones (se entregan en E5).
 **Alcance:** alta, edición de cargo, profesión y especialidades, proyección del BP, endpoints y validaciones de EMP-BR-01 a
 EMP-BR-07, EMP-BR-10 y EMP-BR-19.
-**Pruebas:** T-04 (altas simultáneas), T-07, T-10 (permisos de alta y edición), T-12 (P-01 y P-05). **Cierre:** gate PASS; el alta
+**Pruebas:** T-04 (altas simultáneas), T-07, T-10 (permisos de alta y edición), T-12 (P-01 y P-05).
+**Requisitos de aceptación heredados de la revisión de EMP-E2:** evaluar la protección adicional de la inmutabilidad de `CompanyId` a nivel EF (contrato y arquitectura vigentes); validación y pruebas negativas de referencias cruzadas entre empresas y tenants (cargo, profesión, especialidad y BP); sin acreditarlas no se habilita ninguna operación real. **Cierre:** gate PASS; el alta
 real queda habilitada solo después. Hasta E5 no existe baja ni reincorporación.
 
 ## EMP-E5 — Asignaciones laborales y ciclo laboral completo (baja y reincorporación)
@@ -148,7 +149,8 @@ asignaciones contenidas en un período (INV-08); EMP-BR-23.
 implementar el comportamiento afectado (baja con asignaciones posteriores a su fecha); sin esa definición solo se implementa el
 bloqueo preventivo PROPUESTO de EMP-BR-23 y no se inventa otro flujo.
 **Pruebas:** T-02 (bordes de reincorporación a nivel de aplicación), T-03, T-04 (reincorporaciones y asignaciones simultáneas),
-T-08, T-09, T-10 (permiso `employees.disable`), T-12 (P-07). **Cierre:** gate PASS con las operaciones de baja y reincorporación
+T-08, T-09, T-10 (permiso `employees.disable`), T-12 (P-07).
+**Requisito de aceptación heredado de la revisión de EMP-E2:** validación y pruebas negativas de referencias cruzadas entre empresas y tenants (sucursal y empleado de otra empresa o tenant); sin acreditarlas no se habilita ninguna operación real. **Cierre:** gate PASS con las operaciones de baja y reincorporación
 verificadas como atómicas en PostgreSQL real. **Prohibido:** tocar `CompanyUserBranch` o permisos.
 
 ## EMP-E6 — Vinculación y desvinculación de usuarios

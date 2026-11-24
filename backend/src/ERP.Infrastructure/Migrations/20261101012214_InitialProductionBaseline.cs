@@ -7521,6 +7521,265 @@ namespace ERP.Infrastructure.Migrations
                     { "02", "03", true, "Res. NAC-DGERCGC21-00000060 (RIMPE Negocio Popular: notas de venta)" }
                 });
 
+            migrationBuilder.CreateTable(
+                name: "employee_job_positions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    normalized_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_job_positions", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_professions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    normalized_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_professions", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_specialties",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    normalized_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_specialties", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employees",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    business_partner_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    identity_user_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    job_position_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    profession_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employees", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_employees_master_business_partners_business_partner_id",
+                        column: x => x.business_partner_id,
+                        principalTable: "master_business_partners",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_employees_identity_users_identity_user_id",
+                        column: x => x.identity_user_id,
+                        principalTable: "identity_users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_employees_employee_job_positions_job_position_id",
+                        column: x => x.job_position_id,
+                        principalTable: "employee_job_positions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_employees_employee_professions_profession_id",
+                        column: x => x.profession_id,
+                        principalTable: "employee_professions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_employment_periods",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    termination_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    employee_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_employment_periods", x => x.id);
+                    table.CheckConstraint("ck_employee_employment_periods_dates", "end_date IS NULL OR end_date >= start_date");
+                    table.ForeignKey(
+                        name: "FK_employee_employment_periods_employees_employee_id",
+                        column: x => x.employee_id,
+                        principalTable: "employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_branch_assignments",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    employee_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_branch_assignments", x => x.id);
+                    table.CheckConstraint("ck_employee_branch_assignments_dates", "end_date IS NULL OR end_date >= start_date");
+                    table.ForeignKey(
+                        name: "FK_employee_branch_assignments_branches_branch_id",
+                        column: x => x.branch_id,
+                        principalTable: "branches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_employee_branch_assignments_employees_employee_id",
+                        column: x => x.employee_id,
+                        principalTable: "employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_specialty_links",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    employee_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    specialty_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_specialty_links", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_employee_specialty_links_employees_employee_id",
+                        column: x => x.employee_id,
+                        principalTable: "employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_employee_specialty_links_employee_specialties_specialty_id",
+                        column: x => x.specialty_id,
+                        principalTable: "employee_specialties",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    business_partner_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    changed_field = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    new_value = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    old_value = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_audit", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "employee_catalog_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    catalog_type = table.Column<int>(type: "integer", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    new_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    old_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_employee_catalog_audit", x => x.id);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_access_profile_permissions_subscriber_key",
                 table: "access_profile_permissions",
@@ -11114,6 +11373,116 @@ namespace ERP.Infrastructure.Migrations
             // ADR-BP-03 — identificación única e incondicional por tenant. Combina una columna del
             // owner (tenant_id) con columnas del owned type Identification, que EF no puede
             // expresar en un índice compuesto (ver BusinessPartnerConfiguration).
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_audit_entity_occurred_at",
+                table: "employee_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_audit_user_occurred_at",
+                table: "employee_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_employee_branch_assignments_branch_id",
+                table: "employee_branch_assignments",
+                column: "branch_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_branch_assignments_employee_branch",
+                table: "employee_branch_assignments",
+                columns: new[] { "employee_id", "branch_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_branch_assignments_tenant_branch",
+                table: "employee_branch_assignments",
+                columns: new[] { "tenant_id", "branch_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_catalog_audit_entity_occurred_at",
+                table: "employee_catalog_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_catalog_audit_user_occurred_at",
+                table: "employee_catalog_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employee_employment_periods_open",
+                table: "employee_employment_periods",
+                column: "employee_id",
+                unique: true,
+                filter: "end_date IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employee_job_positions_company_name",
+                table: "employee_job_positions",
+                columns: new[] { "company_id", "normalized_name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employee_professions_company_name",
+                table: "employee_professions",
+                columns: new[] { "company_id", "normalized_name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employee_specialties_company_name",
+                table: "employee_specialties",
+                columns: new[] { "company_id", "normalized_name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employee_specialty_links_specialty",
+                table: "employee_specialty_links",
+                column: "specialty_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employee_specialty_links_employee_specialty",
+                table: "employee_specialty_links",
+                columns: new[] { "employee_id", "specialty_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_employees_business_partner_id",
+                table: "employees",
+                column: "business_partner_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_employees_identity_user_id",
+                table: "employees",
+                column: "identity_user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_employees_job_position_id",
+                table: "employees",
+                column: "job_position_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_employees_profession_id",
+                table: "employees",
+                column: "profession_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_employees_tenant_business_partner_active",
+                table: "employees",
+                columns: new[] { "tenant_id", "business_partner_id" },
+                filter: "is_active");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employees_company_business_partner",
+                table: "employees",
+                columns: new[] { "company_id", "business_partner_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_employees_company_identity_user",
+                table: "employees",
+                columns: new[] { "company_id", "identity_user_id" },
+                unique: true,
+                filter: "identity_user_id IS NOT NULL");
+
             migrationBuilder.Sql(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification
@@ -11239,6 +11608,28 @@ namespace ERP.Infrastructure.Migrations
                 """
             );
 
+            // EMP-E2 — defensa final de INV-05 e INV-07 (ADR-050 §12, especificación §2): sin períodos
+            // laborales solapados por empleado ni asignaciones solapadas por empleado y sucursal. Rango de
+            // fechas cerrado [start_date, end_date] (fechas inclusivas); btree_gist (extensión modelada con
+            // HasPostgresExtension) aporta la igualdad. EF no modela EXCLUDE.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE employee_employment_periods
+                    ADD CONSTRAINT ex_employee_employment_periods_no_overlap
+                    EXCLUDE USING gist (
+                        employee_id WITH =,
+                        daterange(start_date, end_date, '[]') WITH &&
+                    );
+                ALTER TABLE employee_branch_assignments
+                    ADD CONSTRAINT ex_employee_branch_assignments_no_overlap
+                    EXCLUDE USING gist (
+                        employee_id WITH =,
+                        branch_id WITH =,
+                        daterange(start_date, end_date, '[]') WITH &&
+                    );
+                """
+            );
+
             // ADR-043 — cursor durable de los jobs recurrentes (BackgroundJobProgress): un registro por
             // stream de procesamiento. Sin entidad EF; se lee y escribe con SQL parametrizado.
             migrationBuilder.Sql(
@@ -11259,6 +11650,8 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.Sql(
                 """
                 DROP TABLE IF EXISTS background_job_progress;
+                ALTER TABLE employee_branch_assignments DROP CONSTRAINT IF EXISTS ex_employee_branch_assignments_no_overlap;
+                ALTER TABLE employee_employment_periods DROP CONSTRAINT IF EXISTS ex_employee_employment_periods_no_overlap;
                 ALTER TABLE accounting_periods DROP CONSTRAINT IF EXISTS ex_accounting_periods_company_no_overlap;
                 DROP TRIGGER IF EXISTS a1_movement_product_scope ON stock_movements;
                 DROP TRIGGER IF EXISTS a1_stock_product_scope ON current_stocks;
@@ -11277,6 +11670,33 @@ namespace ERP.Infrastructure.Migrations
                 DROP INDEX IF EXISTS uq_mbp_identification;
                 """
             );
+
+            migrationBuilder.DropTable(
+                name: "employee_catalog_audit");
+
+            migrationBuilder.DropTable(
+                name: "employee_audit");
+
+            migrationBuilder.DropTable(
+                name: "employee_specialty_links");
+
+            migrationBuilder.DropTable(
+                name: "employee_branch_assignments");
+
+            migrationBuilder.DropTable(
+                name: "employee_employment_periods");
+
+            migrationBuilder.DropTable(
+                name: "employees");
+
+            migrationBuilder.DropTable(
+                name: "employee_specialties");
+
+            migrationBuilder.DropTable(
+                name: "employee_professions");
+
+            migrationBuilder.DropTable(
+                name: "employee_job_positions");
 
             migrationBuilder.DropTable(
                 name: "access_profile_permissions");

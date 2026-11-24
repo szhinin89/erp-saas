@@ -269,6 +269,40 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
             .Be("EXCLUDE USING gist (company_id WITH =, daterange(start_date, end_date, '[]'::text) WITH &&)");
     }
 
+    [Theory]
+    [InlineData(
+        "ex_employee_employment_periods_no_overlap",
+        "employee_employment_periods",
+        "EXCLUDE USING gist (employee_id WITH =, daterange(start_date, end_date, '[]'::text) WITH &&)"
+    )]
+    [InlineData(
+        "ex_employee_branch_assignments_no_overlap",
+        "employee_branch_assignments",
+        "EXCLUDE USING gist (employee_id WITH =, branch_id WITH =, daterange(start_date, end_date, '[]'::text) WITH &&)"
+    )]
+    public async Task Exclusion_de_Employees_existe_con_su_definicion(
+        string constraintName,
+        string tableName,
+        string expectedDefinition
+    )
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var qualified = $"public.{tableName}";
+        var definition = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT pg_get_constraintdef(c.oid) AS "Value"
+                  FROM pg_constraint c
+                 WHERE c.conname = {constraintName}
+                   AND c.conrelid = {qualified}::regclass AND c.contype = 'x'
+                """
+            )
+            .SingleAsync();
+
+        definition.Should().Be(expectedDefinition);
+    }
+
     [Fact]
     public async Task Tabla_background_job_progress_existe_con_su_estructura()
     {
