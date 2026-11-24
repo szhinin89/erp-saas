@@ -4,7 +4,7 @@ Decisiones: [ADR-050](../decisions/ADR-050-employees-v1-architecture.md). Compor
 [especificación contractual](../decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
-**Este plan no autoriza ninguna fase.** Funcionalidad no implementada; EMP-E1 está PENDING / NO AUTORIZADA. Cada fase requiere
+**Este plan no autoriza ninguna fase.** Funcionalidad no implementada; EMP-E1: **VERIFICACIÓN TÉCNICA COMPLETADA / CIERRE APROBADO POR EL PROPIETARIO** (2026-11-24; resultado y decisiones abajo); E2–E7 y E6b PENDING / NO AUTORIZADAS. Cada fase requiere
 autorización expresa del propietario con lista exacta de rutas, gate del propietario (PASS o FAIL) y staging y commit realizados
 por el propietario ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa de
 pruebas; PostgreSQL real para integridad y concurrencia. Etiquetas: APROBADO, EXISTENTE, PROPUESTO y NO VERIFICADO según el ADR.
@@ -48,15 +48,71 @@ pruebas; PostgreSQL real para integridad y concurrencia. Etiquetas: APROBADO, EX
 10. Normalizador de nombres existente reutilizable (EXISTENTE: ninguno compartido).
 11. Estado de las pruebas de arquitectura aplicables a los módulos nuevos.
 
-**Prohibido:** escribir código o documentos. **Cierre:** informe con cada punto resuelto o con su decisión pendiente.
+**Prohibido:** escribir código y crear documentos nuevos. **Cierre:** informe con cada punto resuelto o con su decisión pendiente.
+
+### Resultado de la ejecución de EMP-E1 (2026-11-24; solo lectura de código; verificación técnica, no implementación)
+
+Autorizada por el propietario como verificación de solo lectura. No se modificó código, BD, migraciones, Kernel, Access ni MasterData, y
+no se ejecutaron suites ni compilaciones: «Verificado» significa comprobado leyendo el código o las SSOT citados. **Cierre propuesto:
+verificación técnica completada; cierre aprobado por el propietario, condicionado a las validaciones documentales.** No cambia ninguna decisión aprobada ni autoriza E2–E7 ni E6b.
+
+| # | Punto | Mecanismo EXISTENTE y evidencia | Reutilizable | Brecha real | Autorización / decisión |
+|---|---|---|---|---|---|
+| 1 | Migraciones y baseline | Una sola migración `20261101012214_InitialProductionBaseline` (+ snapshot) como única cadena, sin upgrade-path ([DATABASE](../DATABASE.md#migraciones)). Los objetos raw SQL viven al final de `Up` (con su `Down`), con `btree_gist` modelada (`HasPostgresExtension`). Dos commits posteriores la editaron en sitio (`72a9afc3d`, `f4f04c272`). `dotnet ef migrations add` omite el SQL crudo. El registro es doble: diccionario `RequiredRawSqlObjects` y prueba «todo objeto raw está registrado» (`RawSqlDatabaseObjectsSurviveMigrationSquashTests`) y definición física en `RawSqlDatabaseObjectsBaselineIntegrationTests` (ya cubre un `EXCLUDE … daterange(…,'[]')`). `xmin` con `IsRowVersion` confirmado (`AccountingOperationalPolicyConfiguration`). | `EXCLUDE` de `accounting_periods` como plantilla literal; patrón `xmin`; índices parciales (`HasFilter` en uso) | Las tablas de Employees exigen editar a mano la baseline, su `Designer` y el snapshot (no regenerar) y añadir los tres `EXCLUDE`/`CHECK` al registro. Una BD ya migrada no se actualiza: se recrea (o se acepta una migración incremental, contraria a la política vigente). | Autorización del propietario para tocar la baseline/esquema (E2). **Decisión pendiente:** baseline editada en sitio (precedente) frente a migración incremental. |
+| 2 | Nombres e identificadores | [naming](../architecture/naming.md): `snake_case`, índices `ix_/ux_/uq_`, FK `fk_*` con `_tenant_`. Precedentes: `ex_accounting_periods_company_no_overlap`, `ck_items_nature`, `uq_mbp_identification`; tablas `master_business_partners` e `identity_users` (destinos de FK). Longitudes: motivo en texto libre `HasMaxLength(500)` (`Payment.reverse_reason`, `JournalEntry.reverse_reason`). | Nombres de la spec §1–§2 compatibles; 500 confirmado para `termination_reason` | `naming.md` no fija longitudes ni prefijo de tabla por módulo; `EmployeeAudit` usa `ConfigureAuditBase("…_audit")` (patrón confirmado). 150 para catálogos no tiene precedente directo. | Ninguna. Confirmar 150 al implementar E2. |
+| 3 | Errores y HTTP | `ApiErrorCategory` (10): Validation 422, BusinessRule 400, Duplicate 409, NotFound 404, Authentication 401, Authorization 403, Infrastructure 503, Integration 502, RateLimit 429, InternalError 500 (`ApiErrorStatus`). Los códigos son constantes `SCREAMING_SNAKE_CASE` en clases anidadas de `ApiResponseCodes`, con entrada obligatoria en `MessageCatalog` (prueba «una entrada por código»). Comunes ya existentes: `CONFLICT`, `UNIQUE_VIOLATION`, `CONCURRENCY_CONFLICT` (Duplicate) y `DOMAIN_RULE_VIOLATION` (**Validation, 422**, no 400). | Correspondencia propuesta: `EMPLOYEE_NOT_FOUND` → NotFound; `*_ALREADY_EXISTS`, `*_OVERLAP`, `USER_ALREADY_LINKED`, `CATALOG_DUPLICATE`, `CONCURRENT_MODIFICATION` → Duplicate; el resto → BusinessRule | `EMPLOYEE_CONCURRENT_MODIFICATION` duplica `CONCURRENCY_CONFLICT`; `EMPLOYEE_INVALID_DATE` admite Validation o BusinessRule | **Decisión pendiente** (propietario, en E2): reutilizar el código común o uno propio; categoría de `INVALID_DATE`. |
+| 4 | Controllers, rutas y paginación | `[ApiController] [Route("api/v1/…")] [Authorize]` + política por acción `perm:{Const}`; MediatR; `ToOkOrBadRequest`; `PagedResult<T>`. Paginación con **dos convenciones**: `skip/take` (`BusinessPartnersController`) y `page/pageSize` (`ActivityController`). Los controllers deben ser delgados (`ApiControllerGuardrailTests`). `[AppFeature]` en controllers de menú. | Patrón completo para `api/v1/employees` | Elegir convención de paginación. Rutas `employees/job-positions` y `employees/{id}` no colisionan con `{id:guid}`. | Decisión menor en E4: `skip/take` o `page/pageSize`. |
+| 5 | Locks | `pg_advisory_xact_lock(int4,int4)` vía `ExecuteSqlInterpolatedAsync`; clave = (hash del namespace UTF-8, hash de `Guid.ToByteArray()`); hash estable `h=17; h=h*31+b` copiado en cada repositorio (`AccountingOperationalPolicy`, `AccountRepository`, `JournalEntry`, `DocumentSequence`); exige transacción activa (lanza si no) y omite en no relacional. Variantes: `hashtext()` (`CompanyRepository`) y `hashtextextended` bigint (`InventoryCostLedger`). | `"Employees"` por ficha encaja directo (namespace + id) | (a) `"BpEmployment"` necesita **(tenant, BP)** = dos Guid en una sola ranura `int4`: combinar los bytes en un hash o usar la forma `bigint`; una colisión solo serializa de más. (b) No existe helper compartido de hash. (c) `DeactivateBusinessPartnerHandler` y `RevokeBusinessPartnerRoleHandler` **no usan transacción** (solo `SaveChanges`); tomar el lock exige `IUnitOfWork.BeginTransactionAsync` (patrón `PaymentUseCases`). (d) Orden: Employees → BpEmployment (alta/reincorporación) frente a solo BpEmployment (desactivar/revocar): sin ciclo. | Decisión técnica en E2/E3: forma de la clave. El cambio de transacción en los dos handlers pertenece a la autorización de MasterData de E3. |
+| 6 | Capas y puerto de BP | `LayerDependencyTests`: Domain sin EF/ASP.NET/Infrastructure; Application sin Infrastructure/EF; Infrastructure sin API. No hay regla que impida a Employees usar interfaces de dominio de MasterData. `IBusinessPartnerRepository` (filtro de tenant) ofrece `GetByIdAsync` y `GetDisplayInfoByIdsAsync` → `BusinessPartnerDisplayInfo(Id, TradeName, LegalName, IdentificationNumber, IdentificationType)`, que coincide con la proyección mínima de P-05. `PlatformQueryAccessor.AsPlatformQuery()` es `internal` de `ERP.Infrastructure`. | Proyección P-05 sin puerto nuevo; la guardia se implementa en Infrastructure con tenant explícito | **Hallazgo:** `IgnoreQueryFiltersAuditTests` solo busca el texto `.IgnoreQueryFilters(`; ~20 archivos usan `AsPlatformQuery()` sin entrada en la allowlist. Una guardia que use `AsPlatformQuery()` **no necesitaría** entrada en la allowlist. No se halló otro gate sobre `AsPlatformQuery` (solo una fixture en `tools/architecture`). La caracterización `BusinessPartnerDeactivationPostgreSqlTests` fija hoy que desactivar con roles activos tiene éxito; deberá ajustarse en E3 junto con la guardia. | Autorización de MasterData (E3). **Decisión pendiente:** si se mantiene la autorización específica de la allowlist (ADR-050 §12) o se registra como innecesaria. |
+| 7 | Búsqueda de usuarios (Access) | `GET api/v1/admin/iam/memberships/lookup?username=` (exacto, ≤50; clase con `access.company_user_memberships.view`): devuelve `UsernameLookupDto(IdentityUserExists, FullName, Membership)`; una cuenta global o de otro tenant responde como inexistente. `GET …/memberships` lista las de la empresa con `IdentityUserId`, `Username`, `FullName`, `IsActive` (sin búsqueda ni paginación). Puerto de dominio `IAccessRepository`: `GetCompanyUserMembershipAsync(companyId, userId)`, `GetUserByIdAsync`, `GetActiveGlobalUserIdsAsync`. | Validar membresía activa de EMP-BR-13 y rechazar cuentas globales por el puerto, sin tocar Access | La UI de vinculación necesita `access.company_user_memberships.view` además de `employees.link-user`; no hay búsqueda textual de usuarios. La spec no define si se pueden vincular cuentas globales (el puerto permite detectarlas). | Sin extensión de Access. **Decisión pendiente:** exigir ambos permisos (análogo a P-06) y excluir cuentas globales. |
+| 8 | Wizard de BP | `MasterDataPartnerWizard` declara `type Role = "customer" \| "supplier"` (también `BP_CONTEXT_ROLE`, `businessPartnerSchema(role)`); solo lo usan las páginas de Clientes y Proveedores. Backend ya admite Employee: `RoleType.Employee = 3`, `MapRoleToUsage` en `AssignBusinessPartnerRoleHandler`/`UpdateBusinessPartnerHandler`, `CatalogController` acepta `usage=Employee`, `GET /business-partners?roles=` filtra por rol; asignar el rol exige `masterdata.businesspartners.update`. Existe `businessPartnerRegistrationFacade` (altas desde otro módulo). | Todo el backend; la fachada de registro como contrato público | **El wizard no soporta Employee** (rol, textos, `usage`, esquema): requiere extensión mínima de frontend compartido. | Autorización propia de frontend compartido en E7 (ya prevista). |
+| 9 | Kernel | Los módulos se descubren por reflexión (`[Module]` en `Kernel/Modules/*Module.cs`, 12 hoy); `KernelRegistryTests` no afirma el total (solo módulos concretos); `Controller_perm_policies_exist_in_KernelRegistry_Permissions` exige que toda policy exista; los permisos se toman de las constantes de `Kernel/Permissions`. | Agregar `EmployeesPermissions` y `EmployeesModule` no rompe una cuenta fija | Un permiso solo es **asignable** si aparece en un `NavItem` o en las acciones relacionadas (`AssignablePermissionKeys`): sin `EmployeesModule` (E7) ningún perfil no administrador puede recibir `employees.*`. `INV_E2` exige alcance explícito de empresa en los requests. | Autorización de Kernel (E2 para permisos, E7 para módulo). El orden E2–E4 antes de E7 deja los permisos solo para Admin. |
+| 10 | Normalizador | Solo existe `PurchaseLineNormalizer` (local de Compras); no hay normalizador compartido de nombres (confirmado). | — | Crear uno dentro de Employees (EMP-T-09). | Ninguna. |
+| 11 | Pruebas de arquitectura | `RawSqlDatabaseObjectsSurviveMigrationSquashTests`, `IgnoreQueryFiltersAuditTests`, `KernelControllerPolicyTests`, `ApiControllerGuardrailTests`, `TenantIsolationInvariantTests` (INV-A1..E2: `CompanyId` sin setter público, no anulable, hereda tenant). Las clases nuevas de `ERP.Infrastructure.Tests` deben asignarse en `tools/ci/backend-test-groups.json`. | Aplican sin cambios a Employees | Ninguna propia; vigilar el manifiesto de CI. | Ninguna. |
+
+**Compatibilidad de `IEmployeeDirectory` con SPA (punto 8 del encargo).** Las seis firmas y `EmployeeSummary` (spec §19) cubren todo lo que
+el contrato SPA §6 consume: profesional responsable distinto del usuario registrador (`GetLinkedUserAsync`), elegibilidad por fecha y
+sucursal, inactivos históricos con `includeInactive`, y cargo/profesión nulos (P-01). `EmployeeSummary` expone `displayName`, igual que
+`BusinessPartnerDisplayInfo.DisplayName`. Dos puntos: «elegibles por especialidad» (SPA-OPS-SRV-06) exige un
+filtro por `specialtyId` en `ListAsync` (decisión 8: incluido), y las citas futuras de un profesional que deja de estar
+disponible (SPA-OPS-AGE-14) dependen de la política pendiente de asignaciones futuras. Las firmas siguen PROPUESTAS hasta E6b; ninguna
+comprobación aquí las convierte en implementadas.
+
+**Bloqueos técnicos reales (ninguno impide cerrar E1; condicionan fases posteriores).** (1) Edición manual de la baseline y registro de SQL
+crudo, con BD existentes que se recrean (E2; sin migraciones incrementales, decisión 1). (2) Los handlers de BP no tienen transacción: el lock de E3 les cambia el flujo. (3) El
+wizard de BP no admite Employee (E7). (4) `employees.*` no es asignable a perfiles hasta existir el módulo de Kernel (E7).
+
+**Autorizaciones especiales necesarias (ninguna otorgada):** esquema/baseline (E2); Kernel: permisos (E2) y módulo (E7); MasterData, solo
+las dos guardias y su transacción (E3); allowlist de `IgnoreQueryFiltersAuditTests` (**no se modificará** si `AsPlatformQuery()` cumple los controles, decisión 9);
+frontend compartido para el wizard (E7); Access: ninguna.
+
+**Decisiones aprobadas por el propietario (2026-11-24) sobre los puntos que E1 planteó** (no reabren ADR-050 ni amplían el alcance):
+1. Se mantiene la baseline inicial única vigente, **sin migraciones incrementales** (punto 1).
+2. Se reutiliza `CONCURRENCY_CONFLICT`; no se crea `EMPLOYEE_CONCURRENT_MODIFICATION` (punto 3).
+3. Las fechas inválidas de entrada (`EMPLOYEE_INVALID_DATE`) se tratan como `Validation` (HTTP 422) (punto 3).
+4. Paginación `skip/take` (punto 4).
+5. `BpEmployment`: clave de bloqueo determinista que combina `TenantId` y `BusinessPartnerId`, conforme al patrón de hash existente (punto 5).
+6. Vincular usuarios exige los permisos de Empleados (`employees.link-user`) y el de consulta de membresías (`access.company_user_memberships.view`) (punto 7).
+7. No se pueden vincular cuentas globales (punto 7).
+8. `IEmployeeDirectory.ListAsync` incluye el filtro `specialtyId`.
+9. No se modifica `IgnoreQueryFiltersAuditTests` ni su allowlist si el uso de `AsPlatformQuery()` cumple los controles existentes (punto 6); la entrada prevista para E3 queda sin efecto salvo que la guardia deba llamar `IgnoreQueryFilters()` directamente.
+10. Se mantiene el bloqueo preventivo de baja con asignaciones futuras (EMP-BR-23) hasta que el propietario defina el procedimiento de regularización.
+
+Las decisiones 6, 7, 8 y 9 precisan el alcance de las fases afectadas; E2–E7 y E6b siguen **PENDING / NO AUTORIZADAS**. Las firmas de
+`IEmployeeDirectory` siguen PROPUESTAS hasta E6b.
+
+**No verificado:** comportamiento en ejecución (no se compilaron ni ejecutaron pruebas ni PostgreSQL); ubicación definitiva de carpetas
+(`ERP.Domain/Modules/<X>` frente a `ERP.Domain/MasterData`; las rutas `ERP.Domain/Employees/**`, `ERP.Application/Employees/**` y `ERP.Infrastructure/Employees/**` de E2 son
+provisionales: no existen y deben fijarse en la autorización de E2); el detalle de `PagedResult`; los atributos `[AppFeature]` frente al
+menú de Kernel para Employees.
 
 ## EMP-E2 — Base: entidades, períodos, catálogos, auditoría y permisos
 
 **Dependencias:** E1. **Objetivo:** modelo de datos y reglas de dominio de la spec §1–§4, §16–§17, sin endpoints de alta.
 **Alcance:** `Employee`, `EmployeeEmploymentPeriod`, `EmployeeBranchAssignment` (modelo), catálogos, `EmployeeSpecialty`,
 `EmployeeAudit`, `EmployeeCatalogAudit`, `EmployeesPermissions`, normalizador, `EXCLUDE` y unicidades.
-**Rutas potenciales:** `ERP.Domain/Employees/**`, `ERP.Application/Employees/**`, `ERP.Infrastructure/Employees/**`,
-`ERP.Domain/Kernel/Permissions/EmployeesPermissions.cs`, configuración EF, esquema/migración según el resultado de E1, registro de
+**Rutas potenciales (provisionales; ubicación definitiva en la autorización de E2):** `ERP.Domain/Employees/**`, `ERP.Application/Employees/**`, `ERP.Infrastructure/Employees/**`,
+`ERP.Domain/Kernel/Permissions/EmployeesPermissions.cs`, configuración EF, esquema en la baseline inicial única (sin migraciones incrementales), registro de
 SQL crudo, manifiesto de pruebas de Infrastructure.
 **Prohibido:** tocar MasterData, Access, auditoría o frontend; exponer endpoints de alta.
 **Pruebas:** T-01, T-02 (datos), T-03 (datos), T-11, T-13 parcial. **Cierre:** pruebas en PostgreSQL real y gate del propietario.
@@ -67,7 +123,7 @@ SQL crudo, manifiesto de pruebas de Infrastructure.
 Infrastructure, guardia en `DeactivateBusinessPartnerHandler` y en `RevokeBusinessPartnerRoleHandler` (solo rol Employee), código
 `BP_HAS_ACTIVE_EMPLOYMENT`, lock `("BpEmployment", tenant, bp)`.
 **Rutas potenciales:** `ERP.Domain/MasterData/Interfaces`, los dos handlers, `ERP.Infrastructure/Employees/**`,
-`IgnoreQueryFiltersAuditTests` (solo la entrada de la guardia), `MessageCatalog`.
+`MessageCatalog`; `IgnoreQueryFiltersAuditTests` solo si la guardia no puede usar `AsPlatformQuery()` (decisión 9 de E1).
 **Prohibido:** otros cambios en MasterData; alterar el alcance del BP (ADR-017).
 **Pruebas:** T-05, T-06, T-13. **Cierre:** protección demostrada con PostgreSQL real y gate PASS. Hasta este cierre no se habilitan
 altas reales.
