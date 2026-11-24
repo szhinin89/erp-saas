@@ -483,7 +483,12 @@ public sealed class BpNestedResourceOwnershipHandlerTests
         op switch
         {
             "revoke" => Outcome(
-                await new RevokeBusinessPartnerRoleHandler(f.Repo.Object, _ctx.Object).Handle(
+                await new RevokeBusinessPartnerRoleHandler(
+                    f.Repo.Object,
+                    _ctx.Object,
+                    Mock.Of<IBusinessPartnerEmploymentGuard>(),
+                    Mock.Of<IUnitOfWork>()
+                ).Handle(
                     new RevokeBusinessPartnerRoleCommand(bpId, roleId),
                     default
                 )

@@ -340,7 +340,9 @@ public sealed class BpNestedResourceOwnershipIntegrationTests : IAsyncLifetime
         );
         var revokeCrossParent = await new RevokeBusinessPartnerRoleHandler(
             repo,
-            Ctx(_tenantA)
+            Ctx(_tenantA),
+            new ERP.Infrastructure.Persistence.Repositories.Employees.BusinessPartnerEmploymentGuard(db),
+            new UnitOfWork(db)
         ).Handle(new RevokeBusinessPartnerRoleCommand(_bpA1, _roleA2), default);
         var configCrossParent = await new UpdateSupplierRoleConfigHandler(
             repo,
@@ -355,7 +357,9 @@ public sealed class BpNestedResourceOwnershipIntegrationTests : IAsyncLifetime
         );
         var revokeCrossTenant = await new RevokeBusinessPartnerRoleHandler(
             repo,
-            Ctx(_tenantA)
+            Ctx(_tenantA),
+            new ERP.Infrastructure.Persistence.Repositories.Employees.BusinessPartnerEmploymentGuard(db),
+            new UnitOfWork(db)
         ).Handle(new RevokeBusinessPartnerRoleCommand(_bpB, _roleB), default);
 
         ownNotes.IsSuccess.Should().BeTrue(ownNotes.Error);

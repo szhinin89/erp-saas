@@ -284,6 +284,12 @@ public static class MessageCatalog
             "Communication attachment could not be resolved by its owner module.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.MasterData.BpHasActiveEmployment] = new(
+            ApiSeverity.Error,
+            "No se puede desactivar el tercero ni revocar su rol de Empleado mientras tenga una ficha laboral activa. Dé de baja la ficha laboral primero.",
+            "BusinessPartner has an active employment record; deactivation and Employee role revocation are blocked.",
+            ApiErrorCategory.BusinessRule
+        ),
         [ApiResponseCodes.Retentions.AnnulmentPending] = new(
             ApiSeverity.Error,
             "La retención tiene una anulación en trámite ante el SRI: la cuenta por pagar no admite pagos, créditos ni ajustes.",

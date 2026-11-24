@@ -99,7 +99,11 @@ public sealed class BusinessPartnerDeactivationPostgreSqlTests : IClassFixture<I
 
         var ctx = new Mock<IOperationalContext>();
         ctx.SetupGet(x => x.UserId).Returns(_user);
-        var handler = new DeactivateBusinessPartnerHandler(new BusinessPartnerRepository(db), ctx.Object);
+        ctx.SetupGet(x => x.TenantId).Returns(tenant.Id);
+        var handler = new DeactivateBusinessPartnerHandler(
+            new BusinessPartnerRepository(db), ctx.Object,
+            new ERP.Infrastructure.Persistence.Repositories.Employees.BusinessPartnerEmploymentGuard(db),
+            new UnitOfWork(db));
 
         var result = await handler.Handle(new DeactivateBusinessPartnerCommand(bp.Id), CancellationToken.None);
 

@@ -291,4 +291,11 @@ public static class ApiResponseCodes
             .RetentionAnnulmentPendingException
             .ErrorCode;
     }
+
+    /// <summary>EMP-E3 (ADR-050 §12) — protección de BusinessPartner frente a fichas laborales activas.</summary>
+    public static class MasterData
+    {
+        /// <summary>El BP tiene una ficha de empleado activa en alguna empresa del tenant: no se desactiva ni pierde el rol Employee.</summary>
+        public const string BpHasActiveEmployment = "BP_HAS_ACTIVE_EMPLOYMENT";
+    }
 }

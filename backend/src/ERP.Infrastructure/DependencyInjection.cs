@@ -206,6 +206,7 @@ public static class DependencyInjection
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ILegalEntityTypeRepository, LegalEntityTypeRepository>();
         services.AddScoped<IBusinessPartnerRoleRepository, BusinessPartnerRoleRepository>();
+        services.AddScoped<IBusinessPartnerEmploymentGuard, ERP.Infrastructure.Persistence.Repositories.Employees.BusinessPartnerEmploymentGuard>();
         services.AddScoped<IBusinessPartnerLocationRepository, BusinessPartnerLocationRepository>();
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();
         services.AddScoped<IPaymentTermRepository, PaymentTermRepository>();
