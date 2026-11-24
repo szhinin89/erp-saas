@@ -9,10 +9,11 @@
 - **Dependencias y condiciones pendientes:** Empleados y `IEmployeeDirectory` (EMP-E6b) requieren implementación y pruebas bajo autorización separada. **COND-01..13 identificadas, pendientes según corresponda**: la aprobación de ADR-051 satisface solo la parte arquitectónica de COND-13; las autorizaciones expresas por fase y sus listas exactas de archivos siguen pendientes. Se conservan las autorizaciones especiales para componentes protegidos (C-01, Identity/Access/Kernel y ámbitos FROZEN/CLOSED/LOCKED), las validaciones técnicas, jurídicas y fiscales aplicables, precisión V-04, firma/menores, conservación, claves/restauración, lecturas oficiales y fiscal/SRI. O-14 y O-24/V-01 siguen abiertos en su alcance; O-13 conserva sus aspectos parciales conforme a los documentos oficiales. Ninguna condición se declara cumplida por el CI ni por la aceptación arquitectónica.
 - **Antecedentes históricos (2026-11-18, superados en estado arquitectónico):** SPA-DEC-115/116 recuperadas como aprobadas antes de planificar Empleados; O-23 cerrada en inclusión funcional general. Normalización en cuatro documentos oficiales, con seis antecedentes consolidados y retirados (historial Git); diez exclusiones HX-01..10, textos O-15/O-25 y DIR-SSOT-01 conservados. La verificación de aquella corrección registró guardrail documental, 585 enlaces/anclas y `git diff --check` PASS, 19 fichas, 102 escenarios y 13 casos anteriores; su autorización separada de staging/commit para 13 archivos fue exclusiva de ese trabajo. ADR-051 estaba entonces PROPOSED / NO APROBADO; la aprobación del 2026-11-19 sustituye ese estado y la revisión arquitectónica pendiente de aquel momento. Los detalles históricos SPA-DEC-001..114 no recuperados no reabren decisiones aprobadas.
 
-## EMPLOYEES-V1 — ADR-050 PROPOSED: arquitectura funcional de Empleados V1 aprobada y documentada, NO implementada; EMP-E1 PENDING / NO AUTORIZADA (2026-11-18)
+## EMPLOYEES-V1 — ADR-050 ACCEPTED / APROBADO: arquitectura de referencia de Empleados V1 aprobada, NO implementada; EMP-E1 PENDING / NO AUTORIZADA (2026-11-24)
 
 > La documentación contractual de Empleados V1 fue autorizada **exclusivamente como trabajo documental** (EMP-E0-DOC). El diseño
-> funcional fue aprobado por el propietario; el ADR-050 queda en estado Proposed hasta su aceptación formal. **No hay código,
+> funcional fue aprobado durante la planificación; el propietario acepta expresamente **ADR-050 como arquitectura de referencia
+> el 2026-11-24 (ACCEPTED / APROBADO)**, sin alterar las decisiones anteriores ni cerrar verificaciones pendientes. **No hay código,
 > endpoints, permisos, migraciones ni cambios de base de datos, y ninguna fase de programación está autorizada.** No se ejecutó
 > CI ni suites.
 
@@ -21,6 +22,9 @@
   protección de BusinessPartner y contrato mínimo `IEmployeeDirectory` para Gali Spa). Módulo visual propio en el launcher; sin
   «Datos Maestros». Excluye nómina, salarios, contratos laborales, comisiones y reportes de productividad.
 - **Decisiones aprobadas:** DEC-E1 a DEC-E6, EMP-T-01 a EMP-T-10 (T-10 corregida), E-D1 a E-D4 y P-01 a P-07.
+- **Integración oficial:** `IEmployeeDirectory` está especificado y pendiente de implementación y verificación (EMP-E6b).
+  La integración Empleados–SPA mantiene su definición; la aceptación arquitectónica no entrega el contrato.
+- **Fases:** EMP-E1 y todas las demás permanecen **PENDING / NO AUTORIZADAS**, con autorización expresa y lista exacta de rutas por fase.
 - **Pendiente:** EMP-E1 (verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS); definición del
   propietario del procedimiento de regularización de asignaciones futuras al dar de baja; autorizaciones separadas para
   MasterData, allowlist de `IgnoreQueryFiltersAuditTests`, Kernel y frontend compartido. La protección de BusinessPartner debe

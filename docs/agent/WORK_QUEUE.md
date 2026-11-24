@@ -5,12 +5,14 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
 - SPA-V1.1-DOC (**PLANIFICACIÓN DOCUMENTAL COMPLETA / ARQUITECTURA APROBADA / CI #1227 SUCCESS**): 13 áreas funcionales y 19 pantallas especificadas; [ADR-051](../decisions/ADR-051-spa-v1.1-architecture.md) ACCEPTED / APROBADO, SPA-SEL-01..12 y DP-01..03 aprobadas por el propietario el 2026-11-19, publicadas en `8e04e3a6d` y verificadas con [CI #1227 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/44629184698). [Contrato central](../decisions/SPA-V1.1-CONTRACT-SPEC-01.md), [registro de aprobación §25](../decisions/SPA-V1.1-APPROVED-DECISIONS-01.md#25-aprobación-arquitectónica-de-adr-051-spa-sel-0112-y-dp-0103) y [plan F0–F8 documentado](../decisions/SPA-V1.1-IMPLEMENTATION-PLAN-01.md). Pendientes reales: Empleados / `IEmployeeDirectory` (EMP-E6b), con implementación/pruebas y autorización separadas; COND-01..13 según corresponda (parte arquitectónica de COND-13 aprobada, autorizaciones por fase pendientes); autorizaciones especiales de componentes protegidos y validaciones técnicas, jurídicas y fiscales aplicables. O-14 y O-24/V-01 siguen abiertos en su alcance; O-13 conserva aspectos parciales. La planificación general y la aprobación de ADR-051 están completadas; no se reabren decisiones aprobadas. **SPA no implementado; F0–F8 sin autorización de implementación**, tampoco preparación de solo lectura ni desarrollo de Empleados. El CI no acredita API real ni cierre funcional. Estado y conciliación CI #1202–#1227 SUCCESS, con #1201 FAILURE histórico e incidencia abierta, en [STATUS](../../STATUS.md).
-- EMPLOYEES-V1-E1 (**PENDING / NO AUTORIZADA**; ADR-050 Proposed, arquitectura funcional aprobada y documentada, Empleados no
+- EMPLOYEES-V1-E1 (**PENDING / NO AUTORIZADA**; ADR-050 **ACCEPTED / APROBADO** como arquitectura de referencia por aprobación expresa del propietario el **2026-11-24**, Empleados no
   implementado): verificaciones técnicas de solo lectura de los mecanismos PROPUESTOS y NO VERIFICADOS (migraciones y baseline,
   nombres, categorías de error, locks, puerto de la guardia de BP, búsqueda de usuarios en Access, wizard de BP). Requiere
   autorización expresa del propietario para iniciarse; ninguna fase de programación (E2–E7, E6b) está autorizada. Quedan además
   pendientes la definición del propietario sobre asignaciones futuras al dar de baja y las autorizaciones separadas de MasterData
-  y de la allowlist de arquitectura. Estado en [STATUS](../../STATUS.md); diseño en
+  y de la allowlist de arquitectura, Kernel, frontend compartido y Access si fuera necesario. `IEmployeeDirectory` es el contrato
+  oficial especificado, pendiente de implementación y verificación (EMP-E6b); se conserva la integración definida con SPA.
+  EMP-E1 y las demás fases permanecen **PENDING / NO AUTORIZADAS**, sin cerrar verificaciones por esta aceptación. Estado en [STATUS](../../STATUS.md); diseño en
   [ADR-050](../decisions/ADR-050-employees-v1-architecture.md), [especificación](../decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md) y
   [plan](EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md).
 - PEDIDOS-VENTA-V1-F0 (**PENDING / NO AUTORIZADA**; ADR-049 Accepted el 17/11/2026, diseño aprobado y no implementado):

@@ -1,11 +1,13 @@
 # ADR-050 — Empleados V1 (módulo técnico independiente `Employees`)
 
-Estado: **Proposed** — la arquitectura funcional fue **aprobada por el propietario** durante la planificación (decisiones
-de §3); este documento la consolida y queda pendiente de su aceptación formal.
-**La aceptación aprobará el diseño; no autoriza código, endpoints, permisos, migraciones, cambios de base de datos,
+Estado: **ACCEPTED / APROBADO** — fecha de aceptación formal: **2026-11-24**. El propietario aprueba expresamente
+ADR-050 — Empleados V1 como arquitectura de referencia. Esta aceptación conserva las decisiones funcionales y técnicas
+anteriores, incluida la aprobación funcional durante la planificación (decisiones de §3), sin alterarlas ni dar por
+cumplidas las verificaciones técnicas pendientes.
+**La aceptación aprueba el diseño; no autoriza código, endpoints, permisos, migraciones, cambios de base de datos,
 cambios en módulos FROZEN/CLOSED ni ejecución alguna.** Empleados **no está implementado**. **Ninguna fase de
 implementación está autorizada**: EMP-E1 figura en la cola como PENDING / NO AUTORIZADA y cada fase posterior requiere
-autorización expresa del propietario y lista exacta de rutas.
+autorización expresa del propietario y lista exacta de rutas. Todas las fases permanecen **PENDING / NO AUTORIZADAS**.
 
 El comportamiento exacto está en la [especificación contractual](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (diseño, no SSOT) y el
 orden de trabajo en el [plan de implementación](../agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). Cuando exista código
@@ -194,7 +196,8 @@ Employee; si no, la extensión mínima requiere autorización propia.
 ## 13. Integración con Spa
 
 APROBADO: Spa reutiliza Employee y no crea otro registro laboral. Empleados entrega `IEmployeeDirectory` como contrato mínimo
-de lectura dentro de V1 (ver especificación §19). Spa conserva sus permisos clínicos, agenda, horarios, sesiones y
+de lectura dentro de V1 (ver especificación §19). Es el contrato oficial, especificado y **pendiente de implementación
+y verificación**; la aceptación de este ADR no lo declara implementado. Spa conserva sus permisos clínicos, agenda, horarios, sesiones y
 disponibilidad, y registra por separado el profesional responsable (`EmployeeId`) y el usuario que registró; el cobro no se
 confunde con quien presta el servicio. Spa exige usuario ERP autorizado a quien documente atenciones; esa exigencia pertenece a
 Spa. Empleados no implementa funcionalidad clínica ni lógica de Spa. La integración de Spa no comienza antes de entregar y
