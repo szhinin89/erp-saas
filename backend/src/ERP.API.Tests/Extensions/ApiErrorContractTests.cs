@@ -46,6 +46,7 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.ValidationError] = 422,
         [ApiResponseCodes.Common.DomainRuleViolation] = 422,
         [ApiResponseCodes.Common.BadRequest] = 400,
+        [ApiResponseCodes.MasterData.BpHasActiveEmployment] = 400,
         [ApiResponseCodes.Purchases.CancellationSubsequentInventoryExit] = 400,
         [ApiResponseCodes.Purchases.CostDistributionStale] = 409,
         [ApiResponseCodes.Common.NotFound] = 404,
