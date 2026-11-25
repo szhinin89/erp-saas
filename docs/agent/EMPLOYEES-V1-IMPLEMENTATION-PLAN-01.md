@@ -159,12 +159,14 @@ verificadas como atómicas en PostgreSQL real. **Prohibido:** tocar `CompanyUser
 
 ## EMP-E6 — Vinculación y desvinculación de usuarios
 
-**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones registradas: D-E6-1 vincular y desvincular en fichas activas y en baja; D-E6-2 no se reemplaza un vínculo existente (409); D-E6-3 `rowVersion` en vincular y desvincular, **complemento contractual** que resuelve la contradicción con «`unlink-user`: sin cuerpo» de la especificación §9; D-E6-4 usuario inactivo con membresía activa admitido; D-E6-5 cuenta posteriormente global oculta, sin advertencia y desvinculable. Observación B de usuarios resuelta con la regla única de IAM y predicados de tenant y empresa; `ACTIVE_MEMBERSHIP` completado en la baja. Detalle y evidencia en [STATUS](../../STATUS.md).
+**Estado (2026-11-25): COMPLETADO / CLOSED (commit `877d99d04f`, CI #1241 SUCCESS).** Decisiones registradas: D-E6-1 vincular y desvincular en fichas activas y en baja; D-E6-2 no se reemplaza un vínculo existente (409); D-E6-3 `rowVersion` en vincular y desvincular, **complemento contractual** que resuelve la contradicción con «`unlink-user`: sin cuerpo» de la especificación §9; D-E6-4 usuario inactivo con membresía activa admitido; D-E6-5 cuenta posteriormente global oculta, sin advertencia y desvinculable. Observación B de usuarios resuelta con la regla única de IAM y predicados de tenant y empresa; `ACTIVE_MEMBERSHIP` completado en la baja. Detalle y evidencia en [STATUS](../../STATUS.md).
 
 **Dependencias:** E4 y E1. **Alcance:** EMP-BR-13 y EMP-BR-14, `POST /employees/{id}/unlink-user`. Acceso a Identity/Access solo
 mediante puertos de lectura; si hiciera falta tocar Access, autorización separada. **Pruebas:** T-08, T-10.
 
 ## EMP-E6b — Contrato `IEmployeeDirectory` para Spa
+
+**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones registradas: D-E6b-1 seis firmas definitivas, modelos mínimos, filtro solo `specialtyId` y lista sin paginación; D-E6b-2 EMP-BR-12 literal; D-E6b-3 contrato interno sin permisos propios y con aislamiento obligatorio. SSOT: [employees.md](../architecture/employees.md). Detalle y evidencia en [STATUS](../../STATUS.md).
 
 **Dependencias:** E5 y E6. **Alcance:** interfaz y servicio de lectura (spec §19) con referencias históricas estables.
 **Pruebas:** T-15. **Condición:** debe cerrarse antes de cualquier integración de Spa. No incluye lógica clínica ni de Spa.

@@ -67,6 +67,24 @@ public sealed class EmployeeIdentityProjector : IEmployeeIdentityProjector
             ? null
             : new EmployeeIdentityUserDto(user.Id, user.Username, membership.IsActive);
     }
+
+    public async Task<IReadOnlySet<Guid>> FilterVisibleAsync(
+        Guid companyId,
+        IReadOnlyCollection<Guid> identityUserIds,
+        CancellationToken ct = default
+    )
+    {
+        if (identityUserIds.Count == 0)
+            return new HashSet<Guid>();
+
+        // Misma regla que ProjectAsync (membresía en la empresa y no global), en dos consultas.
+        var members = (await _access.GetCompanyUserMembershipsByCompanyAsync(companyId, onlyActive: false, ct))
+            .Select(m => m.IdentityUserId)
+            .ToHashSet();
+        var candidates = identityUserIds.Where(members.Contains).ToHashSet();
+        candidates.ExceptWith(await IamIdentityScope.GetGlobalUserIdsAsync(_access, candidates, ct));
+        return candidates;
+    }
 }
 
 // ── Handlers ────────────────────────────────────────────────────────────

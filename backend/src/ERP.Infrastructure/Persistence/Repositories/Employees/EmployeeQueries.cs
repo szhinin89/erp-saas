@@ -208,16 +208,10 @@ public sealed class EmployeeQueries : IEmployeeQueries
         {
             // D-E5-4: asignación vigente en la fecha de referencia (bordes inclusivos).
             var asOf = filter.AsOf ?? throw new InvalidOperationException("Fecha de referencia requerida.");
-            query = query.Where(r =>
-                _context.EmployeeBranchAssignments.Any(a =>
-                    a.TenantId == tenantId
-                    && a.CompanyId == companyId
-                    && a.EmployeeId == r.Id
-                    && a.BranchId == branchId
-                    && a.StartDate <= asOf
-                    && (a.EndDate == null || a.EndDate >= asOf)
-                )
-            );
+            var current = _context
+                .EmployeeBranchAssignments.Where(EmployeeTemporalPredicates.AssignmentCovers(asOf))
+                .Where(a => a.TenantId == tenantId && a.CompanyId == companyId && a.BranchId == branchId);
+            query = query.Where(r => current.Any(a => a.EmployeeId == r.Id));
         }
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
