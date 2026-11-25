@@ -18,10 +18,7 @@ public sealed record EmployeePeriodDto(
     string? TerminationReason
 );
 
-/// <summary>
-/// Ficha completa (contrato §9). <c>Assignments</c> e <c>IdentityUser</c> permanecen vacío/nulo
-/// hasta EMP-E5 y EMP-E6.
-/// </summary>
+/// <summary>Ficha completa (contrato §9).</summary>
 public sealed record EmployeeDto(
     Guid Id,
     Guid CompanyId,
@@ -30,12 +27,18 @@ public sealed record EmployeeDto(
     EmployeeCatalogRefDto? JobPosition,
     EmployeeCatalogRefDto? Profession,
     IReadOnlyList<EmployeeCatalogRefDto> Specialties,
-    object? IdentityUser,
+    EmployeeIdentityUserDto? IdentityUser,
     IReadOnlyList<EmployeePeriodDto> Periods,
     IReadOnlyList<EmployeeBranchAssignmentDto> Assignments,
     uint RowVersion,
     IReadOnlyList<string> Warnings
 );
+
+/// <summary>
+/// Usuario ERP vinculado (contrato §9): solo identificador, nombre de usuario y si su membresía en la
+/// empresa de la ficha está activa. Nulo sin vínculo o si IAM-V1-F1 lo protege (cuenta global).
+/// </summary>
+public sealed record EmployeeIdentityUserDto(Guid Id, string Username, bool MembershipActive);
 
 /// <summary>
 /// Asignación a sucursal con su historial (EMP-BR-11). Sucursal: identificador, nombre y código por

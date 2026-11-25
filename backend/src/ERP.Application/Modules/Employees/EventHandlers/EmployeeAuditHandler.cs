@@ -15,7 +15,8 @@ public sealed class EmployeeAuditHandler
       INotificationHandler<EmployeeFieldChangedEvent>,
       INotificationHandler<EmployeeTerminatedEvent>,
       INotificationHandler<EmployeeRehiredEvent>,
-      INotificationHandler<EmployeeBranchAssignmentChangedEvent>
+      INotificationHandler<EmployeeBranchAssignmentChangedEvent>,
+      INotificationHandler<EmployeeUserLinkChangedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -105,4 +106,19 @@ public sealed class EmployeeAuditHandler
         var f = System.Globalization.CultureInfo.InvariantCulture;
         return $"{e.BranchId} {e.StartDate.ToString("yyyy-MM-dd", f)}/{end?.ToString("yyyy-MM-dd", f)}";
     }
+
+    public Task Handle(EmployeeUserLinkChangedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            EmployeeAudit.Create(
+                _context.Actor,
+                e.CompanyId,
+                e.EmployeeId,
+                e.BusinessPartnerId,
+                e.Action,
+                changedField: EmployeeUserLinkChangedEvent.IdentityUserField,
+                oldValue: e.OldIdentityUserId?.ToString(),
+                newValue: e.NewIdentityUserId?.ToString()
+            ),
+            ct
+        );
 }

@@ -211,6 +211,8 @@ public static class DependencyInjection
         services.AddScoped<ERP.Domain.Modules.Employees.Interfaces.IEmployeeCatalogRepository, ERP.Infrastructure.Persistence.Repositories.Employees.EmployeeCatalogRepository>();
         services.AddScoped<ERP.Domain.Modules.Employees.Interfaces.IEmployeeBusinessPartnerReader, ERP.Infrastructure.Persistence.Repositories.Employees.EmployeeBusinessPartnerReader>();
         services.AddScoped<ERP.Domain.Modules.Employees.Interfaces.IEmployeeBranchReader, ERP.Infrastructure.Persistence.Repositories.Employees.EmployeeBranchReader>();
+        services.AddScoped<ERP.Domain.Modules.Employees.Interfaces.IEmployeeUserReader, ERP.Infrastructure.Persistence.Repositories.Employees.EmployeeUserReader>();
+        services.AddScoped<ERP.Application.Modules.Employees.Interfaces.IEmployeeIdentityProjector, ERP.Application.Modules.Employees.UseCases.EmployeeIdentityProjector>();
         services.AddScoped<ERP.Application.Modules.Employees.Interfaces.IEmployeeQueries, ERP.Infrastructure.Persistence.Repositories.Employees.EmployeeQueries>();
         services.AddScoped<IBusinessPartnerLocationRepository, BusinessPartnerLocationRepository>();
         services.AddScoped<IBusinessPartnerContactRepository, BusinessPartnerContactRepository>();

@@ -202,4 +202,36 @@ public sealed class Employee : AuditableEntity, ICompanyOperationalEntity
         RaiseDomainEvent(
             new EmployeeBranchAssignmentChangedEvent(
                 TenantId, CompanyId, Id, BusinessPartnerId, action, a.BranchId, a.StartDate, oldEnd, a.EndDate));
+
+    /// <summary>
+    /// Vincula un usuario ERP a la ficha (EMP-BR-13). La elegibilidad (membresía, no global, unicidad) la
+    /// valida el caso de uso; no reemplaza un vínculo existente (D-E6-2). No concede acceso.
+    /// </summary>
+    public void LinkUser(Guid identityUserId, Guid updatedBy)
+    {
+        if (identityUserId == Guid.Empty)
+            throw new ArgumentException("identityUserId requerido.", nameof(identityUserId));
+        if (IdentityUserId is not null)
+            throw new DomainRuleViolationException("La ficha ya tiene un usuario vinculado.");
+
+        IdentityUserId = identityUserId;
+        SetUpdated(updatedBy);
+        RaiseUserLink(EmployeeUserLinkChangedEvent.LinkedAction, null, identityUserId);
+    }
+
+    /// <summary>Quita el vínculo (EMP-BR-14). No toca la cuenta, la membresía ni los permisos.</summary>
+    public void UnlinkUser(Guid updatedBy)
+    {
+        var previous = IdentityUserId
+            ?? throw new DomainRuleViolationException("La ficha no tiene un usuario vinculado.");
+
+        IdentityUserId = null;
+        SetUpdated(updatedBy);
+        RaiseUserLink(EmployeeUserLinkChangedEvent.UnlinkedAction, previous, null);
+    }
+
+    private void RaiseUserLink(string action, Guid? oldUserId, Guid? newUserId) =>
+        RaiseDomainEvent(
+            new EmployeeUserLinkChangedEvent(
+                TenantId, CompanyId, Id, BusinessPartnerId, action, oldUserId, newUserId));
 }

@@ -138,6 +138,24 @@ public sealed class EmployeeRepository : IEmployeeRepository
     public void SetExpectedAssignmentRowVersion(EmployeeBranchAssignment assignment, uint rowVersion) =>
         _context.Entry(assignment).Property<uint>(RowVersionProperty).OriginalValue = rowVersion;
 
+    public Task<bool> IsUserLinkedToOtherEmployeeAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid identityUserId,
+        Guid employeeId,
+        CancellationToken ct = default
+    ) =>
+        _context
+            .Employees.AsNoTracking()
+            .AnyAsync(
+                e =>
+                    e.TenantId == tenantId
+                    && e.CompanyId == companyId
+                    && e.IdentityUserId == identityUserId
+                    && e.Id != employeeId,
+                ct
+            );
+
     public async Task AddAsync(Employee employee, CancellationToken ct = default) =>
         await _context.Employees.AddAsync(employee, ct);
 

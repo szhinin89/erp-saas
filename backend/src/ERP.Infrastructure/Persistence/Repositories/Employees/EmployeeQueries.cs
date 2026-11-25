@@ -13,8 +13,10 @@ namespace ERP.Infrastructure.Persistence.Repositories.Employees;
 public sealed class EmployeeQueries : IEmployeeQueries
 {
     private readonly ErpDbContext _context;
+    private readonly IEmployeeIdentityProjector _identity;
 
-    public EmployeeQueries(ErpDbContext context) => _context = context;
+    public EmployeeQueries(ErpDbContext context, IEmployeeIdentityProjector identity) =>
+        (_context, _identity) = (context, identity);
 
     // Clase con inicializador de miembros (no record posicional): EF solo compone filtros
     // posteriores (Where/OrderBy) sobre proyecciones de este tipo.
@@ -33,6 +35,7 @@ public sealed class EmployeeQueries : IEmployeeQueries
         public string? JobPositionName { get; init; }
         public bool? JobPositionActive { get; init; }
         public Guid? ProfessionId { get; init; }
+        public Guid? IdentityUserId { get; init; }
         public string? ProfessionName { get; init; }
         public bool? ProfessionActive { get; init; }
     }
@@ -67,6 +70,7 @@ public sealed class EmployeeQueries : IEmployeeQueries
             JobPositionName = jp.Name,
             JobPositionActive = (bool?)jp.IsActive,
             ProfessionId = e.ProfessionId,
+            IdentityUserId = e.IdentityUserId,
             ProfessionName = pr.Name,
             ProfessionActive = (bool?)pr.IsActive,
         };
@@ -164,11 +168,13 @@ public sealed class EmployeeQueries : IEmployeeQueries
             Ref(row.JobPositionId, row.JobPositionName, row.JobPositionActive),
             Ref(row.ProfessionId, row.ProfessionName, row.ProfessionActive),
             specialties,
-            null,
+            row.IdentityUserId is { } linked
+                ? await _identity.ProjectAsync(companyId, linked, ct)
+                : null,
             periods,
             await AssignmentsAsync(tenantId, companyId, employeeId, ct),
             row.RowVersion,
-            Array.Empty<string>() // ACTIVE_MEMBERSHIP llega con EMP-E6 (D-E5-3)
+            Array.Empty<string>() // solo la respuesta de la baja agrega ACTIVE_MEMBERSHIP
         );
     }
 

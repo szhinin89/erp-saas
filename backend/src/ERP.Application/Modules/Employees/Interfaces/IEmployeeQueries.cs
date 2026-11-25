@@ -6,6 +6,14 @@ namespace ERP.Application.Modules.Employees.Interfaces;
 /// Lecturas de Empleados con proyección del BP (D-5): sin seguimiento, con tenant y empresa
 /// explícitos, sin N+1.
 /// </summary>
+/// <summary>
+/// Proyección del usuario vinculado según IAM-V1-F1 (la implementa Application sobre la regla única de IAM).
+/// </summary>
+public interface IEmployeeIdentityProjector
+{
+    Task<EmployeeIdentityUserDto?> ProjectAsync(Guid companyId, Guid identityUserId, CancellationToken ct = default);
+}
+
 public interface IEmployeeQueries
 {
     Task<EmployeeDto?> GetByIdAsync(

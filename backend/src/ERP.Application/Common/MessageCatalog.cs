@@ -374,6 +374,29 @@ public static class MessageCatalog
             "Branch does not exist, is inactive or is outside the operating company.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.Employees.UserAlreadyLinked] = new(
+            ApiSeverity.Error,
+            "El usuario o la ficha ya tienen un vínculo. Desvincule primero.",
+            "User or employee record is already linked.",
+            ApiErrorCategory.Duplicate
+        ),
+        [ApiResponseCodes.Employees.UserNoMembership] = new(
+            ApiSeverity.Error,
+            "El usuario no tiene una membresía activa en esta empresa.",
+            "User has no linkable active membership in the company.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.UserNotLinked] = new(
+            ApiSeverity.Error,
+            "La ficha no tiene un usuario vinculado.",
+            "Employee record has no linked user.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.ActiveMembership] = new(
+            ApiSeverity.Warning,
+            "El empleado conserva acceso al ERP: su usuario tiene una membresía activa en esta empresa.",
+            "Linked user still has an active membership; termination does not revoke access."
+        ),
         [ApiResponseCodes.MasterData.BpHasActiveEmployment] = new(
             ApiSeverity.Error,
             "No se puede desactivar el tercero ni revocar su rol de Empleado mientras tenga una ficha laboral activa. Dé de baja la ficha laboral primero.",

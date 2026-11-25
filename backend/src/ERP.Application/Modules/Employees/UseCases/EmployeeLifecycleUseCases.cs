@@ -104,9 +104,13 @@ public sealed class TerminateEmployeeHandler
         if (!done.IsSuccess)
             return Result<EmployeeDto>.Failure(done.Error!, done.Code);
         var dto = await _queries.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
-        return dto is null
-            ? EmployeeUseCaseSupport.EmployeeNotFound<EmployeeDto>()
-            : Result<EmployeeDto>.Success(dto);
+        if (dto is null)
+            return EmployeeUseCaseSupport.EmployeeNotFound<EmployeeDto>();
+        // Informativa (EMP-BR-08): la baja no revoca acceso ni cambia membresías. No se persiste. La
+        // proyección es nula para cuentas globales, así que esas nunca generan la advertencia.
+        if (dto.IdentityUser is { MembershipActive: true })
+            dto = dto with { Warnings = [ApiResponseCodes.Employees.ActiveMembership] };
+        return Result<EmployeeDto>.Success(dto);
     }
 }
 

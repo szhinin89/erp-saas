@@ -42,6 +42,8 @@ public sealed class EmployeesPermissionContractTests
         (typeof(EmployeesController), nameof(EmployeesController.SetSpecialties), EmployeesPermissions.Update),
         (typeof(EmployeesController), nameof(EmployeesController.Terminate), EmployeesPermissions.Disable),
         (typeof(EmployeesController), nameof(EmployeesController.Rehire), EmployeesPermissions.Disable),
+        (typeof(EmployeesController), nameof(EmployeesController.LinkUser), EmployeesPermissions.LinkUser),
+        (typeof(EmployeesController), nameof(EmployeesController.UnlinkUser), EmployeesPermissions.LinkUser),
         (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.List), EmployeesPermissions.View),
         (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.Create), EmployeesPermissions.AssignmentsManage),
         (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.Close), EmployeesPermissions.AssignmentsManage),
@@ -64,6 +66,12 @@ public sealed class EmployeesPermissionContractTests
         }
     }
 
+    /// <summary>Vincular exige además consultar membresías (E1, decisión 6); el resto, un solo permiso.</summary>
+    private static string[] RequiredFor(Type controller, string action, string permission) =>
+        controller == typeof(EmployeesController) && action == nameof(EmployeesController.LinkUser)
+            ? [permission, AccessPermissions.MembershipsView]
+            : [permission];
+
     private static (Type Controller, string Action, string Permission) Find(string controller, string action) =>
         Expected.Single(e => e.Controller.Name == controller && e.Action == action);
 
@@ -78,7 +86,11 @@ public sealed class EmployeesPermissionContractTests
             .Succeeded.Should().BeFalse("los demás permisos de Empleados no lo habilitan");
         (await AuthorizeAsync(controller, action, [SettingsPermissions.CompaniesUpdate]))
             .Succeeded.Should().BeFalse("un permiso ajeno no lo habilita");
-        (await AuthorizeAsync(controller, action, [permission])).Succeeded.Should().BeTrue();
+        var required = RequiredFor(controller, action, permission);
+        if (required.Length > 1)
+            foreach (var single in required)
+                (await AuthorizeAsync(controller, action, [single])).Succeeded.Should().BeFalse("exige ambos permisos");
+        (await AuthorizeAsync(controller, action, required)).Succeeded.Should().BeTrue();
     }
 
     [Theory]
@@ -88,8 +100,8 @@ public sealed class EmployeesPermissionContractTests
         var (controller, _, permission) = Find(controllerName, action);
         var method = controller.GetMethod(action)!;
 
-        method.GetCustomAttributes<AuthorizeAttribute>().Should().ContainSingle()
-            .Which.Policy.Should().Be($"perm:{permission}");
+        method.GetCustomAttributes<AuthorizeAttribute>().Select(a => a.Policy)
+            .Should().BeEquivalentTo(RequiredFor(controller, action, permission).Select(p => $"perm:{p}"));
         method.GetCustomAttributes<AllowAnonymousAttribute>().Should().BeEmpty();
         controller.GetCustomAttributes<AllowAnonymousAttribute>().Should().BeEmpty();
         controller.GetCustomAttributes<AuthorizeAttribute>().Should().Contain(a => a.Policy == null,

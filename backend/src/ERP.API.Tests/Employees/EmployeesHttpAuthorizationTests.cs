@@ -47,6 +47,9 @@ public sealed class EmployeesHttpAuthorizationFixture : IAsyncLifetime
     public Guid CatalogsManageUser { get; private set; }
     public Guid DisableUser { get; private set; }
     public Guid AssignmentsManageUser { get; private set; }
+    public Guid LinkUserOnly { get; private set; }
+    public Guid MembershipsViewOnly { get; private set; }
+    public Guid LinkAndMemberships { get; private set; }
     public Guid FullUserC1 { get; private set; }
     public Guid FullUserC2 { get; private set; }
     public Guid AdminUser { get; private set; }
@@ -141,17 +144,22 @@ public sealed class EmployeesHttpAuthorizationFixture : IAsyncLifetime
         CatalogsManageUser = await NewUserAsync(db, Company1, Branch1, "Catálogos gestión", [EmployeesPermissions.CatalogsManage]);
         DisableUser = await NewUserAsync(db, Company1, Branch1, "Baja y reincorporación", [EmployeesPermissions.Disable]);
         AssignmentsManageUser = await NewUserAsync(db, Company1, Branch1, "Asignaciones", [EmployeesPermissions.AssignmentsManage]);
+        LinkUserOnly = await NewUserAsync(db, Company1, Branch1, "Solo vincular", [EmployeesPermissions.LinkUser]);
+        MembershipsViewOnly = await NewUserAsync(db, Company1, Branch1, "Solo membresías", [AccessPermissions.MembershipsView]);
+        LinkAndMemberships = await NewUserAsync(db, Company1, Branch1, "Vincular y membresías",
+            [EmployeesPermissions.LinkUser, AccessPermissions.MembershipsView]);
         string[] all =
         [
             EmployeesPermissions.View, EmployeesPermissions.Create, EmployeesPermissions.Update,
             EmployeesPermissions.CatalogsView, EmployeesPermissions.CatalogsManage,
             EmployeesPermissions.Disable, EmployeesPermissions.AssignmentsManage,
+            EmployeesPermissions.LinkUser, AccessPermissions.MembershipsView,
         ];
         FullUserC1 = await NewUserAsync(db, Company1, Branch1, "Empleados completo C1", all);
         FullUserC2 = await NewUserAsync(db, Company2, Branch2, "Empleados completo C2", all);
         AdminUser = await NewUserAsync(db, Company1, Branch1, "Admin sin permisos explícitos", role: "Admin");
 
-        SeededEmployeesPermissionRows = 7 + 7 + 7;
+        SeededEmployeesPermissionRows = 7 + 1 + 1 + 8 + 8;
     }
 
     private async Task<Guid> NewBranchAsync(ErpDbContext db, Guid companyId, string code)
@@ -193,11 +201,12 @@ public sealed class EmployeesHttpAuthorizationFixture : IAsyncLifetime
 public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHttpAuthorizationFixture>
 {
     private const string Base = "/api/v1/employees";
+    private const string BothLinkPermissions = "employees.link-user + access.company_user_memberships.view";
     private readonly EmployeesHttpAuthorizationFixture _f;
 
     public EmployeesHttpAuthorizationTests(EmployeesHttpAuthorizationFixture fixture) => _f = fixture;
 
-    /// <summary>Las 11 operaciones: método, ruta, cuerpo y permiso exigido.</summary>
+    /// <summary>Todas las operaciones: método, ruta, cuerpo y permiso exigido (link exige dos a la vez).</summary>
     public static TheoryData<string, string, string?, string> Routes()
     {
         var id = Guid.NewGuid();
@@ -219,6 +228,8 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
             { "GET", $"{Base}/{id}/branch-assignments", null, EmployeesPermissions.View },
             { "POST", $"{Base}/{id}/branch-assignments", $$"""{"branchId":"{{Guid.NewGuid()}}","startDate":"2026-03-01"}""", EmployeesPermissions.AssignmentsManage },
             { "POST", $"{Base}/{id}/branch-assignments/{Guid.NewGuid()}/close", """{"rowVersion":1,"endDate":"2026-06-30"}""", EmployeesPermissions.AssignmentsManage },
+            { "POST", $"{Base}/{id}/link-user", $$"""{"identityUserId":"{{Guid.NewGuid()}}","rowVersion":1}""", BothLinkPermissions },
+            { "POST", $"{Base}/{id}/unlink-user", """{"rowVersion":1}""", EmployeesPermissions.LinkUser },
         };
     }
 
@@ -269,6 +280,8 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
             (EmployeesPermissions.CatalogsManage, _f.CatalogsManageUser),
             (EmployeesPermissions.Disable, _f.DisableUser),
             (EmployeesPermissions.AssignmentsManage, _f.AssignmentsManageUser),
+            (EmployeesPermissions.LinkUser, _f.LinkUserOnly),
+            (AccessPermissions.MembershipsView, _f.MembershipsViewOnly),
         };
         foreach (var (permission, user) in users)
         {
@@ -447,5 +460,89 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
             .SqlQuery<int>($"SELECT ((SELECT count(*) FROM company_user_memberships) + (SELECT count(*) FROM company_user_branches) + (SELECT count(*) FROM access_profile_permissions))::int AS \"Value\"")
             .SingleAsync());
         accessAfter.Should().Be(accessBefore);
+    }
+
+    [Fact]
+    public async Task Vincular_exige_ambos_permisos_y_desvincular_solo_el_de_empleados()
+    {
+        var id = Guid.NewGuid();
+        var link = $$"""{"identityUserId":"{{Guid.NewGuid()}}","rowVersion":1}""";
+        async Task<HttpStatusCode> Send(Guid user, string action, string body, string role = EmployeesHttpAuthorizationFixture.Role)
+        {
+            using var client = _f.ClientFor(user, _f.Company1, _f.Branch1, role);
+            using var response = await client.SendAsync(Req("POST", $"{Base}/{id}/{action}", body));
+            return response.StatusCode;
+        }
+
+        (await Send(_f.LinkUserOnly, "link-user", link)).Should().Be(HttpStatusCode.Forbidden, "falta consultar membresías");
+        (await Send(_f.MembershipsViewOnly, "link-user", link)).Should().Be(HttpStatusCode.Forbidden, "falta vincular");
+        (await Send(_f.MembershipsViewOnly, "unlink-user", """{"rowVersion":1}""")).Should().Be(HttpStatusCode.Forbidden);
+        (await Send(_f.LinkUserOnly, "unlink-user", """{"rowVersion":1}""")).Should().Be(HttpStatusCode.NotFound, "autorizado; la ficha no existe");
+        (await Send(_f.LinkAndMemberships, "link-user", link)).Should().Be(HttpStatusCode.NotFound, "autorizado; la ficha no existe");
+        (await Send(_f.AdminUser, "link-user", link, "Admin")).Should().Be(HttpStatusCode.NotFound, "Admin conforme a su comportamiento oficial");
+    }
+
+    [Fact]
+    public async Task Flujo_HTTP_real_vinculacion_advertencia_de_baja_y_conservacion_del_acceso()
+    {
+        HttpClient C1() => _f.ClientFor(_f.FullUserC1, _f.Company1, _f.Branch1);
+        HttpClient C2() => _f.ClientFor(_f.FullUserC2, _f.Company2, _f.Branch2);
+        // Acceso previo del usuario que se vinculará, verificado por el pipeline oficial.
+        async Task<HttpStatusCode> LinkedUserAccess()
+        {
+            using var client = _f.ClientFor(_f.ViewUser, _f.Company1, _f.Branch1);
+            using var response = await client.GetAsync(Base);
+            return response.StatusCode;
+        }
+        (await LinkedUserAccess()).Should().Be(HttpStatusCode.OK);
+
+        var bp = await _f.NewEmployeeBpAsync();
+        using var hire = await C1().PostAsJsonAsync(Base, new { businessPartnerId = bp, startDate = "2026-03-01" });
+        var employee = await DataAsync(hire);
+        var id = employee.GetProperty("id").GetGuid();
+        var version = employee.GetProperty("rowVersion").GetUInt32();
+        employee.GetProperty("identityUser").ValueKind.Should().Be(JsonValueKind.Null);
+
+        // Usuario de otra empresa → 400 indistinguible de inexistente; ficha desde otra empresa → 404.
+        using var foreignUser = await C1().PostAsJsonAsync($"{Base}/{id}/link-user", new { identityUserId = _f.FullUserC2, rowVersion = version });
+        using var missingUser = await C1().PostAsJsonAsync($"{Base}/{id}/link-user", new { identityUserId = Guid.NewGuid(), rowVersion = version });
+        foreignUser.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await CodeAsync(foreignUser)).Should().Be("EMPLOYEE_USER_NO_MEMBERSHIP").And.Be(await CodeAsync(missingUser));
+        using var foreignEmployee = await C2().PostAsJsonAsync($"{Base}/{id}/link-user", new { identityUserId = _f.FullUserC2, rowVersion = version });
+        foreignEmployee.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        using var linked = await C1().PostAsJsonAsync($"{Base}/{id}/link-user", new { identityUserId = _f.ViewUser, rowVersion = version });
+        linked.StatusCode.Should().Be(HttpStatusCode.OK, await linked.Content.ReadAsStringAsync());
+        var dto = await DataAsync(linked);
+        var identity = dto.GetProperty("identityUser");
+        identity.EnumerateObject().Select(x => x.Name).Should().BeEquivalentTo("id", "username", "membershipActive");
+        identity.GetProperty("id").GetGuid().Should().Be(_f.ViewUser);
+        identity.GetProperty("membershipActive").GetBoolean().Should().BeTrue();
+        var linkedVersion = dto.GetProperty("rowVersion").GetUInt32();
+
+        using var stale = await C1().PostAsJsonAsync($"{Base}/{id}/unlink-user", new { rowVersion = version });
+        stale.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await CodeAsync(stale)).Should().Be("CONCURRENCY_CONFLICT");
+        using var second = await C1().PostAsJsonAsync($"{Base}/{id}/link-user", new { identityUserId = _f.ViewUser, rowVersion = linkedVersion });
+        second.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await CodeAsync(second)).Should().Be("EMPLOYEE_USER_ALREADY_LINKED");
+
+        using var terminated = await C1().PostAsJsonAsync($"{Base}/{id}/terminate", new { rowVersion = linkedVersion, endDate = "2026-06-30" });
+        terminated.StatusCode.Should().Be(HttpStatusCode.OK, await terminated.Content.ReadAsStringAsync());
+        var afterTerminate = await DataAsync(terminated);
+        afterTerminate.GetProperty("warnings").EnumerateArray().Select(w => w.GetString()).Should().Equal("ACTIVE_MEMBERSHIP");
+        (await LinkedUserAccess()).Should().Be(HttpStatusCode.OK, "la baja no revoca el acceso ERP");
+        using var read = await C1().GetAsync($"{Base}/{id}");
+        (await DataAsync(read)).GetProperty("warnings").GetArrayLength().Should().Be(0);
+
+        var terminatedVersion = afterTerminate.GetProperty("rowVersion").GetUInt32();
+        using var unlinked = await C1().PostAsJsonAsync($"{Base}/{id}/unlink-user", new { rowVersion = terminatedVersion });
+        unlinked.StatusCode.Should().Be(HttpStatusCode.OK, await unlinked.Content.ReadAsStringAsync());
+        var afterUnlink = await DataAsync(unlinked);
+        afterUnlink.GetProperty("identityUser").ValueKind.Should().Be(JsonValueKind.Null);
+        using var again = await C1().PostAsJsonAsync($"{Base}/{id}/unlink-user", new { rowVersion = afterUnlink.GetProperty("rowVersion").GetUInt32() });
+        again.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await CodeAsync(again)).Should().Be("EMPLOYEE_USER_NOT_LINKED");
+        (await LinkedUserAccess()).Should().Be(HttpStatusCode.OK, "desvincular no toca el acceso ERP");
     }
 }

@@ -20,6 +20,7 @@ using ERP.Domain.Modules.Employees.Services;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.Employees;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Tests.Audit;
@@ -149,17 +150,17 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
         IBusinessPartnerEmploymentGuard? guard = null, IEmployeeCatalogRepository? catalogs = null) =>
         new(new EmployeeRepository(db), catalogs ?? new EmployeeCatalogRepository(db),
             new EmployeeBusinessPartnerReader(db), guard ?? new BusinessPartnerEmploymentGuard(db),
-            new IdentificationUsageValidator(db), new EmployeeQueries(db),
+            new IdentificationUsageValidator(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))),
             new PostgresDatabaseExceptionTranslator(), Ctx(tenant, company, _user), new UnitOfWork(db));
 
     private UpdateEmployeeHandler UpdateH(
         ErpDbContext db, Guid tenant, Guid company, IEmployeeCatalogRepository? catalogs = null) =>
         new(new EmployeeRepository(db), catalogs ?? new EmployeeCatalogRepository(db),
-            new EmployeeQueries(db), Ctx(tenant, company, _user), new UnitOfWork(db));
+            new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(tenant, company, _user), new UnitOfWork(db));
 
     private SetEmployeeSpecialtiesHandler SpecialtiesH(ErpDbContext db, Guid tenant, Guid company) =>
         new(new EmployeeRepository(db), new EmployeeCatalogRepository(db),
-            new EmployeeQueries(db), Ctx(tenant, company, _user), new UnitOfWork(db));
+            new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(tenant, company, _user), new UnitOfWork(db));
 
     private DeactivateBusinessPartnerHandler DeactivateH(
         ErpDbContext db, Guid tenant, Guid company, IBusinessPartnerEmploymentGuard? guard = null) =>
@@ -202,7 +203,7 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
     {
         var (t, c) = (tenant ?? _tenantA, company ?? _companyA1);
         await using var db = NewDb(t, c);
-        var result = await new GetEmployeeByIdHandler(new EmployeeQueries(db), Ctx(t, c, _user))
+        var result = await new GetEmployeeByIdHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(t, c, _user))
             .Handle(new GetEmployeeByIdQuery(id), default);
         result.IsSuccess.Should().BeTrue(result.Error);
         return result.Value!;
@@ -496,7 +497,7 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
         }
 
         await using var db = NewDb(_tenantA, _companyA2);
-        var get = await new GetEmployeeByIdHandler(new EmployeeQueries(db), Ctx(_tenantA, _companyA2, _user))
+        var get = await new GetEmployeeByIdHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(_tenantA, _companyA2, _user))
             .Handle(new GetEmployeeByIdQuery(id), default);
         get.Code.Should().Be(ApiResponseCodes.Employees.NotFound);
         (await GetAsync(id)).RowVersion.Should().Be(version, "ninguna escritura ajena");
@@ -523,8 +524,8 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
             .Should().BeEmpty("empresa distinta");
         (await catalogs.ResolveForAssignmentAsync(EmployeeCatalogType.JobPosition, _tenantB, _companyA1, [catalog]))
             .Should().BeEmpty("tenant distinto");
-        (await new EmployeeQueries(db).GetByIdAsync(_tenantB, _companyA1, id)).Should().BeNull();
-        (await new EmployeeQueries(db).GetByIdAsync(_tenantA, _companyA2, id)).Should().BeNull();
+        (await new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))).GetByIdAsync(_tenantB, _companyA1, id)).Should().BeNull();
+        (await new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))).GetByIdAsync(_tenantA, _companyA2, id)).Should().BeNull();
         await tx.RollbackAsync();
     }
 
@@ -689,7 +690,7 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
         async Task<PagedResult<EmployeeListItemDto>> List(ListEmployeesQuery q)
         {
             await using var db = NewDb(_tenantA, company);
-            var r = await new ListEmployeesHandler(new EmployeeQueries(db), Ctx(_tenantA, company, _user), FixedClock.Create()).Handle(q, default);
+            var r = await new ListEmployeesHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(_tenantA, company, _user), FixedClock.Create()).Handle(q, default);
             r.IsSuccess.Should().BeTrue(r.Error);
             return r.Value!;
         }

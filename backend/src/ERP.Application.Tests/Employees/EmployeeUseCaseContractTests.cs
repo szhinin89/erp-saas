@@ -42,6 +42,7 @@ public sealed class EmployeeUseCaseContractTests
             typeof(GetEmployeeByIdQuery), typeof(ListEmployeesQuery), typeof(ListEmployeeCatalogQuery),
             typeof(GetEmployeeCatalogEntryQuery), typeof(CreateEmployeeCatalogEntryCommand),
             typeof(RenameEmployeeCatalogEntryCommand), typeof(SetEmployeeCatalogEntryActiveCommand),
+            typeof(LinkEmployeeUserCommand), typeof(UnlinkEmployeeUserCommand),
         })
         {
             typeof(ICompanyScopedRequest).IsAssignableFrom(type).Should().BeTrue(type.Name);

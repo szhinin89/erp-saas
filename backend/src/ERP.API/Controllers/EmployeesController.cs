@@ -139,7 +139,7 @@ public sealed class EmployeesController : ControllerBase
     /// <summary>Da de baja al empleado: cierra su período abierto y sus asignaciones vigentes.</summary>
     /// <remarks>
     /// No revoca el acceso al ERP. Se bloquea si existe una asignación con inicio posterior a la fecha de baja.
-    /// <c>warnings</c> permanece vacío hasta EMP-E6.
+    /// <c>warnings</c> incluye <c>ACTIVE_MEMBERSHIP</c> si el usuario vinculado conserva membresía activa en la empresa.
     /// </remarks>
     /// <param name="id">Identificador de la ficha de empleado.</param>
     /// <param name="request">Versión leída (<c>rowVersion</c>), fecha de baja inclusiva y motivo opcional (máx. 500).</param>
@@ -192,5 +192,59 @@ public sealed class EmployeesController : ControllerBase
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new RehireEmployeeCommand(id, request.RowVersion, request.StartDate), ct)
+        );
+
+    /// <summary>Vincula un usuario ERP existente a la ficha. No crea cuentas, membresías ni permisos.</summary>
+    /// <remarks>
+    /// El usuario debe tener membresía activa en la empresa operativa y no ser una cuenta global; se admite en
+    /// fichas activas o en baja. Exige además el permiso de consulta de membresías. Una ficha ya vinculada
+    /// no se reemplaza: hay que desvincularla primero.
+    /// </remarks>
+    /// <param name="id">Identificador de la ficha de empleado.</param>
+    /// <param name="request">Usuario a vincular y versión leída (<c>rowVersion</c>) de la ficha.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Ficha con el usuario vinculado.</response>
+    /// <response code="400">El usuario no tiene una membresía activa en la empresa.</response>
+    /// <response code="404">La ficha no existe o es de otro ámbito.</response>
+    /// <response code="409">Versión obsoleta, o la ficha o el usuario ya están vinculados.</response>
+    /// <response code="422">Datos inválidos.</response>
+    [ProducesResponseType(typeof(ApiResponse<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [HttpPost("{id:guid}/link-user")]
+    [Authorize(Policy = $"perm:{EmployeesPermissions.LinkUser}")]
+    [Authorize(Policy = $"perm:{AccessPermissions.MembershipsView}")]
+    public async Task<IActionResult> LinkUser(
+        Guid id,
+        [FromBody] LinkEmployeeUserRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new LinkEmployeeUserCommand(id, request.IdentityUserId, request.RowVersion), ct)
+        );
+
+    /// <summary>Quita el vínculo con el usuario ERP. La cuenta, la membresía y los permisos no cambian.</summary>
+    /// <param name="id">Identificador de la ficha de empleado.</param>
+    /// <param name="request">Versión leída (<c>rowVersion</c>) de la ficha.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Ficha sin usuario vinculado.</response>
+    /// <response code="400">La ficha no tiene un usuario vinculado.</response>
+    /// <response code="404">La ficha no existe o es de otro ámbito.</response>
+    /// <response code="409">La versión (<c>rowVersion</c>) está obsoleta.</response>
+    [ProducesResponseType(typeof(ApiResponse<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [HttpPost("{id:guid}/unlink-user")]
+    [Authorize(Policy = $"perm:{EmployeesPermissions.LinkUser}")]
+    public async Task<IActionResult> UnlinkUser(
+        Guid id,
+        [FromBody] UnlinkEmployeeUserRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new UnlinkEmployeeUserCommand(id, request.RowVersion), ct)
         );
 }

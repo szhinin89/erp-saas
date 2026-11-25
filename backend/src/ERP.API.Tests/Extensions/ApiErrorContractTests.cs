@@ -62,6 +62,9 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Employees.AssignmentOverlap] = 400,
         [ApiResponseCodes.Employees.AssignmentOutsidePeriod] = 400,
         [ApiResponseCodes.Employees.BranchInvalid] = 422,
+        [ApiResponseCodes.Employees.UserAlreadyLinked] = 409,
+        [ApiResponseCodes.Employees.UserNoMembership] = 400,
+        [ApiResponseCodes.Employees.UserNotLinked] = 400,
         [ApiResponseCodes.Purchases.CancellationSubsequentInventoryExit] = 400,
         [ApiResponseCodes.Purchases.CostDistributionStale] = 409,
         [ApiResponseCodes.Common.NotFound] = 404,
@@ -167,6 +170,8 @@ public sealed class ApiErrorContractTests
         ApiResponseCodes.Retentions.SriAnnulmentPending,
         ApiResponseCodes.Retentions.SriNotAuthorized,
         ApiResponseCodes.Retentions.SriVerificationFailed,
+        // EMP-E6 — advertencia informativa dentro de una baja satisfactoria.
+        ApiResponseCodes.Employees.ActiveMembership,
     ];
 
     private static IEnumerable<string> DeclaredCodes(Type type) =>

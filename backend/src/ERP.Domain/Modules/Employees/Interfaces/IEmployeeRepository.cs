@@ -53,6 +53,10 @@ public interface IEmployeeRepository
     /// <summary>Fija el token recibido del cliente como valor original de la asignación.</summary>
     void SetExpectedAssignmentRowVersion(EmployeeBranchAssignment assignment, uint rowVersion);
 
+    /// <summary>¿El usuario ya está vinculado a otra ficha de la empresa (UX-EMP-02)? Lectura sin seguimiento.</summary>
+    Task<bool> IsUserLinkedToOtherEmployeeAsync(
+        Guid tenantId, Guid companyId, Guid identityUserId, Guid employeeId, CancellationToken ct = default);
+
     Task AddAsync(Employee employee, CancellationToken ct = default);
 
     /// <summary>Fija el token de concurrencia (<c>xmin</c>) recibido del cliente como valor original.</summary>

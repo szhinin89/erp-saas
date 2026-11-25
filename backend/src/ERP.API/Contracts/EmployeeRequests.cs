@@ -35,3 +35,9 @@ public sealed record CreateBranchAssignmentRequest(Guid BranchId, DateOnly Start
 
 /// <summary>Cuerpo del cierre: versión leída de la asignación (<c>rowVersion</c>) y fecha de fin.</summary>
 public sealed record CloseBranchAssignmentRequest(uint RowVersion, DateOnly EndDate);
+
+/// <summary>Cuerpo de la vinculación: usuario ERP y versión leída de la ficha (<c>rowVersion</c>).</summary>
+public sealed record LinkEmployeeUserRequest(Guid IdentityUserId, uint RowVersion);
+
+/// <summary>Cuerpo de la desvinculación: versión leída de la ficha (<c>rowVersion</c>).</summary>
+public sealed record UnlinkEmployeeUserRequest(uint RowVersion);

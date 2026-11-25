@@ -36,6 +36,7 @@
         "ERP.Infrastructure.Tests.Modules.Employees.BusinessPartnerEmploymentGuardPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Employees.EmployeeLifecyclePostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Employees.EmployeeManagementPostgreSqlTests",
+        "ERP.Infrastructure.Tests.Modules.Employees.EmployeeUserLinkPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Employees.EmployeesSchemaPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseRetentionConfirmIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseCostDistributionPostgreSqlTests",

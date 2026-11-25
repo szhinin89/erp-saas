@@ -143,7 +143,7 @@ real queda habilitada solo después. Hasta E5 no existe baja ni reincorporación
 
 ## EMP-E5 — Asignaciones laborales y ciclo laboral completo (baja y reincorporación)
 
-**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones registradas: D-E5-1 `rowVersion` en baja, reincorporación (ficha) y cierre de asignación (asignación), con existencia → versión → reglas; D-E5-2 `EMPLOYEE_BRANCH_INVALID` (422) indistinguible; D-E5-3 `warnings[]` vacío hasta E6 (`ACTIVE_MEMBERSHIP` obligatorio en E6); D-E5-4 filtro `branchId` + `asOf` (hoy de la empresa por defecto); D-E5-5 respuestas de cierre de asignación (404/409/422). Observación B de sucursales resuelta con predicados explícitos de tenant y empresa y `FOR SHARE` sin modificar Branches. Detalle y evidencia en [STATUS](../../STATUS.md).
+**Estado (2026-11-25): COMPLETADO / CLOSED (commit `6d87fe1087`, CI #1240 SUCCESS).** Decisiones registradas: D-E5-1 `rowVersion` en baja, reincorporación (ficha) y cierre de asignación (asignación), con existencia → versión → reglas; D-E5-2 `EMPLOYEE_BRANCH_INVALID` (422) indistinguible; D-E5-3 `warnings[]` vacío hasta E6 (`ACTIVE_MEMBERSHIP` obligatorio en E6); D-E5-4 filtro `branchId` + `asOf` (hoy de la empresa por defecto); D-E5-5 respuestas de cierre de asignación (404/409/422). Observación B de sucursales resuelta con predicados explícitos de tenant y empresa y `FOR SHARE` sin modificar Branches. Detalle y evidencia en [STATUS](../../STATUS.md).
 
 **Dependencias:** E4. **Objetivo:** completar el ciclo laboral integrando períodos y asignaciones en operaciones atómicas.
 **Alcance:** EMP-BR-11, EMP-BR-12; **baja** (EMP-BR-08) con cierre del período y de las asignaciones vigentes en una sola
@@ -158,6 +158,8 @@ T-08, T-09, T-10 (permiso `employees.disable`), T-12 (P-07).
 verificadas como atómicas en PostgreSQL real. **Prohibido:** tocar `CompanyUserBranch` o permisos.
 
 ## EMP-E6 — Vinculación y desvinculación de usuarios
+
+**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones registradas: D-E6-1 vincular y desvincular en fichas activas y en baja; D-E6-2 no se reemplaza un vínculo existente (409); D-E6-3 `rowVersion` en vincular y desvincular, **complemento contractual** que resuelve la contradicción con «`unlink-user`: sin cuerpo» de la especificación §9; D-E6-4 usuario inactivo con membresía activa admitido; D-E6-5 cuenta posteriormente global oculta, sin advertencia y desvinculable. Observación B de usuarios resuelta con la regla única de IAM y predicados de tenant y empresa; `ACTIVE_MEMBERSHIP` completado en la baja. Detalle y evidencia en [STATUS](../../STATUS.md).
 
 **Dependencias:** E4 y E1. **Alcance:** EMP-BR-13 y EMP-BR-14, `POST /employees/{id}/unlink-user`. Acceso a Identity/Access solo
 mediante puertos de lectura; si hiciera falta tocar Access, autorización separada. **Pruebas:** T-08, T-10.

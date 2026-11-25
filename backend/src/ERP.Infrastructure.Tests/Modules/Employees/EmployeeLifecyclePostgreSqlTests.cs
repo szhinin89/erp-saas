@@ -19,6 +19,7 @@ using ERP.Domain.Modules.Employees.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.Employees;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Tests.Audit;
@@ -144,23 +145,23 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
 
     private CreateEmployeeHandler CreateH(ErpDbContext db, Guid t, Guid c) =>
         new(new EmployeeRepository(db), new EmployeeCatalogRepository(db), new EmployeeBusinessPartnerReader(db),
-            new BusinessPartnerEmploymentGuard(db), new IdentificationUsageValidator(db), new EmployeeQueries(db),
+            new BusinessPartnerEmploymentGuard(db), new IdentificationUsageValidator(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))),
             new PostgresDatabaseExceptionTranslator(), Ctx(t, c, _user), new UnitOfWork(db));
 
     private TerminateEmployeeHandler TerminateH(ErpDbContext db, Guid t, Guid c, IEmployeeRepository? repo = null) =>
-        new(repo ?? new EmployeeRepository(db), new EmployeeQueries(db), Ctx(t, c, _user), new UnitOfWork(db));
+        new(repo ?? new EmployeeRepository(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(t, c, _user), new UnitOfWork(db));
 
     private RehireEmployeeHandler RehireH(ErpDbContext db, Guid t, Guid c, IBusinessPartnerEmploymentGuard? guard = null) =>
         new(new EmployeeRepository(db), new EmployeeBusinessPartnerReader(db),
-            guard ?? new BusinessPartnerEmploymentGuard(db), new EmployeeQueries(db), Ctx(t, c, _user), new UnitOfWork(db));
+            guard ?? new BusinessPartnerEmploymentGuard(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(t, c, _user), new UnitOfWork(db));
 
     private CreateBranchAssignmentHandler AssignH(
         ErpDbContext db, Guid t, Guid c, IEmployeeBranchReader? branches = null, IEmployeeRepository? repo = null) =>
-        new(repo ?? new EmployeeRepository(db), branches ?? new EmployeeBranchReader(db), new EmployeeQueries(db),
+        new(repo ?? new EmployeeRepository(db), branches ?? new EmployeeBranchReader(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))),
             Ctx(t, c, _user), new UnitOfWork(db));
 
     private CloseBranchAssignmentHandler CloseH(ErpDbContext db, Guid t, Guid c) =>
-        new(new EmployeeRepository(db), new EmployeeQueries(db), Ctx(t, c, _user), new UnitOfWork(db));
+        new(new EmployeeRepository(db), new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(t, c, _user), new UnitOfWork(db));
 
     private DeactivateBusinessPartnerHandler DeactivateH(ErpDbContext db, Guid t, Guid c, IBusinessPartnerEmploymentGuard? g = null) =>
         new(new BusinessPartnerRepository(db), Ctx(t, c, _user), g ?? new BusinessPartnerEmploymentGuard(db), new UnitOfWork(db));
@@ -206,7 +207,7 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
     {
         var (t, c) = (tenant ?? _tenantA, company ?? _companyA1);
         await using var db = NewDb(t, c);
-        var r = await new GetEmployeeByIdHandler(new EmployeeQueries(db), Ctx(t, c, _user))
+        var r = await new GetEmployeeByIdHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(t, c, _user))
             .Handle(new GetEmployeeByIdQuery(id), default);
         r.IsSuccess.Should().BeTrue(r.Error);
         return r.Value!;
@@ -512,7 +513,7 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
         (await AssignAsync(id, b1, D(2, 28))).Code.Should().Be(ApiResponseCodes.Employees.AssignmentOverlap, "comparte el día 28");
 
         await using var db = NewDb(_tenantA, _companyA1);
-        var list = await new ListBranchAssignmentsHandler(new EmployeeQueries(db), Ctx(_tenantA, _companyA1, _user))
+        var list = await new ListBranchAssignmentsHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(_tenantA, _companyA1, _user))
             .Handle(new ListBranchAssignmentsQuery(id), default);
         list.Value!.Should().HaveCount(3);
         (await AssignmentCountAsync(id)).Should().Be(3);
@@ -623,7 +624,7 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
         async Task<List<Guid>> Ids(ListEmployeesQuery q)
         {
             await using var db = NewDb(_tenantA, company);
-            var r = await new ListEmployeesHandler(new EmployeeQueries(db), Ctx(_tenantA, company, _user), Clock()).Handle(q, default);
+            var r = await new ListEmployeesHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(_tenantA, company, _user), Clock()).Handle(q, default);
             r.IsSuccess.Should().BeTrue(r.Error);
             return r.Value!.Items.Select(i => i.Id).ToList();
         }
@@ -644,7 +645,7 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
 
         // Aislamiento: otra empresa del tenant, aunque conozca la sucursal, no ve nada.
         await using var db = NewDb(_tenantA, _companyA1);
-        var foreign = await new ListEmployeesHandler(new EmployeeQueries(db), Ctx(_tenantA, _companyA1, _user), Clock())
+        var foreign = await new ListEmployeesHandler(new EmployeeQueries(db, new EmployeeIdentityProjector(new AccessRepository(db))), Ctx(_tenantA, _companyA1, _user), Clock())
             .Handle(new ListEmployeesQuery(BranchId: branch, AsOf: D(6, 15)), default);
         foreign.Value!.TotalCount.Should().Be(0);
     }
@@ -725,6 +726,7 @@ public sealed class EmployeeLifecyclePostgreSqlTests : IAsyncLifetime
         public Task AddPeriodAsync(EmployeeEmploymentPeriod period, CancellationToken ct = default) => inner.AddPeriodAsync(period, ct);
         public uint GetAssignmentRowVersion(EmployeeBranchAssignment assignment) => inner.GetAssignmentRowVersion(assignment);
         public void SetExpectedAssignmentRowVersion(EmployeeBranchAssignment assignment, uint v) => inner.SetExpectedAssignmentRowVersion(assignment, v);
+        public Task<bool> IsUserLinkedToOtherEmployeeAsync(Guid t, Guid c, Guid u, Guid e, CancellationToken ct = default) => inner.IsUserLinkedToOtherEmployeeAsync(t, c, u, e, ct);
         public Task AddAsync(Employee employee, CancellationToken ct = default) => inner.AddAsync(employee, ct);
         public void SetExpectedRowVersion(Employee employee, uint v) => inner.SetExpectedRowVersion(employee, v);
         public Task<IReadOnlyList<EmployeeSpecialty>> GetSpecialtyLinksAsync(Guid t, Guid c, Guid e, CancellationToken ct = default) => inner.GetSpecialtyLinksAsync(t, c, e, ct);

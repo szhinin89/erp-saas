@@ -319,5 +319,13 @@ public static class ApiResponseCodes
         public const string AssignmentOverlap = "EMPLOYEE_ASSIGNMENT_OVERLAP";
         public const string AssignmentOutsidePeriod = "EMPLOYEE_ASSIGNMENT_OUTSIDE_PERIOD";
         public const string BranchInvalid = "EMPLOYEE_BRANCH_INVALID";
+
+        // EMP-E6 — vinculación de usuarios.
+        public const string UserAlreadyLinked = "EMPLOYEE_USER_ALREADY_LINKED";
+        public const string UserNoMembership = "EMPLOYEE_USER_NO_MEMBERSHIP";
+        public const string UserNotLinked = "EMPLOYEE_USER_NOT_LINKED";
+
+        /// <summary>Advertencia (no es error) de la baja: el usuario vinculado conserva membresía activa.</summary>
+        public const string ActiveMembership = "ACTIVE_MEMBERSHIP";
     }
 }
