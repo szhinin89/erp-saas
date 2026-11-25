@@ -1,3 +1,4 @@
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -19,6 +20,14 @@ namespace ERP.API.Controllers;
 [Route("api/v1/employees/{catalog:regex(^(job-positions|professions|specialties)$)}")]
 [Authorize]
 [Produces("application/json")]
+[AppFeature(
+    "Catálogos laborales",
+    $"perm:{EmployeesPermissions.CatalogsView}",
+    "🗂️",
+    "/employees/catalogs",
+    null,
+    26
+)]
 public sealed class EmployeeCatalogsController : ControllerBase
 {
     private readonly IMediator _mediator;

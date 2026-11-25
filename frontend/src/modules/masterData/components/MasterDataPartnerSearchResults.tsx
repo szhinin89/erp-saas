@@ -6,8 +6,15 @@
 import { useI18n } from "../../../i18n/i18n";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 import { ZHBtn } from "../../../components/zh/ZHForm";
+import {
+  SRI_ID_TYPE_CEDULA,
+  SRI_ID_TYPE_PASSPORT,
+} from "../constants/sriIdentificationCodes";
 
-type Role = "customer" | "supplier";
+type Role = "customer" | "supplier" | "employee";
+
+/** EMP-BR-02: un empleado se identifica con cédula o pasaporte; el backend es la autoridad. */
+const EMPLOYEE_ID_TYPES: readonly string[] = [SRI_ID_TYPE_CEDULA, SRI_ID_TYPE_PASSPORT];
 
 /**
  * Estado de un resultado de búsqueda respecto al rol que se está creando/asignando
@@ -19,13 +26,21 @@ export type PartnerSearchResultState =
   | "canAssignNoRole"
   | "canAssignOtherRole"
   | "alreadyTarget"
-  | "alreadyBoth";
+  | "alreadyBoth"
+  | "employeeCandidate"
+  | "employeeIdNotAllowed";
 
 /** Pura y testeable sin mocks de API — ver ZH-MASTERDATA-PARTNER-FUNCTIONAL-CASE-MATRIX-06 §9. */
 export function getPartnerSearchResultState(
   bp: BusinessPartnerSummaryDto,
   targetRole: Role,
 ): PartnerSearchResultState {
+  // La búsqueda no informa el rol Employee: se ofrece asignar y el backend rechaza si ya está activo.
+  if (targetRole === "employee") {
+    return EMPLOYEE_ID_TYPES.includes(bp.identificationType)
+      ? "employeeCandidate"
+      : "employeeIdNotAllowed";
+  }
   const hasTarget = targetRole === "customer" ? bp.isCustomer : bp.isSupplier;
   const hasOther = targetRole === "customer" ? bp.isSupplier : bp.isCustomer;
   if (hasTarget && hasOther) return "alreadyBoth";
@@ -50,8 +65,8 @@ export function MasterDataPartnerSearchResults({
   onAssign,
 }: Props) {
   const { t } = useI18n();
-  const roleLabel = role === "customer" ? "Cliente" : "Proveedor";
-  const roleLabelLower = role === "customer" ? "cliente" : "proveedor";
+  const roleLabel = { customer: "Cliente", supplier: "Proveedor", employee: "Empleado" }[role];
+  const roleLabelLower = roleLabel.toLowerCase();
   const otherRoleLabelLower = role === "customer" ? "proveedor" : "cliente";
 
   return (
@@ -67,6 +82,16 @@ export function MasterDataPartnerSearchResults({
                 {bp.identificationNumber}
               </span>
               <span className="md-search-result-status">
+                {resultState === "employeeCandidate" &&
+                  t(
+                    "masterdata.wizard.search.employeeCandidate",
+                    "Registro encontrado. Asígnele el rol Empleado si aún no lo tiene.",
+                  )}
+                {resultState === "employeeIdNotAllowed" &&
+                  t(
+                    "masterdata.wizard.search.employeeIdNotAllowed",
+                    "Su tipo de identificación no admite el rol Empleado. Solo cédula o pasaporte.",
+                  )}
                 {resultState === "alreadyBoth" &&
                   t(
                     "masterdata.wizard.search.alreadyBoth",
@@ -87,7 +112,8 @@ export function MasterDataPartnerSearchResults({
               </span>
             </div>
             {(resultState === "canAssignNoRole" ||
-              resultState === "canAssignOtherRole") && (
+              resultState === "canAssignOtherRole" ||
+              resultState === "employeeCandidate") && (
               <ZHBtn
                 type="button"
                 variant="primary"

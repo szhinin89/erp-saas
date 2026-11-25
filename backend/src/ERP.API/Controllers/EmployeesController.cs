@@ -1,3 +1,4 @@
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -19,6 +20,7 @@ namespace ERP.API.Controllers;
 [Route("api/v1/employees")]
 [Authorize]
 [Produces("application/json")]
+[AppFeature("Empleados", $"perm:{EmployeesPermissions.View}", "🧑‍💼", "/employees", null, 25)]
 public sealed class EmployeesController : ControllerBase
 {
     private readonly IMediator _mediator;

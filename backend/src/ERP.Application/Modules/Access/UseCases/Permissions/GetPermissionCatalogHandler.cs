@@ -4,6 +4,7 @@ using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Kernel;
 using ERP.Domain.Kernel.Navigation;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
@@ -70,6 +71,22 @@ public sealed class GetPermissionCatalogHandler
         ["retransmit-corrected"] = (
             "Retransmitir corregido",
             "Permite retransmitir un documento corregido."
+        ),
+    };
+
+    // EMP-E7: claves cuyo último segmento no describe la acción (presentación; la clave no cambia).
+    private static readonly IReadOnlyDictionary<
+        string,
+        (string Label, string Description)
+    > PermissionKeyLabels = new Dictionary<string, (string, string)>(StringComparer.Ordinal)
+    {
+        [EmployeesPermissions.LinkUser] = (
+            "Vincular y desvincular usuarios",
+            "Permite vincular y desvincular el usuario ERP de un empleado."
+        ),
+        [EmployeesPermissions.AssignmentsManage] = (
+            "Administrar asignaciones a sucursales",
+            "Permite crear y cerrar las asignaciones de un empleado a sucursales."
         ),
     };
 
@@ -203,6 +220,9 @@ public sealed class GetPermissionCatalogHandler
 
     private static (string Label, string Description) ResolveVerbLabel(string permissionKey)
     {
+        if (PermissionKeyLabels.TryGetValue(permissionKey, out var specific))
+            return specific;
+
         var verb = permissionKey[(permissionKey.LastIndexOf('.') + 1)..];
         return ActionVerbs.TryGetValue(verb, out var resolved)
             ? resolved

@@ -10,6 +10,7 @@ import {
   mainRoutes,
   catalogRoutes,
   accessRoutes,
+  employeesRoutes,
   adminCoreRoutes,
 } from "./routes";
 import { registerGlobalNavigator } from "./lib/navigation/globalNavigator";
@@ -41,6 +42,7 @@ export function AppRoutes() {
             {mainRoutes}
             {catalogRoutes}
             {accessRoutes}
+            {employeesRoutes}
           </Route>
         </Route>
 

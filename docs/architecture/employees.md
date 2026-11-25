@@ -1,4 +1,4 @@
-# Empleados — ficha laboral, ciclo laboral, sucursales, usuarios y directorio
+# Empleados — ficha laboral, ciclo laboral, sucursales, usuarios, directorio e interfaz
 
 **SSOT** del módulo Empleados: comportamiento implementado y comprobado. Otros documentos solo enlazan aquí. La decisión y su
 justificación están en [ADR-050](../decisions/ADR-050-employees-v1-architecture.md) y el diseño aprobado en la
@@ -13,8 +13,6 @@ justificación están en [ADR-050](../decisions/ADR-050-employees-v1-architectur
 - No duplica identidad ni contactos (se leen del BusinessPartner), no crea BP ni asigna roles, no crea cuentas, membresías,
   perfiles ni permisos y no modifica `CompanyUserBranch`. **El estado laboral y el acceso al ERP son independientes.**
 - Sin nómina, salarios, contratos laborales, comisiones, agenda, horarios ni disponibilidad.
-- Es solo backend: no hay pantallas, menú, launcher ni módulo de Kernel; los permisos `employees.*` no son asignables a perfiles,
-  de modo que hoy solo los ejerce el Admin conforme a las reglas oficiales de autorización.
 
 ## Modelo
 
@@ -113,6 +111,38 @@ Eventos de dominio procesados por `EmployeeAuditHandler` y `EmployeeCatalogAudit
 (`Created`, `Renamed`, `Deactivated`, `Activated`). Solo identificadores y fechas, sin datos personales. Un rechazo o conflicto no
 audita. No existe consulta de esta auditoría por API.
 
+## Navegación y permisos asignables
+
+- Módulo de Kernel `EmployeesModule` (`employees`, orden 25, entre Proveedores y Compras): «Empleados» → «Gestión de empleados» →
+  «Empleados» (`/employees`, `employees.view`) y «Catálogos laborales» (`/employees/catalogs`, `employees.catalogs.view`). El
+  contenedor se muestra con cualquiera de esos dos permisos. Árbol oficial: [MENU_MAP](../navigation/MENU_MAP.md).
+- Los ocho permisos `employees.*` son asignables a perfiles (`view`, `create`, `update`, `disable`, `assignments.manage`,
+  `link-user`, `catalogs.view`, `catalogs.manage`). Ningún perfil existente ni inicial los recibe automáticamente.
+- `EmployeesController` y `EmployeeCatalogsController` declaran `[AppFeature]`; el catálogo `app_features` solo se sincroniza al
+  arrancar con `Development:SyncFuncionalidadesOnStartup` en desarrollo.
+- Rutas frontend protegidas por el menú del servidor; `/employees/:id` hereda el acceso de `/employees`.
+
+## Interfaz
+
+Frontend en `frontend/src/modules/employees` sobre la API anterior; cada acción se muestra según su permiso y el backend es la
+autoridad.
+
+| Pantalla | Contenido |
+|---|---|
+| Listado (`/employees`) | Paginado; búsqueda, estado, cargo, profesión, especialidad y sucursal con fecha; alta desde un modal |
+| Alta | Selecciona un socio activo con rol Employee y la fecha de inicio; cargo, profesión y especialidades opcionales |
+| Ficha, **General** | Identidad en solo lectura, cargo, profesión, especialidades, estado, períodos, baja y reincorporación |
+| Ficha, **Sucursales** | Asignaciones vigentes, futuras e históricas; crear y cerrar |
+| Ficha, **Acceso ERP** | Usuario vinculado y estado de su membresía; vincular y desvincular |
+| Catálogos laborales | Una pestaña por catálogo, Lista→Editor; activar y desactivar, sin eliminar |
+
+- Los formularios envían `rowVersion`; ante `CONCURRENCY_CONFLICT` se recarga sin reintentar. Hay confirmación al abandonar
+  cambios sin guardar.
+- El módulo accede a MasterData solo por `employeePartnerFacade`. Si el socio no existe o no tiene el rol, usa el wizard oficial
+  `MasterDataPartnerWizard` con rol Employee: crear el socio y asignar el rol lo autoriza MasterData con sus permisos.
+- En ese contexto el wizard admite solo cédula o pasaporte, adapta el buscador, rotula «Nombres y apellidos» (campo `legalName`),
+  oculta «Nombre comercial» y no ofrece asignar el rol a un socio con RUC. Clientes y Proveedores conservan su comportamiento.
+
 ## `IEmployeeDirectory`
 
 Contrato oficial de lectura para otros módulos (`ERP.Application/Modules/Employees/Interfaces`), implementado en Infrastructure y
@@ -139,11 +169,21 @@ tablas de Empleados (`EmployeesBoundaryTests`). Hoy no tiene consumidores.
 ## Limitaciones conocidas
 
 - No hay procedimiento para regularizar asignaciones futuras al dar de baja: solo el bloqueo preventivo.
+- El directorio no pagina y no garantiza una instantánea común entre sus consultas.
+- En la edición de ficha y especialidades las referencias se validan antes que `rowVersion`, a diferencia del resto de
+  escrituras (sin persistencia parcial).
+- Desactivar después una sucursal conserva las asignaciones.
+- El pasaporte solo valida longitud conforme al contrato vigente de identificación.
 - La protección de `TenantId`/`CompanyId` es de EF, no una restricción de PostgreSQL frente a SQL directo.
 - El paso concurrente de una cuenta a global no se puede bloquear sin modificar Identity (único origen identificado: first-run).
 - Una membresía revocada después de vincular conserva el vínculo.
+- La búsqueda de socios del wizard no informa el rol Employee; si ya está activo, responde el rechazo del servidor.
+- Los tipos de identificación del wizard exigen `catalog.manage` y asignar sucursales exige además `settings.branches.view`.
+- El aviso `ACTIVE_MEMBERSHIP` no persiste al recargar.
+- El diseño responsive no tiene prueba automatizada.
 
 ## Pruebas
 
 `ERP.Domain.Tests/Employees`, `ERP.Application.Tests/Employees`, `ERP.Infrastructure.Tests/Modules/Employees` (PostgreSQL real),
-`ERP.API.Tests/Employees`, `EmployeesPermissionContractTests` y `ERP.Architecture.Tests/EmployeesBoundaryTests`.
+`ERP.API.Tests/Employees`, `EmployeesPermissionContractTests`, `ERP.Architecture.Tests/EmployeesBoundaryTests`, las pruebas de
+navegación del Kernel y, en frontend, `modules/employees/**/*.test.tsx` y `routes/employeesRoutes.test.tsx`.

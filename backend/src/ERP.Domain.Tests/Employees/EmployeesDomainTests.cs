@@ -156,7 +156,7 @@ public sealed class EmployeesDomainTests
     }
 
     [Fact]
-    public void Los_ocho_permisos_aprobados_estan_en_el_Kernel_sin_modulo_ni_perfiles()
+    public void Los_ocho_permisos_aprobados_son_asignables_por_el_modulo_y_no_entran_en_perfiles()
     {
         var expected = new[]
         {
@@ -169,9 +169,11 @@ public sealed class EmployeesDomainTests
             .Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!)
             .Should().BeEquivalentTo(expected);
         KernelRegistry.Permissions.Should().Contain(expected);
-        // Sin EmployeesModule (EMP-E7): ningún módulo de menú declara el prefijo employees.
-        KernelRegistry.Modules.Select(m => m.Code).Should().NotContain("employees");
-        KernelRegistry.AssignablePermissionKeys.Should().NotContain(expected);
+        // EMP-E7: EmployeesModule hace asignables exactamente los ocho.
+        KernelRegistry.Modules.Select(m => m.Code).Should().Contain("employees");
+        KernelRegistry.AssignablePermissionKeys
+            .Where(p => p.StartsWith("employees.", StringComparison.Ordinal))
+            .Should().BeEquivalentTo(expected);
         new[] { InitialProfileBundles.Biller, InitialProfileBundles.Accountant }
             .SelectMany(b => b.Permissions).Should()
             .NotContain(p => p.StartsWith("employees.", StringComparison.Ordinal));

@@ -16,8 +16,8 @@ namespace ERP.API.Tests;
 /// <summary>
 /// EMP-E4 (T-10) — cada endpoint de Empleados exige su permiso <c>perm:</c> propio y ninguno
 /// concede otro. Evalúa las policies declaradas con el proveedor y los handlers reales
-/// (sin HTTP ni base de datos). Los menús y el módulo de Kernel llegan con EMP-E7: aquí se
-/// comprueba además que el controller no declara <c>[AppFeature]</c> y que no existe DELETE.
+/// (sin HTTP ni base de datos). Comprueba además el <c>[AppFeature]</c> de cada pantalla del menú
+/// (EMP-E7) y que no existe DELETE.
 /// </summary>
 public sealed class EmployeesPermissionContractTests
 {
@@ -112,7 +112,7 @@ public sealed class EmployeesPermissionContractTests
     [InlineData(typeof(EmployeesController))]
     [InlineData(typeof(EmployeeCatalogsController))]
     [InlineData(typeof(EmployeeBranchAssignmentsController))]
-    public void Los_controllers_cubren_todas_sus_acciones_no_declaran_menu_ni_DELETE(Type controller)
+    public void Los_controllers_cubren_todas_sus_acciones_declaran_su_menu_y_no_DELETE(Type controller)
     {
         var actions = controller
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -120,7 +120,20 @@ public sealed class EmployeesPermissionContractTests
             .ToHashSet();
         actions.Should().BeEquivalentTo(Expected.Where(e => e.Controller == controller).Select(e => e.Action));
 
-        controller.GetCustomAttributes<AppFeatureAttribute>().Should().BeEmpty("el menú es EMP-E7");
+        // EMP-E7 (D-2): una entrada AppFeature por pantalla del menú; las asignaciones viven en la ficha.
+        var features = controller.GetCustomAttributes<AppFeatureAttribute>()
+            .Select(a => (a.Permission, a.Path))
+            .ToList();
+        if (controller == typeof(EmployeesController))
+            features.Should().Equal(($"perm:{EmployeesPermissions.View}", "/employees"));
+        else if (controller == typeof(EmployeeCatalogsController))
+            features.Should().Equal(($"perm:{EmployeesPermissions.CatalogsView}", "/employees/catalogs"));
+        else
+            features.Should().BeEmpty();
+        controller
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .SelectMany(m => m.GetCustomAttributes<AppFeatureAttribute>())
+            .Should().BeEmpty();
         controller
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
             .SelectMany(m => m.GetCustomAttributes<HttpMethodAttribute>())

@@ -15,7 +15,7 @@ type Props = {
   saving: boolean;
   modalLayout?: boolean;
   section?: "identity" | "review";
-  usage?: "customer" | "supplier";
+  usage?: "customer" | "supplier" | "employee";
   /** Edición de un socio existente (ficha): identificación de solo lectura (el PUT no la modifica) y sin la configuración de alta del proveedor. */
   identityLocked?: boolean;
 };
@@ -45,6 +45,10 @@ export function MasterDataBpFormFields({
   const { options: supplierTypeOptions, loading: loadingSupplierTypes } =
     useSriSupplierTypes();
   const watchedIdentificationType = watch("identificationType");
+  // Empleado es una persona: se nombra como tal y no registra nombre comercial (opcional en el BP).
+  const isEmployee = usage === "employee";
+  const nameLengthError =
+    errors.legalName?.type === "too_small" || errors.legalName?.type === "too_big";
 
   useEffect(() => {
     // El backend infiere legalEntityTypeCode para RUC/CI — cualquier valor manual anterior
@@ -170,9 +174,20 @@ export function MasterDataBpFormFields({
         <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>{t("masterdata.bp.detail.id.main", "Datos principales")}</h4>
         <ZHGrid cols={modalLayout ? 2 : 3}>
           <ZHField
-            label={t("masterdata.bp.detail.id.legalName", "Razón social")}
+            label={
+              isEmployee
+                ? t("masterdata.bp.detail.id.legalName.employee", "Nombres y apellidos")
+                : t("masterdata.bp.detail.id.legalName", "Razón social")
+            }
             required
-            fieldError={errors.legalName?.message}
+            fieldError={
+              isEmployee && nameLengthError
+                ? t(
+                    "masterdata.bp.detail.id.legalNameLength.employee",
+                    "Ingrese nombres y apellidos (entre 2 y 200 caracteres).",
+                  )
+                : errors.legalName?.message
+            }
           >
             <ZhTextInput
               className="zh-input"
@@ -181,13 +196,15 @@ export function MasterDataBpFormFields({
             />
           </ZHField>
 
-          <ZHField label={t("masterdata.bp.detail.id.tradeName", "Nombre comercial")}>
-            <ZhTextInput
-              className="zh-input"
-              {...register("tradeName")}
-              disabled={saving}
-            />
-          </ZHField>
+          {!isEmployee && (
+            <ZHField label={t("masterdata.bp.detail.id.tradeName", "Nombre comercial")}>
+              <ZhTextInput
+                className="zh-input"
+                {...register("tradeName")}
+                disabled={saving}
+              />
+            </ZHField>
+          )}
 
           <ZHField
             label={t("masterdata.bp.detail.id.country", "País (ISO alpha-2)")}

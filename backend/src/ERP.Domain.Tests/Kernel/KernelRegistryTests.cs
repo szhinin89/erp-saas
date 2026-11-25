@@ -1125,6 +1125,7 @@ public sealed class KernelRegistryTests
             "accounting",
             "settings",
             "admin",
+            "employees",
         };
 
         var strayScreens = KernelRegistry
@@ -1141,6 +1142,33 @@ public sealed class KernelRegistryTests
             .BeEmpty(
                 "ninguna pantalla real debe quedar suelta directamente bajo el módulo (debe vivir dentro de una categoría)"
             );
+    }
+
+    [Fact]
+    public void Navigation_employees_module_sits_after_suppliers_with_its_two_screens()
+    {
+        // EMP-E7 (contrato Empleados V1 §18): módulo propio, contenedor visible con cualquiera de
+        // los dos permisos de consulta y cada pantalla con el suyo.
+        var module = KernelRegistry.Modules.Single(m => m.Code == "employees");
+        var suppliers = KernelRegistry.Modules.Single(m => m.Code == "suppliers");
+        var purchases = KernelRegistry.Modules.Single(m => m.Code == "purchases");
+        module.SortOrder.Should().Be(25).And.BeGreaterThan(suppliers.SortOrder).And.BeLessThan(purchases.SortOrder);
+
+        var items = KernelRegistry.Navigation.Where(n => n.GroupCode == "employees").ToList();
+        var container = items.Single(n => n.PermissionKey is null);
+        container.ParentItemId.Should().BeNull();
+        container.PermissionKeysAnyJson.Should()
+            .Contain(ERP.Domain.Kernel.Permissions.EmployeesPermissions.View)
+            .And.Contain(ERP.Domain.Kernel.Permissions.EmployeesPermissions.CatalogsView);
+
+        var screens = items.Where(n => n.PermissionKey is not null).ToList();
+        screens.Select(n => (n.RoutePath, n.PermissionKey)).Should().BeEquivalentTo(
+            new[]
+            {
+                ("/employees", ERP.Domain.Kernel.Permissions.EmployeesPermissions.View),
+                ("/employees/catalogs", ERP.Domain.Kernel.Permissions.EmployeesPermissions.CatalogsView),
+            });
+        screens.Should().OnlyContain(n => n.ParentItemId == container.Id);
     }
 
     [Fact]

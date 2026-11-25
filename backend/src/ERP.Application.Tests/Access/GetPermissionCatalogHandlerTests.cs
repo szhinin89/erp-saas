@@ -74,6 +74,27 @@ public sealed class GetPermissionCatalogHandlerTests
     }
 
     [Fact]
+    public async Task Employees_screens_expose_the_eight_permissions_with_clear_labels()
+    {
+        // EMP-E7 (T-10, D-3): ocho claves asignables; las dos etiquetas aprobadas, sin cambiar claves.
+        var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
+        var employees = result.Value!.Groups.Single(g => g.Code == "employees");
+        var actions = employees.Categories.SelectMany(c => c.Items).SelectMany(i => i.Actions).ToList();
+
+        actions.Select(a => a.Code).Should().BeEquivalentTo(
+            "employees.view", "employees.create", "employees.update", "employees.disable",
+            "employees.assignments.manage", "employees.link-user",
+            "employees.catalogs.view", "employees.catalogs.manage");
+        actions.Single(a => a.Code == "employees.link-user").Label.Should()
+            .Be("Vincular y desvincular usuarios");
+        actions.Single(a => a.Code == "employees.assignments.manage").Label.Should()
+            .Be("Administrar asignaciones a sucursales");
+        // El resto conserva la etiqueta por verbo.
+        actions.Single(a => a.Code == "employees.catalogs.manage").Label.Should().Be("Administrar");
+        actions.Single(a => a.Code == "employees.disable").Label.Should().Be("Deshabilitar");
+    }
+
+    [Fact]
     public async Task Supplier_payments_screen_exposes_create_and_reverse_as_extra_actions()
     {
         var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);

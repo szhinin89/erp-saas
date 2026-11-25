@@ -1,10 +1,11 @@
-# Empleados V1 — Plan de implementación (PROPUESTO; ninguna fase autorizada)
+# Empleados V1 — Plan de implementación (EMP-E1 a EMP-E6b cerradas; EMP-E7 pendiente de CI)
 
 Decisiones: [ADR-050](../decisions/ADR-050-employees-v1-architecture.md). Comportamiento exacto:
 [especificación contractual](../decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
-**Este plan no autoriza ninguna fase.** Funcionalidad no implementada; EMP-E1: **VERIFICACIÓN TÉCNICA COMPLETADA / CIERRE APROBADO POR EL PROPIETARIO** (2026-11-24; resultado y decisiones abajo); E2–E7 y E6b PENDING / NO AUTORIZADAS. Cada fase requiere
+**Este plan no autoriza por sí mismo ninguna fase.** Estado (2026-11-25): EMP-E1 **VERIFICACIÓN TÉCNICA COMPLETADA / CIERRE APROBADO
+POR EL PROPIETARIO**; EMP-E2 a EMP-E6b **COMPLETADO / CLOSED**; **EMP-E7 IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI**. Cada fase requirió
 autorización expresa del propietario con lista exacta de rutas, gate del propietario (PASS o FAIL) y staging y commit realizados
 por el propietario ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa de
 pruebas; PostgreSQL real para integridad y concurrencia. Etiquetas: APROBADO, EXISTENTE, PROPUESTO y NO VERIFICADO según el ADR.
@@ -166,12 +167,14 @@ mediante puertos de lectura; si hiciera falta tocar Access, autorización separa
 
 ## EMP-E6b — Contrato `IEmployeeDirectory` para Spa
 
-**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones registradas: D-E6b-1 seis firmas definitivas, modelos mínimos, filtro solo `specialtyId` y lista sin paginación; D-E6b-2 EMP-BR-12 literal; D-E6b-3 contrato interno sin permisos propios y con aislamiento obligatorio. SSOT: [employees.md](../architecture/employees.md). Detalle y evidencia en [STATUS](../../STATUS.md).
+**Estado (2026-11-25): COMPLETADO / CLOSED (commit `b78edc11a9350f3a148a03c649ccd69e621b4609`, [CI #1242 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/45663558911), segundo intento).** Directorio PostgreSQL 13/13, resolución real por DI, T-15 acreditado, Architecture 158/158 y SSOT creada e indexada. El primer intento del CI falló por la incidencia histórica de Compras `Test8_D_polling_y_verificacion_en_linea_simultaneos_con_ANULADO_anulan_la_compra_una_sola_vez` (`OriginFinalized`: esperado 1, obtenido 0); la reejecución fue satisfactoria y la causa raíz permanece NO CONFIRMADA. Decisiones registradas: D-E6b-1 seis firmas definitivas, modelos mínimos, filtro solo `specialtyId` y lista sin paginación; D-E6b-2 EMP-BR-12 literal; D-E6b-3 contrato interno sin permisos propios y con aislamiento obligatorio. SSOT: [employees.md](../architecture/employees.md). Detalle y evidencia en [STATUS](../../STATUS.md).
 
 **Dependencias:** E5 y E6. **Alcance:** interfaz y servicio de lectura (spec §19) con referencias históricas estables.
 **Pruebas:** T-15. **Condición:** debe cerrarse antes de cualquier integración de Spa. No incluye lógica clínica ni de Spa.
 
 ## EMP-E7 — Frontend, Kernel y launcher
+
+**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI.** Decisiones aprobadas D-1 (wizard de MasterData con rol Employee, incluidos sus dos componentes internos), D-2 (`AppFeature`) y D-3 (etiquetas de permisos); línea `/api/employees` autorizada en la guarda de plataforma. Aceptación visual y funcional del propietario aprobada, con las correcciones del wizard en contexto Employee. No se declara CLOSED hasta CI satisfactorio. Cobertura T-01 a T-15, resultados y limitaciones en [STATUS](../../STATUS.md); comportamiento en [employees.md](../architecture/employees.md).
 
 **Dependencias:** E4–E6b. **Alcance:** `EmployeesModule.cs`, claves i18n, `frontend/src/modules/employees/**`,
 `MODULE_ICON_BY_ID`, pantallas, ficha de tres secciones, catálogos laborales, guard de cambios sin guardar. Si el wizard de BP no

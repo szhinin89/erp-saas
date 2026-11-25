@@ -58,6 +58,7 @@ const MODULE_ICON_BY_ID: Readonly<Record<string, NavigationIconKey>> = {
   masterdata: "masterData",
   customers: "masterData",
   suppliers: "purchases",
+  employees: "masterData",
   products: "inventory",
   inventory: "inventory",
   inventario: "inventory",

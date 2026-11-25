@@ -1,6 +1,6 @@
 # Mapa de menú ERP — SSOT de navegación
 
-**Tickets:** MAPA-MENU-ERP-SSOT-01, URLS-MENU-ALIGNMENT-01, NAV-CONSOLIDATION-A01, NAV-COVERAGE-H1..H4 · **Actualizado:** 2026-11-12
+**Tickets:** MAPA-MENU-ERP-SSOT-01, URLS-MENU-ALIGNMENT-01, NAV-CONSOLIDATION-A01, NAV-COVERAGE-H1..H4 · **Actualizado:** 2026-11-25
 
 Fuente de verdad **ejecutable** del menú: `backend/src/ERP.Domain/Kernel/Modules/*.cs`
 (atributos `[Module]`/`[NavItem]`, leídos por reflexión en `KernelRegistry`). Este documento es
@@ -17,7 +17,7 @@ home/access/security/saas/plan-custom, sintéticos) y el glifo de ícono por có
 
 ---
 
-## Árbol oficial (12 módulos de nivel superior)
+## Árbol oficial (13 módulos de nivel superior)
 
 Orden de módulos e ítems = `SortOrder` de `[Module]`/`[NavItem]`; etiquetas = texto visible en
 español (`LabelKey` → `frontend/src/i18n/locales/es.json`). Cada usuario ve solo las ramas que
@@ -40,6 +40,11 @@ Proveedores                                 [Module("suppliers")]
 └─ Condiciones comerciales
    ├─ Condiciones de Pago                   /suppliers/payment-terms
    └─ Condiciones de Crédito                /suppliers/credit-terms
+
+Empleados                                   [Module("employees")]
+└─ Gestión de empleados
+   ├─ Empleados                             /employees
+   └─ Catálogos laborales                   /employees/catalogs
 
 Compras                                     [Module("purchases")]
 ├─ Compras
@@ -227,6 +232,9 @@ Compras/Inventario/Contabilidad.
   | `/master/payment-terms` | `/suppliers/payment-terms` |
   | `/finance/credit-terms` | `/suppliers/credit-terms` |
 
+- Rutas nuevas en EMP-E7 (sin URL anterior; no aplican redirects): `/employees`, `/employees/catalogs` y la ficha
+  `/employees/:id`, que no es un `[NavItem]` y hereda el acceso de `/employees`.
+
 - Ruta nueva en BANK-CATALOG-01 (pantalla nueva, sin URL anterior — no aplica redirect legacy):
   `/settings/catalogs/banks`.
 
@@ -330,3 +338,5 @@ por el botón de Inicio del header, nunca desde el launcher de módulos.
   usan los nombres aprobados por el propietario (`LabelKey` → `es.json`). Solo cambian etiquetas;
   rutas, `LabelKey`, `Id`, `ParentId` y permisos permanecen. «Datos de la empresa» pasa a
   `SortOrder` 10 (primero en Empresa). El historial usa los nombres vigentes.
+- **2026-11-25 — EMP-E7**: módulo Empleados (`SortOrder` 25, entre Proveedores y Compras) con «Empleados» y «Catálogos
+  laborales»; comportamiento en [employees.md](../architecture/employees.md).

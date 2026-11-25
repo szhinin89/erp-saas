@@ -46,7 +46,7 @@ export {
   type PartnerSearchResultState,
 } from "./MasterDataPartnerSearchResults";
 
-type Role = "customer" | "supplier";
+type Role = "customer" | "supplier" | "employee";
 
 /** Solo aplica cuando role='supplier' — ver SupplierRoleConfig (backend). */
 export type SupplierConfigAtCreation = {
@@ -155,18 +155,26 @@ export function MasterDataPartnerWizard({
   const [bannerError, setBannerError] = useState<string | null>(null);
   const queryRef = useRef<HTMLInputElement>(null);
 
-  const roleLabel = role === "customer" ? "Cliente" : "Proveedor";
-  const roleLabelLower = role === "customer" ? "cliente" : "proveedor";
+  const byRole = <T,>(customer: T, supplier: T, employee: T): T => ({ customer, supplier, employee })[role];
+  const roleLabel = byRole("Cliente", "Proveedor", "Empleado");
+  const roleLabelLower = roleLabel.toLowerCase();
+  const finalNotice = byRole(
+    t("masterdata.wizard.finalNotice.customer", "Quedará disponible para ventas, facturación y cuentas por cobrar."),
+    t("masterdata.wizard.finalNotice.supplier", "Quedará disponible para compras, gastos, retenciones y cuentas por pagar."),
+    t("masterdata.wizard.finalNotice.employee", "Quedará disponible para registrar su ficha de empleado."),
+  );
 
   // Edición embebida (ficha): solo identidad; «Tipo de Proveedor» es de alta y se edita en la pestaña Proveedor.
   const identityOnly = embedded && isEdit;
   const form = useForm<BusinessPartnerFormValues>({
-    resolver: zodResolver(businessPartnerSchema(identityOnly ? "customer" : role)),
+    // Solo el proveedor exige configuración propia en el alta; empleado valida como identidad simple.
+    resolver: zodResolver(businessPartnerSchema(identityOnly || role === "employee" ? "customer" : role)),
     defaultValues: {
       identificationType:
         editingPartner?.identificationType ??
         initialValues?.identificationType ??
-        "04",
+        // Employee no admite RUC (sri_id_type_usage): el alta arranca en cédula.
+        byRole("04", "04", "05"),
       identificationNumber:
         editingPartner?.identificationNumber ??
         initialValues?.identificationNumber ??
@@ -324,7 +332,7 @@ export function MasterDataPartnerWizard({
       <FormProvider {...form}>
         <form
           id={modalFormId}
-          aria-label={t(role === "customer" ? "masterdata.bp.detail.id.formLabel.customer" : "masterdata.bp.detail.id.formLabel.supplier", `Datos del ${roleLabelLower}`)}
+          aria-label={t(byRole("masterdata.bp.detail.id.formLabel.customer", "masterdata.bp.detail.id.formLabel.supplier", "masterdata.bp.detail.id.formLabel.employee"), `Datos del ${roleLabelLower}`)}
           aria-busy={submitting}
           onSubmit={form.handleSubmit(onValidSubmit)}
         >
@@ -338,12 +346,7 @@ export function MasterDataPartnerWizard({
               identityLocked={identityOnly}
             />
             {!identityOnly && (
-              <ZHPageNotice
-                variant="info"
-                message={role === "customer"
-                  ? t("masterdata.wizard.finalNotice.customer", "Quedará disponible para ventas, facturación y cuentas por cobrar.")
-                  : t("masterdata.wizard.finalNotice.supplier", "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.")}
-              />
+              <ZHPageNotice variant="info" message={finalNotice} />
             )}
           </ZHGrid>
         </form>
@@ -360,7 +363,7 @@ export function MasterDataPartnerWizard({
             <div className="md-partner-card-title-block">
               <div className="pg-section-header-left">
                 <span className="material-symbols-outlined pg-section-icon">
-                  {role === "customer" ? "group" : "local_shipping"}
+                  {byRole("group", "local_shipping", "badge")}
                 </span>
                 <span className="pg-section-label">
                   {isEdit ? `Editar ${roleLabel}` : `Nuevo ${roleLabel}`}
@@ -369,15 +372,17 @@ export function MasterDataPartnerWizard({
               {/* Descripción general — pertenece al título, no al body
                   (ZH-MASTERDATA-PARTNER-HEADER-MESSAGE-ALIGNMENT-04F). */}
               <p className="md-partner-card-description">
-                {role === "customer"
-                  ? t(
-                      "masterdata.wizard.intro.customer",
-                      "Crea o asigna una persona o empresa para ventas, facturación y cuentas por cobrar.",
-                    )
-                  : t(
-                      "masterdata.wizard.intro.supplier",
-                      "Crea o asigna una persona o empresa para compras, gastos, retenciones y cuentas por pagar.",
-                    )}
+                {byRole(
+                  t(
+                    "masterdata.wizard.intro.customer",
+                    "Crea o asigna una persona o empresa para ventas, facturación y cuentas por cobrar.",
+                  ),
+                  t(
+                    "masterdata.wizard.intro.supplier",
+                    "Crea o asigna una persona o empresa para compras, gastos, retenciones y cuentas por pagar.",
+                  ),
+                  t("masterdata.wizard.intro.employee", "Crea o asigna una persona como empleado."),
+                )}
               </p>
             </div>
 
@@ -395,7 +400,7 @@ export function MasterDataPartnerWizard({
                     <input
                       ref={queryRef}
                       className="prd-search-input"
-                      placeholder="RUC, cédula o razón social…"
+                      placeholder={byRole("RUC, cédula o razón social…", "RUC, cédula o razón social…", t("masterdata.wizard.search.placeholder.employee", "Cédula, pasaporte o nombres…"))}
                       value={query}
                       autoFocus
                       onChange={(e) => setQuery(e.target.value)}
@@ -446,15 +451,20 @@ export function MasterDataPartnerWizard({
                       variant="info"
                       className="md-partner-notice-compact"
                       message={
-                        role === "customer"
-                          ? t(
-                              "masterdata.wizard.search.crossRoleHint.customer",
-                              "Busca primero para evitar duplicados. Si ya existe como proveedor, puedes asignarlo también como cliente sin duplicarlo.",
-                            )
-                          : t(
-                              "masterdata.wizard.search.crossRoleHint.supplier",
-                              "Busca primero para evitar duplicados. Si ya existe como cliente, puedes asignarlo también como proveedor sin duplicarlo.",
-                            )
+                        byRole(
+                          t(
+                            "masterdata.wizard.search.crossRoleHint.customer",
+                            "Busca primero para evitar duplicados. Si ya existe como proveedor, puedes asignarlo también como cliente sin duplicarlo.",
+                          ),
+                          t(
+                            "masterdata.wizard.search.crossRoleHint.supplier",
+                            "Busca primero para evitar duplicados. Si ya existe como cliente, puedes asignarlo también como proveedor sin duplicarlo.",
+                          ),
+                          t(
+                            "masterdata.wizard.search.crossRoleHint.employee",
+                            "Busca primero para evitar duplicados. Si la persona ya existe, asígnale el rol de empleado sin duplicarla.",
+                          ),
+                        )
                       }
                     />
                   )}
@@ -556,17 +566,7 @@ export function MasterDataPartnerWizard({
                 <ZHPageNotice
                   variant="info"
                   className="md-partner-final-notice md-partner-notice-compact"
-                  message={
-                    role === "customer"
-                      ? t(
-                          "masterdata.wizard.finalNotice.customer",
-                          "Quedará disponible para ventas, facturación y cuentas por cobrar.",
-                        )
-                      : t(
-                          "masterdata.wizard.finalNotice.supplier",
-                          "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.",
-                        )
-                  }
+                  message={finalNotice}
                 />
               </div>
 

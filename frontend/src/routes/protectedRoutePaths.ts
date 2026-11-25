@@ -2,6 +2,7 @@ import { isValidElement, type ReactElement } from "react";
 import { Navigate } from "react-router-dom";
 import { accessRoutes } from "./accessRoutes";
 import { catalogRoutes } from "./catalogRoutes";
+import { employeesRoutes } from "./employeesRoutes";
 import { mainRoutes } from "./mainRoutes";
 import { SupplierCreditDetailLegacyRedirect } from "./legacyRedirects";
 
@@ -17,6 +18,7 @@ const PROTECTED_ROUTES = [
   ...mainRoutes,
   ...catalogRoutes,
   ...accessRoutes,
+  ...employeesRoutes,
 ] as RouteEl[];
 
 function pathsOf(predicate: (element: ReactElement | undefined) => boolean): string[] {

@@ -21,6 +21,12 @@ con reproceso individual/por lote. Alcance funcional: [Accounting](docs/architec
 Importación de maestros y saldos iniciales. Contratos: [Backend](docs/architecture/backend.md#carga-inicial);
 contabilización: [Accounting](docs/architecture/accounting.md). Las capacidades se enumeran abajo.
 
+## Empleados
+
+Directorio laboral por empresa sobre BusinessPartner (`/employees`, `/employees/catalogs`, `/api/v1/employees`): ficha, alta,
+baja y reincorporación, especialidades, sucursales laborales, vínculo opcional con usuario ERP y catálogos laborales. Sin
+nómina ni agenda. Alcance y límites: [employees.md](docs/architecture/employees.md); entrega: [STATUS](STATUS.md).
+
 ## Módulos producto (scope: empresa — `company_id`)
 
 **Anulación de compra (2026-10-16):** bloqueo por salidas posteriores y política SRI global. Reglas: [purchases.md § 5](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).

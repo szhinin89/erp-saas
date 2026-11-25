@@ -49,6 +49,7 @@
     "/api/dashboard",
     "/api/electronic-invoicing",
     "/api/electronic-documents",
+    "/api/employees",
     "/api/cash",
     "/api/cash-funding-requests",
     "/api/cash-movement-reasons",
