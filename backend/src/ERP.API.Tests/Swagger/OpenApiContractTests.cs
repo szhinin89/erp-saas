@@ -533,10 +533,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     ];
 
     /// <summary>
-    /// EMP-E4: Empleados y sus catálogos laborales (11 operaciones). Documentados desde su creación
+    /// EMP-E4: Empleados y sus catálogos laborales (16 operaciones; EMP-E5 añade 5). Documentados desde su creación
     /// con summary, parámetros, cuerpos y respuestas.
     /// </summary>
-    private static readonly string[] Phase2B6Employees = ["Employees", "EmployeeCatalogs"];
+    private static readonly string[] Phase2B6Employees = ["Employees", "EmployeeCatalogs", "EmployeeBranchAssignments"];
 
     /// <summary>
     /// Único controlador sin metadatos añadidos: <c>OrgConfig</c> (API pública congelada, ya cumplía).
@@ -717,12 +717,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     public void El_inventario_total_no_omite_ni_duplica_operaciones()
     {
         var all = Operations().ToList();
-        all.Should().HaveCount(531);
+        all.Should().HaveCount(536);
         all.Select(o => o.Op["operationId"]!.GetValue<string>()).Should().OnlyHaveUniqueItems();
         all.Select(o => $"{o.Method} {o.Path}").Should().OnlyHaveUniqueItems();
 
-        DocumentedOperations().Should().HaveCount(527);
-        OperationsOf(Phase2B6Employees).Should().HaveCount(11);
+        DocumentedOperations().Should().HaveCount(532);
+        OperationsOf(Phase2B6Employees).Should().HaveCount(16);
         OperationsOf(NotDocumentedControllers).Should().HaveCount(4);
 
         // Cada operación está documentada o figura en la lista explícita de excepciones: nada queda sin dueño.

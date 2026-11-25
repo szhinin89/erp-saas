@@ -1238,6 +1238,10 @@
       "name": "ElectronicDocuments"
     },
     {
+      "description": "Asignaciones laborales de un empleado a sucursales (EMP-BR-11). No concede acceso ni permisos y no toca\r\n\u0060CompanyUserBranch\u0060 (INV-11). Sin men\u00FA (EMP-E7); cada acci\u00F3n exige su permiso \u0060perm:\u0060.",
+      "name": "EmployeeBranchAssignments"
+    },
+    {
       "description": "Administraci\u00F3n de los cat\u00E1logos laborales por empresa (EMP-BR-15/16): \u0060job-positions\u0060,\r\n\u0060professions\u0060 y \u0060specialties\u0060. Activar o inactivar nunca borra. Sin men\u00FA (EMP-E7).",
       "name": "EmployeeCatalogs"
     },

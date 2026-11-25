@@ -23,3 +23,15 @@ public sealed record UpdateEmployeeCatalogEntryRequest(uint RowVersion, string N
 
 /// <summary>Cuerpo de activar o inactivar: versión leída (<c>rowVersion</c>).</summary>
 public sealed record EmployeeCatalogVersionRequest(uint RowVersion);
+
+/// <summary>Cuerpo de la baja: versión leída de la ficha (<c>rowVersion</c>), fecha de baja y motivo opcional.</summary>
+public sealed record TerminateEmployeeRequest(uint RowVersion, DateOnly EndDate, string? Reason);
+
+/// <summary>Cuerpo de la reincorporación: versión leída de la ficha (<c>rowVersion</c>) y fecha de inicio.</summary>
+public sealed record RehireEmployeeRequest(uint RowVersion, DateOnly StartDate);
+
+/// <summary>Cuerpo de la asignación: sucursal, inicio y fin opcional (fechas inclusivas).</summary>
+public sealed record CreateBranchAssignmentRequest(Guid BranchId, DateOnly StartDate, DateOnly? EndDate);
+
+/// <summary>Cuerpo del cierre: versión leída de la asignación (<c>rowVersion</c>) y fecha de fin.</summary>
+public sealed record CloseBranchAssignmentRequest(uint RowVersion, DateOnly EndDate);

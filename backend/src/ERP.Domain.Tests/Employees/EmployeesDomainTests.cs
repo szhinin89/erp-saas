@@ -61,7 +61,8 @@ public sealed class EmployeesDomainTests
     public void CompanyId_no_tiene_setter_publico_en_ninguna_entidad_de_Employees()
     {
         var types = typeof(Employee).Assembly.GetTypes()
-            .Where(t => t.Namespace == "ERP.Domain.Modules.Employees.Entities" && !t.IsAbstract)
+            .Where(t => t.Namespace == "ERP.Domain.Modules.Employees.Entities" && !t.IsAbstract
+                && !t.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false))
             .ToList();
         types.Should().NotBeEmpty();
         foreach (var t in types)

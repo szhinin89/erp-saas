@@ -25,6 +25,34 @@ public interface IEmployeeRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// Ficha con todos sus períodos (con seguimiento) para la baja, la reincorporación y las asignaciones;
+    /// null si no existe o es de otro ámbito.
+    /// </summary>
+    Task<Employee?> GetWithPeriodsAsync(Guid tenantId, Guid companyId, Guid id, CancellationToken ct = default);
+
+    /// <summary>Token de concurrencia (<c>xmin</c>) vigente de una ficha leída con seguimiento.</summary>
+    uint GetRowVersion(Employee employee);
+
+    /// <summary>Asignaciones a sucursal de la ficha (abiertas y cerradas), con seguimiento.</summary>
+    Task<IReadOnlyList<EmployeeBranchAssignment>> GetAssignmentsAsync(
+        Guid tenantId, Guid companyId, Guid employeeId, CancellationToken ct = default);
+
+    /// <summary>Asignación de esa ficha, tenant y empresa (con seguimiento); null si no corresponde.</summary>
+    Task<EmployeeBranchAssignment?> GetAssignmentAsync(
+        Guid tenantId, Guid companyId, Guid employeeId, Guid assignmentId, CancellationToken ct = default);
+
+    Task AddAssignmentAsync(EmployeeBranchAssignment assignment, CancellationToken ct = default);
+
+    /// <summary>Registra como nuevo el período abierto por una reincorporación.</summary>
+    Task AddPeriodAsync(EmployeeEmploymentPeriod period, CancellationToken ct = default);
+
+    /// <summary>Token de concurrencia (<c>xmin</c>) vigente de una asignación leída con seguimiento.</summary>
+    uint GetAssignmentRowVersion(EmployeeBranchAssignment assignment);
+
+    /// <summary>Fija el token recibido del cliente como valor original de la asignación.</summary>
+    void SetExpectedAssignmentRowVersion(EmployeeBranchAssignment assignment, uint rowVersion);
+
     Task AddAsync(Employee employee, CancellationToken ct = default);
 
     /// <summary>Fija el token de concurrencia (<c>xmin</c>) recibido del cliente como valor original.</summary>

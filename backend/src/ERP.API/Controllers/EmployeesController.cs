@@ -31,6 +31,8 @@ public sealed class EmployeesController : ControllerBase
     /// <param name="jobPositionId">Filtra por cargo.</param>
     /// <param name="professionId">Filtra por profesión.</param>
     /// <param name="specialtyId">Filtra por especialidad activa.</param>
+    /// <param name="branchId">Solo empleados con asignación vigente a esa sucursal en la fecha de referencia.</param>
+    /// <param name="asOf">Fecha de referencia (<c>YYYY-MM-DD</c>, inclusiva); por defecto hoy en la zona horaria de la empresa.</param>
     /// <param name="skip">Registros a omitir.</param>
     /// <param name="take">Registros a devolver (1–200).</param>
     /// <param name="ct">Token de cancelación.</param>
@@ -44,13 +46,16 @@ public sealed class EmployeesController : ControllerBase
         [FromQuery] Guid? jobPositionId = null,
         [FromQuery] Guid? professionId = null,
         [FromQuery] Guid? specialtyId = null,
+        [FromQuery] Guid? branchId = null,
+        [FromQuery] DateOnly? asOf = null,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 50,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new ListEmployeesQuery(isActive, search, jobPositionId, professionId, specialtyId, skip, take),
+                new ListEmployeesQuery(
+                    isActive, search, jobPositionId, professionId, specialtyId, branchId, asOf, skip, take),
                 ct
             )
         );
@@ -129,5 +134,63 @@ public sealed class EmployeesController : ControllerBase
                 new SetEmployeeSpecialtiesCommand(id, request.RowVersion, request.SpecialtyIds ?? []),
                 ct
             )
+        );
+
+    /// <summary>Da de baja al empleado: cierra su período abierto y sus asignaciones vigentes.</summary>
+    /// <remarks>
+    /// No revoca el acceso al ERP. Se bloquea si existe una asignación con inicio posterior a la fecha de baja.
+    /// <c>warnings</c> permanece vacío hasta EMP-E6.
+    /// </remarks>
+    /// <param name="id">Identificador de la ficha de empleado.</param>
+    /// <param name="request">Versión leída (<c>rowVersion</c>), fecha de baja inclusiva y motivo opcional (máx. 500).</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Ficha en baja.</response>
+    /// <response code="400">La ficha ya está en baja o existen asignaciones posteriores a la fecha de baja.</response>
+    /// <response code="404">La ficha no existe o es de otro ámbito.</response>
+    /// <response code="409">La versión (<c>rowVersion</c>) está obsoleta.</response>
+    /// <response code="422">La fecha de baja no es válida.</response>
+    [ProducesResponseType(typeof(ApiResponse<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [HttpPost("{id:guid}/terminate")]
+    [Authorize(Policy = $"perm:{EmployeesPermissions.Disable}")]
+    public async Task<IActionResult> Terminate(
+        Guid id,
+        [FromBody] TerminateEmployeeRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new TerminateEmployeeCommand(id, request.RowVersion, request.EndDate, request.Reason), ct)
+        );
+
+    /// <summary>Reincorpora al empleado abriendo un nuevo período laboral.</summary>
+    /// <remarks>
+    /// El inicio debe ser estrictamente posterior a la fecha de baja anterior. No reabre asignaciones, no asigna
+    /// sucursales y conserva cargo, profesión y especialidades. Exige tercero y rol Employee activos.
+    /// </remarks>
+    /// <param name="id">Identificador de la ficha de empleado.</param>
+    /// <param name="request">Versión leída (<c>rowVersion</c>) y fecha de inicio del nuevo período.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Ficha reincorporada.</response>
+    /// <response code="400">La ficha ya está activa, el tercero está inactivo o sin rol Employee, o hay solapamiento.</response>
+    /// <response code="404">La ficha no existe o es de otro ámbito.</response>
+    /// <response code="409">La versión (<c>rowVersion</c>) está obsoleta.</response>
+    /// <response code="422">La fecha de inicio no es válida.</response>
+    [ProducesResponseType(typeof(ApiResponse<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    [HttpPost("{id:guid}/rehire")]
+    [Authorize(Policy = $"perm:{EmployeesPermissions.Disable}")]
+    public async Task<IActionResult> Rehire(
+        Guid id,
+        [FromBody] RehireEmployeeRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new RehireEmployeeCommand(id, request.RowVersion, request.StartDate), ct)
         );
 }

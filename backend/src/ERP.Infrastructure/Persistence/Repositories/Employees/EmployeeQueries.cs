@@ -1,4 +1,5 @@
 using ERP.Application.Modules.Employees.DTOs;
+using ERP.Domain.Branches.Entities;
 using ERP.Application.Modules.Employees.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -81,6 +82,46 @@ public sealed class EmployeeQueries : IEmployeeQueries
     private static EmployeeCatalogRefDto? Ref(Guid? id, string? name, bool? active) =>
         id is { } value && name is not null ? new(value, name, active ?? false) : null;
 
+    // Una sola consulta con join a la sucursal (nombre y código), con tenant y empresa explícitos.
+    private IQueryable<EmployeeBranchAssignmentDto> AssignmentRows(Guid tenantId, Guid companyId) =>
+        from a in _context.EmployeeBranchAssignments.AsNoTracking()
+        where a.TenantId == tenantId && a.CompanyId == companyId
+        join b in _context.Set<Branch>().AsNoTracking().Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+            on a.BranchId equals b.Id
+        select new EmployeeBranchAssignmentDto(
+            a.Id, b.Id, b.Name, b.Code, a.StartDate, a.EndDate, EF.Property<uint>(a, "xmin"));
+
+    private async Task<IReadOnlyList<EmployeeBranchAssignmentDto>> AssignmentsAsync(
+        Guid tenantId, Guid companyId, Guid employeeId, CancellationToken ct) =>
+        await (
+            from a in _context.EmployeeBranchAssignments.AsNoTracking()
+            where a.TenantId == tenantId && a.CompanyId == companyId && a.EmployeeId == employeeId
+            join b in _context.Set<Branch>().AsNoTracking().Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+                on a.BranchId equals b.Id
+            orderby a.StartDate, b.Name, a.Id
+            select new EmployeeBranchAssignmentDto(
+                a.Id, b.Id, b.Name, b.Code, a.StartDate, a.EndDate, EF.Property<uint>(a, "xmin"))
+        ).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<EmployeeBranchAssignmentDto>?> ListAssignmentsAsync(
+        Guid tenantId, Guid companyId, Guid employeeId, CancellationToken ct = default)
+    {
+        var exists = await _context.Employees.AsNoTracking()
+            .AnyAsync(e => e.TenantId == tenantId && e.CompanyId == companyId && e.Id == employeeId, ct);
+        return exists ? await AssignmentsAsync(tenantId, companyId, employeeId, ct) : null;
+    }
+
+    public async Task<EmployeeBranchAssignmentDto?> GetAssignmentAsync(
+        Guid tenantId, Guid companyId, Guid employeeId, Guid assignmentId, CancellationToken ct = default) =>
+        await (
+            from a in _context.EmployeeBranchAssignments.AsNoTracking()
+            where a.TenantId == tenantId && a.CompanyId == companyId && a.EmployeeId == employeeId && a.Id == assignmentId
+            join b in _context.Set<Branch>().AsNoTracking().Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+                on a.BranchId equals b.Id
+            select new EmployeeBranchAssignmentDto(
+                a.Id, b.Id, b.Name, b.Code, a.StartDate, a.EndDate, EF.Property<uint>(a, "xmin"))
+        ).FirstOrDefaultAsync(ct);
+
     public async Task<EmployeeDto?> GetByIdAsync(
         Guid tenantId,
         Guid companyId,
@@ -125,8 +166,9 @@ public sealed class EmployeeQueries : IEmployeeQueries
             specialties,
             null,
             periods,
-            Array.Empty<object>(),
-            row.RowVersion
+            await AssignmentsAsync(tenantId, companyId, employeeId, ct),
+            row.RowVersion,
+            Array.Empty<string>() // ACTIVE_MEMBERSHIP llega con EMP-E6 (D-E5-3)
         );
     }
 
@@ -156,6 +198,21 @@ public sealed class EmployeeQueries : IEmployeeQueries
                     && l.IsActive
                 )
             );
+        if (filter.BranchId is { } branchId)
+        {
+            // D-E5-4: asignación vigente en la fecha de referencia (bordes inclusivos).
+            var asOf = filter.AsOf ?? throw new InvalidOperationException("Fecha de referencia requerida.");
+            query = query.Where(r =>
+                _context.EmployeeBranchAssignments.Any(a =>
+                    a.TenantId == tenantId
+                    && a.CompanyId == companyId
+                    && a.EmployeeId == r.Id
+                    && a.BranchId == branchId
+                    && a.StartDate <= asOf
+                    && (a.EndDate == null || a.EndDate >= asOf)
+                )
+            );
+        }
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var pattern = $"%{filter.Search.Trim()}%";

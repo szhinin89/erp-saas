@@ -1,5 +1,6 @@
 using ERP.Application.Audit;
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.MasterData.UseCases.DeactivateBusinessPartner;
 using ERP.Application.MasterData.UseCases.RevokeBusinessPartnerRole;
 using ERP.Application.Modules.Employees.DTOs;
@@ -105,6 +106,18 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
 
         public Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
             where TNotification : INotification => Task.CompletedTask;
+    }
+
+    private static class FixedClock
+    {
+        public static ICompanyClock Create()
+        {
+            var clock = new Mock<ICompanyClock>();
+            clock
+                .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DateOnly(2026, 6, 15));
+            return clock.Object;
+        }
     }
 
     private ErpDbContext NewDb(Guid tenant, Guid company, bool audit = false)
@@ -676,7 +689,7 @@ public sealed class EmployeeManagementPostgreSqlTests : IAsyncLifetime
         async Task<PagedResult<EmployeeListItemDto>> List(ListEmployeesQuery q)
         {
             await using var db = NewDb(_tenantA, company);
-            var r = await new ListEmployeesHandler(new EmployeeQueries(db), Ctx(_tenantA, company, _user)).Handle(q, default);
+            var r = await new ListEmployeesHandler(new EmployeeQueries(db), Ctx(_tenantA, company, _user), FixedClock.Create()).Handle(q, default);
             r.IsSuccess.Should().BeTrue(r.Error);
             return r.Value!;
         }

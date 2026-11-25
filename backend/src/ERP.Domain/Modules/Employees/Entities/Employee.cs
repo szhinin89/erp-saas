@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Employees.Events;
 
 namespace ERP.Domain.Modules.Employees.Entities;
@@ -21,6 +22,12 @@ public sealed class Employee : AuditableEntity, ICompanyOperationalEntity
     public bool IsActive { get; private set; }
 
     public IReadOnlyCollection<EmployeeEmploymentPeriod> Periods => _periods.AsReadOnly();
+
+    /// <summary>Período abierto (sin fecha fin), si la ficha está activa (INV-04, INV-06).</summary>
+    public EmployeeEmploymentPeriod? OpenPeriod => _periods.SingleOrDefault(p => p.EndDate is null);
+
+    /// <summary>Fecha fin del último período cerrado (la reincorporación debe ser posterior, INV-13).</summary>
+    public DateOnly? LastEndDate => _periods.Where(p => p.EndDate is not null).Max(p => p.EndDate);
 
     private Employee() { }
 
@@ -134,4 +141,65 @@ public sealed class Employee : AuditableEntity, ICompanyOperationalEntity
                 newValue
             )
         );
+
+    /// <summary>
+    /// Baja (EMP-BR-08): cierra el período abierto, acorta las asignaciones vigentes a la fecha de baja y
+    /// deja la ficha inactiva (INV-06, INV-09). Las precondiciones con código de negocio las valida el caso
+    /// de uso; aquí se defienden los invariantes. Las asignaciones ya terminadas no se modifican.
+    /// </summary>
+    public void Terminate(
+        DateOnly endDate,
+        string? reason,
+        IReadOnlyCollection<EmployeeBranchAssignment> assignments,
+        Guid updatedBy
+    )
+    {
+        var open = OpenPeriod ?? throw new DomainRuleViolationException("La ficha ya está dada de baja.");
+        if (assignments.Any(a => a.StartDate > endDate))
+            throw new DomainRuleViolationException("Existen asignaciones posteriores a la fecha de baja.");
+
+        open.Close(endDate, reason, updatedBy);
+        foreach (var assignment in assignments.Where(a => a.EndDate is null || a.EndDate > endDate))
+        {
+            var oldEnd = assignment.EndDate;
+            assignment.TruncateTo(endDate, updatedBy);
+            RaiseAssignmentEvent(EmployeeBranchAssignmentChangedEvent.ClosedAction, assignment, oldEnd);
+        }
+        IsActive = false;
+        SetUpdated(updatedBy);
+        RaiseDomainEvent(
+            new EmployeeTerminatedEvent(TenantId, CompanyId, Id, BusinessPartnerId, endDate, reason));
+    }
+
+    /// <summary>
+    /// Reincorporación (EMP-BR-09): abre un período nuevo estrictamente posterior al último fin; no reabre
+    /// períodos ni asignaciones anteriores (INV-12, INV-13) y conserva cargo, profesión y especialidades.
+    /// </summary>
+    public EmployeeEmploymentPeriod Rehire(DateOnly startDate, Guid updatedBy)
+    {
+        if (OpenPeriod is not null)
+            throw new DomainRuleViolationException("La ficha ya está activa.");
+        if (startDate == default || (LastEndDate is { } last && startDate <= last))
+            throw new DomainRuleViolationException("La reincorporación debe ser posterior a la baja anterior.");
+
+        var period = EmployeeEmploymentPeriod.Open(TenantId, CompanyId, Id, startDate, updatedBy);
+        _periods.Add(period);
+        IsActive = true;
+        SetUpdated(updatedBy);
+        RaiseDomainEvent(new EmployeeRehiredEvent(TenantId, CompanyId, Id, BusinessPartnerId, startDate));
+        return period;
+    }
+
+    /// <summary>Registra en la auditoría la creación de una asignación a sucursal.</summary>
+    public void RecordAssignmentCreated(EmployeeBranchAssignment assignment) =>
+        RaiseAssignmentEvent(EmployeeBranchAssignmentChangedEvent.AssignedAction, assignment, null);
+
+    /// <summary>Registra en la auditoría el cierre de una asignación (<paramref name="oldEnd"/> previo).</summary>
+    public void RecordAssignmentClosed(EmployeeBranchAssignment assignment, DateOnly? oldEnd) =>
+        RaiseAssignmentEvent(EmployeeBranchAssignmentChangedEvent.ClosedAction, assignment, oldEnd);
+
+    private void RaiseAssignmentEvent(string action, EmployeeBranchAssignment a, DateOnly? oldEnd) =>
+        RaiseDomainEvent(
+            new EmployeeBranchAssignmentChangedEvent(
+                TenantId, CompanyId, Id, BusinessPartnerId, action, a.BranchId, a.StartDate, oldEnd, a.EndDate));
 }

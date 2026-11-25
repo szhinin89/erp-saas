@@ -311,5 +311,13 @@ public static class ApiResponseCodes
         public const string InvalidDate = "EMPLOYEE_INVALID_DATE";
         public const string CatalogInactive = "EMPLOYEE_CATALOG_INACTIVE";
         public const string CatalogDuplicate = "EMPLOYEE_CATALOG_DUPLICATE";
+
+        // EMP-E5 — ciclo laboral y asignaciones a sucursales.
+        public const string AlreadyTerminated = "EMPLOYEE_ALREADY_TERMINATED";
+        public const string AlreadyActive = "EMPLOYEE_ALREADY_ACTIVE";
+        public const string TerminationBlockedByFutureAssignments = "EMPLOYEE_TERMINATION_BLOCKED_BY_FUTURE_ASSIGNMENTS";
+        public const string AssignmentOverlap = "EMPLOYEE_ASSIGNMENT_OVERLAP";
+        public const string AssignmentOutsidePeriod = "EMPLOYEE_ASSIGNMENT_OUTSIDE_PERIOD";
+        public const string BranchInvalid = "EMPLOYEE_BRANCH_INVALID";
     }
 }

@@ -338,6 +338,42 @@ public static class MessageCatalog
             "A catalog entry with the same normalized name already exists in the company.",
             ApiErrorCategory.Duplicate
         ),
+        [ApiResponseCodes.Employees.AlreadyTerminated] = new(
+            ApiSeverity.Error,
+            "La ficha del empleado ya está dada de baja.",
+            "Employee is already terminated.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.AlreadyActive] = new(
+            ApiSeverity.Error,
+            "La ficha del empleado ya está activa.",
+            "Employee is already active.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.TerminationBlockedByFutureAssignments] = new(
+            ApiSeverity.Error,
+            "No se puede dar de baja: existen asignaciones a sucursales posteriores a la fecha de baja.",
+            "Termination blocked by branch assignments starting after the termination date.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.AssignmentOverlap] = new(
+            ApiSeverity.Error,
+            "La asignación se solapa con otra del empleado en la misma sucursal.",
+            "Branch assignment overlaps an existing one for the same branch.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.AssignmentOutsidePeriod] = new(
+            ApiSeverity.Error,
+            "Las fechas de la asignación deben estar dentro de un período laboral del empleado.",
+            "Branch assignment dates must lie within an employment period.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.BranchInvalid] = new(
+            ApiSeverity.Error,
+            "La sucursal indicada no es válida.",
+            "Branch does not exist, is inactive or is outside the operating company.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.MasterData.BpHasActiveEmployment] = new(
             ApiSeverity.Error,
             "No se puede desactivar el tercero ni revocar su rol de Empleado mientras tenga una ficha laboral activa. Dé de baja la ficha laboral primero.",

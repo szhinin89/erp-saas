@@ -32,7 +32,22 @@ public sealed record EmployeeDto(
     IReadOnlyList<EmployeeCatalogRefDto> Specialties,
     object? IdentityUser,
     IReadOnlyList<EmployeePeriodDto> Periods,
-    IReadOnlyList<object> Assignments,
+    IReadOnlyList<EmployeeBranchAssignmentDto> Assignments,
+    uint RowVersion,
+    IReadOnlyList<string> Warnings
+);
+
+/// <summary>
+/// Asignación a sucursal con su historial (EMP-BR-11). Sucursal: identificador, nombre y código por
+/// proyección de solo lectura.
+/// </summary>
+public sealed record EmployeeBranchAssignmentDto(
+    Guid Id,
+    Guid BranchId,
+    string BranchName,
+    string? BranchCode,
+    DateOnly StartDate,
+    DateOnly? EndDate,
     uint RowVersion
 );
 
@@ -53,5 +68,7 @@ public sealed record EmployeeListFilter(
     string? Search,
     Guid? JobPositionId,
     Guid? ProfessionId,
-    Guid? SpecialtyId
+    Guid? SpecialtyId,
+    Guid? BranchId = null,
+    DateOnly? AsOf = null
 );

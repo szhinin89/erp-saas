@@ -40,6 +40,11 @@ public sealed class EmployeesPermissionContractTests
         (typeof(EmployeesController), nameof(EmployeesController.Create), EmployeesPermissions.Create),
         (typeof(EmployeesController), nameof(EmployeesController.Update), EmployeesPermissions.Update),
         (typeof(EmployeesController), nameof(EmployeesController.SetSpecialties), EmployeesPermissions.Update),
+        (typeof(EmployeesController), nameof(EmployeesController.Terminate), EmployeesPermissions.Disable),
+        (typeof(EmployeesController), nameof(EmployeesController.Rehire), EmployeesPermissions.Disable),
+        (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.List), EmployeesPermissions.View),
+        (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.Create), EmployeesPermissions.AssignmentsManage),
+        (typeof(EmployeeBranchAssignmentsController), nameof(EmployeeBranchAssignmentsController.Close), EmployeesPermissions.AssignmentsManage),
         (typeof(EmployeeCatalogsController), nameof(EmployeeCatalogsController.List), EmployeesPermissions.CatalogsView),
         (typeof(EmployeeCatalogsController), nameof(EmployeeCatalogsController.GetById), EmployeesPermissions.CatalogsView),
         (typeof(EmployeeCatalogsController), nameof(EmployeeCatalogsController.Create), EmployeesPermissions.CatalogsManage),
@@ -94,6 +99,7 @@ public sealed class EmployeesPermissionContractTests
     [Theory]
     [InlineData(typeof(EmployeesController))]
     [InlineData(typeof(EmployeeCatalogsController))]
+    [InlineData(typeof(EmployeeBranchAssignmentsController))]
     public void Los_controllers_cubren_todas_sus_acciones_no_declaran_menu_ni_DELETE(Type controller)
     {
         var actions = controller
@@ -113,7 +119,7 @@ public sealed class EmployeesPermissionContractTests
     [Fact]
     public void Los_controllers_son_delgados_solo_dependen_de_IMediator()
     {
-        foreach (var controller in new[] { typeof(EmployeesController), typeof(EmployeeCatalogsController) })
+        foreach (var controller in new[] { typeof(EmployeesController), typeof(EmployeeCatalogsController), typeof(EmployeeBranchAssignmentsController) })
             controller.GetConstructors().Single().GetParameters()
                 .Select(p => p.ParameterType.Name).Should().Equal("IMediator");
     }

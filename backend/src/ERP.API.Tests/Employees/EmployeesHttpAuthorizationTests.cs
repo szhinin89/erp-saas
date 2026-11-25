@@ -45,6 +45,8 @@ public sealed class EmployeesHttpAuthorizationFixture : IAsyncLifetime
     public Guid UpdateUser { get; private set; }
     public Guid CatalogsViewUser { get; private set; }
     public Guid CatalogsManageUser { get; private set; }
+    public Guid DisableUser { get; private set; }
+    public Guid AssignmentsManageUser { get; private set; }
     public Guid FullUserC1 { get; private set; }
     public Guid FullUserC2 { get; private set; }
     public Guid AdminUser { get; private set; }
@@ -137,16 +139,19 @@ public sealed class EmployeesHttpAuthorizationFixture : IAsyncLifetime
         UpdateUser = await NewUserAsync(db, Company1, Branch1, "Empleados edición", [EmployeesPermissions.Update]);
         CatalogsViewUser = await NewUserAsync(db, Company1, Branch1, "Catálogos consulta", [EmployeesPermissions.CatalogsView]);
         CatalogsManageUser = await NewUserAsync(db, Company1, Branch1, "Catálogos gestión", [EmployeesPermissions.CatalogsManage]);
+        DisableUser = await NewUserAsync(db, Company1, Branch1, "Baja y reincorporación", [EmployeesPermissions.Disable]);
+        AssignmentsManageUser = await NewUserAsync(db, Company1, Branch1, "Asignaciones", [EmployeesPermissions.AssignmentsManage]);
         string[] all =
         [
             EmployeesPermissions.View, EmployeesPermissions.Create, EmployeesPermissions.Update,
             EmployeesPermissions.CatalogsView, EmployeesPermissions.CatalogsManage,
+            EmployeesPermissions.Disable, EmployeesPermissions.AssignmentsManage,
         ];
         FullUserC1 = await NewUserAsync(db, Company1, Branch1, "Empleados completo C1", all);
         FullUserC2 = await NewUserAsync(db, Company2, Branch2, "Empleados completo C2", all);
         AdminUser = await NewUserAsync(db, Company1, Branch1, "Admin sin permisos explícitos", role: "Admin");
 
-        SeededEmployeesPermissionRows = 1 + 1 + 1 + 1 + 1 + 5 + 5;
+        SeededEmployeesPermissionRows = 7 + 7 + 7;
     }
 
     private async Task<Guid> NewBranchAsync(ErpDbContext db, Guid companyId, string code)
@@ -209,6 +214,11 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
             { "PATCH", $"{Base}/job-positions/{id}", """{"rowVersion":1,"name":"x"}""", EmployeesPermissions.CatalogsManage },
             { "POST", $"{Base}/professions/{id}/activate", """{"rowVersion":1}""", EmployeesPermissions.CatalogsManage },
             { "POST", $"{Base}/specialties/{id}/deactivate", """{"rowVersion":1}""", EmployeesPermissions.CatalogsManage },
+            { "POST", $"{Base}/{id}/terminate", """{"rowVersion":1,"endDate":"2026-06-30"}""", EmployeesPermissions.Disable },
+            { "POST", $"{Base}/{id}/rehire", """{"rowVersion":1,"startDate":"2026-07-01"}""", EmployeesPermissions.Disable },
+            { "GET", $"{Base}/{id}/branch-assignments", null, EmployeesPermissions.View },
+            { "POST", $"{Base}/{id}/branch-assignments", $$"""{"branchId":"{{Guid.NewGuid()}}","startDate":"2026-03-01"}""", EmployeesPermissions.AssignmentsManage },
+            { "POST", $"{Base}/{id}/branch-assignments/{Guid.NewGuid()}/close", """{"rowVersion":1,"endDate":"2026-06-30"}""", EmployeesPermissions.AssignmentsManage },
         };
     }
 
@@ -257,6 +267,8 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
             (EmployeesPermissions.Update, _f.UpdateUser),
             (EmployeesPermissions.CatalogsView, _f.CatalogsViewUser),
             (EmployeesPermissions.CatalogsManage, _f.CatalogsManageUser),
+            (EmployeesPermissions.Disable, _f.DisableUser),
+            (EmployeesPermissions.AssignmentsManage, _f.AssignmentsManageUser),
         };
         foreach (var (permission, user) in users)
         {
@@ -282,10 +294,6 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
         var rows = await _f.WithDbAsync(db =>
             db.AccessProfilePermissions.IgnoreQueryFilters().CountAsync(p => p.PermissionKey.StartsWith("employees.")));
         rows.Should().Be(_f.SeededEmployeesPermissionRows);
-        var withoutExplicit = await _f.WithDbAsync(db =>
-            db.AccessProfilePermissions.IgnoreQueryFilters()
-                .CountAsync(p => p.PermissionKey.StartsWith("employees.") && p.PermissionKey == EmployeesPermissions.Disable));
-        withoutExplicit.Should().Be(0);
     }
 
     private Task<int> CatalogRowsAsync() =>
@@ -356,5 +364,88 @@ public sealed class EmployeesHttpAuthorizationTests : IClassFixture<EmployeesHtt
         var otherBp = await _f.NewEmployeeBpAsync();
         using var badRef = await c2.PostAsJsonAsync(Base, new { businessPartnerId = otherBp, startDate = "2026-03-01", jobPositionId = catalogId });
         badRef.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task Flujo_HTTP_real_ciclo_laboral_y_asignaciones_con_aislamiento_y_sin_tocar_el_acceso_ERP()
+    {
+        // El usuario efectivo de la fábrica es un singleton mutable: cada cliente se crea justo antes de usarse.
+        HttpClient C1() => _f.ClientFor(_f.FullUserC1, _f.Company1, _f.Branch1);
+        HttpClient C2() => _f.ClientFor(_f.FullUserC2, _f.Company2, _f.Branch2);
+        var accessBefore = await _f.WithDbAsync(db => db.Database
+            .SqlQuery<int>($"SELECT ((SELECT count(*) FROM company_user_memberships) + (SELECT count(*) FROM company_user_branches) + (SELECT count(*) FROM access_profile_permissions))::int AS \"Value\"")
+            .SingleAsync());
+
+        var bp = await _f.NewEmployeeBpAsync();
+        using var hire = await C1().PostAsJsonAsync(Base, new { businessPartnerId = bp, startDate = "2026-03-01" });
+        hire.StatusCode.Should().Be(HttpStatusCode.Created, await hire.Content.ReadAsStringAsync());
+        var employee = await DataAsync(hire);
+        var id = employee.GetProperty("id").GetGuid();
+
+        // Asignación: 201 con sucursal proyectada; sucursal de otra empresa → 422 EMPLOYEE_BRANCH_INVALID.
+        using var assigned = await C1().PostAsJsonAsync($"{Base}/{id}/branch-assignments", new { branchId = _f.Branch1, startDate = "2026-03-01" });
+        assigned.StatusCode.Should().Be(HttpStatusCode.Created, await assigned.Content.ReadAsStringAsync());
+        var assignment = await DataAsync(assigned);
+        assignment.GetProperty("branchName").GetString().Should().NotBeNullOrEmpty();
+        using var badBranch = await C1().PostAsJsonAsync($"{Base}/{id}/branch-assignments", new { branchId = _f.Branch2, startDate = "2026-03-01" });
+        badBranch.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodeAsync(badBranch)).Should().Be("EMPLOYEE_BRANCH_INVALID");
+        using var overlap = await C1().PostAsJsonAsync($"{Base}/{id}/branch-assignments", new { branchId = _f.Branch1, startDate = "2026-04-01" });
+        overlap.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await CodeAsync(overlap)).Should().Be("EMPLOYEE_ASSIGNMENT_OVERLAP");
+
+        // Lista y filtro por sucursal con fecha de referencia inclusiva.
+        using var list = await C1().GetAsync($"{Base}/{id}/branch-assignments");
+        (await DataAsync(list)).GetArrayLength().Should().Be(1);
+        using var inRange = await C1().GetAsync($"{Base}?branchId={_f.Branch1}&asOf=2026-03-01");
+        (await DataAsync(inRange)).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).Should().Contain(id);
+        using var before = await C1().GetAsync($"{Base}?branchId={_f.Branch1}&asOf=2026-02-28");
+        (await DataAsync(before)).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetGuid()).Should().NotContain(id);
+
+        // Aislamiento: otra empresa no ve la ficha ni sus asignaciones (404 indistinguible).
+        using var foreignList = await C2().GetAsync($"{Base}/{id}/branch-assignments");
+        using var missingList = await C2().GetAsync($"{Base}/{Guid.NewGuid()}/branch-assignments");
+        foreignList.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await CodeAsync(foreignList)).Should().Be("EMPLOYEE_NOT_FOUND").And.Be(await CodeAsync(missingList));
+        using var foreignTerminate = await C2().PostAsJsonAsync($"{Base}/{id}/terminate", new { rowVersion = 1, endDate = "2026-06-30" });
+        foreignTerminate.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        // Baja: 200, warnings vacío; versión obsoleta → 409; el período se cierra y la asignación vigente también.
+        var version = employee.GetProperty("rowVersion").GetUInt32();
+        using var stale = await C1().PostAsJsonAsync($"{Base}/{id}/terminate", new { rowVersion = version + 9, endDate = "2026-06-30" });
+        stale.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        using var terminated = await C1().PostAsJsonAsync($"{Base}/{id}/terminate", new { rowVersion = version, endDate = "2026-06-30", reason = "Fin de contrato" });
+        terminated.StatusCode.Should().Be(HttpStatusCode.OK, await terminated.Content.ReadAsStringAsync());
+        var afterTerminate = await DataAsync(terminated);
+        afterTerminate.GetProperty("isActive").GetBoolean().Should().BeFalse();
+        afterTerminate.GetProperty("warnings").GetArrayLength().Should().Be(0);
+        afterTerminate.GetProperty("assignments")[0].GetProperty("endDate").GetString().Should().Be("2026-06-30");
+
+        // Cierre de una asignación ya cerrada con versión vigente → 422 DOMAIN_RULE_VIOLATION; obsoleta → 409.
+        var assignmentId = assignment.GetProperty("id").GetGuid();
+        var currentAssignmentVersion = afterTerminate.GetProperty("assignments")[0].GetProperty("rowVersion").GetUInt32();
+        using var closeAgain = await C1().PostAsJsonAsync($"{Base}/{id}/branch-assignments/{assignmentId}/close", new { rowVersion = currentAssignmentVersion, endDate = "2026-07-01" });
+        closeAgain.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodeAsync(closeAgain)).Should().Be("DOMAIN_RULE_VIOLATION");
+        using var closeStale = await C1().PostAsJsonAsync($"{Base}/{id}/branch-assignments/{assignmentId}/close", new { rowVersion = currentAssignmentVersion + 9, endDate = "2026-07-01" });
+        closeStale.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        // Reincorporación: el mismo día de la baja → 400; el siguiente → 200.
+        var terminatedVersion = afterTerminate.GetProperty("rowVersion").GetUInt32();
+        using var sameDay = await C1().PostAsJsonAsync($"{Base}/{id}/rehire", new { rowVersion = terminatedVersion, startDate = "2026-06-30" });
+        sameDay.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await CodeAsync(sameDay)).Should().Be("EMPLOYEE_PERIOD_OVERLAP");
+        using var rehired = await C1().PostAsJsonAsync($"{Base}/{id}/rehire", new { rowVersion = terminatedVersion, startDate = "2026-07-01" });
+        rehired.StatusCode.Should().Be(HttpStatusCode.OK, await rehired.Content.ReadAsStringAsync());
+        var afterRehire = await DataAsync(rehired);
+        afterRehire.GetProperty("isActive").GetBoolean().Should().BeTrue();
+        afterRehire.GetProperty("periods").GetArrayLength().Should().Be(2);
+        afterRehire.GetProperty("assignments").GetArrayLength().Should().Be(1, "no se reabren ni se crean asignaciones");
+
+        // La baja y las asignaciones no tocan membresías, sucursales de usuario ni permisos.
+        var accessAfter = await _f.WithDbAsync(db => db.Database
+            .SqlQuery<int>($"SELECT ((SELECT count(*) FROM company_user_memberships) + (SELECT count(*) FROM company_user_branches) + (SELECT count(*) FROM access_profile_permissions))::int AS \"Value\"")
+            .SingleAsync());
+        accessAfter.Should().Be(accessBefore);
     }
 }

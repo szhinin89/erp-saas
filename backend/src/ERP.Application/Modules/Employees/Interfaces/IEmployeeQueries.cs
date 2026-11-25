@@ -15,6 +15,22 @@ public interface IEmployeeQueries
         CancellationToken ct = default
     );
 
+    /// <summary>Historial de asignaciones de la ficha; null si la ficha no existe o es de otro ámbito.</summary>
+    Task<IReadOnlyList<EmployeeBranchAssignmentDto>?> ListAssignmentsAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid employeeId,
+        CancellationToken ct = default
+    );
+
+    Task<EmployeeBranchAssignmentDto?> GetAssignmentAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid employeeId,
+        Guid assignmentId,
+        CancellationToken ct = default
+    );
+
     Task<(IReadOnlyList<EmployeeListItemDto> Items, int Total)> ListAsync(
         Guid tenantId,
         Guid companyId,

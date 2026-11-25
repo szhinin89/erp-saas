@@ -34,6 +34,7 @@
         "ERP.Infrastructure.Tests.Codes.QrGenerationRequestHardeningTests",
         "ERP.Infrastructure.Tests.Communications.CommunicationOutboxDeliveryIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Employees.BusinessPartnerEmploymentGuardPostgreSqlTests",
+        "ERP.Infrastructure.Tests.Modules.Employees.EmployeeLifecyclePostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Employees.EmployeeManagementPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Employees.EmployeesSchemaPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseRetentionConfirmIntegrationTests",

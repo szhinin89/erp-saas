@@ -12,7 +12,10 @@ namespace ERP.Application.Modules.Employees.EventHandlers;
 /// </summary>
 public sealed class EmployeeAuditHandler
     : INotificationHandler<EmployeeCreatedEvent>,
-      INotificationHandler<EmployeeFieldChangedEvent>
+      INotificationHandler<EmployeeFieldChangedEvent>,
+      INotificationHandler<EmployeeTerminatedEvent>,
+      INotificationHandler<EmployeeRehiredEvent>,
+      INotificationHandler<EmployeeBranchAssignmentChangedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -51,4 +54,55 @@ public sealed class EmployeeAuditHandler
             ),
             ct
         );
+
+    public Task Handle(EmployeeTerminatedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            EmployeeAudit.Create(
+                _context.Actor,
+                e.CompanyId,
+                e.EmployeeId,
+                e.BusinessPartnerId,
+                ((IAuditEvent)e).Action,
+                changedField: "EndDate",
+                newValue: e.EndDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                reason: e.Reason
+            ),
+            ct
+        );
+
+    public Task Handle(EmployeeRehiredEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            EmployeeAudit.Create(
+                _context.Actor,
+                e.CompanyId,
+                e.EmployeeId,
+                e.BusinessPartnerId,
+                ((IAuditEvent)e).Action,
+                changedField: "StartDate",
+                newValue: e.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            ),
+            ct
+        );
+
+    public Task Handle(EmployeeBranchAssignmentChangedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            EmployeeAudit.Create(
+                _context.Actor,
+                e.CompanyId,
+                e.EmployeeId,
+                e.BusinessPartnerId,
+                e.Action,
+                changedField: "BranchAssignment",
+                oldValue: e.Action == EmployeeBranchAssignmentChangedEvent.ClosedAction ? Describe(e, e.OldEndDate) : null,
+                newValue: Describe(e, e.NewEndDate)
+            ),
+            ct
+        );
+
+    // «sucursal inicio/fin» (fechas yyyy-MM-dd; fin vacío = abierta). Sin datos personales.
+    private static string Describe(EmployeeBranchAssignmentChangedEvent e, DateOnly? end)
+    {
+        var f = System.Globalization.CultureInfo.InvariantCulture;
+        return $"{e.BranchId} {e.StartDate.ToString("yyyy-MM-dd", f)}/{end?.ToString("yyyy-MM-dd", f)}";
+    }
 }

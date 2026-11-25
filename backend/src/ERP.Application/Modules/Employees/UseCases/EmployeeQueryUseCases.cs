@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Employees.DTOs;
 using ERP.Application.Modules.Employees.Interfaces;
 using FluentValidation;
@@ -17,6 +18,8 @@ public sealed record ListEmployeesQuery(
     Guid? JobPositionId = null,
     Guid? ProfessionId = null,
     Guid? SpecialtyId = null,
+    Guid? BranchId = null,
+    DateOnly? AsOf = null,
     int Skip = 0,
     int Take = 50
 ) : IRequest<Result<PagedResult<EmployeeListItemDto>>>, ICompanyScopedRequest;
@@ -28,6 +31,8 @@ public sealed class ListEmployeesQueryValidator : AbstractValidator<ListEmployee
         RuleFor(x => x.Skip).GreaterThanOrEqualTo(0);
         RuleFor(x => x.Take).InclusiveBetween(1, 200);
         RuleFor(x => x.Search).MaximumLength(150);
+        RuleFor(x => x.BranchId).NotEqual(Guid.Empty);
+        RuleFor(x => x.AsOf).Must(d => d is null || d != default).WithMessage("La fecha de referencia no es válida.");
     }
 }
 
@@ -54,9 +59,10 @@ public sealed class ListEmployeesHandler
 {
     private readonly IEmployeeQueries _queries;
     private readonly IOperationalContext _ctx;
+    private readonly ICompanyClock _clock;
 
-    public ListEmployeesHandler(IEmployeeQueries queries, IOperationalContext ctx) =>
-        (_queries, _ctx) = (queries, ctx);
+    public ListEmployeesHandler(IEmployeeQueries queries, IOperationalContext ctx, ICompanyClock clock) =>
+        (_queries, _ctx, _clock) = (queries, ctx, clock);
 
     public async Task<Result<PagedResult<EmployeeListItemDto>>> Handle(
         ListEmployeesQuery q,
@@ -65,10 +71,15 @@ public sealed class ListEmployeesHandler
     {
         var take = Math.Clamp(q.Take, 1, 200);
         var skip = Math.Max(q.Skip, 0);
+        // D-E5-4: fecha de referencia = hoy de la empresa (ICompanyClock), nunca la fecha UTC del servidor.
+        DateOnly? asOf = q.BranchId is null
+            ? null
+            : q.AsOf ?? await _clock.TodayAsync(_ctx.CompanyId, _ctx.TenantId, ct);
         var (items, total) = await _queries.ListAsync(
             _ctx.TenantId,
             _ctx.CompanyId,
-            new EmployeeListFilter(q.IsActive, q.Search, q.JobPositionId, q.ProfessionId, q.SpecialtyId),
+            new EmployeeListFilter(
+                q.IsActive, q.Search, q.JobPositionId, q.ProfessionId, q.SpecialtyId, q.BranchId, asOf),
             skip,
             take,
             ct

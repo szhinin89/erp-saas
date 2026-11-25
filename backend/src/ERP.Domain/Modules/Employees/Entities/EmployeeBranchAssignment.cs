@@ -1,4 +1,5 @@
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 
 namespace ERP.Domain.Modules.Employees.Entities;
 
@@ -55,5 +56,31 @@ public sealed class EmployeeBranchAssignment : AuditableEntity, ICompanyOperatio
         };
         assignment.SetCreated(createdBy);
         return assignment;
+    }
+
+    /// <summary>Indica si el rango (inclusivo; fin nulo = abierto) se solapa con esta asignación.</summary>
+    public bool Overlaps(DateOnly start, DateOnly? end) =>
+        start <= (EndDate ?? DateOnly.MaxValue) && StartDate <= (end ?? DateOnly.MaxValue);
+
+    /// <summary>Cierra una asignación abierta con fecha fin inclusiva (EMP-BR-11).</summary>
+    public void Close(DateOnly endDate, Guid updatedBy)
+    {
+        if (EndDate is not null)
+            throw new DomainRuleViolationException("La asignación ya está cerrada.");
+        if (endDate < StartDate)
+            throw new ArgumentException("La fecha fin no puede ser anterior a la fecha inicio.", nameof(endDate));
+
+        EndDate = endDate;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Acorta una asignación vigente a la fecha de baja (EMP-BR-08, INV-09).</summary>
+    internal void TruncateTo(DateOnly endDate, Guid updatedBy)
+    {
+        if (endDate < StartDate)
+            throw new ArgumentException("La fecha fin no puede ser anterior a la fecha inicio.", nameof(endDate));
+
+        EndDate = endDate;
+        SetUpdated(updatedBy);
     }
 }
