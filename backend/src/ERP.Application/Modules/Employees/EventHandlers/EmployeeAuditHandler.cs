@@ -10,7 +10,9 @@ namespace ERP.Application.Modules.Employees.EventHandlers;
 /// Traduce los domain events de <see cref="Employee"/> a <see cref="EmployeeAudit"/> (EMP-BR-20).
 /// Único lugar que conoce ambos lados; la infraestructura de auditoría es genérica.
 /// </summary>
-public sealed class EmployeeAuditHandler : INotificationHandler<EmployeeCreatedEvent>
+public sealed class EmployeeAuditHandler
+    : INotificationHandler<EmployeeCreatedEvent>,
+      INotificationHandler<EmployeeFieldChangedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -31,6 +33,21 @@ public sealed class EmployeeAuditHandler : INotificationHandler<EmployeeCreatedE
                 ((IAuditEvent)e).Action,
                 changedField: "StartDate",
                 newValue: e.StartDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            ),
+            ct
+        );
+
+    public Task Handle(EmployeeFieldChangedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            EmployeeAudit.Create(
+                _context.Actor,
+                e.CompanyId,
+                e.EmployeeId,
+                e.BusinessPartnerId,
+                ((IAuditEvent)e).Action,
+                changedField: e.ChangedField,
+                oldValue: e.OldValue,
+                newValue: e.NewValue
             ),
             ct
         );

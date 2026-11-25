@@ -284,6 +284,60 @@ public static class MessageCatalog
             "Communication attachment could not be resolved by its owner module.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.Employees.NotFound] = new(
+            ApiSeverity.Error,
+            "El empleado no existe.",
+            "Employee not found in the operating company.",
+            ApiErrorCategory.NotFound
+        ),
+        [ApiResponseCodes.Employees.AlreadyExists] = new(
+            ApiSeverity.Error,
+            "El tercero ya tiene una ficha de empleado en esta empresa.",
+            "An employee record already exists for the business partner in this company.",
+            ApiErrorCategory.Duplicate
+        ),
+        [ApiResponseCodes.Employees.BpInactive] = new(
+            ApiSeverity.Error,
+            "El tercero está inactivo y no puede registrarse como empleado.",
+            "Business partner is inactive.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.BpRoleMissing] = new(
+            ApiSeverity.Error,
+            "El tercero no tiene el rol de Empleado activo.",
+            "Business partner has no active Employee role.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.IdentificationNotAllowed] = new(
+            ApiSeverity.Error,
+            "El tipo de identificación del tercero no está permitido para empleados. Revise la identificación en Datos Maestros.",
+            "Identification type is not allowed for employees.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.PeriodOverlap] = new(
+            ApiSeverity.Error,
+            "El período laboral se solapa con otro período del empleado.",
+            "Employment period overlaps an existing period.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.InvalidDate] = new(
+            ApiSeverity.Error,
+            "La fecha indicada no es válida.",
+            "Invalid employment date.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.Employees.CatalogInactive] = new(
+            ApiSeverity.Error,
+            "El cargo, la profesión o la especialidad seleccionada está inactiva.",
+            "Catalog entry is inactive and cannot be newly assigned.",
+            ApiErrorCategory.BusinessRule
+        ),
+        [ApiResponseCodes.Employees.CatalogDuplicate] = new(
+            ApiSeverity.Error,
+            "Ya existe un registro con ese nombre en el catálogo.",
+            "A catalog entry with the same normalized name already exists in the company.",
+            ApiErrorCategory.Duplicate
+        ),
         [ApiResponseCodes.MasterData.BpHasActiveEmployment] = new(
             ApiSeverity.Error,
             "No se puede desactivar el tercero ni revocar su rol de Empleado mientras tenga una ficha laboral activa. Dé de baja la ficha laboral primero.",

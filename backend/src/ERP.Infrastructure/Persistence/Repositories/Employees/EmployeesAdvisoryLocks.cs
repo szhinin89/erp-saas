@@ -29,15 +29,45 @@ public static class EmployeesAdvisoryLocks
         return (StableHash(System.Text.Encoding.UTF8.GetBytes(BpEmploymentNamespace)), StableHash(bytes));
     }
 
+    /// <summary>Clave <c>(int4, int4)</c> de <c>("Employees", employeeId)</c>.</summary>
+    public static (int Namespace, int Key) EmployeeKey(Guid employeeId) =>
+        (
+            StableHash(System.Text.Encoding.UTF8.GetBytes(EmployeesNamespace)),
+            StableHash(employeeId.ToByteArray())
+        );
+
     /// <summary>
-    /// Lock exclusivo, de ámbito de transacción: se libera al COMMIT/ROLLBACK de la transacción
-    /// ambiente y nunca abre ni confirma una propia. Sin transacción se liberaría al instante, así
-    /// que se exige una activa.
+    /// Lock exclusivo por (tenant, BP), de ámbito de transacción: se libera al COMMIT/ROLLBACK de la
+    /// transacción ambiente y nunca abre ni confirma una propia. Sin transacción se liberaría al
+    /// instante, así que se exige una activa.
     /// </summary>
-    public static async Task AcquireBpEmploymentAsync(
+    public static Task AcquireBpEmploymentAsync(
         ErpDbContext context,
         Guid tenantId,
         Guid businessPartnerId,
+        CancellationToken cancellationToken
+    ) =>
+        AcquireAsync(
+            context,
+            BpEmploymentNamespace,
+            BpEmploymentKey(tenantId, businessPartnerId),
+            cancellationToken
+        );
+
+    /// <summary>
+    /// Lock exclusivo por ficha (EMP-E4), con las mismas exigencias (transacción activa y
+    /// READ COMMITTED). Cuando también se necesita BpEmployment, este se adquiere primero.
+    /// </summary>
+    public static Task AcquireEmployeeAsync(
+        ErpDbContext context,
+        Guid employeeId,
+        CancellationToken cancellationToken
+    ) => AcquireAsync(context, EmployeesNamespace, EmployeeKey(employeeId), cancellationToken);
+
+    private static async Task AcquireAsync(
+        ErpDbContext context,
+        string lockName,
+        (int Namespace, int Key) key,
         CancellationToken cancellationToken
     )
     {
@@ -45,7 +75,7 @@ public static class EmployeesAdvisoryLocks
             return;
         if (context.Database.CurrentTransaction is null)
             throw new InvalidOperationException(
-                "El lock BpEmployment requiere una transacción activa."
+                $"El lock {lockName} requiere una transacción activa."
             );
 
         // El protocolo (lock → consulta → escritura) solo es correcto si cada sentencia ve lo
@@ -60,10 +90,10 @@ public static class EmployeesAdvisoryLocks
             .SingleAsync(cancellationToken);
         if (!string.Equals(isolation, "read committed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
-                $"El lock BpEmployment exige una transacción READ COMMITTED (actual: {isolation})."
+                $"El lock {lockName} exige una transacción READ COMMITTED (actual: {isolation})."
             );
 
-        var (hash1, hash2) = BpEmploymentKey(tenantId, businessPartnerId);
+        var (hash1, hash2) = key;
         await context.Database.ExecuteSqlInterpolatedAsync(
             $"SELECT pg_advisory_xact_lock({hash1}, {hash2})",
             cancellationToken

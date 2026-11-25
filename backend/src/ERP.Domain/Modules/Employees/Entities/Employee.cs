@@ -73,4 +73,65 @@ public sealed class Employee : AuditableEntity, ICompanyOperationalEntity
         );
         return employee;
     }
+
+    /// <summary>Cambia el cargo (null lo elimina, P-01). Sin efecto si no cambia.</summary>
+    public void ChangeJobPosition(Guid? jobPositionId, Guid updatedBy)
+    {
+        if (jobPositionId == Guid.Empty)
+            throw new ArgumentException("jobPositionId inválido.", nameof(jobPositionId));
+        if (jobPositionId == JobPositionId)
+            return;
+
+        var old = JobPositionId;
+        JobPositionId = jobPositionId;
+        SetUpdated(updatedBy);
+        RaiseFieldChanged(EmployeeFieldChangedEvent.JobPositionField, old?.ToString(), jobPositionId?.ToString());
+    }
+
+    /// <summary>Cambia la profesión (null la elimina, P-01). Sin efecto si no cambia.</summary>
+    public void ChangeProfession(Guid? professionId, Guid updatedBy)
+    {
+        if (professionId == Guid.Empty)
+            throw new ArgumentException("professionId inválido.", nameof(professionId));
+        if (professionId == ProfessionId)
+            return;
+
+        var old = ProfessionId;
+        ProfessionId = professionId;
+        SetUpdated(updatedBy);
+        RaiseFieldChanged(EmployeeFieldChangedEvent.ProfessionField, old?.ToString(), professionId?.ToString());
+    }
+
+    /// <summary>
+    /// Registra en la auditoría que una especialidad se asignó o retiró (EMP-BR-06). El vínculo
+    /// (<see cref="EmployeeSpecialty"/>) cambia por separado; este método deja el rastro en la ficha.
+    /// </summary>
+    public void RecordSpecialtyChange(Guid specialtyId, bool assigned, Guid updatedBy)
+    {
+        SetUpdated(updatedBy);
+        RaiseFieldChanged(
+            EmployeeFieldChangedEvent.SpecialtyField,
+            assigned ? null : specialtyId.ToString(),
+            assigned ? specialtyId.ToString() : null
+        );
+    }
+
+    /// <summary>
+    /// Marca la ficha como modificada: fuerza el UPDATE que comprueba el token de concurrencia
+    /// (<c>xmin</c>) aunque la edición no cambie columnas de la ficha (p. ej. solo especialidades).
+    /// </summary>
+    public void Touch(Guid updatedBy) => SetUpdated(updatedBy);
+
+    private void RaiseFieldChanged(string field, string? oldValue, string? newValue) =>
+        RaiseDomainEvent(
+            new EmployeeFieldChangedEvent(
+                TenantId,
+                CompanyId,
+                Id,
+                BusinessPartnerId,
+                field,
+                oldValue,
+                newValue
+            )
+        );
 }

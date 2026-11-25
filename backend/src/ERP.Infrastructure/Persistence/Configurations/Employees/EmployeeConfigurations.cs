@@ -3,6 +3,7 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Employees.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Employees;
@@ -19,8 +20,19 @@ internal static class EmployeeMapping
         builder.ToTable(table);
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
+        // Observación A (EMP-E4): TenantId y CompanyId son inmutables. EF rechaza (lanza) cualquier
+        // intento de modificarlos en SaveChanges; es una protección de EF, no una restricción física
+        // de PostgreSQL frente a SQL directo. No altera el esquema ni el snapshot.
+        builder
+            .Property(x => x.TenantId)
+            .HasColumnName("tenant_id")
+            .IsRequired()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Throw);
+        builder
+            .Property(x => x.CompanyId)
+            .HasColumnName("company_id")
+            .IsRequired()
+            .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Throw);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

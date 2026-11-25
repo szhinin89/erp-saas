@@ -1238,6 +1238,14 @@
       "name": "ElectronicDocuments"
     },
     {
+      "description": "Administraci\u00F3n de los cat\u00E1logos laborales por empresa (EMP-BR-15/16): \u0060job-positions\u0060,\r\n\u0060professions\u0060 y \u0060specialties\u0060. Activar o inactivar nunca borra. Sin men\u00FA (EMP-E7).",
+      "name": "EmployeeCatalogs"
+    },
+    {
+      "description": "Ficha de empleado (EMP-E4). Sin \u0060[AppFeature]\u0060: el men\u00FA y el m\u00F3dulo de Kernel llegan con\r\nEMP-E7. La ausencia de men\u00FA no es un control de seguridad: cada acci\u00F3n exige su permiso\r\n\u0060perm:\u0060 y el contexto de empresa operativa.",
+      "name": "Employees"
+    },
+    {
       "description": "P0-03 (ERP_CORE_SUMAK_READINESS_AUDIT.md) \u2014 expone la liquidaci\u00F3n de AR (\u0060Payment\u0060,\r\nFase 5.5.5.3). Controller delgado: solo recibe el command, lo env\u00EDa v\u00EDa MediatR y traduce el\r\n\u0060Result\u0060 \u2014 toda la l\u00F3gica de negocio (balance, l\u00EDmites de saldo, transiciones de estado)\r\nvive en \u0060Payment\u0060/\u0060SalesReceivable\u0060 (ERP.Application.Modules.Finance.UseCases.Payments.RegisterCollectionCommandHandler),\r\nreutilizada sin cambios.\r\nPAYABLES-PAYMENTS-LEGACY-CLEANUP-14 \u2014 el endpoint AP (\u0060POST /payments\u0060,\r\n\u0060RegisterPaymentCommand\u0060 contra \u0060AccountsPayable\u0060) fue eliminado junto con su \u00FAnica\r\nUI (\u0060AccountsPayablePage\u0060/\u0060RegisterPaymentModal\u0060, ya eliminadas): no debe quedar un\r\nendpoint activo de registro de pago a proveedor sin pantalla ni dise\u00F1o \u2014 cuando exista el\r\nm\u00F3dulo PagoCabecera/PagoDetalle, se implementar\u00E1 ah\u00ED desde cero, no reviviendo este endpoint.",
       "name": "FinancePayments"
     },

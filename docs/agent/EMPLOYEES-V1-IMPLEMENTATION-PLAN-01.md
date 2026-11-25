@@ -130,6 +130,8 @@ altas reales.
 
 ## EMP-E4 — Alta y edición de la ficha (primera parte del ciclo laboral)
 
+**Estado (2026-11-24): IMPLEMENTADO / GATE APROBADO / PENDIENTE CI.** Decisiones del propietario registradas para esta fase: D-1 `startDate` obligatoria y válida sin cotas; D-2 conservar el valor inactivo ya asignado y prohibir asignar uno inactivo; D-3 `PATCH` distingue omitido de `null`; D-4 filtro por sucursal diferido a E5; D-5 join de lectura del BP en Infrastructure; D-6 el alta exige solo `employees.create`; D-7 administración de catálogos incluida en E4; D-8 respuestas de referencias inválidas (BP → 404, catálogo → 422, ficha ajena → `EMPLOYEE_NOT_FOUND`, indistinguibles). Observación A resuelta con `SetAfterSaveBehavior(Throw)` sobre `TenantId` y `CompanyId` (protección de EF; sin cambio de esquema); observación B con predicados explícitos de tenant y empresa y pruebas negativas. Los catálogos exponen y exigen `rowVersion` (xmin) en renombre, activación e inactivación. T-05 completo sigue pendiente de E5. Detalle y evidencia en [STATUS](../../STATUS.md).
+
 **Dependencias:** E3 cerrada. **Capacidades de ciclo laboral de esta fase:** alta (apertura del primer período) y edición de
 cargo, profesión y especialidades. **Fuera de esta fase:** baja y reincorporación, que no se implementan ni se exponen en E4 porque
 su operación completa exige el cierre atómico de asignaciones (se entregan en E5).

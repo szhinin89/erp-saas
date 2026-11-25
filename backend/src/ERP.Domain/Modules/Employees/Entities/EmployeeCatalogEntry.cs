@@ -75,6 +75,12 @@ public abstract class EmployeeCatalogEntry : AuditableEntity, ICompanyOperationa
         );
     }
 
+    /// <summary>
+    /// Marca el registro como modificado: fuerza el UPDATE que comprueba el token de concurrencia
+    /// (<c>xmin</c>) aunque el renombre no cambie columnas.
+    /// </summary>
+    public void Touch(Guid updatedBy) => SetUpdated(updatedBy);
+
     public void Deactivate(Guid updatedBy)
     {
         if (!IsActive)

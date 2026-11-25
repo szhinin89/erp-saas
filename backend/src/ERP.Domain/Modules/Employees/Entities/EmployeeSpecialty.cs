@@ -45,4 +45,22 @@ public sealed class EmployeeSpecialty : AuditableEntity, ICompanyOperationalEnti
         link.SetCreated(createdBy);
         return link;
     }
+
+    /// <summary>Reasigna una especialidad previamente retirada (misma fila, EMP-BR-06).</summary>
+    public void Activate(Guid updatedBy)
+    {
+        if (IsActive)
+            return;
+        IsActive = true;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Retira la especialidad conservando la fila e historial (EMP-BR-06).</summary>
+    public void Deactivate(Guid updatedBy)
+    {
+        if (!IsActive)
+            return;
+        IsActive = false;
+        SetUpdated(updatedBy);
+    }
 }

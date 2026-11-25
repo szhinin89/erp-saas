@@ -298,4 +298,18 @@ public static class ApiResponseCodes
         /// <summary>El BP tiene una ficha de empleado activa en alguna empresa del tenant: no se desactiva ni pierde el rol Employee.</summary>
         public const string BpHasActiveEmployment = "BP_HAS_ACTIVE_EMPLOYMENT";
     }
+
+    /// <summary>EMP-E4 (EMPLOYEES-V1-CONTRACT-SPEC-01 §10) — ficha de empleado y catálogos laborales.</summary>
+    public static class Employees
+    {
+        public const string NotFound = "EMPLOYEE_NOT_FOUND";
+        public const string AlreadyExists = "EMPLOYEE_ALREADY_EXISTS";
+        public const string BpInactive = "EMPLOYEE_BP_INACTIVE";
+        public const string BpRoleMissing = "EMPLOYEE_BP_ROLE_MISSING";
+        public const string IdentificationNotAllowed = "EMPLOYEE_IDENTIFICATION_NOT_ALLOWED";
+        public const string PeriodOverlap = "EMPLOYEE_PERIOD_OVERLAP";
+        public const string InvalidDate = "EMPLOYEE_INVALID_DATE";
+        public const string CatalogInactive = "EMPLOYEE_CATALOG_INACTIVE";
+        public const string CatalogDuplicate = "EMPLOYEE_CATALOG_DUPLICATE";
+    }
 }
