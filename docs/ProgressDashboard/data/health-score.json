@@ -126,6 +126,15 @@
         "Score":  81.5
     },
     {
+        "Module":  "Employees",
+        "Architecture":  90,
+        "Tests":  80,
+        "Documentation":  70,
+        "Backend":  90,
+        "Frontend":  70,
+        "Score":  81.5
+    },
+    {
         "Module":  "Tenants",
         "Architecture":  90,
         "Tests":  80,

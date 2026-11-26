@@ -501,6 +501,13 @@
                                           ]
                          },
                          {
+                             "name":  "Create Integration Company Command",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Integration/UseCases/CreateIntegrationCompanyCommandValidator.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Tenant Integration",
                              "status":  "implemented",
                              "evidence":  [
@@ -1253,6 +1260,53 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/RefreshPurchaseReceptionStatus"
+                                          ]
+                         }
+                     ]
+    },
+    {
+        "module":  "Employees",
+        "features":  [
+                         {
+                             "name":  "Employee Catalog",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCatalogUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Employee Commands",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCommands.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Employee Lifecycle",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeLifecycleUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Employee",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Employee Use Case Support",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeUseCaseSupport.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Employee User Link",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeUserLinkUseCases.cs"
                                           ]
                          }
                      ]

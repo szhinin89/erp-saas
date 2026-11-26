@@ -1,14 +1,26 @@
 ﻿{
-    "Generated":  "2026-11-11 20:20:11",
-    "FilesAnalyzed":  12233,
-    "TODO":  734,
+    "Generated":  "2026-11-26 12:43:42",
+    "FilesAnalyzed":  12458,
+    "TODO":  733,
     "FIXME":  30,
     "HACK":  1,
     "NotImplemented":  8,
     "LargeFiles":  [
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\Accounting\\AccountingController.cs",
+                           "Lines":  917
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\PurchasesController.cs",
+                           "Lines":  553
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                            "Lines":  630
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Employees\\EmployeesHttpAuthorizationTests.cs",
+                           "Lines":  549
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Expenses\\ExpensesControllerTests.cs",
@@ -83,8 +95,16 @@
                            "Lines":  511
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                           "Lines":  870
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Unit\\RefreshTokenServiceTests.cs",
                            "Lines":  683
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Common\\MessageCatalog.cs",
+                           "Lines":  636
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Accounting\\Queries\\JournalEntrySourceResolution.cs",
@@ -116,19 +136,19 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments\\Services\\ElectronicDocumentIssuer.cs",
-                           "Lines":  1458
+                           "Lines":  1485
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Categories\\ExpenseCategoryUseCases.cs",
-                           "Lines":  667
+                           "Lines":  707
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Documents\\ExpenseDocumentConfirmUseCases.cs",
-                           "Lines":  799
+                           "Lines":  818
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Documents\\ExpenseDocumentDraftUseCases.cs",
-                           "Lines":  960
+                           "Lines":  1042
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
@@ -168,7 +188,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseDraftUseCases.cs",
-                           "Lines":  1973
+                           "Lines":  1993
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseReturnDraftUseCases.cs",
@@ -180,7 +200,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\AuthorizeSalesUseCases.cs",
-                           "Lines":  736
+                           "Lines":  742
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\PaymentMethodUseCases.cs",
@@ -292,7 +312,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Expenses\\CreateConfirmedExpenseUseCasesTests.cs",
-                           "Lines":  566
+                           "Lines":  636
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Expenses\\ExpenseDocumentConfirmUseCasesTests.cs",
@@ -300,7 +320,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Expenses\\ExpenseDocumentDraftUseCasesTests.cs",
-                           "Lines":  883
+                           "Lines":  1128
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Finance\\ApplySupplierCreditUseCasesTests.cs",
@@ -344,7 +364,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\MasterData\\BpNestedResourceOwnershipHandlerTests.cs",
-                           "Lines":  578
+                           "Lines":  583
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\OrgConfig\\CompanySalesPreferencesIntegrityTests.cs",
@@ -424,11 +444,11 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseDraftExplicitCostAllocationTests.cs",
-                           "Lines":  870
+                           "Lines":  872
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseDraftRecoveryTests.cs",
-                           "Lines":  602
+                           "Lines":  717
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReturnDraftUseCasesTests.cs",
@@ -548,7 +568,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests\\Kernel\\KernelRegistryTests.cs",
-                           "Lines":  1156
+                           "Lines":  1193
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests\\Payables\\SupplierPaymentTests.cs",
@@ -576,15 +596,15 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
-                           "Lines":  11853
+                           "Lines":  12383
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
-                           "Lines":  22442
+                           "Lines":  23331
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                           "Lines":  22439
+                           "Lines":  23328
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -596,7 +616,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
-                           "Lines":  525
+                           "Lines":  549
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
@@ -620,7 +640,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
-                           "Lines":  1247
+                           "Lines":  1264
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Accounting\\AccountingContinuityIntegrationTests.cs",
@@ -712,7 +732,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
-                           "Lines":  850
+                           "Lines":  986
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
@@ -733,6 +753,26 @@
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\PublishOpeningJournalEntryPostgreSqlTests.cs",
                            "Lines":  719
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\BusinessPartnerEmploymentGuardPostgreSqlTests.cs",
+                           "Lines":  683
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
+                           "Lines":  728
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeLifecyclePostgreSqlTests.cs",
+                           "Lines":  1098
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeManagementPostgreSqlTests.cs",
+                           "Lines":  1306
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeUserLinkPostgreSqlTests.cs",
+                           "Lines":  788
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseReception\\ResolvePurchaseReceptionLinesIntegrationTests.cs",
@@ -2832,7 +2872,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.tsx",
-                           "Lines":  518
+                           "Lines":  510
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\accounting\\api\\accountingApi.ts",
@@ -2844,7 +2884,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\accounting\\pages\\AccountingPostingsPage.tsx",
-                           "Lines":  523
+                           "Lines":  522
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\accounting\\pages\\ChartOfAccountsPage.tsx",
@@ -2871,10 +2911,6 @@
                            "Lines":  633
                        },
                        {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\expenses\\components\\ExpenseRetentionSection.tsx",
-                           "Lines":  545
-                       },
-                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\expenses\\pages\\ExpenseCategoriesPage.test.tsx",
                            "Lines":  508
                        },
@@ -2884,15 +2920,11 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\expenses\\pages\\ExpenseDocumentFormPage.retention.test.tsx",
-                           "Lines":  581
+                           "Lines":  577
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\expenses\\pages\\ExpenseDocumentFormPage.tsx",
-                           "Lines":  730
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\finance\\pages\\CreditTermsPage.tsx",
-                           "Lines":  505
+                           "Lines":  707
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\initialLoad\\components\\OpeningReconciliationCard.test.tsx",
@@ -2920,19 +2952,11 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\masterData\\components\\MasterDataPartnerWizard.tsx",
-                           "Lines":  640
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\masterData\\pages\\MasterDataBusinessPartnerDetailPage.tsx",
-                           "Lines":  1274
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\masterData\\pages\\MasterDataSuppliersPage.tsx",
-                           "Lines":  850
+                           "Lines":  654
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\pricing\\pages\\PriceListExceptionsTab.tsx",
-                           "Lines":  605
+                           "Lines":  604
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\pricing\\pages\\PriceListsPage.tsx",
@@ -2975,8 +2999,8 @@
                            "Lines":  626
                        },
                        {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchasesPage.tsx",
-                           "Lines":  3013
+                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchaseReceptionPage.tsx",
+                           "Lines":  501
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\utils\\purchaseLinePresentation.registration.test.ts",

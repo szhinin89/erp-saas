@@ -75,10 +75,13 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   de intentos y resultados de consulta XML. Antes de intervenir el handler congelado, revisar
   ADR-028/ADR-046, migraciones, privacidad y aislamiento; esta cola no autoriza alterar contratos
   fiscales protegidos.
-- DASHBOARD-REGEN-DH-001 (PENDING; Dashboard FROZEN v1.0): regeneración documental separada con el
-  procedimiento oficial (`tools/dashboard/run-dashboard-final.ps1`) sobre árbol limpio, revisando el
-  diff antes de publicar; resuelve DH-001 de
-  [DASHBOARD_HEALTH](../ProgressDashboard/DASHBOARD_HEALTH.md). No se mezcla con commits funcionales.
+- DASHBOARD-ANALYZER-REPRODUCIBILITY-01 (**PENDING / DIAGNÓSTICO ACREDITADO / IMPLEMENTACIÓN NO
+  AUTORIZADA**; Dashboard FROZEN v1.0): los analizadores dependen de archivos locales no versionados,
+  por lo que puntajes y tendencias no son reproducibles. Propuesta pendiente de autorización:
+  población reproducible de archivos versionados, revisión de todos los analizadores afectados,
+  registro de procedencia, commit y población analizada, nueva línea base sin reescribir resultados
+  históricos y acreditación de invariancia ante artefactos locales no versionados. Diagnóstico y
+  límites en [STATUS](../../STATUS.md).
 - CI-SELECTIVE-ARCHITECTURE-01 (PENDING): retirar una excepción de
   `tools/architecture/architecture-grandfather.json` clasifica hoy como perfil completo (ruta fuera
   de las listas de `ci_changes.mjs`; p. ej. CI #1121 sobre `bd816be40`). Evitar el FULL innecesario

@@ -1,5 +1,43 @@
 # Project Status
 
+## DASHBOARD-ANALYZER-REPRODUCIBILITY-01 — Analizadores del Dashboard no reproducibles — PENDING / DIAGNÓSTICO ACREDITADO / IMPLEMENTACIÓN NO AUTORIZADA (2026-11-26)
+
+Detectado al regenerar el Dashboard con Empleados V1 sobre `e257aa32d` (CI #1245 SUCCESS, verificado
+en GitHub por el propietario). Se compararon dos corridas de `run-dashboard-final.ps1`, con y sin
+`frontend/dist`.
+
+Diagnóstico acreditado:
+
+- Los analizadores dependen de archivos locales no versionados.
+- En la segunda corrida, 7.504 de los 12.538 archivos analizados por seguridad no están versionados.
+- 116 de las 196 coincidencias de patrones de secretos proceden de `node_modules`.
+- `frontend/dist` añadió 267 archivos analizados y 19 coincidencias (215 frente a 196); también
+  elevó en 267 los archivos analizados por deuda técnica.
+
+Límites:
+
+- Las coincidencias son patrones de texto y no acreditan secretos reales.
+- Los puntajes heurísticos no constituyen una auditoría de seguridad.
+- Las tendencias históricas pueden comparar poblaciones de archivos diferentes.
+- La segunda regeneración, aprobada por el propietario para publicarse, excluyó temporalmente
+  `frontend/dist`, pero no resuelve la falta general de reproducibilidad: sigue contando
+  `node_modules`, `bin` y `obj`.
+- `frontend/dist` se restauró íntegramente (mismas rutas, tamaños y SHA256).
+
+Propuesta pendiente de autorización, no implementada:
+
+- Definir una población reproducible de archivos versionados.
+- Revisar todos los analizadores afectados.
+- Registrar procedencia, commit y población analizada.
+- Establecer una nueva línea base sin reescribir resultados históricos.
+- Acreditar invariancia ante artefactos locales no versionados.
+
+**Conciliación de DASHBOARD-REGEN-DH-001:** la entrada se retira de la
+[cola de trabajo](docs/agent/WORK_QUEUE.md). DH-001 ya consta como Resuelto desde el 2026-09-26 en
+[DASHBOARD_HEALTH](docs/ProgressDashboard/DASHBOARD_HEALTH.md), y esta entrega regenera el Dashboard
+con el procedimiento oficial. La mención en PURCHASES-RECEPTION-SECURITY-01 es histórica. DH-002
+sigue Abierto.
+
 ## SPA-V1.1-DOC — PLANIFICACIÓN DOCUMENTAL COMPLETA / ARQUITECTURA APROBADA / CI #1227 SUCCESS; sin implementación autorizada (2026-11-24)
 
 > SPA V1.1 tiene planificación funcional completa: **13 áreas funcionales y 19 pantallas especificadas**. **ADR-051 ACCEPTED / APROBADO** por el propietario el 2026-11-19; **SPA-SEL-01..12 y DP-01..03 aprobadas**. **SPA no está implementado y ninguna fase F0–F8 está autorizada**, incluida la preparación de solo lectura. La aprobación arquitectónica no acredita implementación, pruebas con API real ni cierre funcional.

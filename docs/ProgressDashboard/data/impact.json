@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-11-11 20:20:44",
+    "generated":  "2026-11-26 12:44:15",
     "coverage":  {
                      "mappedFeaturePoints":  53,
-                     "totalFeaturePoints":  304,
-                     "percentage":  17.43
+                     "totalFeaturePoints":  311,
+                     "percentage":  17.04
                  },
     "domains":  [
                     {
@@ -375,7 +375,19 @@
                                         {
                                             "name":  "Integration",
                                             "score":  77.75,
-                                            "features":  2,
+                                            "features":  3,
+                                            "processes":  [
+
+                                                          ],
+                                            "risks":  [
+                                                          "Unmapped business domain - no domains.json relationship"
+                                                      ],
+                                            "risk":  "MEDIUM"
+                                        },
+                                        {
+                                            "name":  "Employees",
+                                            "score":  81.5,
+                                            "features":  6,
                                             "processes":  [
 
                                                           ],

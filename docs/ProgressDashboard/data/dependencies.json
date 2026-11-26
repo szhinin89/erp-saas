@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-11 20:20:55",
+    "generated":  "2026-11-26 12:44:27",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -14,12 +14,12 @@
     "nodes":  [
                   {
                       "id":  "Company",
-                      "filesScanned":  63,
+                      "filesScanned":  64,
                       "fanIn":  17,
                       "fanOut":  10,
                       "coupling":  27,
                       "instability":  0.37,
-                      "cohesionApprox":  0.541,
+                      "cohesionApprox":  0.544,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -240,7 +240,7 @@
                   },
                   {
                       "id":  "Integration",
-                      "filesScanned":  4,
+                      "filesScanned":  5,
                       "fanIn":  0,
                       "fanOut":  3,
                       "coupling":  3,
@@ -260,10 +260,10 @@
                   {
                       "id":  "Access",
                       "filesScanned":  108,
-                      "fanIn":  13,
+                      "fanIn":  14,
                       "fanOut":  6,
-                      "coupling":  19,
-                      "instability":  0.316,
+                      "coupling":  20,
+                      "instability":  0.3,
                       "cohesionApprox":  0.562,
                       "busFactor":  1,
                       "isolated":  false,
@@ -282,6 +282,7 @@
                                            "Caja",
                                            "Companies",
                                            "Company",
+                                           "Employees",
                                            "Finance",
                                            "InitialLoad",
                                            "Inventory",
@@ -397,6 +398,26 @@
                                        ]
                   },
                   {
+                      "id":  "Employees",
+                      "filesScanned":  36,
+                      "fanIn":  0,
+                      "fanOut":  4,
+                      "coupling":  4,
+                      "instability":  1,
+                      "cohesionApprox":  0.532,
+                      "busFactor":  1,
+                      "isolated":  false,
+                      "dependsOn":  [
+                                        "Access",
+                                        "Audit",
+                                        "Common",
+                                        "SriCatalogs"
+                                    ],
+                      "dependedOnBy":  [
+
+                                       ]
+                  },
+                  {
                       "id":  "Tenants",
                       "filesScanned":  2,
                       "fanIn":  6,
@@ -477,9 +498,9 @@
                   {
                       "id":  "Common",
                       "filesScanned":  23,
-                      "fanIn":  33,
+                      "fanIn":  34,
                       "fanOut":  0,
-                      "coupling":  33,
+                      "coupling":  34,
                       "instability":  0,
                       "cohesionApprox":  null,
                       "busFactor":  1,
@@ -503,6 +524,7 @@
                                            "DocTypes",
                                            "ElectronicDocuments",
                                            "ElectronicInvoicing",
+                                           "Employees",
                                            "Expenses",
                                            "Finance",
                                            "InitialLoad",
@@ -793,7 +815,7 @@
                       "fanOut":  14,
                       "coupling":  15,
                       "instability":  0.933,
-                      "cohesionApprox":  0.596,
+                      "cohesionApprox":  0.594,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -947,10 +969,10 @@
                   {
                       "id":  "SriCatalogs",
                       "filesScanned":  26,
-                      "fanIn":  10,
+                      "fanIn":  11,
                       "fanOut":  1,
-                      "coupling":  11,
-                      "instability":  0.091,
+                      "coupling":  12,
+                      "instability":  0.083,
                       "cohesionApprox":  0.857,
                       "busFactor":  1,
                       "isolated":  false,
@@ -963,6 +985,7 @@
                                            "Company",
                                            "Configuration",
                                            "ElectronicDocuments",
+                                           "Employees",
                                            "Expenses",
                                            "InitialLoad",
                                            "Purchases",
@@ -973,10 +996,10 @@
                   {
                       "id":  "Audit",
                       "filesScanned":  12,
-                      "fanIn":  14,
+                      "fanIn":  15,
                       "fanOut":  4,
-                      "coupling":  18,
-                      "instability":  0.222,
+                      "coupling":  19,
+                      "instability":  0.211,
                       "cohesionApprox":  0.615,
                       "busFactor":  1,
                       "isolated":  false,
@@ -991,6 +1014,7 @@
                                            "Branches",
                                            "Company",
                                            "ElectronicDocuments",
+                                           "Employees",
                                            "Expenses",
                                            "Finance",
                                            "Inventory",
@@ -1653,6 +1677,18 @@
                                    ]
                   },
                   {
+                      "from":  "Employees",
+                      "to":  "Common",
+                      "referenceCount":  23,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCatalogUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCatalogUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCommands.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCommands.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCommands.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Company",
                       "to":  "Branches",
                       "referenceCount":  2,
@@ -1949,6 +1985,18 @@
                                        "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockTransfer/CreateStockTransferCommandHandler.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/CreateWarehouse/CreateWarehouseCommandHandler.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/UpdateWarehouse/UpdateWarehouseCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Accounting",
+                      "to":  "Common",
+                      "referenceCount":  67,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingCompletenessService.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingCancellation.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingExecutor.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingFactBuilder.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingRecorder.cs"
                                    ]
                   },
                   {
@@ -2389,13 +2437,13 @@
                   {
                       "from":  "InitialLoad",
                       "to":  "Common",
-                      "referenceCount":  60,
+                      "referenceCount":  61,
                       "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/InitialLoadClosedGuard.cs",
                                        "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/CloseInitialLoad.cs",
                                        "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                                        "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/OpeningAccountingGate.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/OpeningBalancePostingPreflight.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/PostOpeningBalance.cs"
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/OpeningBalancePostingPreflight.cs"
                                    ]
                   },
                   {
@@ -2547,6 +2595,18 @@
                                    ]
                   },
                   {
+                      "from":  "Employees",
+                      "to":  "Audit",
+                      "referenceCount":  10,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Employees/EventHandlers/EmployeeAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/EventHandlers/EmployeeAuditHandler.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/EventHandlers/EmployeeCatalogAuditHandler.cs",
+                                       "backend/src/ERP.Domain/Modules/Employees/Entities/EmployeeAudit.cs",
+                                       "backend/src/ERP.Domain/Modules/Employees/Entities/EmployeeCatalogAudit.cs"
+                                   ]
+                  },
+                  {
                       "from":  "InitialLoad",
                       "to":  "Items",
                       "referenceCount":  8,
@@ -2655,12 +2715,11 @@
                                    ]
                   },
                   {
-                      "from":  "ElectronicDocuments",
-                      "to":  "Communications",
-                      "referenceCount":  2,
+                      "from":  "Companies",
+                      "to":  "Access",
+                      "referenceCount":  1,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Communications/ElectronicDocumentAuthorizedXmlAttachmentProvider.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Communications/ElectronicDocumentAuthorizedXmlAttachmentProvider.cs"
+                                       "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany/CreateCompanyHandler.cs"
                                    ]
                   },
                   {
@@ -2752,9 +2811,10 @@
                   {
                       "from":  "Integration",
                       "to":  "Common",
-                      "referenceCount":  2,
+                      "referenceCount":  3,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Integration/UseCases/CompanyIntegrationUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Integration/UseCases/CreateIntegrationCompanyCommandValidator.cs",
                                        "backend/src/ERP.Application/Modules/Integration/UseCases/TenantIntegrationUseCases.cs"
                                    ]
                   },
@@ -2792,11 +2852,21 @@
                                    ]
                   },
                   {
-                      "from":  "Companies",
-                      "to":  "Access",
-                      "referenceCount":  1,
+                      "from":  "ElectronicDocuments",
+                      "to":  "Communications",
+                      "referenceCount":  2,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Companies/UseCases/CreateCompany/CreateCompanyHandler.cs"
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Communications/ElectronicDocumentAuthorizedXmlAttachmentProvider.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicDocuments/Communications/ElectronicDocumentAuthorizedXmlAttachmentProvider.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Employees",
+                      "to":  "Access",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeUserLinkUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeUserLinkUseCases.cs"
                                    ]
                   },
                   {
@@ -2833,15 +2903,11 @@
                                    ]
                   },
                   {
-                      "from":  "Accounting",
-                      "to":  "Common",
-                      "referenceCount":  67,
+                      "from":  "Employees",
+                      "to":  "SriCatalogs",
+                      "referenceCount":  1,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingCompletenessService.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingCancellation.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingExecutor.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingFactBuilder.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingRecorder.cs"
+                                       "backend/src/ERP.Application/Modules/Employees/UseCases/EmployeeCommands.cs"
                                    ]
                   },
                   {
@@ -3412,6 +3478,7 @@
                           "Sales":  13,
                           "Items":  11,
                           "Purchases":  10,
+                          "Employees":  19,
                           "Tenants":  1,
                           "Session":  21,
                           "Retentions":  8,
@@ -3441,8 +3508,8 @@
                            "Common",
                            "Company",
                            "Sales",
-                           "Purchases",
-                           "Accounting"
+                           "Accounting",
+                           "Purchases"
                        ],
     "criticalModules":  [
                             "Common",

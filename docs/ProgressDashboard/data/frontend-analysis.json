@@ -1,11 +1,11 @@
 ﻿{
-    "Generated":  "2026-11-11 20:14:57",
+    "Generated":  "2026-11-26 12:38:17",
     "FrontendRoot":  "C:\\ProyectCursor\\erp-saas\\frontend\\src",
     "Statistics":  {
-                       "SourceFiles":  1257,
+                       "SourceFiles":  1356,
                        "Pages":  0,
-                       "Components":  147,
-                       "Hooks":  8,
+                       "Components":  157,
+                       "Hooks":  9,
                        "Services":  0,
                        "Stores":  0,
                        "Routes":  2
@@ -26,6 +26,7 @@
                     "documentSequences",
                     "electronicDocuments",
                     "emissionPoints",
+                    "employees",
                     "establishments",
                     "expenses",
                     "finance",

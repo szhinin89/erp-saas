@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-11-11 20:20:32",
-    "FilesAnalyzed":  12344,
-    "SecretsFound":  195,
+    "Generated":  "2026-11-26 12:44:02",
+    "FilesAnalyzed":  12538,
+    "SecretsFound":  196,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
@@ -12,6 +12,7 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ForgotPasswordSecurityHttpTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\IamIdentityIsolationHttpTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\InternalCapabilitiesHttpTests.cs",
+                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.FindingFixes.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Communications\\UseCases\\UpdateCompanyEmailSettings\\UpdateCompanyEmailSettingsCommandHandler.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Companies\\UseCases\\CreateCompany\\CreateCompanyHandler.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Company\\UseCases\\CompanyAdministratorsForAdminCore\\CompanyAdministratorsForAdminCore.cs",
@@ -199,22 +200,26 @@
                         "C:\\ProyectCursor\\erp-saas\\frontend\\src\\types\\auth.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\src\\types\\companyManagement.ts"
                     ],
-    "AnonymousDetected":  12,
+    "AnonymousDetected":  16,
     "AnonymousFiles":  [
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\AuthController.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\DevCacheController.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\PublicController.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Controllers\\SetupController.cs",
+                           "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Extensions\\SwaggerExtensions.cs",
+                           "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Swagger\\OpenApiOperationFilters.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Auth\\AdminCoreCompanyUpdateControllerTests.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CompaniesApiSurfaceSnapshotTests.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\StockApiSurfaceSnapshotTests.cs",
+                           "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                           "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\EmployeesPermissionContractTests.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Access\\Interfaces\\IUserSessionRepository.cs",
                            "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\UserSessionRepository.cs",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.d.ts",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.js",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\_tsc.js"
                        ],
-    "ConnectionStringsFound":  13,
+    "ConnectionStringsFound":  14,
     "ConnectionStringFiles":  [
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Hosting\\ErpHostRegistration.cs",
@@ -226,9 +231,10 @@
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.CreditNoteRecovery.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentUncertainSriPostgreSqlTests.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyProvisioningAtomicityPostgreSqlTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                               ],
-    "Warnings":  220
+    "Warnings":  226
 }

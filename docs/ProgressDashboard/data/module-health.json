@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-11-11 20:20:33",
+    "Generated":  "2026-11-26 12:44:03",
     "Modules":  [
                     {
                         "Name":  "Company",
@@ -94,6 +94,13 @@
                     },
                     {
                         "Name":  "Purchases",
+                        "Domain":  true,
+                        "Application":  true,
+                        "Frontend":  true,
+                        "Score":  90
+                    },
+                    {
+                        "Name":  "Employees",
                         "Domain":  true,
                         "Application":  true,
                         "Frontend":  true,

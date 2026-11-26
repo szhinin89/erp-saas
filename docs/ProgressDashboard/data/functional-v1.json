@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "formula": "approved / unique planned V1 capabilities * 100; equal weight; rounded to 2 decimals only for display",
   "global": {
-    "approved": 70,
-    "total": 70,
+    "approved": 75,
+    "total": 75,
     "pct": 100,
     "ids": [
       "Companies-01",
@@ -73,6 +73,11 @@
       "InitialLoad-05",
       "FirstRun-01",
       "Configuration-01",
+      "Employees-01",
+      "Employees-02",
+      "Employees-03",
+      "Employees-04",
+      "Employees-05",
       "InitialLoad-06",
       "InitialLoad-07",
       "Navigation-03"
@@ -345,12 +350,25 @@
       "ids": [
         "Configuration-01"
       ]
+    },
+    "Employees": {
+      "approved": 5,
+      "total": 5,
+      "pct": 100,
+      "ids": [
+        "Employees-01",
+        "Employees-02",
+        "Employees-03",
+        "Employees-04",
+        "Employees-05"
+      ]
     }
   },
   "moduleTitles": {
     "InitialLoad": "Carga inicial",
     "FirstRun": "Instalación inicial",
-    "Configuration": "Configuración organizacional"
+    "Configuration": "Configuración organizacional",
+    "Employees": "Empleados"
   },
   "features": [
     {
@@ -366,13 +384,13 @@
           "path": "FEATURES.md",
           "contains": "| Empresas |",
           "found": true,
-          "line": 61
+          "line": 68
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Companies-01]",
           "found": true,
-          "line": 2214
+          "line": 3389
         }
       ]
     },
@@ -389,13 +407,13 @@
           "path": "FEATURES.md",
           "contains": "| Sucursales |",
           "found": true,
-          "line": 51
+          "line": 57
         },
         {
           "path": "FEATURES.md",
           "contains": "organizativas, no fiscales. FROZEN",
           "found": true,
-          "line": 51
+          "line": 57
         }
       ]
     },
@@ -412,13 +430,13 @@
           "path": "FEATURES.md",
           "contains": "| Establecimientos |",
           "found": true,
-          "line": 52
+          "line": 58
         },
         {
           "path": "FEATURES.md",
           "contains": "disable bloqueado si tiene PEs activos. FROZEN",
           "found": true,
-          "line": 52
+          "line": 58
         }
       ]
     },
@@ -435,13 +453,13 @@
           "path": "FEATURES.md",
           "contains": "| Puntos de emisión |",
           "found": true,
-          "line": 53
+          "line": 59
         },
         {
           "path": "FEATURES.md",
           "contains": "DocumentSequence automático. FROZEN",
           "found": true,
-          "line": 53
+          "line": 59
         }
       ]
     },
@@ -458,14 +476,14 @@
           "path": "FEATURES.md",
           "contains": "| Catálogo / Ítems |",
           "found": true,
-          "line": 39
+          "line": 45
         },
         {
           "path": "STATUS.md",
           "contains": "A1 Ítems | CLOSED",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3921
+          "line": 5116
         }
       ]
     },
@@ -482,13 +500,13 @@
           "path": "FEATURES.md",
           "contains": "variantes, empaques, códigos de proveedor. FROZEN",
           "found": true,
-          "line": 39
+          "line": 45
         },
         {
           "path": "FEATURES.md",
           "contains": "variantes, empaques, códigos de proveedor. FROZEN",
           "found": true,
-          "line": 39
+          "line": 45
         }
       ]
     },
@@ -505,13 +523,13 @@
           "path": "FEATURES.md",
           "contains": "variantes, empaques, códigos de proveedor. FROZEN",
           "found": true,
-          "line": 39
+          "line": 45
         },
         {
           "path": "FEATURES.md",
           "contains": "variantes, empaques, códigos de proveedor. FROZEN",
           "found": true,
-          "line": 39
+          "line": 45
         }
       ]
     },
@@ -528,13 +546,13 @@
           "path": "FEATURES.md",
           "contains": "| Motor de Pricing v2 |",
           "found": true,
-          "line": 40
+          "line": 46
         },
         {
           "path": "FEATURES.md",
           "contains": "CLOSED (ADR-021",
           "found": true,
-          "line": 40
+          "line": 46
         }
       ]
     },
@@ -551,13 +569,13 @@
           "path": "FEATURES.md",
           "contains": "| Master data",
           "found": true,
-          "line": 31
+          "line": 37
         },
         {
           "path": "FEATURES.md",
           "contains": "roles Customer/Supplier — FROZEN",
           "found": true,
-          "line": 31
+          "line": 37
         }
       ]
     },
@@ -574,13 +592,13 @@
           "path": "FEATURES.md",
           "contains": "| Ventas |",
           "found": true,
-          "line": 46
+          "line": 52
         },
         {
           "path": "FEATURES.md",
           "contains": "facturación electrónica. FROZEN",
           "found": true,
-          "line": 46
+          "line": 52
         }
       ]
     },
@@ -597,13 +615,13 @@
           "path": "FEATURES.md",
           "contains": "| Ventas |",
           "found": true,
-          "line": 46
+          "line": 52
         },
         {
           "path": "FEATURES.md",
           "contains": "facturación electrónica. FROZEN",
           "found": true,
-          "line": 46
+          "line": 52
         }
       ]
     },
@@ -620,13 +638,13 @@
           "path": "FEATURES.md",
           "contains": "| Devolución de Ventas",
           "found": true,
-          "line": 48
+          "line": 54
         },
         {
           "path": "FEATURES.md",
           "contains": "P0-01 — COMPLETED/CLOSED",
           "found": true,
-          "line": 48
+          "line": 54
         }
       ]
     },
@@ -644,14 +662,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -669,14 +687,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -694,14 +712,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -718,14 +736,14 @@
           "path": "FEATURES.md",
           "contains": "| Compras |",
           "found": true,
-          "line": 42
+          "line": 48
         },
         {
           "path": "STATUS.md",
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 2530
+          "line": 3725
         }
       ]
     },
@@ -742,14 +760,14 @@
           "path": "FEATURES.md",
           "contains": "| Compras |",
           "found": true,
-          "line": 42
+          "line": 48
         },
         {
           "path": "STATUS.md",
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 2530
+          "line": 3725
         }
       ]
     },
@@ -766,14 +784,14 @@
           "path": "FEATURES.md",
           "contains": "| Compras |",
           "found": true,
-          "line": 42
+          "line": 48
         },
         {
           "path": "STATUS.md",
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 2530
+          "line": 3725
         }
       ]
     },
@@ -790,14 +808,14 @@
           "path": "FEATURES.md",
           "contains": "| Compras |",
           "found": true,
-          "line": 42
+          "line": 48
         },
         {
           "path": "STATUS.md",
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 2530
+          "line": 3725
         }
       ]
     },
@@ -814,14 +832,14 @@
           "path": "FEATURES.md",
           "contains": "| Compras |",
           "found": true,
-          "line": 42
+          "line": 48
         },
         {
           "path": "STATUS.md",
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 2530
+          "line": 3725
         }
       ]
     },
@@ -838,14 +856,14 @@
           "path": "FEATURES.md",
           "contains": "| Inventario |",
           "found": true,
-          "line": 41
+          "line": 47
         },
         {
           "path": "STATUS.md",
           "contains": "B1/B2 Inventario | CLOSED",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3923
+          "line": 5118
         }
       ]
     },
@@ -863,14 +881,14 @@
           "contains": "aislamiento entre empresas PASS",
           "section": "R2 —",
           "found": true,
-          "line": 3444
+          "line": 4639
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 3441
+          "line": 4636
         }
       ]
     },
@@ -888,14 +906,14 @@
           "contains": "aislamiento entre empresas PASS",
           "section": "R2 —",
           "found": true,
-          "line": 3444
+          "line": 4639
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 3441
+          "line": 4636
         }
       ]
     },
@@ -913,14 +931,14 @@
           "contains": "CLOSED",
           "section": "INVENTARIO V1 — B4:",
           "found": true,
-          "line": 3717
+          "line": 4912
         },
         {
           "path": "STATUS.md",
           "contains": "CLOSED",
           "section": "INVENTARIO V1 — B4:",
           "found": true,
-          "line": 3717
+          "line": 4912
         }
       ]
     },
@@ -938,14 +956,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -963,14 +981,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -988,14 +1006,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 3418
+          "line": 4613
         }
       ]
     },
@@ -1012,14 +1030,14 @@
           "path": "FEATURES.md",
           "contains": "| Cuentas por cobrar",
           "found": true,
-          "line": 47
+          "line": 53
         },
         {
           "path": "STATUS.md",
           "contains": "CxC y cobros, cierre 2026-10-27 | **CLOSED**",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3927
+          "line": 5122
         }
       ]
     },
@@ -1036,14 +1054,14 @@
           "path": "FEATURES.md",
           "contains": "| Cuentas por cobrar",
           "found": true,
-          "line": 47
+          "line": 53
         },
         {
           "path": "STATUS.md",
           "contains": "el propietario aprueba expresamente el cierre integral",
           "section": "Caso #20 —",
           "found": true,
-          "line": 3274
+          "line": 4469
         }
       ]
     },
@@ -1061,14 +1079,14 @@
           "contains": "Compras/Gastos/CxP/Pagos",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         },
         {
           "path": "STATUS.md",
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         }
       ]
     },
@@ -1086,14 +1104,14 @@
           "contains": "Compras/Gastos/CxP/Pagos",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         },
         {
           "path": "STATUS.md",
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         }
       ]
     },
@@ -1110,13 +1128,13 @@
           "path": "FEATURES.md",
           "contains": "| Pagos a proveedor — anticipo",
           "found": true,
-          "line": 44
+          "line": 50
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Finance-05]",
           "found": true,
-          "line": 2140
+          "line": 3315
         }
       ]
     },
@@ -1133,13 +1151,13 @@
           "path": "FEATURES.md",
           "contains": "| Saldos a favor de proveedor",
           "found": true,
-          "line": 45
+          "line": 51
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Finance-06]",
           "found": true,
-          "line": 2141
+          "line": 3316
         }
       ]
     },
@@ -1157,14 +1175,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         }
       ]
     },
@@ -1182,14 +1200,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         }
       ]
     },
@@ -1207,14 +1225,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         }
       ]
     },
@@ -1232,14 +1250,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 3410
+          "line": 4605
         }
       ]
     },
@@ -1257,13 +1275,13 @@
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 3883
+          "line": 5078
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-05]",
           "found": true,
-          "line": 2142
+          "line": 3317
         }
       ]
     },
@@ -1281,13 +1299,13 @@
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 3883
+          "line": 5078
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-06]",
           "found": true,
-          "line": 2143
+          "line": 3318
         }
       ]
     },
@@ -1305,13 +1323,13 @@
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 3883
+          "line": 5078
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-07]",
           "found": true,
-          "line": 2144
+          "line": 3319
         }
       ]
     },
@@ -1329,13 +1347,13 @@
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 3883
+          "line": 5078
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-08]",
           "found": true,
-          "line": 2145
+          "line": 3320
         }
       ]
     },
@@ -1359,7 +1377,7 @@
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         }
       ]
     },
@@ -1383,7 +1401,7 @@
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3926
+          "line": 5121
         }
       ]
     },
@@ -1401,14 +1419,14 @@
           "contains": "#31 retención funcional",
           "section": "R2 —",
           "found": true,
-          "line": 3442
+          "line": 4637
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 3441
+          "line": 4636
         }
       ]
     },
@@ -1426,14 +1444,14 @@
           "contains": "Retenciones: emisión, XML/RIDE, transmisión y anulación asistida implementados",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 3888
+          "line": 5083
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Retentions-02]",
           "section": "V1-FUNCTIONAL-CLOSE-01",
           "found": true,
-          "line": 1895
+          "line": 3070
         }
       ]
     },
@@ -1520,13 +1538,13 @@
           "contains": "IMPLEMENTADO",
           "section": "Caso #32 —",
           "found": true,
-          "line": 3209
+          "line": 4404
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-04]",
           "found": true,
-          "line": 3251
+          "line": 4446
         }
       ]
     },
@@ -1543,13 +1561,13 @@
           "path": "FEATURES.md",
           "contains": "pausa total: ninguna llamada",
           "found": true,
-          "line": 49
+          "line": 55
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-05]",
           "found": true,
-          "line": 2343
+          "line": 3518
         }
       ]
     },
@@ -1566,13 +1584,13 @@
           "path": "FEATURES.md",
           "contains": "salud técnica SRI",
           "found": true,
-          "line": 49
+          "line": 55
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-06]",
           "found": true,
-          "line": 2352
+          "line": 3527
         }
       ]
     },
@@ -1590,13 +1608,13 @@
           "contains": "READY FOR REVIEW",
           "section": "SRI 2.34 R12 Fase B",
           "found": true,
-          "line": 2813
+          "line": 4008
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-07]",
           "found": true,
-          "line": 2834
+          "line": 4029
         }
       ]
     },
@@ -1619,7 +1637,7 @@
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Dashboard-01]",
           "found": true,
-          "line": 2283
+          "line": 3458
         }
       ]
     },
@@ -1636,13 +1654,13 @@
           "path": "FEATURES.md",
           "contains": "| Acceso / Seguridad |",
           "found": true,
-          "line": 54
+          "line": 61
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Security-01]",
           "found": true,
-          "line": 2211
+          "line": 3386
         }
       ]
     },
@@ -1660,14 +1678,14 @@
           "contains": "CLOSED",
           "section": "SEGURIDAD — SEC-06",
           "found": true,
-          "line": 3603
+          "line": 4798
         },
         {
           "path": "STATUS.md",
           "contains": "CLOSED",
           "section": "SEGURIDAD — SEC-06",
           "found": true,
-          "line": 3603
+          "line": 4798
         }
       ]
     },
@@ -1684,13 +1702,13 @@
           "path": "FEATURES.md",
           "contains": "| Acceso / Seguridad |",
           "found": true,
-          "line": 54
+          "line": 61
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Session-01]",
           "found": true,
-          "line": 2210
+          "line": 3385
         }
       ]
     },
@@ -1707,13 +1725,13 @@
           "path": "FEATURES.md",
           "contains": "| Acceso / Seguridad |",
           "found": true,
-          "line": 54
+          "line": 61
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Session-02]",
           "found": true,
-          "line": 2290
+          "line": 3465
         }
       ]
     },
@@ -1731,14 +1749,14 @@
           "contains": "IMPLEMENTACIÓN V1 CLOSED",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 2458
+          "line": 3633
         },
         {
           "path": "STATUS.md",
           "contains": "Cierre de la implementación aprobado expresamente",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 2482
+          "line": 3657
         }
       ]
     },
@@ -1761,7 +1779,7 @@
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-01]",
           "found": true,
-          "line": 2212
+          "line": 3387
         }
       ]
     },
@@ -1784,7 +1802,7 @@
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-02]",
           "found": true,
-          "line": 2213
+          "line": 3388
         }
       ]
     },
@@ -1802,14 +1820,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -1827,14 +1845,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -1852,14 +1870,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -1877,14 +1895,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -1901,13 +1919,13 @@
           "path": "FEATURES.md",
           "contains": "| Carga inicial — Apertura contable |",
           "found": true,
-          "line": 38
+          "line": 44
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:InitialLoad-05]",
           "found": true,
-          "line": 2086
+          "line": 3261
         }
       ]
     },
@@ -1931,7 +1949,7 @@
           "contains": "First Run | Cerrado",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 3924
+          "line": 5119
         }
       ]
     },
@@ -1948,13 +1966,128 @@
           "path": "FEATURES.md",
           "contains": "| Configuración organizacional |",
           "found": true,
-          "line": 50
+          "line": 56
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Configuration-01]",
           "found": true,
-          "line": 2085
+          "line": 3260
+        }
+      ]
+    },
+    {
+      "id": "Employees-01",
+      "module": "Employees",
+      "name": "Ficha laboral, BusinessPartner y catálogos laborales",
+      "scope": "v1",
+      "state": "approved",
+      "implemented": true,
+      "missing": "",
+      "evidence": [
+        {
+          "path": "FEATURES.md",
+          "contains": "| Empleados |",
+          "found": true,
+          "line": 60
+        },
+        {
+          "path": "STATUS.md",
+          "contains": "[V1-APPROVED:Employees-01]",
+          "found": true,
+          "line": 84
+        }
+      ]
+    },
+    {
+      "id": "Employees-02",
+      "module": "Employees",
+      "name": "Ciclo laboral, baja, reincorporación e historial",
+      "scope": "v1",
+      "state": "approved",
+      "implemented": true,
+      "missing": "",
+      "evidence": [
+        {
+          "path": "FEATURES.md",
+          "contains": "| Empleados |",
+          "found": true,
+          "line": 60
+        },
+        {
+          "path": "STATUS.md",
+          "contains": "[V1-APPROVED:Employees-02]",
+          "found": true,
+          "line": 85
+        }
+      ]
+    },
+    {
+      "id": "Employees-03",
+      "module": "Employees",
+      "name": "Asignaciones a sucursales y vigencia temporal",
+      "scope": "v1",
+      "state": "approved",
+      "implemented": true,
+      "missing": "",
+      "evidence": [
+        {
+          "path": "FEATURES.md",
+          "contains": "| Empleados |",
+          "found": true,
+          "line": 60
+        },
+        {
+          "path": "STATUS.md",
+          "contains": "[V1-APPROVED:Employees-03]",
+          "found": true,
+          "line": 86
+        }
+      ]
+    },
+    {
+      "id": "Employees-04",
+      "module": "Employees",
+      "name": "Vinculación de usuarios y protección IAM",
+      "scope": "v1",
+      "state": "approved",
+      "implemented": true,
+      "missing": "",
+      "evidence": [
+        {
+          "path": "FEATURES.md",
+          "contains": "| Empleados |",
+          "found": true,
+          "line": 60
+        },
+        {
+          "path": "STATUS.md",
+          "contains": "[V1-APPROVED:Employees-04]",
+          "found": true,
+          "line": 87
+        }
+      ]
+    },
+    {
+      "id": "Employees-05",
+      "module": "Employees",
+      "name": "Directorio transversal y elegibilidad operativa",
+      "scope": "v1",
+      "state": "approved",
+      "implemented": true,
+      "missing": "",
+      "evidence": [
+        {
+          "path": "FEATURES.md",
+          "contains": "| Empleados |",
+          "found": true,
+          "line": 60
+        },
+        {
+          "path": "STATUS.md",
+          "contains": "[V1-APPROVED:Employees-05]",
+          "found": true,
+          "line": 88
         }
       ]
     },
@@ -1989,7 +2122,7 @@
           "contains": "PRODUCCIÓN NO-GO",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 2462
+          "line": 3637
         }
       ]
     },
@@ -2007,14 +2140,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -2032,14 +2165,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 3467
+          "line": 4662
         }
       ]
     },
@@ -2056,24 +2189,24 @@
           "path": "FEATURES.md",
           "contains": "Español e Inglés.",
           "found": true,
-          "line": 68
+          "line": 75
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-03]",
           "found": true,
-          "line": 2139
+          "line": 3314
         }
       ]
     }
   ],
   "inputs": {
-    "FEATURES.md": "85995980464dc9385960008d33910e9dac071c8730316d3bc048d99912763e3d",
-    "STATUS.md": "4634359a2d994b75c78e8d463b31a126683e3703907049cd19721331be17062f",
-    "docs/agent/WORK_QUEUE.md": "c6f6fbe82ed90378517625e60e32e043ab05873f12251ea9c30b9c4026fbfb2e",
-    "docs/ProgressDashboard/data/functional-v1-source.json": "0a8197095bf49add1dccc55be2164109fcd621290877d7787cbb393ea42b6a1d",
+    "FEATURES.md": "dadf6bf0f5fdf70edb472618d0f385198d0e011d68b320328e79ea1f2c169e55",
+    "STATUS.md": "4ba24f8c26652b7ae5bad46cee3e74951b164ae81ba9d97b953ef38b62fa0170",
+    "docs/agent/WORK_QUEUE.md": "23f6a778dfccb3b29739a7713d3cda22ea9a55526e19401200596bda794b7f4a",
+    "docs/ProgressDashboard/data/functional-v1-source.json": "46908c9af861316dfae53ffd12dfb10e326c702c50a16bea47da65e75216f4ce",
     "docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md": "41892aced337e683f1616ed63803c833a57b6639d529a963dd56f93f26ef3403",
-    "docs/decisions/ADR-023-electronic-documents-v1-closure.md": "88a02642cfb5192cab4989688612d57fd1671f4e3ec7e1e5f000dd2ba686d399",
+    "docs/decisions/ADR-023-electronic-documents-v1-closure.md": "1febb1d7245138539cdb8ef55c75637fd963dae83ef36f977c846c8baf8ded58",
     "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs": "755a18c991a611441a89dd5e152c14a41d64119afc715e0f2df02d08bc202e74",
     "docs/ARCHITECTURE.md": "cc6c59cd49a2b2fd87263979b0ba2453bac1e08835b9bbd3daca8db750314b66",
     "docs/ROADMAP.md": "4720cc8775e0f57fc8c58aa49dc5b74f941fa78ac77a8cea2360d5d6bc16124f"

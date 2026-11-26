@@ -374,6 +374,19 @@
       "adr": "ADR-026-accounting-core.md",
       "observations": "Evidencia: FEATURES.md y STATUS.md registran reportes, reversos, COGS, cobros/pagos, supplier payments, expenses y retentions posting. Ya no es \"Pendiente de evaluacion\".",
       "reviewedAt": "2026-09-16"
+    },
+    {
+      "id": "Employees",
+      "functionalStatus": "Completado",
+      "maturityLevel": "Pendiente de evaluacion",
+      "freezeStatus": "No congelado -- Empleados V1 COMPLETADO / CLOSED (2026-11-26); sin freeze declarado",
+      "priority": "Pendiente de evaluacion",
+      "roadmapStage": "Pendiente de evaluacion",
+      "nextStage": "Sin fase funcional activa",
+      "blockers": "Ninguno activo registrado para el cierre V1; limitaciones aceptadas en observations",
+      "adr": "ADR-050-employees-v1-architecture.md",
+      "observations": "STATUS.md, seccion EMPLOYEES-V1: Empleados V1 COMPLETADO / CLOSED (CI #1244 SUCCESS, 2026-11-26), capacidades Employees-01 a 05 aprobadas. SSOT docs/architecture/employees.md. Limitaciones: sin regularizacion de asignaciones futuras al dar de baja, directorio sin paginacion ni consumidores, responsive sin prueba automatizada, verificacion con API real solo de tablas, menu y 401. No acredita preparacion para produccion.",
+      "reviewedAt": "2026-11-26"
     }
   ],
   "reviewedAt": "2026-09-16"

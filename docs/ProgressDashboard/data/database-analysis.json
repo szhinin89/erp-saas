@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-11-11 20:15:07",
+    "Generated":  "2026-11-26 12:38:31",
     "Database":  {
-                     "DbContext":  106,
-                     "DbSets":  198,
+                     "DbContext":  107,
+                     "DbSets":  209,
                      "EntityConfigurations":  0,
                      "Repositories":  105,
                      "Migrations":  3

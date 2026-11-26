@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-11-11 20:14:56",
+    "Generated":  "2026-11-26 12:38:15",
     "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
     "ProjectCount":  12,
-    "ModuleCount":  37,
+    "ModuleCount":  38,
     "Projects":  [
                      {
                          "Name":  "ERP.AI.Application",
@@ -109,6 +109,10 @@
                                          {
                                              "Name":  "ElectronicInvoicing",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing"
+                                         },
+                                         {
+                                             "Name":  "Employees",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Employees"
                                          },
                                          {
                                              "Name":  "Expenses",
@@ -256,6 +260,10 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\ElectronicDocuments"
                                          },
                                          {
+                                             "Name":  "Employees",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Employees"
+                                         },
+                                         {
                                              "Name":  "Expenses",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Expenses"
                                          },
@@ -348,6 +356,10 @@
                          "Layer":  "Other",
                          "Type":  "Test",
                          "Modules":  [
+                                         {
+                                             "Name":  "Employees",
+                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees"
+                                         },
                                          {
                                              "Name":  "Purchases",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases"
@@ -484,6 +496,19 @@
                                          "ERP.Application",
                                          "ERP.Domain",
                                          "ERP.Infrastructure",
+                                         "ERP.Infrastructure.Tests"
+                                     ]
+                    },
+                    {
+                        "Name":  "Employees",
+                        "Layers":  [
+                                       "Application",
+                                       "Domain",
+                                       "Other"
+                                   ],
+                        "Projects":  [
+                                         "ERP.Application",
+                                         "ERP.Domain",
                                          "ERP.Infrastructure.Tests"
                                      ]
                     },

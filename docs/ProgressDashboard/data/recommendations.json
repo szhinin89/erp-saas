@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-11 20:20:58",
+    "generated":  "2026-11-26 12:44:29",
     "source":  "dashboard-model-v12.json, model-health.json, completion-intelligence.json, dependencies.json, critical-path.json, release-simulation.json",
     "rule":  "Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in \u0027justifiedBy\u0027. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.",
     "recommendations":  [
@@ -13,7 +13,7 @@
                             },
                             {
                                 "title":  "Security reaches 80% raises Production Readiness",
-                                "text":  "Security reaches 80% moves Production Readiness from 59.60% to 73.40% (+13.80 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Security reaches 80% moves Production Readiness from 57.50% to 73.34% (+15.84 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security reaches 80%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -21,7 +21,7 @@
                             },
                             {
                                 "title":  "Quality reaches 85% raises Production Readiness",
-                                "text":  "Quality reaches 85% moves Production Readiness from 59.60% to 75.16% (+15.56 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Quality reaches 85% moves Production Readiness from 57.50% to 73.12% (+15.62 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Quality reaches 85%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -29,7 +29,7 @@
                             },
                             {
                                 "title":  "Security 80% + Quality 85% combined raises Production Readiness",
-                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 59.60% to 88.96% (+29.36 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 57.50% to 88.96% (+31.46 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security 80% + Quality 85% combined\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -61,24 +61,24 @@
                             },
                             {
                                 "title":  "Prioritize \u0027Common\u0027 in the dependency graph",
-                                "text":  "\u0027Common\u0027 has the highest transitive unblock count in the real dependency graph: completing it removes it as a dependency blocker for 34 module(s), touching 2 distinct verified process(es).",
+                                "text":  "\u0027Common\u0027 has the highest transitive unblock count in the real dependency graph: completing it removes it as a dependency blocker for 35 module(s), touching 2 distinct verified process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027Common\u0027, transitiveUnblocks=34, unlockedProcesses=2",
+                                                    "critical-path.json: module=\u0027Common\u0027, transitiveUnblocks=35, unlockedProcesses=2",
                                                     "dependencies.json real dependency graph (edges evidenced by \u0027using ERP.*\u0027 references)"
                                                 ]
                             },
                             {
                                 "title":  "\u0027DocTypes\u0027 unblocks 2 process(es)",
-                                "text":  "Completing \u0027DocTypes\u0027 (current score 77.75%) unblocks 2 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
+                                "text":  "Completing \u0027DocTypes\u0027 (current score 77.75%) unblocks 2 direct dependent module(s) and 30 transitive dependent module(s), covering 2 verified business process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027DocTypes\u0027, directUnblocks=2, transitiveUnblocks=29, unlockedProcesses=2"
+                                                    "critical-path.json: module=\u0027DocTypes\u0027, directUnblocks=2, transitiveUnblocks=30, unlockedProcesses=2"
                                                 ]
                             },
                             {
-                                "title":  "\u0027Navigation\u0027 unblocks 2 process(es)",
-                                "text":  "Completing \u0027Navigation\u0027 (current score 77.75%) unblocks 1 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
+                                "title":  "\u0027ElectronicInvoicing\u0027 unblocks 2 process(es)",
+                                "text":  "Completing \u0027ElectronicInvoicing\u0027 (current score 77.75%) unblocks 1 direct dependent module(s) and 30 transitive dependent module(s), covering 2 verified business process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027Navigation\u0027, directUnblocks=1, transitiveUnblocks=29, unlockedProcesses=2"
+                                                    "critical-path.json: module=\u0027ElectronicInvoicing\u0027, directUnblocks=1, transitiveUnblocks=30, unlockedProcesses=2"
                                                 ]
                             },
                             {
@@ -90,9 +90,9 @@
                             },
                             {
                                 "title":  "\u0027Common\u0027 is a single-author bottleneck with high coupling",
-                                "text":  "\u0027Common\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 33 (fanIn=33, fanOut=0). Knowledge concentration on a highly-coupled module is a real continuity risk.",
+                                "text":  "\u0027Common\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 34 (fanIn=34, fanOut=0). Knowledge concentration on a highly-coupled module is a real continuity risk.",
                                 "justifiedBy":  [
-                                                    "dependencies.json: node id=\u0027Common\u0027, busFactor=1, coupling=33"
+                                                    "dependencies.json: node id=\u0027Common\u0027, busFactor=1, coupling=34"
                                                 ]
                             },
                             {
@@ -103,29 +103,29 @@
                                                 ]
                             },
                             {
-                                "title":  "\u0027Purchases\u0027 is a single-author bottleneck with high coupling",
-                                "text":  "\u0027Purchases\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 23 (fanIn=9, fanOut=14). Knowledge concentration on a highly-coupled module is a real continuity risk.",
+                                "title":  "\u0027Accounting\u0027 is a single-author bottleneck with high coupling",
+                                "text":  "\u0027Accounting\u0027 has Bus Factor = 1 (single known contributor via git history) and coupling = 23 (fanIn=9, fanOut=14). Knowledge concentration on a highly-coupled module is a real continuity risk.",
                                 "justifiedBy":  [
-                                                    "dependencies.json: node id=\u0027Purchases\u0027, busFactor=1, coupling=23"
+                                                    "dependencies.json: node id=\u0027Accounting\u0027, busFactor=1, coupling=23"
                                                 ]
                             },
                             {
-                                "title":  "Assign a domain to 22 unmapped catalog item(s)",
-                                "text":  "model-health.json lists 22 unmapped item(s) (modules with domainId=\u0027unmapped\u0027 or zero features mapped). Resolving them raises Model Integrity confidence for downstream analysis (critical path, impact analysis).",
+                                "title":  "Assign a domain to 23 unmapped catalog item(s)",
+                                "text":  "model-health.json lists 23 unmapped item(s) (modules with domainId=\u0027unmapped\u0027 or zero features mapped). Resolving them raises Model Integrity confidence for downstream analysis (critical path, impact analysis).",
                                 "justifiedBy":  [
-                                                    "model-health.json: unmappedItems=22"
+                                                    "model-health.json: unmappedItems=23"
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Security Score bajo: 11% (Secrets detectados: 195, endpoints anonimos: 12)",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Security Score bajo: 11% (Secrets detectados: 195, endpoints anonimos: 12)",
+                                "title":  "Critical gap already tracked: Security Score bajo: 0.8% (Secrets detectados: 196, endpoints anonimos: 16)",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Security Score bajo: 0.8% (Secrets detectados: 196, endpoints anonimos: 16)",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Quality Score bajo: 7.2%",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 7.2%",
+                                "title":  "Critical gap already tracked: Quality Score bajo: 6.9%",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 6.9%",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]

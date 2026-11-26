@@ -408,6 +408,20 @@
       "technicalDebt": "Ver explorer-index.json.modules[].debt.largeFilesCount (fuente unica, fusionado en vivo por render-dashboard.ps1 -- no duplicado aqui como numero estatico)",
       "architectureRisk": "Ver explorer-index.json.modules[].changeRisk.band (fuente unica, fusionado en vivo por render-dashboard.ps1 -- no duplicado aqui como numero estatico)",
       "observations": "adr/freezeStatus espejados de modules-status.json (Fase Dashboard 3.0) -- no reinvestigado, evita contradicciones entre archivos."
+    },
+    {
+      "id": "Employees",
+      "adr": "ADR-050-employees-v1-architecture.md",
+      "adrVerified": true,
+      "freezeStatus": "No congelado -- Empleados V1 COMPLETADO / CLOSED (2026-11-26); sin freeze declarado",
+      "architectureStatus": "Pendiente de auditoria",
+      "lastAudit": "Pendiente de auditoria",
+      "nextAudit": "Pendiente de auditoria",
+      "findingsOpen": "Pendiente de auditoria",
+      "findingsClosed": "Pendiente de auditoria",
+      "technicalDebt": "Ver explorer-index.json.modules[].debt.largeFilesCount (fuente unica, fusionado en vivo por render-dashboard.ps1 -- no duplicado aqui como numero estatico)",
+      "architectureRisk": "Ver explorer-index.json.modules[].changeRisk.band (fuente unica, fusionado en vivo por render-dashboard.ps1 -- no duplicado aqui como numero estatico)",
+      "observations": "adr/freezeStatus espejados de modules-status.json (Fase Dashboard 3.0) -- no reinvestigado, evita contradicciones entre archivos."
     }
   ]
 }
