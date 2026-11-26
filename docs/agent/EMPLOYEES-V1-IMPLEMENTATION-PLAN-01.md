@@ -1,11 +1,11 @@
-# Empleados V1 — Plan de implementación (EMP-E1 a EMP-E6b cerradas; EMP-E7 pendiente de CI)
+# Empleados V1 — Plan de implementación (COMPLETADO / CLOSED, EMP-E1 a EMP-E7)
 
 Decisiones: [ADR-050](../decisions/ADR-050-employees-v1-architecture.md). Comportamiento exacto:
 [especificación contractual](../decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
-**Este plan no autoriza por sí mismo ninguna fase.** Estado (2026-11-25): EMP-E1 **VERIFICACIÓN TÉCNICA COMPLETADA / CIERRE APROBADO
-POR EL PROPIETARIO**; EMP-E2 a EMP-E6b **COMPLETADO / CLOSED**; **EMP-E7 IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI**. Cada fase requirió
+**Este plan no autoriza por sí mismo ninguna fase.** Estado (2026-11-26): **EMPLEADOS V1 COMPLETADO / CLOSED**; EMP-E1 **VERIFICACIÓN TÉCNICA COMPLETADA / CIERRE APROBADO
+POR EL PROPIETARIO**; EMP-E2 a EMP-E6b **COMPLETADO / CLOSED**; **EMP-E7 COMPLETADO / CLOSED** (CI #1244 SUCCESS). Cada fase requirió
 autorización expresa del propietario con lista exacta de rutas, gate del propietario (PASS o FAIL) y staging y commit realizados
 por el propietario ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa de
 pruebas; PostgreSQL real para integridad y concurrencia. Etiquetas: APROBADO, EXISTENTE, PROPUESTO y NO VERIFICADO según el ADR.
@@ -174,7 +174,7 @@ mediante puertos de lectura; si hiciera falta tocar Access, autorización separa
 
 ## EMP-E7 — Frontend, Kernel y launcher
 
-**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI.** Decisiones aprobadas D-1 (wizard de MasterData con rol Employee, incluidos sus dos componentes internos), D-2 (`AppFeature`) y D-3 (etiquetas de permisos); línea `/api/employees` autorizada en la guarda de plataforma. Aceptación visual y funcional del propietario aprobada, con las correcciones del wizard en contexto Employee. No se declara CLOSED hasta CI satisfactorio. CI #1243 FAILURE (Backend API 1902/1903) por el snapshot `app-features.txt` sin las dos filas de D-2; corregido el 2026-11-26 y verificado en local. Cobertura T-01 a T-15, resultados y limitaciones en [STATUS](../../STATUS.md); comportamiento en [employees.md](../architecture/employees.md).
+**Estado (2026-11-26): COMPLETADO / CLOSED** ([CI #1244 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/45820503898) sobre `c0e175b1e`; gate y aceptación del propietario del 2026-11-25). Decisiones aprobadas D-1 (wizard de MasterData con rol Employee, incluidos sus dos componentes internos), D-2 (`AppFeature`) y D-3 (etiquetas de permisos); línea `/api/employees` autorizada en la guarda de plataforma. Aceptación visual y funcional del propietario aprobada, con las correcciones del wizard en contexto Employee. CI #1243 FAILURE (Backend API 1902/1903) por el snapshot `app-features.txt` sin las dos filas de D-2; corregido el 2026-11-26 y validado por CI #1244. Cobertura T-01 a T-15, resultados y limitaciones en [STATUS](../../STATUS.md); comportamiento en [employees.md](../architecture/employees.md).
 
 **Dependencias:** E4–E6b. **Alcance:** `EmployeesModule.cs`, claves i18n, `frontend/src/modules/employees/**`,
 `MODULE_ICON_BY_ID`, pantallas, ficha de tres secciones, catálogos laborales, guard de cambios sin guardar. Si el wizard de BP no
@@ -186,3 +186,5 @@ comprobado, `employees.md`, `FEATURES.md` y `docs/architecture/README.md`.
 
 Todas las fases cerradas (con la baja y la reincorporación habilitadas solo desde E5); T-01 a T-15 verdes; documentación sincronizada con el código; ningún componente FROZEN modificado fuera
 de las autorizaciones separadas; sin duplicación de datos del BP.
+
+**Módulo cerrado (2026-11-26).** T-14 se cierra con la limitación registrada de no tener prueba automatizada de responsive; capacidades aprobadas, evidencia y límites en [STATUS](../../STATUS.md).

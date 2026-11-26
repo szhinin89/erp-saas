@@ -6,7 +6,7 @@ import { calculate, projectRoot } from './analyze-functional-v1.mjs';
 const source=()=>JSON.parse(fs.readFileSync(path.join(projectRoot,'docs/ProgressDashboard/data/functional-v1-source.json'),'utf8'));
 test('unique global denominator, exact module union and Core membership',()=>{
  const d=calculate();
- assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[70,70,100]);
+ assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[75,75,100]);
  assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[43,43,100]);
  assert.equal(new Set(d.global.ids).size,d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.total,0),d.global.total);
@@ -23,6 +23,7 @@ test('unique global denominator, exact module union and Core membership',()=>{
  assert.equal(d.features.find(f=>f.id==='Configuration-01').state,'approved');
  assert.equal(d.modules.InitialLoad.pct,100);
  assert.equal(d.modules.Configuration.pct,100);
+ assert.deepEqual([d.modules.Employees.approved,d.modules.Employees.total,d.modules.Employees.pct],[5,5,100]); // Empleados V1 close 2026-11-26.
  for(const f of d.features.filter(f=>f.state==='approved'))assert.ok(f.evidence.some(e=>e.found));
 });
 test('future/production never affect denominator or approved totals',()=>{
@@ -37,12 +38,12 @@ test('new explicit STATUS acceptance recalculates; implementation alone does not
  assert.equal(before.modules.Dashboard.approved,0);
  assert.equal(after.modules.Dashboard.approved,1);
  assert.equal(after.global.approved,before.global.approved+1);
- assert.equal(after.global.total,70);
+ assert.equal(after.global.total,75);
  assert.notEqual(before.inputs['STATUS.md'],after.inputs['STATUS.md']);
 });
 test('withdrawn approval stops contributing without removing denominator',()=>{
  const s=source();s.features.find(f=>f.id==='Purchases-01').approval.contains='[V1-APPROVED:withdrawn]';
- const d=calculate(projectRoot,s);assert.equal(d.global.approved,calculate().global.approved-1);assert.equal(d.global.total,70);
+ const d=calculate(projectRoot,s);assert.equal(d.global.approved,calculate().global.approved-1);assert.equal(d.global.total,75);
  assert.equal(d.features.find(f=>f.id==='Purchases-01').state,'validation_pending');
 });
 test('duplicate ids, duplicate capabilities, missing evidence and ambiguous sections fail closed',()=>{

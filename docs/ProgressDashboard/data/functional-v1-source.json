@@ -1089,6 +1089,81 @@
       "missing": "Requiere aprobación vigente del alcance API de preferencias organizacionales e historial, sin pantalla nueva."
     },
     {
+      "id": "Employees-01",
+      "module": "Employees",
+      "name": "Ficha laboral, BusinessPartner y catálogos laborales",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empleados |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Employees-01]"
+      },
+      "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
+    },
+    {
+      "id": "Employees-02",
+      "module": "Employees",
+      "name": "Ciclo laboral, baja, reincorporación e historial",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empleados |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Employees-02]"
+      },
+      "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
+    },
+    {
+      "id": "Employees-03",
+      "module": "Employees",
+      "name": "Asignaciones a sucursales y vigencia temporal",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empleados |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Employees-03]"
+      },
+      "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
+    },
+    {
+      "id": "Employees-04",
+      "module": "Employees",
+      "name": "Vinculación de usuarios y protección IAM",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empleados |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Employees-04]"
+      },
+      "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
+    },
+    {
+      "id": "Employees-05",
+      "module": "Employees",
+      "name": "Directorio transversal y elegibilidad operativa",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empleados |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Employees-05]"
+      },
+      "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
+    },
+    {
       "id": "Future-01",
       "module": "Future",
       "name": "CRM, BI/Data Warehouse, IA y aplicación móvil",
@@ -1262,6 +1337,10 @@
       "module": "Branches"
     },
     {
+      "label": "Empleados",
+      "module": "Employees"
+    },
+    {
       "label": "Acceso / Seguridad",
       "module": "Security"
     },
@@ -1281,6 +1360,7 @@
   "moduleTitles": {
     "InitialLoad": "Carga inicial",
     "FirstRun": "Instalación inicial",
-    "Configuration": "Configuración organizacional"
+    "Configuration": "Configuración organizacional",
+    "Employees": "Empleados"
   }
 }
