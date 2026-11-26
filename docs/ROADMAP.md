@@ -99,6 +99,19 @@ y volumen real de datos. No introduce dependencias IA en Domain/Application.
 CRM y RRHH dependen de priorización de negocio; no se fuerzan dentro de otra etapa.
 La evolución de SaaS Platform corresponde a su producto externo.
 
+## Ampliaciones trasladadas desde la cola V1
+
+Fuera del alcance funcional V1 (depuración aprobada el 2026-11-26); sin autorización de implementación.
+
+- Compras (PURCHASES-RECEPTION-XML-ATTEMPT-01): historial persistente de intentos y resultados de consulta XML.
+  Requiere backend y migración; antes de intervenir el handler congelado, revisar ADR-028/ADR-046, migraciones,
+  privacidad y aislamiento, sin alterar contratos fiscales protegidos.
+- Empleados: definición del propietario sobre las asignaciones futuras al dar de baja (limitación aceptada: hoy
+  bloquea la baja; ver [Empleados](architecture/employees.md)). No reabre Empleados V1.
+- Design System: bloques 4–5 de [UIUX-GLOBAL-ARCHITECTURE-02](agent/UIUX-GLOBAL-ARCHITECTURE-02.md).
+- Comprobantes electrónicos que exceden el tamaño admitido (R16): recuperación o límite de líneas, decisión pendiente
+  ([matriz SRI §5.6](sri/SRI-2.34-COMPLIANCE-CLOSURE.md#5-limitaciones-externas-y-puntos-blocked)).
+
 ## Relacionados
 
 - [Índice normativo](architecture/README.md).

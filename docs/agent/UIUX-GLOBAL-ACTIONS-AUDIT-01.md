@@ -5,8 +5,9 @@ componentes, CSS, páginas, permisos, STATUS ni WORK_QUEUE. Sin suites generales
 staging/commit/push. Seguimiento posterior: AA-D1 corregido técnicamente por FUNC-PARTNER-ROLE-01 y AA-D5
 corregido técnicamente por FUNC-DEACTIVATION-CONFIRM-01 (§ 10), ambos pendientes de Git/CI (ver
 [STATUS](../../STATUS.md)). El Bloque 2 (Clientes) está implementado por
-UIUX-GLOBAL-ACTIONS-CLIENTS-01 (§ 11), que además resuelve AA-D2 y AA-D3, pendiente de gate del
-propietario y Git/CI; los demás hallazgos siguen pendientes.
+UIUX-GLOBAL-ACTIONS-CLIENTS-01 (§ 11), que además resuelve AA-D2 y AA-D3; publicado en `4ab84b0ba`
+(CI #1106) y **superado por BP-CONSOLIDATION-01** según decisión del propietario del 2026-11-26, sin
+aceptación visual de la interfaz original; los demás hallazgos siguen pendientes.
 
 Referencia normativa: [Frontend § Proveedores](../architecture/frontend.md) (fila «Ver» +
 «Más acciones», `portal` opcional), [UIUX-GLOBAL-STANDARD-01](UIUX-GLOBAL-STANDARD-01.md) y

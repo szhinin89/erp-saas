@@ -8,12 +8,12 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 
 ## Dashboard Health Summary
 
-- Hallazgos abiertos: 1
+- Hallazgos abiertos: 2
 - Hallazgos resueltos: 4
 - Hallazgos críticos: 0
-- Hallazgos importantes: 1
+- Hallazgos importantes: 2
 - Hallazgos menores: 0
-- Última auditoría: 2026-10-24
+- Última auditoría: 2026-10-24 (DH-006 registrado el 2026-11-26, sin nueva auditoría del pipeline)
 - Estado general: Advertencia
 
 ---
@@ -83,6 +83,23 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 - **Corrección:** El pie de la plantilla usa el slot `{{META:GENERATED}}`. `compose-curated-dashboard.ps1` lo resuelve con la marca de tiempo del pie generado (`dashboard-model-v12.json` → `Generated`). Si falta, falla de forma explícita, y un slot `META` sin resolver bloquea la composición. Las secciones curadas y la segunda línea del pie no cambian.
 - **Responsable:** Pipeline Dashboard
 - **Alcance:** Dashboard exclusivamente.
+
+### DH-006 — Analizadores no reproducibles (DASHBOARD-ANALYZER-REPRODUCIBILITY-01)
+
+- **Fecha de detección:** 2026-11-26 (regeneración con Empleados V1 sobre `e257aa32d`)
+- **Estado:** Abierto
+- **Persistencia:** Nuevo
+- **Prioridad:** 🟧 Importante
+- **Descripción:** Diagnóstico acreditado comparando dos corridas de `run-dashboard-final.ps1`, con y sin `frontend/dist`: los analizadores dependen de archivos locales no versionados. En la segunda corrida, 7.504 de los 12.538 archivos analizados por seguridad no estaban versionados y 116 de las 196 coincidencias de patrones de secretos procedían de `node_modules`. `frontend/dist` añadía 267 archivos analizados y 19 coincidencias (215 frente a 196), además de 267 archivos en deuda técnica.
+- **Impacto:** Puntajes y tendencias no son reproducibles; las tendencias históricas pueden comparar poblaciones distintas.
+- **Límites de los indicadores:** las coincidencias son patrones de texto y no acreditan secretos reales; los puntajes heurísticos no constituyen una auditoría de seguridad. La publicación aprobada excluyó temporalmente `frontend/dist` (restaurado íntegramente), pero sigue contando `node_modules`, `bin` y `obj`.
+- **Recomendación (no autorizada):** población reproducible de archivos versionados, revisión de todos los analizadores afectados, registro de procedencia, commit y población, nueva línea base sin reescribir históricos y acreditación de invariancia ante artefactos locales.
+- **Esfuerzo:** no estimado. **Riesgo:** cambio de línea base en un pipeline FROZEN v1.0. **Dependencias:** autorización del propietario. **Momento recomendado:** tarea propia del pipeline.
+- **Responsable:** Decisión conjunta
+- **Fecha de resolución:** —
+- **Observaciones:** **Implementación no autorizada.** El avance funcional V1 usa un registro y un cálculo propios; este diagnóstico no lo evaluó como afectado. Evidencia en [STATUS](../../STATUS.md); seguimiento en la [cola](../agent/WORK_QUEUE.md).
+
+---
 
 ## Convenciones de este documento
 

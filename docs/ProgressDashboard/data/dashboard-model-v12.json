@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-11-26 12:44:07",
+    "Generated":  "2026-11-26 17:09:52",
     "EngineeringScore":  {
-                             "Generated":  "2026-11-26 12:44:04",
+                             "Generated":  "2026-11-26 17:09:46",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
                              "Quality":  6.9,
@@ -10,7 +10,7 @@
                              "Overall":  55.49
                          },
     "QualityGate":  {
-                        "Generated":  "2026-11-26 12:44:06",
+                        "Generated":  "2026-11-26 17:09:51",
                         "Status":  "RED",
                         "EngineeringScore":  55.49,
                         "Warnings":  [
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-11-26 12:44:06",
-                  "Snapshots":  49,
+                  "Generated":  "2026-11-26 17:09:49",
+                  "Snapshots":  50,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -271,6 +271,11 @@
                                   {
                                       "Date":  "2026-11-26 12:44:05",
                                       "File":  "dashboard-2026-11-26-1244-v2.json",
+                                      "Score":  55.49
+                                  },
+                                  {
+                                      "Date":  "2026-11-26 17:09:48",
+                                      "File":  "dashboard-2026-11-26-1709-v2.json",
                                       "Score":  55.49
                                   }
                               ]
@@ -623,8 +628,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-11-26 12:44:02",
-                     "FilesAnalyzed":  12538,
+                     "Generated":  "2026-11-26 17:09:42",
+                     "FilesAnalyzed":  12540,
                      "SecretsFound":  196,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
@@ -863,7 +868,7 @@
                      "Warnings":  226
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-11-26 12:43:42",
+                          "Generated":  "2026-11-26 17:09:21",
                           "FilesAnalyzed":  12458,
                           "TODO":  733,
                           "FIXME":  30,
@@ -3922,7 +3927,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-11-26 12:38:23",
+                         "Generated":  "2026-11-26 17:04:34",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  738
@@ -3948,7 +3953,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-11-26 12:38:30",
+                         "Generated":  "2026-11-26 17:04:43",
                          "Violations":  [
 
                                         ],

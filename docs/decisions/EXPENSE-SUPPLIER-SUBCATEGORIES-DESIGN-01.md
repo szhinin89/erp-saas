@@ -258,7 +258,8 @@ invisible e inmodificable desde B (probado); sin DELETE físico, `PUT []` devuel
 las dos tablas y sin migraciones nuevas; ningún permiso ni contrato existente cambia; guardrails y pruebas focales PASS
 y gate del propietario PASS.
 
-Resultado: cumplidos en las fases 1–3 con las pruebas registradas en STATUS; el gate del propietario de la fase 4 sigue pendiente.
+Resultado: cumplidos en las fases 1–3 con las pruebas registradas en STATUS; el propietario aprobó el cierre técnico y
+documental de la fase 4 el 2026-11-26, sin acreditar E2E ni validación con API real (ver [STATUS](../../STATUS.md)).
 
 ## Riesgos
 

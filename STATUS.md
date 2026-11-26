@@ -1,5 +1,50 @@
 # Project Status
 
+## ERP-V1-DOC-CONSOLIDATION-01 — Conciliación documental V1 — CLOSED (documental; gate aprobado 2026-11-26)
+
+Solo documentación (este archivo, [WORK_QUEUE](docs/agent/WORK_QUEUE.md),
+[DASHBOARD_HEALTH](docs/ProgressDashboard/DASHBOARD_HEALTH.md), [ROADMAP](docs/ROADMAP.md), el
+[diseño de subcategorías](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) y la
+[auditoría de acciones](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md)). Concilia API-DOC (F-01, F-02, F-09, F-10, F-14,
+F-17, F-18, F-33, F-35), UIUX/FUNC del 05–06/11, Compras, ElectronicDocuments-04 a -07, política de precisión y el
+registro del hallazgo DH-006. La conciliación no cierra pendientes ni incidencias; los únicos cierres son las
+aprobaciones expresas registradas abajo. Spa V1.1 ya reflejaba la entrega de
+`IEmployeeDirectory` sin integración: sin cambios; ninguna condición se declara satisfecha.
+
+**[CI #1246 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/45873196714)** sobre `9a570829d` (publicación del Dashboard; consultado por API: 20 jobs `success`,
+`publish` omitido): se retira de EMPLOYEES-V1 la regeneración pendiente.
+
+**Cierre (2026-11-26):** gate documental aprobado por el propietario, con una única regeneración oficial del Dashboard
+(`frontend/dist` apartado temporalmente y restaurado; DH-006 sigue vigente) y un commit local, sin push. Cierra solo
+esta intervención documental: las aceptaciones, validaciones, incidencias y requisitos de la
+[cola](docs/agent/WORK_QUEUE.md) siguen abiertos y **no acredita preparación para producción (NO-GO)**.
+
+### Aprobaciones del propietario — 2026-11-26
+
+Decisiones expresas sobre evidencia ya registrada: sin cambios de código, permisos, datos, contratos ni guardrails y
+sin repetir pruebas.
+
+| Entrega | Decisión | Evidencia | Límites y residuos |
+|---|---|---|---|
+| BP-NAV-GUARD-01 | **CLOSED**, aceptado con las limitaciones documentadas | `9761470e8`, CI #1202 SUCCESS | Excepciones: «Salir» del overlay de inactividad, shell AdminCore y finalización automática de sesión (incluida la confirmación que quede abierta). Sin E2E con API real. Siguen BP-CONSOLIDATION-01-DEBT y -E2E |
+| API-DOC F-01 | **CLOSED**; aprobada la respuesta 422 ante `brandingJson` no vacío | `cba7e44d4`, CI #1181 SUCCESS | Pendiente la revisión de posibles datos históricos en `website`. **API-DOC-V1 no está CLOSED** |
+| CI-1169 | **CLOSED**, corrección técnica aceptada | `7be7d3a5d`, CI #1170 SUCCESS; 30 pruebas focales; mismos conteos en LF y CRLF | Sin cambios de guardrails |
+| EXPENSE-SUPPLIER-SUBCATEGORIES-01 | **CLOSED**, aprobado el cierre técnico y documental (fase 4) | `72a9afc3d`, `f99332051`, `f4a0bc483`, `e8c067146`; CI #1197 SUCCESS | No acredita E2E ni validación con API real; se conservan las limitaciones de su sección |
+| SECURITY-PRECISION-POLICY-01 | **CLOSED solo el gate de la protección técnica** (PUT con `erp.companies.update`) | `03c627514`; CI #1092 SUCCESS sobre `83da017b3` | Pruebas sin HTTP ni BD; API-DOC-F-31 sigue pendiente; no cierra NAV-COVERAGE-H2 |
+| UIUX-GLOBAL-ACTIONS-CLIENTS-01 | **SUPERADO POR BP-CONSOLIDATION-01** | `4ab84b0ba` (CI #1106), sustituido hasta `65c207e42` (CI #1205) | No registra aceptación visual de la interfaz original. Sigue pendiente BP-CONSOLIDATION-01-E2E |
+
+**Perfil `DataEntry`:** el propietario confirma el 2026-11-26 que fue eliminado; la decisión pendiente sobre ese
+perfil queda superada. Confirmación del propietario: no se consultó ni modificó ninguna base. Las menciones
+anteriores de este archivo se conservan como historia.
+
+### Depuración final — aprobada por el propietario (2026-11-26)
+
+Registros históricos marcados en sus secciones como SUPERADO, RESUELTO, PUBLICADO o FUTURO según su evidencia, sin
+acreditar aceptaciones visuales o funcionales no ocurridas. Trabajo restante, sin duplicados, en la
+[cola](docs/agent/WORK_QUEUE.md): aceptaciones y validaciones, incidencias y deuda, requisitos previos a producción y
+ampliaciones futuras no autorizadas. Avance funcional sin cambios: Global 75/75, Core 43/43, Employees 5/5.
+**Producción NO-GO.**
+
 ## DASHBOARD-ANALYZER-REPRODUCIBILITY-01 — Analizadores del Dashboard no reproducibles — PENDING / DIAGNÓSTICO ACREDITADO / IMPLEMENTACIÓN NO AUTORIZADA (2026-11-26)
 
 Detectado al regenerar el Dashboard con Empleados V1 sobre `e257aa32d` (CI #1245 SUCCESS, verificado
@@ -89,7 +134,8 @@ sigue Abierto.
   - **Verificación con API real:** solo la registrada en EMP-E7 (tablas, menú y 401 sin autenticación en `erp_zh_dev`); no hay evidencia por operación autenticada contra la API real.
   - **No verificado o parcial:** el responsive (T-14) no tiene prueba automatizada; el CI no ejecuta las pruebas Vitest del frontend (sus resultados son locales); el `Down` de la baseline sigue sin verificar (EMP-E2). Se conservan las limitaciones aceptadas registradas en cada fase.
   - La incidencia histórica de Compras (`Test8_D`) y la intermitencia contractual OpenAPI siguen con causa raíz NO CONFIRMADA; este cierre no las resuelve.
-- **Pendiente fuera del cierre:** definición del propietario del procedimiento de regularización de asignaciones futuras al dar de baja (limitación aceptada: hoy bloquea la baja) y regeneración del Dashboard. La integración con SPA requiere autorización separada.
+- **Pendiente fuera del cierre:** definición del propietario del procedimiento de regularización de asignaciones futuras al dar de baja (limitación aceptada: hoy bloquea la baja). La integración con SPA requiere autorización separada. La regeneración del
+  Dashboard pendiente al cierre quedó publicada en `9a570829d` con [CI #1246 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/45873196714).
 - **Documentos:** [ADR-050](docs/decisions/ADR-050-employees-v1-architecture.md),
   [especificación contractual](docs/decisions/EMPLOYEES-V1-CONTRACT-SPEC-01.md) (diseño, no SSOT) y
   [plan de implementación](docs/agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). Cola: [WORK_QUEUE](docs/agent/WORK_QUEUE.md).
@@ -162,6 +208,12 @@ sigue Abierto.
   limitación de idioma.
 
 ## PURCHASES-NEW-TAB-PHASE-A-01 — Compras V1: mejora visual de «Nueva compra» (Fase A) — PUBLICADO en `130d23267`, CI #1208 SUCCESS; validación con API real PENDIENTE (2026-11-15)
+
+> **Marca 2026-11-26 — SUPERADO:** sustituida por PURCHASES-NEW-TAB-REDESIGN-01; la validación con API real
+> se sigue solo en esa entrega.
+
+> Conciliación 2026-11-26: superada como diseño por PURCHASES-NEW-TAB-REDESIGN-01. Su validación con API real
+> no es un pendiente separado: se atiende con la del rediseño.
 
 > **Reapertura puntual y solo visual de Compras V1**, autorizada por el propietario para la pantalla `/purchases`,
 > pestaña «Nueva compra». **No modifica el estado CLOSED de la funcionalidad de negocio de Compras**: sin cambios
@@ -488,6 +540,8 @@ modales no se tocaron en esta etapa**; sus accesos se retiraron en la Etapa 3.
   pantalla de ese shell registra cambios pendientes; (3) la confirmación que quedara abierta cuando termina
   la sesión no se cierra sola (el servicio de mensajes no ofrece cierre programático): responderla no tiene
   efecto. Las subcategorías de gasto solo guardan con su propio botón (no registran cambios pendientes).
+  **BP-NAV-GUARD-01 — CLOSED** por [aprobación del propietario](#aprobaciones-del-propietario--2026-11-26)
+  (2026-11-26) con estas limitaciones; sin E2E con API real.
 - **Subcategorías de gasto (permisos):** `SupplierExpenseSubcategoriesSection` conserva
   `masterdata.businesspartners.configure-company` para modificar: solo es editable con
   `canEdit && catalog !== null`; casillas, búsqueda, «Guardar subcategorías» y «Quitar restricción» (única
@@ -602,6 +656,10 @@ Los registros antiguos «sin commit» o «pendiente Git/CI» fuera de estas entr
 commit específico y aceptación; no se cierran con un CI posterior ni se reabren por
 esta conciliación. Se conserva explícitamente esa limitación de verificación.
 
+Actualización 2026-11-26: imágenes de Ítems y los registros UIUX/FUNC del 05–06/11 quedan trazados a su commit y CI
+en sus propias secciones; RESP-01 y las demás evidencias históricas conservan la limitación. F-01 y CI-1169 quedan
+después CLOSED por [aprobación del propietario](#aprobaciones-del-propietario--2026-11-26).
+
 ## CI-1196 — Refresh concurrente — CORREGIDO (`e8c067146`); CI #1197 SUCCESS
 
 BUG REAL reproducido con la prueba HTTP focalizada y PostgreSQL efímero: dos respuestas 200 para el mismo token. Causa: la lectura
@@ -620,10 +678,14 @@ CI: #1196 (`f99332051`) FAILURE en `backend / Backend (api)`; el log del job no 
 aserción exacta no se confirmó y el defecto anterior es la causa atribuida por reproducción local. CI #1197 (`e8c067146`, incluye este
 arreglo y la Fase 3 de subcategorías) **SUCCESS** (confirmado en Actions por API sobre ese SHA).
 
-## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — FASES 1–3 PUBLICADAS; cierre documental (fase 4) en gate (2026-11-14)
+## EXPENSE-SUPPLIER-SUBCATEGORIES-01 — Proveedor ↔ subcategorías de Gastos — CLOSED (2026-11-26); fases 1–3 publicadas (2026-11-14)
 
 [Diseño](docs/decisions/EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (D1–D10 aprobadas; D4 completada, ver abajo).
 Comportamiento vigente en la SSOT [Gastos](docs/architecture/expenses.md); este registro solo lleva estado, gates y evidencia.
+
+**Cierre:** el propietario aprobó el cierre técnico y documental de la fase 4 el 2026-11-26
+([aprobaciones](#aprobaciones-del-propietario--2026-11-26)). No acredita E2E ni validación con API real; las
+limitaciones de abajo se conservan.
 
 | Fase | Commit (en `origin/main`) | CI | Alcance |
 |---|---|---|---|
@@ -758,7 +820,7 @@ lock de fila en la comprobación es un origen sin guard registrado (API genéric
 ADR-048 D5; una pausa mayor a 90 días expone los pendientes al error SRI [65] (visible en el log/gauge de antigüedad).
 Las pruebas `CompanyStateBypassAuditReproTests` y la L0 de F-03 siguen sin seguimiento y no forman parte de ningún gate.
 
-## CI-1169 — Conteo de controllers Windows/Linux — pendiente de revisión y gate del propietario
+## CI-1169 — Conteo de controllers Windows/Linux — CLOSED (2026-11-26; CI #1170 SUCCESS)
 
 BUG REAL reproducido sobre `AccountingController.cs` versionado en `c198fd3dc`: LF reconocía 118 líneas XML
 y 483 efectivas; CRLF, 307 XML y 294 efectivas (917 totales y 316 de `ProducesResponseType` en ambos).
@@ -768,7 +830,8 @@ Las tres regresiones nuevas fallaron antes del fix; después pasan las 30 prueba
 917 totales, 307 XML, 316 de atributos y 294 efectivas tanto en LF como en CRLF. Guardrail PowerShell
 completo y `npm.cmd run architecture:check` PASS (0 violaciones nuevas). Sin cambios de controllers,
 límites, baseline, grandfather ni funcionalidad por esta corrección.
-Publicado en `7be7d3a5df02bdee221dca692355b993b602de2d`, CI #1170 SUCCESS; pendiente gate del propietario, no CLOSED.
+Publicado en `7be7d3a5df02bdee221dca692355b993b602de2d`, CI #1170 SUCCESS. **CLOSED:** corrección técnica aceptada por
+el propietario el 2026-11-26 ([aprobaciones](#aprobaciones-del-propietario--2026-11-26)).
 
 ## API-DOC-V1 — Documentación Swagger/OpenAPI — PUBLICADO, CI #1176/#1177 SUCCESS; hallazgos independientes abiertos
 
@@ -891,7 +954,7 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 
 | ID | Ubicación | Hallazgo |
 |---|---|---|
-| API-DOC-F-01 | `IntegrationCompanyCreateRequest.BrandingJson` → `CreateIntegrationCompanyHandler` | Se entrega al parámetro `website` de `CreateManagedCompanyAsync`; posible cableado de posición incorrecto. |
+| API-DOC-F-01 | `IntegrationCompanyCreateRequest.BrandingJson` → `CreateIntegrationCompanyHandler` | Se entrega al parámetro `website` de `CreateManagedCompanyAsync`; posible cableado de posición incorrecto. **BUG REAL corregido y publicado en L3/C2, CI #1181 SUCCESS; CLOSED por el propietario (2026-11-26).** |
 | API-DOC-F-02 | `SuspendIntegrationCompany` / `ActivateIntegrationCompany` | Suspender solo cambia `OperationalStatus` y no `IsActive`; activar sí pone `IsActive=true`. Una empresa suspendida puede devolver `isActive=true`. **BUG REAL corregido y publicado en L3/C3 (`Activate` ya no toca `IsActive`), CI #1182 SUCCESS.** |
 | API-DOC-F-03 | `GET /api/v1/finance/collections/receivable/{id}` | Exige el permiso `ReverseCollection`, no uno de lectura. |
 | API-DOC-F-04 | `SupplierCredit` frente a `FinancePayments.RegisterCollection` | Un conflicto de idempotencia sale como 422 (`ValidationFailure`) en SupplierCredit y como 409 (`Conflict`) en cobros; criterio no uniforme. |
@@ -899,12 +962,12 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-06 | `SupplierPayments.Register` | El reintento idempotente responde 201 en lugar de 200. |
 | API-DOC-F-07 | `CashMovementReasons.Update` | Con id de ruta distinto al del cuerpo devuelve `BadRequest()` sin envelope; `CashRegister.Update` usa `ApiBadRequest` con envelope. No verificado en ejecución. |
 | API-DOC-F-08 | `CashSession.Close/RecordMovement/RecordBankDeposit` | Sesión ajena o cerrada responde 422, no 403. Contrato vigente documentado; confirmar si es intencional. |
-| API-DOC-F-09 | `IntegrationController.CreateCompany` | `NormalizeOfficial` rellena con ceros o trunca el RUC a 13 caracteres; un tercero puede no esperarlo. |
-| API-DOC-F-10 | Cierre anual (`GenerateFiscalYearClosingEntry`) y asientos manuales (`PERIOD_NOT_OPEN`, `MANUAL_FUTURE_DATE`, `ACCOUNTING_NOT_ENABLED`, `YEAR_END_CLOSING_*`, `FISCAL_YEAR_*`, `MANUAL_POST_INTERNAL`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: caen en el fallback BusinessRule y responden 400 (mensaje genérico «Unmapped response code» en cierre anual) en vez de 422; los demás fallos de negocio salen 422. Criterio de status no uniforme dentro del módulo. |
+| API-DOC-F-09 | `IntegrationController.CreateCompany` | `NormalizeOfficial` rellena con ceros o trunca el RUC a 13 caracteres; un tercero puede no esperarlo. **BUG REAL corregido y publicado en L3/C1, CI #1180 SUCCESS.** |
+| API-DOC-F-10 | Cierre anual (`GenerateFiscalYearClosingEntry`) y asientos manuales (`PERIOD_NOT_OPEN`, `MANUAL_FUTURE_DATE`, `ACCOUNTING_NOT_ENABLED`, `YEAR_END_CLOSING_*`, `FISCAL_YEAR_*`, `MANUAL_POST_INTERNAL`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: caen en el fallback BusinessRule y responden 400 (mensaje genérico «Unmapped response code» en cierre anual) en vez de 422; los demás fallos de negocio salen 422. Criterio de status no uniforme dentro del módulo. **BUG REAL corregido y publicado en B-MSG, CI #1185 SUCCESS** (residuo fuera de alcance en su sección). |
 | API-DOC-F-11 | `AccountingController.ReprocessPosting` | Un fallo contable de la obligación responde 200 (queda `Failed` en el cuerpo); solo «no pudo registrarse el resultado» responde 400 (`Failure` sin código). |
 | API-DOC-F-12 | Reglas de contabilización y períodos | `Enable`/`Disable` de reglas con estado repetido responde 409 (`Conflict`); las transiciones inválidas de períodos responden 422. Criterio no uniforme. |
 | API-DOC-F-13 | `AccountingController.GenerateAccountingFiscalYear` | Responde 200 aunque crea períodos (`ToOkOrBadRequest`, no `ToCreatedOrBadRequest`). |
-| API-DOC-F-14 | `ManualJournalController.Create` (reintento idempotente) | Devuelve siempre `Draft`, versión 1 y sin número, aunque el asiento ya se haya editado o publicado. |
+| API-DOC-F-14 | `ManualJournalController.Create` (reintento idempotente) | Devuelve siempre `Draft`, versión 1 y sin número, aunque el asiento ya se haya editado o publicado. **BUG REAL corregido y publicado en L2, CI #1179 SUCCESS.** |
 | API-DOC-F-15 | `ManualJournalController.Reverse` | La respuesta describe el asiento de reverso, no el original. |
 | API-DOC-F-16 | `ManualJournalController` | No declara `[Produces("application/json")]`, a diferencia del resto de controladores. |
 | API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. **Resuelto y publicado en B-SALES (paginación BUG REAL corregida; `status` KEEP), CI #1186 SUCCESS.** |
@@ -923,9 +986,9 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-30 | `ConfigurationChangeLog.GetChangeLog` | El repositorio limita `pageSize` a 1–200 pero la respuesta devuelve `page` y `pageSize` tal como se enviaron. |
 | API-DOC-F-31 | `CompanyPrecisionPolicy.Update` | Si la empresa ya tiene operaciones reales, el intento rechazado con 409 persiste el bloqueo de la política (efecto lateral en un rechazo). |
 | API-DOC-F-32 | `CommunicationsEmailSettings.SendTest` | Solo `SmtpException` y `TimeoutException` están mapeadas a 422; otros fallos de transporte no verificados podrían salir como 500. |
-| API-DOC-F-33 | `InitialLoad` (`INITIAL_LOAD_CLOSED`, `OPENING_*`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_SOURCE_CHANGED`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: responden 400 y no 422 (misma causa que F-10). |
+| API-DOC-F-33 | `InitialLoad` (`INITIAL_LOAD_CLOSED`, `OPENING_*`, `INITIAL_LOAD_CLOSE_BLOCKED`, `OPENING_SOURCE_CHANGED`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: responden 400 y no 422 (misma causa que F-10). **BUG REAL corregido y publicado en B-MSG, CI #1185 SUCCESS.** |
 | API-DOC-F-34 | `InitialLoad.Confirm`/`Validate`/`Upload` | «Lote no encontrado» dentro del bloqueo responde 422 (solo la primera comprobación da 404); los fallos inesperados usan `Failure` sin código (400); `Upload` sin archivo responde 400 `BAD_REQUEST` en vez de 422. |
-| API-DOC-F-35 | `ExpenseCategories.Update` | `UpdateExpenseCategoryNodeRequest` no incluye `isDeductible` ni `requiresInvoice`; el controller los deja en el valor por defecto `true` y `UpdateSubcategoryTaxRules` los fija en `true` en cada actualización de una subcategoría: un `PUT` revierte esos dos indicadores. |
+| API-DOC-F-35 | `ExpenseCategories.Update` | `UpdateExpenseCategoryNodeRequest` no incluye `isDeductible` ni `requiresInvoice`; el controller los deja en el valor por defecto `true` y `UpdateSubcategoryTaxRules` los fija en `true` en cada actualización de una subcategoría: un `PUT` revierte esos dos indicadores. **BUG REAL corregido y publicado en L1, CI #1178 SUCCESS** (fijar los indicadores por API sigue fuera de alcance). |
 | API-DOC-F-36 | `Expenses.CreateDraft`, `CreateConfirmed`, `UpdateDraft` | `CreateExpenseDraftRequest.Retention` se ignora en `CreateDraft` (solo se usa en `CreateConfirmed`); `receptionDocumentId` y `accessKey` se ignoran en `CreateConfirmed` aunque el cuerpo es el mismo tipo; `UpdateExpenseDraftRequest` no admite `accessKey`. |
 | API-DOC-F-37 | `Expenses.Cancel` | Con una retención ya autorizada por el SRI, el 200 puede significar «solicitud de anulación SRI registrada y el gasto sigue confirmado»; solo se distingue por el `code` del envelope (`AnnulmentRequested`). |
 | API-DOC-F-38 | `Expenses.Confirm`, `CreateConfirmed`, `Cancel` (retención) | Los fallos de emisión o anulación de la retención conservan su código (`ValidationFailure(error, code)`), así que el status real puede ser 400, 409 o 422 según esté catalogado el código. |
@@ -956,13 +1019,15 @@ documental aprobada en la Fase 2D (cinco respuestas `ApiResponse<object>`, sin c
 | Clasificación | Estado | Hallazgos |
 |---|---|---|
 | Defecto Swagger | Corregido | F-07, F-16, F-45, F-46, F-47, F-48, F-50 |
-| Problema funcional | Pendiente (F-02: BUG REAL corregido y publicado, CI #1182 SUCCESS; ver L3/C3) | F-01, F-02, F-03, F-09, F-10, F-14, F-17, F-18, F-30, F-31, F-33, F-34, F-35, F-41, F-49 |
+| Problema funcional | Corregido y publicado, CI #1178–#1182, #1185 y #1186 SUCCESS (ver bloques de resolución) | F-01, F-02, F-09, F-10, F-14, F-17, F-18, F-33, F-35 |
+| Problema funcional | Pendiente | F-03, F-30, F-31, F-34, F-41, F-49 |
 | Deuda técnica | Pendiente | F-04, F-05, F-06, F-08, F-11, F-12, F-13, F-15, F-19, F-21, F-22, F-23, F-25, F-26, F-27, F-28, F-29, F-36, F-37, F-38, F-39, F-40, F-42, F-43, F-44 |
 | Deuda técnica | Aceptado | F-52 |
 | Evidencia insuficiente | Requiere investigación | F-20, F-24, F-32 |
 | KEEP (decisión del propietario) | Documentado y publicado, CI #1187 SUCCESS (B-BP) | F-51 |
 
-Los 52 identificadores aparecen exactamente una vez (7 + 15 + 25 + 1 + 4). Residuos que **no** se cierran con la
+Los 52 identificadores aparecen exactamente una vez (7 + 9 + 6 + 25 + 1 + 3 + 1; estado de los problemas
+funcionales conciliado el 2026-11-26 con los bloques de resolución, sin cerrar API-DOC-V1). Residuos que **no** se cierran con la
 corrección documental: F-07 y F-48 conservan el `BadRequest()` sin envelope y F-47 el `BadRequest("ID mismatch.")` y el
 listado sin envelope (todos pendientes como deuda técnica); F-27 sigue sin envelope. Limitación registrada: bajo el
 mismo 400 de esas cuatro operaciones conviven el envelope (regla de dominio) y otro cuerpo (`ProblemDetails` en `application/json`
@@ -1024,11 +1089,11 @@ solo F-01; sin nuevas funciones de branding ni cambio estructural de v1.
 
 | Hallazgo | Clasificación | Estado | Evidencia |
 |---|---|---|---|
-| F-01 | BUG REAL | Publicado; **CI #1181 SUCCESS; pendiente gate del propietario** | `CreateIntegrationCompanyHandler` pasaba `request.BrandingJson` en la posición de `website` de `CreateManagedCompanyAsync`. Se elimina ese argumento (sin otro destino de persistencia) y `CreateIntegrationCompanyCommandValidator` rechaza un `brandingJson` no vacío ni solo espacios con **422** (`request.BrandingJson`), independiente de la validación del RUC (F-09). `brandingJson` se conserva en v1 pero no se admite su uso hasta definir su contrato. Antes: 9 de 15 casos de Application y 5 de 11 HTTP fallaban (el branding se guardaba o se rechazaba mal). Después: `IntegrationBrandingJsonTests` 15/15 y `IntegrationCompanyBrandingJsonHttpTests` 11/11 (HTTP + PostgreSQL real; 422 sin empresa creada, `Company.Website` nulo, 201 y 409 conservados); F-09 sigue en 30/30 y 12/12. |
+| F-01 | BUG REAL | **CLOSED** (2026-11-26, [aprobaciones](#aprobaciones-del-propietario--2026-11-26)); CI #1181 SUCCESS | `CreateIntegrationCompanyHandler` pasaba `request.BrandingJson` en la posición de `website` de `CreateManagedCompanyAsync`. Se elimina ese argumento (sin otro destino de persistencia) y `CreateIntegrationCompanyCommandValidator` rechaza un `brandingJson` no vacío ni solo espacios con **422** (`request.BrandingJson`), independiente de la validación del RUC (F-09). `brandingJson` se conserva en v1 pero no se admite su uso hasta definir su contrato. Antes: 9 de 15 casos de Application y 5 de 11 HTTP fallaban (el branding se guardaba o se rechazaba mal). Después: `IntegrationBrandingJsonTests` 15/15 y `IntegrationCompanyBrandingJsonHttpTests` 11/11 (HTTP + PostgreSQL real; 422 sin empresa creada, `Company.Website` nulo, 201 y 409 conservados); F-09 sigue en 30/30 y 12/12. |
 
 Contrato: el `422` de `POST /companies` (ya declarado por C1) añade `brandingJson` no vacío; remarks del endpoint y
 comentario de `Platform.Contracts.CompanyProvisionRequest` actualizados. Riesgo de datos históricos: pueden existir
-empresas con JSON en `website`; no se tocan datos. El branding real vive en `CompanyBranding`; incorporarlo al
+empresas con JSON en `website`; no se tocan datos y su revisión sigue pendiente. El branding real vive en `CompanyBranding`; incorporarlo al
 aprovisionamiento es `FALTA` y requiere un contrato nuevo. C3 (F-02) se resuelve como bloque independiente (abajo).
 
 ### Resolución de hallazgos F-01 a F-52 — bloque L3/C3 (F-02, Integración)
@@ -1279,12 +1344,20 @@ reales modificados: `DataEntry` conserva sus 126 permisos y los perfiles existen
 
 ## IAM-V1-F2 — Administración de perfiles, permisos y usuarios; visibilidad por permisos efectivos — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
 
+> **Marca 2026-11-26 — vigencia:** solo queda pendiente la aceptación del propietario; sin trabajo técnico. El uso de
+> `access.profiles.view` en escrituras es conforme al contrato vigente
+> ([contratos](docs/architecture/contracts.md)). La observación sobre reactivar un perfil sin la regla
+> anti-escalamiento queda **NO ACREDITADA** (no reproducida y fuera de las operaciones donde el contrato exige la
+> regla). IAM-V1-F3 sigue CLOSED. `DataEntry`: ELIMINADO.
+
 Autorizado por el propietario con ajustes (2026-11-10). Regla vigente:
 [Seguridad § administración de usuarios y perfiles](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)
 y [Security & Access Contract](docs/architecture/security.md#security--access-contract-v1--locked).
 Sin migraciones ni cambios en First Run, creación de empresas, modelo de roles, autorización,
 perfiles, permisos, usuarios ni datos: `DataEntry` conserva sus 126 permisos (verificado en
 `erp_zh_dev`, solo lectura). Fase 1 intacta.
+(Referencia histórica: superada por la eliminación del perfil `DataEntry`, confirmada por el propietario el
+2026-11-26.)
 
 - «Administrador de empresa» (`Role = Admin`) y «Usuario operativo» (`Role = User`) en Perfiles
   (tarjeta fija de la función, sin perfil representativo), lista y ficha de usuario; el perfil no
@@ -1345,7 +1418,8 @@ Sin migraciones, sin cambios en First Run, perfiles, `DataEntry`, permisos, cred
   existencia.
 - Diagnóstico previo de `facturador1` (sin cambios): su acceso a Usuarios es real y autorizado por
   los permisos actuales del perfil `DataEntry` de la base (126, ampliados por un Admin el
-  2026-11-04); decisión de datos pendiente del propietario.
+  2026-11-04); decisión de datos pendiente del propietario en esa fecha, **superada** por la eliminación del perfil
+  (confirmación del propietario del 2026-11-26).
 - Gate final de aislamiento (aprobado funcionalmente por el propietario): la actividad por entidad
   quedaba acotada solo por tenant; ahora exige empresa operativa validada y que la entidad
   pertenezca a ella (sin cambios de esquema ni de escritura de auditoría). Las nuevas pruebas de
@@ -1654,6 +1728,8 @@ Riesgos residuales:
   conciliación de comprobantes sin compra; sin `purchases.update` no concilian líneas de una compra
   ya registrada. Revisar perfiles antes de desplegar (consulta de solo lectura sobre
   `access_profile_permissions`).
+  Vigencia (2026-11-26): el único requisito es revisar los permisos **productivos** antes de habilitar producción. La
+  aceptación histórica local se retira como requisito independiente; no se acredita ninguna revisión local.
 - La pantalla de Compras (formulario de compra, fuera del alcance) no oculta las acciones de
   conciliación según el permiso; el servidor responde 403.
 - Contrato fail-closed de H1: un TXT sin la columna `IDENTIFICACION_RECEPTOR` se rechaza completo.
@@ -2234,7 +2310,13 @@ en 363 archivos; focales 139/139; TypeScript, ESLint, controles de arquitectura 
 PASS. Las seis pruebas obsoletas quedaron actualizadas sin cambiar la lógica funcional. Compras
 V1 continúa CLOSED y sus reglas no cambian.
 
-## UIUX-GLOBAL-ACTIONS-CLIENTS-01 — IMPLEMENTADO; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
+## UIUX-GLOBAL-ACTIONS-CLIENTS-01 — SUPERADO POR BP-CONSOLIDATION-01 (2026-11-26); publicado en 4ab84b0ba, CI #1106 SUCCESS (2026-11-06)
+
+> Conciliación 2026-11-26 (GitHub Actions consultado por API): publicado en `4ab84b0ba`,
+> [CI #1106 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42223667591). Esto supera «Sin staging/commit/push». El CI frontend no ejecuta Vitest.
+> Decisión del propietario (2026-11-26, [aprobaciones](#aprobaciones-del-propietario--2026-11-26)): **superado por
+> [BP-CONSOLIDATION-01](#bp-consolidation-01--business-partners--clientes-y-proveedores--completada--closed-2026-11-15)**;
+> la fila y el menú descritos abajo son históricos y no se registra aceptación visual de esa interfaz.
 
 Bloque 2 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#11-seguimiento-uiux-global-actions-clients-01-bloque-2--clientes-2026-11-06):
 la fila de Clientes muestra Ver y Editar (con permiso) y agrupa Empresa, Clasificación, Agregar
@@ -2260,7 +2342,11 @@ dejaba Ver/Editar/«⋯» en 1.9:1; corrección acotada a Clientes (opacidad 1 y
 de inactivo. Regla global y Proveedores sin cambios. Revalidado a 320/390/768/1440 px sin scroll,
 recortes ni pérdida de foco. `PurchaseFormFeedback` mantiene su fallo preexistente (no tocado).
 
-## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 2 FRONTEND IMPLEMENTADA; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
+## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 2 FRONTEND PUBLICADA: commit bfc69e5d6, CI #1105 SUCCESS (intento 2); pendiente gate del propietario (2026-11-06)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada en `bfc69e5d6`,
+> [CI #1105](https://github.com/szhinin89/erp-saas/actions/runs/42218006484): intento 1 `failure` en `Backend (infrastructure-06)`, causa no determinada;
+> intento 2 `success`. Sigue pendiente el gate del propietario; el flujo completo no está CLOSED.
 
 Filtro, estado y activación de imágenes conectados al endpoint existente; contrato en
 [Ítems](docs/architecture/items.md#imágenes-estado-y-recuperación-de-registros).
@@ -2277,7 +2363,11 @@ Sin suites funcionales generales ni SRI; sin nuevas pruebas backend/PostgreSQL e
 Flujo completo NO CLOSED: pendiente de gate del propietario, revisión y consolidación Git/CI
 del frontend. Sin staging/commit/push.
 
-## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 1 BACKEND APROBADA TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
+## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 1 BACKEND APROBADA TÉCNICAMENTE; PUBLICADA: commits afb0dba12 + a2889eb80, CI #1104 SUCCESS (2026-11-06)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada. `afb0dba12` tuvo
+> [CI #1103 FAILURE](https://github.com/szhinin89/erp-saas/actions/runs/42212270113); `a2889eb80` asignó las pruebas a su shard y obtuvo
+> [CI #1104 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42214695221). Se conservan ambos resultados. El flujo completo depende de la Etapa 2.
 
 Endpoint y coordinación transaccional de reactivación/desactivación/reemplazo implementados.
 Contrato único en [Ítems](docs/architecture/items.md#imágenes-estado-y-recuperación-de-registros).
@@ -2295,7 +2385,10 @@ Gate PostgreSQL real del propietario: 11/11 PASS, cero omitidas, exit code 0; ap
 técnica recibida el 2026-11-06. No se repitieron las pruebas para preparar la consolidación.
 No CLOSED: pendiente de staging selectivo y commit del propietario y consolidación Git/CI.
 
-## FUNC-DEACTIVATION-CONFIRM-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
+## FUNC-DEACTIVATION-CONFIRM-01 — CORRECCIÓN TÉCNICA APROBADA; PUBLICADA: commit de835b03e, CI #1102 SUCCESS (2026-11-06)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada en `de835b03e`,
+> [CI #1102 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42170231927). Esto supera el pendiente Git/CI descrito abajo.
 
 Corrige AA-D5 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#10-seguimiento-func-deactivation-confirm-01-aa-d5-2026-11-06):
 Desactivar en Marcas/Grupos/Definiciones de atributo (`useCatalogCrud`), Tipos de ítem, Cajas y
@@ -2316,7 +2409,10 @@ Cajas, páginas/formulario de Ítems y `ItemEditorModal.update`; 16 archivos) 12
 ESLint focal; `architecture:check` (0 violaciones nuevas, `i18n-keys` PASS), guardrail oficial
 `-SkipFrontendChunk` y `git diff --check` PASS. Datos ficticios.
 
-## FUNC-PARTNER-ROLE-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+## FUNC-PARTNER-ROLE-01 — CORRECCIÓN TÉCNICA APROBADA; PUBLICADA: commit caf631239, CI #1101 SUCCESS (2026-11-05)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada en `caf631239`,
+> [CI #1101 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42167493539). Esto supera el pendiente Git/CI descrito abajo.
 
 Corrige AA-D1 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md):
 «+ Proveedor» (Clientes, `MasterDataPartnerListTab`) y «Asignar como cliente» (Proveedores,
@@ -2333,7 +2429,10 @@ rol, inactivo, con/sin permiso, error del backend sin falso refresco y demás ac
 `tsc -b`; ESLint focal; `architecture:check` (0 violaciones nuevas), guardrail oficial
 `-SkipFrontendChunk` y `git diff --check` PASS. Sin operaciones sobre datos reales.
 
-## UIUX-GLOBAL-KPI-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+## UIUX-GLOBAL-KPI-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PUBLICADO: commit bdf8a7694, CI #1100 SUCCESS (2026-11-05)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada en `bdf8a7694`,
+> [CI #1100 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42162187329). Esto supera el pendiente Git/CI descrito abajo. La decisión sobre el manifiesto temporal citado abajo no se concilia aquí.
 
 Aprobación visual del propietario registrada el 2026-11-05: Proveedores a 960 px con tres KPI en
 una fila; Clientes a 390 px con KPI horizontales compactos; Stock a 540 px con KPI compactos de
@@ -2371,7 +2470,10 @@ demostrar que no se alteraban. Hoy 9 coinciden y 8 difieren por commits posterio
 (`d7b07f6c8` en adelante); ya no protege trabajo sin commit. Eliminación pendiente de decisión
 del propietario.
 
-## UIUX-GLOBAL-TABS-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+## UIUX-GLOBAL-TABS-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PUBLICADO: commit a07ea2090, CI #1099 SUCCESS (intento 2) (2026-11-05)
+
+> Conciliación 2026-11-26: consolidación Git/CI completada en `a07ea2090`,
+> [CI #1099 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/42156824013). Esto supera el pendiente Git/CI descrito abajo. El intento 1 fue `failure` en `Backend (infrastructure-08)`, causa no determinada.
 
 Aprobación visual final del propietario registrada el 2026-11-05 (pestañas del detalle de
 Sucursal Principal a 393 px). Pendiente de staging selectivo, commit y CI.
@@ -2413,6 +2515,9 @@ precios con seis pestañas se registra aparte (UIUX-PRICELISTS-TABS-OVERFLOW).
 
 ## UIUX-PRICELISTS-TABS-OVERFLOW — REGISTRADO, SIN CORREGIR (2026-11-05)
 
+> **Marca 2026-11-26 — RESUELTO (técnico):** corregido técnicamente en `102047c0c` (desplazamiento de `ZHTabBar` hasta 768 px,
+> ZH-DS-TABBAR-RESPONSIVE-01); **sin validación visual** de esta pantalla.
+
 Hallazgo preexistente detectado en la validación de UIUX-GLOBAL-TABS-DEFAULT-01, fuera de su
 alcance: en Listas de precios (`/products/pricing`, `PriceListsPage`) al editar una lista la
 barra tiene seis pestañas (Resumen, Listado, Editar Lista, Productos de la lista, Excepciones,
@@ -2423,6 +2528,8 @@ vista sin scroll visible (la página no desborda). Idéntico antes y después de
 permisos ni navegación por teclado. Pendiente de decisión y alcance propios del propietario.
 
 ## UIUX-PERMISSIONS-HEADER-390 — REGISTRADO, SIN CORREGIR (2026-11-05)
+
+> **Marca 2026-11-26 — RESUELTO (técnico):** corregido técnicamente en `baebc48bb` (barra en columna hasta 640 px); **sin validación visual** de esta pantalla.
 
 Hallazgo preexistente detectado en la validación de UIUX-GLOBAL-HEADER-DEFAULT-01, fuera de su
 alcance: en Asignación de permisos (`/admin/permissions`, `PermissionsAssignmentPage`) a 390 px la
@@ -2478,7 +2585,13 @@ presentación aprobada. Vitest focal (PageShell, AppLayout, Clientes, Proveedore
 Flujos documentales) 56/56, `tsc -b`, ESLint focal, `architecture:check`, guardrail oficial,
 Stack Audit y `git diff --check` PASS.
 
-## UIUX-GLOBAL-ARCHITECTURE-02 — PLAN APROBADO; BLOQUE 1 CERRADO (CI #1098); BLOQUE 2 APROBADO, PENDIENTE DE GIT/CI (2026-11-05)
+## UIUX-GLOBAL-ARCHITECTURE-02 — PLAN APROBADO; BLOQUES 1–3 PUBLICADOS (CI #1098–#1100); BLOQUES 4–5 PENDIENTES (2026-11-05)
+
+> **Marca 2026-11-26 — FUTURO:** los bloques 4–5 pasan al [ROADMAP](docs/ROADMAP.md#ampliaciones-trasladadas-desde-la-cola-v1);
+> sin autorización de implementación.
+
+> Conciliación 2026-11-26: bloque 2 publicado en `a07ea2090` (CI #1099 SUCCESS, intento 2) y bloque 3 en
+> `bdf8a7694` (CI #1100 SUCCESS). Esto supera sus pendientes Git/CI descritos abajo. Bloques 4–5 sin cambios.
 
 Planificación para aplicar por defecto las mejoras aprobadas del DS (encabezado compacto,
 tres pestañas responsive, KPI simples horizontales, identidad y acciones de Clientes), con
@@ -2743,6 +2856,10 @@ Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
 ## NAV-COVERAGE-FINAL-REVIEW-01 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `83da017b3`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola. La discrepancia
+> documental sobre `canShow` está RESUELTA: Seguridad describe hoy el contrato fail-closed (IAM-V1-F2).
+
 Revisión documental e integridad del conjunto NAV-CONSOLIDATION-A01, H1–H4, corrección CI y
 SECURITY-PRECISION-POLICY-01; sin cambios funcionales. [MENU_MAP](docs/navigation/MENU_MAP.md)
 sincronizado con `Kernel/Modules/*.cs` (96 NavItems, 12 módulos, sin huérfanos ni rutas
@@ -2778,6 +2895,9 @@ Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: 
 aprobación del propietario.
 
 ## NAV-COVERAGE-H4 — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `83da017b3`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
 
 Causa: `isRouteAllowed` decide por primer segmento; un redirect legacy cuyo segmento difiere del
 destino y no está en `LEGACY_REDIRECT_PREFIXES` mostraba `NoAccessPage` antes de montar su
@@ -2825,7 +2945,14 @@ cualquier NavItem de Tesorería (preexistente, la API sigue siendo la autoridad)
 Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: aprobación
 técnica registrada; cierre pendiente del propietario.
 
-## SECURITY-PRECISION-POLICY-01 — READY FOR REVIEW (2026-11-04)
+## SECURITY-PRECISION-POLICY-01 — Protección del PUT: gate CLOSED (2026-11-26)
+
+> **Gate de la protección técnica CLOSED** por el propietario el 2026-11-26
+> ([aprobaciones](#aprobaciones-del-propietario--2026-11-26)), con las limitaciones de las pruebas. Publicada en
+> `03c627514`, incluido en `83da017b3` con
+> [CI #1092 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/41951474908). Verificado hoy en
+> [CompanyPrecisionPolicyController](backend/src/ERP.API/Controllers/CompanyPrecisionPolicyController.cs): el PUT
+> exige `perm:erp.companies.update`. No se repitieron pruebas.
 
 Confirmado: `PUT /api/v1/config/precision-policy` solo heredaba el `[Authorize]` de clase
 (cualquier sesión con tenant podía escribir); ni handler ni pipeline validaban permiso.
@@ -2841,10 +2968,14 @@ de `perm:*`, policies del controller; sin HTTP ni BD): PUT denegado sin permisos
 `erp.companies.view` y con ambas lecturas, permitido con `erp.companies.update`; GET y metadata
 permitidos sin permisos. `CompaniesApiSurfaceSnapshotTests` **3/3**,
 `CompanyPrecisionPolicyUseCasesTests` **24/24**, `architecture:check` **PASS**.
-Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: pendiente
-revisión del propietario.
+Sin migraciones, SRI, suites generales, staging, commit ni push. (Registro del 2026-11-04: «No CLOSED»; superado
+por el cierre del 2026-11-26, limitado a la protección del PUT.)
 
 ## NAV-COVERAGE-H2 — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `83da017b3`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola. El hallazgo del PUT de
+> precisión está RESUELTO (protección CLOSED).
 
 Decisión del propietario: `settings.company.view` y `erp.companies.view` siguen siendo
 capacidades independientes. La entrada Datos de la empresa se muestra con cualquiera
@@ -2880,6 +3011,9 @@ permisos, no autorización HTTP.
 Hallazgos para el propietario (sin corregir): `PUT /config/precision-policy` solo exige
 autenticación (la UI exige `erp.companies.update`); security.md describe
 `canShow` como shim "siempre true", desactualizado frente al código.
+Conciliación 2026-11-26: la protección del PUT quedó corregida después en
+[SECURITY-PRECISION-POLICY-01](#security-precision-policy-01--protección-del-put-gate-closed-2026-11-26); el hallazgo anterior es
+histórico y el gate de esa protección está CLOSED. H2 sigue sin cierre.
 Fase A y H3 preservados; sin migraciones, SRI, suites generales, staging, commit ni push.
 **H2 no CLOSED**: pendiente revisión final del propietario.
 
@@ -2888,6 +3022,9 @@ junto a `CompanySettingsMenuVisibilityTests`; `backend_tests.py --verify-only` *
 (209 casos, sin pruebas sin asignar ni duplicadas). Solo cambia el manifiesto.
 
 ## NAV-COVERAGE-H3 — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `83da017b3`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
 
 BUG REAL reproducido con el filtro real de `NavigationBuilder`: `finance.view` sin
 `purchases.view` mostraba el agrupador operativo de Compras sin hijos. La prueba de
@@ -2915,6 +3052,9 @@ git status --short
 ```
 
 ## NAV-CONSOLIDATION-A01 — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `83da017b3`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
 
 Consolidación solicitada de los cuatro accesos duplicados a Preferencias Operativas;
 árbol vigente en [MENU_MAP](docs/navigation/MENU_MAP.md). Se retiran también los
@@ -3113,6 +3253,8 @@ git diff --check
 
 ## CI-1087-PR7 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — RESUELTO:** publicado en `a84a0aeb9`, cubierto por CI #1094 SUCCESS.
+
 Extracción exclusiva de pruebas de Ventas: `SalesPage.moneyValues.test.tsx` queda en
 545/597 líneas no vacías y `SalesPage.ride.test.tsx` en 527/533. Los archivos nuevos
 `SalesPage.discountConsistency.test.tsx` (316) y `SalesPage.electronicStatus.test.tsx`
@@ -3162,6 +3304,9 @@ git diff --check
 
 ## PURCHASE-RETENTION-ENVIRONMENT-01 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `a84a0aeb9`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola. Sin validación visual.
+
 FALTA de presentación resuelta: reutilización del banner global en la configuración de
 retención del borrador de Compra. Contrato en
 [banner electrónico](docs/frontend/ELECTRONIC_ENVIRONMENT_BANNER.md#reutilización).
@@ -3183,6 +3328,9 @@ git diff --check
 
 ## COMPANY-FISCAL-HELP-01 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `19a9c5064`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola. Sin validación visual.
+
 BUG REAL corregido: dependencia visual de retenciones respecto de comercio exterior.
 KEEP: bindings, payload y persistencia actuales. Ayuda fiscal bilingüe incorporada
 con los componentes existentes; contrato en
@@ -3202,6 +3350,9 @@ git diff --check
 ```
 
 ## SALES-ELECTRONIC-STATUS-CLARITY-01 — estado de la venta vs. estado SRI — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `19a9c5064`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola. Sin validación visual.
 
 Solo presentación, más una lectura aditiva: Ventas muestra el estado comercial `Authorized` como
 «Confirmada» y, en una columna o etiqueta separada, el estado SRI real (`Draft` = «Sin emitir»;
@@ -3300,6 +3451,9 @@ git diff --check
 
 ## V1-LANG-FINANCE-ACCOUNTING-01 — bloque acumulado — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — RESUELTO:** los pendientes de capacidades V1 de este bloque quedaron cubiertos por las
+> aprobaciones registradas (indicador funcional 75/75). No acredita producción.
+
 Alcance autorizado: Navigation-03, Finance-05/06 y Accounting-05/06/07/08. Se conservan
 todos los cambios locales y las aprobaciones anteriores. Base CI #1084 SUCCESS aportada
 por el propietario; R2/R4 y las pruebas previas se reutilizan exclusivamente para sus
@@ -3362,6 +3516,9 @@ i18n-keys, frontend-precision y documentación PASS; cálculo focal **6/6 PASS**
 tras su única regeneración final. Estado exacto Git y resultados en la entrega del bloque.
 
 ## V1-INTERNAL-SOLUTIONS-01 — bloque acumulado — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — RESUELTO:** los pendientes de capacidades V1 de este bloque quedaron cubiertos por las
+> aprobaciones registradas (indicador funcional 75/75). No acredita producción.
 
 > Su pendiente Navigation-03 queda resuelto por V1-LANG-FINANCE-ACCOUNTING-01. Evidencia
 > del ciclo anterior conservada; no se sustituyen sus cinco aprobaciones.
@@ -3440,6 +3597,9 @@ src/components/zh/InternalCapabilities.visual.test.tsx` (el visual requiere acce
 
 ## V1-INTERNAL-CLOSE-01 — bloque interno 1 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — RESUELTO:** los pendientes de capacidades V1 de este bloque quedaron cubiertos por las
+> aprobaciones registradas (indicador funcional 75/75). No acredita producción.
+
 > Evidencia del ciclo anterior preservada. Estado posterior de sus seis pendientes:
 > [bloque acumulado](#v1-internal-solutions-01--bloque-acumulado--ready-for-review-2026-11-04).
 
@@ -3506,6 +3666,9 @@ no acredita cierre de las seis pendientes ni GO de producción.
 
 ## V1-EVIDENCE-CLOSE-01 — cierre por evidencia PASS + corrección CI #1083 — READY FOR REVIEW (2026-11-04)
 
+> **Marca 2026-11-26 — RESUELTO:** los pendientes de capacidades V1 de este bloque quedaron cubiertos por las
+> aprobaciones registradas (indicador funcional 75/75). No acredita producción.
+
 **BUG REAL CI #1083:** `ratchet.test.mjs` (Architecture guardrails) fallaba porque
 [Caso #20](#caso-20--closed-integral-por-aprobación-del-propietario-2026-11-03) enlazaba
 como Markdown tres `.trx` de `.local/caso20-results/`, no versionados. Ahora son rutas de
@@ -3537,6 +3700,9 @@ Resultado: 51/70 capacidades V1 (72.86 %); Core 34/43 (79.07 %). Focales: `ratch
 suites generales, staging, commit ni push.
 
 ## DASHBOARD-V1-FINAL — READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — SUPERADO:** por las regeneraciones posteriores del Dashboard; el avance funcional vigente es
+> 75/75.
 
 BUG REAL: el dibujo no calculaba avance funcional verificable. KEEP: las once tarjetas,
 CSS, posiciones, flechas, conexiones, navegación y detalle existentes; sin código ERP.
@@ -3571,6 +3737,8 @@ git diff --check
 
 
 ## DASHBOARD-FIX-02 - READY FOR REVIEW (2026-11-04)
+
+> **Marca 2026-11-26 — SUPERADO:** por las regeneraciones posteriores del Dashboard.
 
 BUG REAL documental: Web ERP, Servicios Core y sus fichas mostraban porcentajes
 manuales historicos sin formula verificable. Sustituidos por CLOSED o PENDIENTE
@@ -3616,6 +3784,9 @@ git diff --check
 Sin staging, commit ni push; gate del propietario pendiente, no CLOSED.
 
 ## CUSTOMER-SALES-SETTINGS-UX-FIX-01 — READY FOR REVIEW (2026-11-03)
+
+> **Marca 2026-11-26 — SUPERADO:** el modal fue retirado por BP-CONSOLIDATION-01 (CLOSED); las condiciones de
+> ventas se administran en la ficha del cliente. No se registra aceptación de la interfaz original.
 
 BUG REAL: `saveSettings()` iniciaba `openSettings()` sin esperarlo; su respuesta
 restablecía el modal después del cierre. Eliminada esa recarga automática;
@@ -3730,6 +3901,14 @@ PENDING, pendientes de validación o «no CLOSED» de Compras. Esos registros co
 el estado y la evidencia de su fecha; no representan trabajo funcional abierto.
 No reauditar ni rediseñar salvo BUG REAL directamente relacionado.
 
+Conciliación 2026-11-26: este cierre no cubre entregas posteriores. Siguen pendientes y separados: la validación
+de «Nueva compra» con API real, sesión autenticada y XML real
+([rediseño](#purchases-new-tab-redesign-01--compras-v1-rediseño-visual-aprobado-de-nueva-compra-y-extracción-de-componentes--publicado-en-04619c611-ci-1209-success-validación-con-api-real-y-xml-real-pendiente-2026-11-15);
+la aprobación de su diseño no acredita esa aceptación), el gate visual de
+[PURCHASE-RETENTION-ENVIRONMENT-01](#purchase-retention-environment-01--ready-for-review-2026-11-04) y los pendientes
+de Compras de la [cola](docs/agent/WORK_QUEUE.md). La incidencia `Test8_D` (`OriginFinalized`) sigue con causa raíz
+NO CONFIRMADA.
+
 Conciliación documental:
 
 - **BUG REAL documental:** retirados de WORK_QUEUE los plazos XML/cuotas y las promociones
@@ -3784,6 +3963,10 @@ git diff --check
 
 ## SRI-TOGGLE-08 — gate final de SRI-TOGGLE-06/07 — PASS agente, listo para gate del propietario (2026-11-02)
 
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-05 (pausa de emisión) fue
+> aprobada por el propietario el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). El gate pendiente descrito abajo queda superado para esa
+> capacidad; resultados y límites se conservan, sin acreditar producción ni SRI real.
+
 PostgreSQL afectado 300/300 (interruptor, candidatos, recuperación y anulaciones de retenciones/gastos, reclamos,
 SRI incierto, retransmisión corregida, decoradores y XML de proveedores). Architecture 145/145, `architecture:check`
 140/140, `tsc -b` y `git diff --check` limpios. Sin cambios en XML, XAdES, firma, SOAP, migraciones, secuenciales ni
@@ -3799,6 +3982,10 @@ este alcance; no se corrigieron. Los 6 deterministas se resolvieron después en
 [B-02](#b-02--pruebas-obsoletas-de-compras-actualizadas--closed-2026-11-06).
 
 ## SRI-TOGGLE-07 — pausa total sin excepciones y corte garantizado — READY FOR REVIEW (2026-11-02)
+
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-05 (pausa de emisión) fue
+> aprobada por el propietario el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). El gate pendiente descrito abajo queda superado para esa
+> capacidad; resultados y límites se conservan, sin acreditar producción ni SRI real.
 
 Con `electronic_documents.emission_enabled=false` tampoco se descarga XML de proveedores (422
 `ELECTRONIC_DOCUMENT_EMISSION_DISABLED`, el comprobante sigue Importado), ni se verifica la vigencia de NC de proveedor
@@ -3819,6 +4006,10 @@ Dashboard regenerado.
 
 ## SRI-TOGGLE-06 — pausa total de la emisión electrónica por empresa — READY FOR REVIEW (2026-11-02)
 
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-05 (pausa de emisión) fue
+> aprobada por el propietario el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). El gate pendiente descrito abajo queda superado para esa
+> capacidad; resultados y límites se conservan, sin acreditar producción ni SRI real.
+
 `electronic_documents.emission_enabled` en OFF bloquea toda llamada al SRI sobre comprobantes propios de la empresa:
 transmisiones, reintentos, consultas de autorización manuales y automáticas, historial R12, retransmisiones,
 ConsultaComprobante (anulaciones de retención) y los jobs (reintentos y polling de anulaciones filtran en SQL en todo
@@ -3838,6 +4029,10 @@ fallo era la siembra de un test nuevo, corregida); frontend `tsc -b`, lint, vite
 
 ## SRI-TOGGLE-04 — reanudación automática solo con actividad posterior a la habilitación — READY FOR REVIEW (2026-11-02)
 
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-05 (pausa de emisión) fue
+> aprobada por el propietario el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). El gate pendiente descrito abajo queda superado para esa
+> capacidad; resultados y límites se conservan, sin acreditar producción ni SRI real.
+
 Cierra sin migración las ventanas de Retenciones y de la recuperación de Ventas, incluida la re-habilitación entre
 precheck e INSERT del Draft; sustituye los parches de SRI-TOGGLE-03. La decisión automática usa el último intento o el
 instante persistido del origen (`UpdatedAt` de autorización/emisión), nunca la creación del comprobante; lecturas y
@@ -3847,6 +4042,10 @@ Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#
 XML/XAdES/SOAP/secuencias, SRI real, commit ni push. Pendiente gate del propietario.
 
 ## SRI-TOGGLE-02 — emisión electrónica habilitable por empresa — READY FOR REVIEW (2026-11-02)
+
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-05 (pausa de emisión) fue
+> aprobada por el propietario el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). El gate pendiente descrito abajo queda superado para esa
+> capacidad; resultados y límites se conservan, sin acreditar producción ni SRI real.
 
 FALTA implementada con intervención FROZEN autorizada y limitada al control: `electronic_documents.emission_enabled`
 (org_settings, scope Company, auditado, **ausente = deshabilitada**) en Preferencias operativas
@@ -3882,6 +4081,9 @@ Pruebas. XML, XSD, XAdES y SOAP verificados conformes; diagnóstico de bloqueo e
 discriminante autorizada por el propietario y reporte al SRI.
 
 ## Salud técnica SRI centralizada — READY FOR REVIEW (2026-11-01)
+
+> Conciliación 2026-11-26 — registro histórico: la capacidad ElectronicDocuments-06 fue aprobada por el propietario
+> el 2026-11-04 en [V1-EVIDENCE-CLOSE-01](#v1-evidence-close-01--cierre-por-evidencia-pass--corrección-ci-1083--ready-for-review-2026-11-04). La aprobación pendiente descrita abajo queda superada; las limitaciones se conservan.
 
 FALTA implementada: estado técnico único de Recepción y Autorización SRI por ambiente (Disponible, Lento,
 Intermitente, No disponible, Sin verificar), con motivo y última observación. Monitor en memoria por host+servicio
@@ -3991,6 +4193,9 @@ git diff --check
 
 ## Consolidación de migraciones EF — migración única — READY FOR REVIEW (2026-11-01)
 
+> **Marca 2026-11-26 — SUPERADO:** el esquema vigente es la única `InitialProductionBaseline`
+> (`20261101012214`).
+
 Base `main@8ded8783e`. Decisión del propietario: las 4 migraciones (`20261021162651_InitialProductionBaseline`,
 `…_PhysicalDocumentAuthorization`, `…_IssuerFiscalDesignations`, `…_CorrectedRetransmission`) se sustituyen por la
 única `20261101012214_InitialProductionBaseline` + ModelSnapshot regenerado; los objetos raw SQL (Up y Down) se
@@ -4006,6 +4211,10 @@ contiene datos (1 tenant, 2 empresas, 7 ventas, 4 compras) y una cadena anterior
 Sin producción, suites completas, staging, commit ni push. No CLOSED.
 
 ## SRI 2.34 R12 Fase B — corrección y retransmisión 01/04/07 — READY FOR REVIEW (2026-10-31)
+
+> Conciliación 2026-11-26: el estado del encabezado es histórico. La capacidad ElectronicDocuments-07 fue aprobada
+> por el propietario el 2026-11-04 con SRI simulado (ED-V1-CLOSE-07, abajo). La aceptación real en `celcer` de un
+> reenvío corregido es evidencia futura, no requisito V1.
 
 Base `main@6505e5734`. Única salida de `Rejected`: comando explícito del Monitor (permiso
 `electronic-documents.retransmit-corrected`, motivo, clave de idempotencia) para errores del archivo
@@ -4103,6 +4312,9 @@ emisión SRI, staging, commit o push. Pendiente gate/revisión del propietario; 
 
 ## F-1..F-5 — corrección final: captura acotada y Régimen General — READY FOR REVIEW (2026-10-30)
 
+> **Marca 2026-11-26 — PUBLICADO:** publicación confirmada en [P0 instalación limpia](#p0-instalación-limpia--ready-for-review-2026-10-31);
+> sin aceptación del propietario registrada; no es trabajo abierto en la cola.
+
 1. Numeración física: el rango autorizado se comprueba bajo el lock de Secuencias Documentales
    (sobrecarga `CaptureNextAsync(…, authorizedRanges)`, [extensión](docs/architecture/frozen-infrastructure.md#secuencias-documentales));
    prueba de concurrencia real PostgreSQL (12 consumidores por el último número: uno lo obtiene, ninguno lo supera;
@@ -4113,6 +4325,9 @@ emisión SRI, staging, commit o push. Pendiente gate/revisión del propietario; 
 Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push.
 
 ## F-1..F-5 — política fiscal de emisión física — READY FOR REVIEW (2026-10-30)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicación confirmada en [P0 instalación limpia](#p0-instalación-limpia--ready-for-review-2026-10-31);
+> sin aceptación del propietario registrada; no es trabajo abierto en la cola.
 
 Política propietaria `IPhysicalEmissionRequirementsValidator` (Company), integrada en la apertura de caja,
 Readiness y el gate de autorización de ventas antes de `CaptureNextAsync`; SSOT:
@@ -4131,6 +4346,9 @@ política física real), Architecture.Tests 143; frontend vitest 31 + 51, `tsc -
 Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push.
 
 ## CI 2B-3 — corrección focal PR-7 — READY FOR REVIEW (2026-10-30)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `2e0977ec5`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
 
 Clasificación: BUG REAL del gate en `598941f6f` (CI `41151151161`); KEEP comportamiento
 y cobertura de [2B-3](docs/architecture/company-readiness.md#habilitación-preventiva-de-cajas-apertura-de-jornada).
@@ -4152,6 +4370,9 @@ F-1 a F-5 en la entrada superior.
 
 ## BUG REAL — diagnóstico de certificado SRI — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
 
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `d0ed35c4f`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
+
 `ValidateSriConfigurationQueryHandler` podía devolver `IsValid=true` con certificado
 instalado y contraseña ausente: omitía el control de contraseña. La corrección agrega
 el control obligatorio `certificatePassword=false` en ese caso; contrato vigente en
@@ -4170,6 +4391,9 @@ reales ni secretos, suites generales, migraciones, configuración operativa, sta
 commit ni push. Pendiente commit/CI; no CLOSED.
 
 ## BUG REAL — recuperación de notas de crédito — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
+
+> **Marca 2026-11-26 — PUBLICADO:** publicado en `4cdf8cac1`, cubierto por CI #1094 SUCCESS sobre `d7b07f6c8`. Sin
+> aceptación del propietario registrada para esta entrega; no es trabajo abierto en la cola.
 
 Una devolución autorizada con número definitivo de nota de crédito, pero sin
 `ElectronicDocument`, no era recuperada automáticamente: `SalesElectronicDocumentRecovery`
@@ -4318,6 +4542,9 @@ y desde frontend: `npx.cmd vitest run src/modules/purchases/hooks/usePurchasesPa
 
 ## Modal Editar empresa — IMPLEMENTADO — PENDIENTE VALIDACIÓN VISUAL DEL PROPIETARIO (2026-10-29)
 
+> **Marca 2026-11-26 — SUPERADO:** por COMPANY-ADMIN-CONSOLIDATION-01 (CLOSED, CI #1151). No se registra
+> aceptación visual de esta entrega.
+
 BUG REAL de composición: campos sin `ZHGrid` y botones dentro del cuerpo, fuera del footer
 oficial. Adaptado a `ZHGrid`, `ZHField`, `ZhTextInput`, checkbox compartido y `footer` de
 `ZHModal`, con Guardar asociado al formulario y acciones deshabilitadas durante el envío.
@@ -4402,6 +4629,9 @@ ALPINA continúa bloqueada en la carga por tablas ausentes según lo anterior. D
 pendiente de validación manual del propietario con la regla vigente de conciliación.
 
 ## Caso #32 — IMPLEMENTADO — V1 APROBADO (2026-11-04)
+
+> Conciliación 2026-11-26: ElectronicDocuments-04 está aprobada (ED-V1-CLOSE-04, al final de esta sección). La
+> frase de D3 sobre su aprobación pendiente corresponde a un momento anterior; D1/D2 no se reabren.
 
 Validación integrada focal de recuperación y conciliación de respuestas inciertas del SRI.
 Clasificación: **KEEP** implementación existente; cobertura de integración faltante incorporada.
