@@ -1,9 +1,9 @@
 ﻿{
-    "Generated":  "2026-11-26 17:09:46",
+    "Generated":  "2026-11-26 18:30:45",
     "Architecture":  100,
     "ModuleHealth":  79.82,
-    "Quality":  6.9,
-    "Security":  0.8,
+    "Quality":  46.2,
+    "Security":  30,
     "Dependencies":  100,
-    "Overall":  55.49
+    "Overall":  69.19
 }

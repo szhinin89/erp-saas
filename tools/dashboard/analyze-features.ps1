@@ -20,6 +20,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -85,6 +87,9 @@ function ToFeatureName($rawName)
 
 $modulesData = @(LoadJson "modules.json")
 
+$featureScopes = @("backend/src/ERP.Application/Modules", "backend/src/ERP.Domain/Modules")
+Register-SourcePopulation $ProjectRoot "analyze-features" $featureScopes @("*") @(Get-SourceFiles $ProjectRoot $featureScopes)
+
 
 Write-Host "Modules to analyze: $($modulesData.Count)"
 
@@ -102,14 +107,18 @@ foreach($module in $modulesData)
     $features = @()
     $seenNames = @{}
 
-    if(Test-Path $moduleAppPath)
+    $moduleAppScope = Get-SourceRelativePath $ProjectRoot $moduleAppPath
+    $moduleAppFiles = @(Get-SourceFiles $ProjectRoot @($moduleAppScope))
+
+    if($moduleAppFiles.Count -gt 0)
     {
         # Tier 1: any "UseCases" folder anywhere under the module (covers submodules)
-        $useCaseDirs = Get-ChildItem -Path $moduleAppPath -Recurse -Directory -Filter "UseCases" -ErrorAction SilentlyContinue
+        $useCaseDirs = @(Get-SourceFolders $ProjectRoot $moduleAppScope "UseCases")
 
         foreach($dir in $useCaseDirs)
         {
-            $items = Get-ChildItem -Path $dir.FullName -ErrorAction SilentlyContinue
+            $dirScope = Get-SourceRelativePath $ProjectRoot $dir.FullName
+            $items = @(Get-SourceDirectories $ProjectRoot $dirScope) + @(Get-SourceFiles $ProjectRoot @($dirScope) -TopOnly)
 
             foreach($item in $items)
             {
@@ -137,7 +146,7 @@ foreach($module in $modulesData)
         if($features.Count -eq 0)
         {
             $rootFiles =
-            Get-ChildItem -Path $moduleAppPath -Recurse -File -ErrorAction SilentlyContinue |
+            $moduleAppFiles |
             Where-Object { $_.Name -match "(Query|Command)\.cs$" -and $_.Name -notmatch "(Handler|Validator)\.cs$" }
 
             foreach($file in $rootFiles)
@@ -180,11 +189,11 @@ foreach($module in $modulesData)
         $reason = "No Application-layer UseCases/Query/Command evidence found"
         $evidence = @()
 
-        if(!(Test-Path $moduleAppPath))
+        if($moduleAppFiles.Count -eq 0)
         {
             $domainOnlyPath = Join-Path $DomainModulesRoot $moduleId
 
-            if(Test-Path $domainOnlyPath)
+            if(@(Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $domainOnlyPath)).Count -gt 0)
             {
                 $reason = "Domain-only catalog module (no Application UseCases layer yet)"
                 $evidence = @(($domainOnlyPath.Substring($ProjectRoot.Length + 1)) -replace "\\", "/")

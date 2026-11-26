@@ -23,6 +23,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $BackendRoot = Join-Path $ProjectRoot "backend\src"
 $DataRoot = Join-Path $ProjectRoot "docs\ProgressDashboard\data"
@@ -53,6 +55,9 @@ Write-Host "Modules known from modules.json: $($moduleIds.Count)"
 # 1. Locate real folders per module (Application / Domain / Infrastructure)
 # =============================================================================
 
+$graphScopes = @("backend/src/ERP.Application/Modules", "backend/src/ERP.Domain/Modules", "backend/src/ERP.Infrastructure")
+Register-SourcePopulation $ProjectRoot "analyze-module-graph" $graphScopes @("*.cs") @(Get-SourceFiles $ProjectRoot $graphScopes @("*.cs"))
+
 $moduleFolders = @{}
 
 foreach($id in $moduleIds)
@@ -61,7 +66,7 @@ foreach($id in $moduleIds)
     foreach($project in @("ERP.Application\Modules", "ERP.Domain\Modules", "ERP.Infrastructure"))
     {
         $candidate = Join-Path $BackendRoot (Join-Path $project $id)
-        if(Test-Path $candidate) { $folders += $candidate }
+        if(@(Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $candidate)).Count -gt 0) { $folders += $candidate }
     }
     $moduleFolders[$id] = $folders
 }
@@ -83,7 +88,7 @@ foreach($id in $moduleIds)
     $files = @()
     foreach($folder in $moduleFolders[$id])
     {
-        $files += @(Get-ChildItem -Path $folder -Recurse -Filter "*.cs" -File -ErrorAction SilentlyContinue |
+        $files += @(Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $folder) @("*.cs") |
             Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' })
     }
 

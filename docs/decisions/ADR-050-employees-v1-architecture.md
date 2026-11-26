@@ -4,15 +4,14 @@ Estado: **ACCEPTED / APROBADO** — fecha de aceptación formal: **2026-11-24**.
 ADR-050 — Empleados V1 como arquitectura de referencia. Esta aceptación conserva las decisiones funcionales y técnicas
 anteriores, incluida la aprobación funcional durante la planificación (decisiones de §3), sin alterarlas ni dar por
 cumplidas las verificaciones técnicas pendientes.
-**La aceptación aprueba el diseño; no autoriza código, endpoints, permisos, migraciones, cambios de base de datos,
-cambios en módulos FROZEN/CLOSED ni ejecución alguna.** Empleados **no está implementado**. **Ninguna fase de
-implementación está autorizada**: EMP-E1 figura en la cola como PENDING / NO AUTORIZADA y cada fase posterior requiere
-autorización expresa del propietario y lista exacta de rutas. Todas las fases permanecen **PENDING / NO AUTORIZADAS**.
+**La aceptación aprobó el diseño; por sí sola no autorizaba código, endpoints, permisos, migraciones, cambios de base
+de datos ni cambios en módulos FROZEN/CLOSED.** Cada fase requirió después autorización expresa del propietario.
+**Estado vigente (2026-11-26): Empleados V1 implementado y CLOSED** (EMP-E1 a EMP-E7).
 
 El comportamiento exacto está en la [especificación contractual](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (diseño, no SSOT) y el
-orden de trabajo en el [plan de implementación](../agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). Cuando exista código
-probado, su SSOT nacerá en `docs/architecture/` ([enforcement](../architecture/enforcement.md#ssot-por-módulo)). Estado de
-entrega: [STATUS](../../STATUS.md).
+orden de trabajo en el [plan de implementación](../agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). El comportamiento
+implementado se define en la SSOT [employees.md](../architecture/employees.md)
+([enforcement](../architecture/enforcement.md#ssot-por-módulo)). Estado de entrega: [STATUS](../../STATUS.md).
 
 **Convención de etiquetas** (la aprobación de la documentación no convierte las propuestas técnicas en decisiones):
 

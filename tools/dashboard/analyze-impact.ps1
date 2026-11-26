@@ -17,6 +17,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -108,6 +110,9 @@ $processesData = @(LoadJson "processes.json")
 $security = $model.Security
 $technicalDebt = $model.TechnicalDebt
 
+$impactScope = "backend/src/ERP.Application/Modules"
+Register-SourcePopulation $ProjectRoot "analyze-impact" @($impactScope) @("*.cs") @(Get-SourceFiles $ProjectRoot @($impactScope) @("*.cs"))
+
 
 Write-Host "Modules to analyze: $($modulesData.Count)"
 
@@ -141,12 +146,7 @@ function Get-ModuleDebtCounts($moduleId)
         largeFiles      = 0
     }
 
-    if(!(Test-Path $modulePath))
-    {
-        return $result
-    }
-
-    $files = Get-ChildItem -Path $modulePath -Recurse -File -Filter "*.cs" -ErrorAction SilentlyContinue
+    $files = @(Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $modulePath) @("*.cs"))
 
     foreach($file in $files)
     {

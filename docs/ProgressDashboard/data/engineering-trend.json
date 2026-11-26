@@ -1,256 +1,320 @@
 ﻿{
-    "Generated":  "2026-11-26 17:09:49",
-    "Snapshots":  50,
+    "Generated":  "2026-11-26 18:30:47",
+    "Snapshots":  51,
     "History":  [
                     {
                         "Date":  "2026-07-15 20:38:00",
                         "File":  "dashboard-2026-07-15_210720.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-15 20:38:00",
                         "File":  "dashboard-2026-07-15_211231.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-15 20:20:34",
                         "File":  "dashboard-2026-07-15-2020-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-15 20:28:42",
                         "File":  "dashboard-2026-07-15-2028-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-15 20:37:59",
                         "File":  "dashboard-2026-07-15-2037-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-16 01:10:23",
                         "File":  "dashboard-2026-07-16-0110-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-16 12:13:06",
                         "File":  "dashboard-2026-07-16-1213-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-16 12:31:25",
                         "File":  "dashboard-2026-07-16-1231-v2.json",
-                        "Score":  73.4
+                        "Score":  73.4,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-20 19:20:09",
                         "File":  "dashboard-2026-07-20-1920-v2.json",
-                        "Score":  72.72
+                        "Score":  72.72,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-26 12:46:09",
                         "File":  "dashboard-2026-07-26-1246-v2.json",
-                        "Score":  72.88
+                        "Score":  72.88,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-26 15:01:14",
                         "File":  "dashboard-2026-07-26-1501-v2.json",
-                        "Score":  72.88
+                        "Score":  72.88,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-26 16:25:40",
                         "File":  "dashboard-2026-07-26-1625-v2.json",
-                        "Score":  72.88
+                        "Score":  72.88,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-07-26 17:06:27",
                         "File":  "dashboard-2026-07-26-1706-v2.json",
-                        "Score":  72.88
+                        "Score":  72.88,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-09-26 11:27:37",
                         "File":  "dashboard-2026-09-26-1127-v2.json",
-                        "Score":  60.83
+                        "Score":  60.83,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-09-26 11:40:07",
                         "File":  "dashboard-2026-09-26-1140-v2.json",
-                        "Score":  60.83
+                        "Score":  60.83,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-03 06:57:27",
                         "File":  "dashboard-2026-10-03-0657-v2.json",
-                        "Score":  57.56
+                        "Score":  57.56,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-03 07:28:19",
                         "File":  "dashboard-2026-10-03-0728-v2.json",
-                        "Score":  57.56
+                        "Score":  57.56,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-03 08:26:56",
                         "File":  "dashboard-2026-10-03-0826-v2.json",
-                        "Score":  57.56
+                        "Score":  57.56,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-10 07:42:16",
                         "File":  "dashboard-2026-10-10-0742-v2.json",
-                        "Score":  59.57
+                        "Score":  59.57,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-10 13:15:49",
                         "File":  "dashboard-2026-10-10-1315-v2.json",
-                        "Score":  59.5
+                        "Score":  59.5,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-10 21:19:43",
                         "File":  "dashboard-2026-10-10-2119-v2.json",
-                        "Score":  59.72
+                        "Score":  59.72,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-10 22:36:59",
                         "File":  "dashboard-2026-10-10-2236-v2.json",
-                        "Score":  60.8
+                        "Score":  60.8,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-10 23:37:50",
                         "File":  "dashboard-2026-10-10-2337-v2.json",
-                        "Score":  61.23
+                        "Score":  61.23,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-11 20:04:57",
                         "File":  "dashboard-2026-10-11-2004-v2.json",
-                        "Score":  60.3
+                        "Score":  60.3,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-11 21:31:42",
                         "File":  "dashboard-2026-10-11-2131-v2.json",
-                        "Score":  60.29
+                        "Score":  60.29,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-11 21:49:07",
                         "File":  "dashboard-2026-10-11-2149-v2.json",
-                        "Score":  60.29
+                        "Score":  60.29,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 06:22:56",
                         "File":  "dashboard-2026-10-13-0622-v2.json",
-                        "Score":  60.72
+                        "Score":  60.72,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 09:18:45",
                         "File":  "dashboard-2026-10-13-0918-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 10:14:31",
                         "File":  "dashboard-2026-10-13-1014-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 11:06:54",
                         "File":  "dashboard-2026-10-13-1106-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 12:20:05",
                         "File":  "dashboard-2026-10-13-1220-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 12:41:34",
                         "File":  "dashboard-2026-10-13-1241-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-13 13:15:20",
                         "File":  "dashboard-2026-10-13-1315-v2.json",
-                        "Score":  61.12
+                        "Score":  61.12,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-24 20:50:23",
                         "File":  "dashboard-2026-10-24-2050-v2.json",
-                        "Score":  59.54
+                        "Score":  59.54,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-25 10:35:35",
                         "File":  "dashboard-2026-10-25-1035-v2.json",
-                        "Score":  58.92
+                        "Score":  58.92,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-27 06:46:04",
                         "File":  "dashboard-2026-10-27-0646-v2.json",
-                        "Score":  58.87
+                        "Score":  58.87,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-27 07:08:07",
                         "File":  "dashboard-2026-10-27-0708-v2.json",
-                        "Score":  58.87
+                        "Score":  58.87,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-31 18:07:31",
                         "File":  "dashboard-2026-10-31-1807-v2.json",
-                        "Score":  57.92
+                        "Score":  57.92,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-10-31 20:39:01",
                         "File":  "dashboard-2026-10-31-2039-v2.json",
-                        "Score":  58.59
+                        "Score":  58.59,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-02 11:46:20",
                         "File":  "dashboard-2026-11-02-1146-v2.json",
-                        "Score":  57.94
+                        "Score":  57.94,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-02 15:31:35",
                         "File":  "dashboard-2026-11-02-1531-v2.json",
-                        "Score":  58.58
+                        "Score":  58.58,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-02 16:32:35",
                         "File":  "dashboard-2026-11-02-1632-v2.json",
-                        "Score":  57.93
+                        "Score":  57.93,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-02 17:04:15",
                         "File":  "dashboard-2026-11-02-1704-v2.json",
-                        "Score":  57.93
+                        "Score":  57.93,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-03 06:36:22",
                         "File":  "dashboard-2026-11-03-0636-v2.json",
-                        "Score":  57.93
+                        "Score":  57.93,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-11 11:33:11",
                         "File":  "dashboard-2026-11-11-1133-v2.json",
-                        "Score":  57.57
+                        "Score":  57.57,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-11 12:41:00",
                         "File":  "dashboard-2026-11-11-1241-v2.json",
-                        "Score":  57.57
+                        "Score":  57.57,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-11 12:42:33",
                         "File":  "dashboard-2026-11-11-1242-v2.json",
-                        "Score":  57.57
+                        "Score":  57.57,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-11 20:20:35",
                         "File":  "dashboard-2026-11-11-2020-v2.json",
-                        "Score":  57.57
+                        "Score":  57.57,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-26 12:44:05",
                         "File":  "dashboard-2026-11-26-1244-v2.json",
-                        "Score":  55.49
+                        "Score":  55.49,
+                        "Method":  "disk-scan-legacy"
                     },
                     {
                         "Date":  "2026-11-26 17:09:48",
                         "File":  "dashboard-2026-11-26-1709-v2.json",
-                        "Score":  55.49
+                        "Score":  55.49,
+                        "Method":  "disk-scan-legacy"
+                    },
+                    {
+                        "Date":  "2026-11-26 18:30:46",
+                        "File":  "dashboard-2026-11-26-1830-v2.json",
+                        "Score":  69.19,
+                        "Method":  "git-tracked-v1"
                     }
-                ]
+                ],
+    "MethodologyChanges":  [
+                               {
+                                   "Date":  "2026-11-26 18:30:46",
+                                   "File":  "dashboard-2026-11-26-1830-v2.json",
+                                   "From":  "disk-scan-legacy",
+                                   "To":  "git-tracked-v1"
+                               }
+                           ]
 }

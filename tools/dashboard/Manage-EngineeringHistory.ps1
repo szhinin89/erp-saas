@@ -56,12 +56,40 @@ $timestamp = Get-Date -Format "yyyy-MM-dd-HHmm"
 $snapshotFileName = "dashboard-$timestamp-v2.json"
 $snapshotOutput = Join-Path $HistoryRoot $snapshotFileName
 
+# Procedencia: la misma poblacion que alimento las metricas de este snapshot.
+$population = LoadJsonOrNull "source-population.json"
+$scoreAnalyzers = @(
+    "analyze-security:backend", "analyze-security:frontend",
+    "analyze-technical-debt:backend", "analyze-technical-debt:frontend",
+    "analyze-architecture", "analyze-dependencies",
+    "analyze-backend", "analyze-frontend", "analyze-tests"
+)
+$analyzed = [ordered]@{}
+foreach($name in $scoreAnalyzers)
+{
+    $entry = if($population) { $population.Analyzers.$name } else { $null }
+    if($null -eq $entry -or $entry.Commit -ne $population.Commit)
+    {
+        throw "Manage-EngineeringHistory: falta la poblacion de $name para el commit actual. Ejecute los analizadores antes del snapshot."
+    }
+    $analyzed[$name] = $entry
+}
+
+$methodology = [ordered]@{
+    Method = $population.Method
+    Commit = $population.Commit
+    TreeDirty = $population.TreeDirty
+    TreeModified = @($population.TreeModified)
+    Analyzers = $analyzed
+}
+
 $snapshot = [ordered]@{
     Generated = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     EngineeringScore = $engineering
     Health = $health
     Security = $security
     TechnicalDebt = $technicalDebt
+    Methodology = $methodology
 }
 
 $snapshot | ConvertTo-Json -Depth 100 | Set-Content $snapshotOutput -Encoding UTF8
@@ -79,6 +107,8 @@ Write-Host "Total v2 snapshots: $snapshotCount"
 $snapshots = Get-ChildItem $HistoryRoot -Filter "*.json" | Sort-Object Name
 
 $history = @()
+$methodChanges = @()
+$previousMethod = $null
 
 foreach($file in $snapshots)
 {
@@ -93,10 +123,20 @@ foreach($file in $snapshots)
 
         if($score -ne $null)
         {
+            # Los snapshots anteriores a DH-006 no declaran metodo: escaneo de disco.
+            $method = if($snapshotData.Methodology.Method) { $snapshotData.Methodology.Method } else { "disk-scan-legacy" }
+
+            if($previousMethod -and $previousMethod -ne $method)
+            {
+                $methodChanges += [ordered]@{ Date = $snapshotData.Generated; File = $file.Name; From = $previousMethod; To = $method }
+            }
+            $previousMethod = $method
+
             $history += [ordered]@{
                 Date = $snapshotData.Generated
                 File = $file.Name
                 Score = [double]$score
+                Method = $method
             }
         }
     }
@@ -110,6 +150,7 @@ $trendResult = [ordered]@{
     Generated = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Snapshots = $history.Count
     History = $history
+    MethodologyChanges = @($methodChanges)
 }
 
 $trendOutput = Join-Path $DataRoot "engineering-trend.json"

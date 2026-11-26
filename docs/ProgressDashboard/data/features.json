@@ -1025,6 +1025,55 @@
         "module":  "Purchases",
         "features":  [
                          {
+                             "name":  "Batch Download Purchase Reception Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/BatchDownloadPurchaseReceptionXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Expense Draft From Reception",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreateExpenseDraftFromReception"
+                                          ]
+                         },
+                         {
+                             "name":  "Create Purchase Reception Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft"
+                                          ]
+                         },
+                         {
+                             "name":  "Download Purchase Reception Xml",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Get Purchase Reception Xml View",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/GetPurchaseReceptionXmlView"
+                                          ]
+                         },
+                         {
+                             "name":  "Import Purchase Reception",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
+                                          ]
+                         },
+                         {
+                             "name":  "Refresh Purchase Reception Status",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/RefreshPurchaseReceptionStatus"
+                                          ]
+                         },
+                         {
                              "name":  "Get Purchase Item Context",
                              "status":  "implemented",
                              "evidence":  [
@@ -1211,55 +1260,6 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Purchases/UseCases/RegisterSupplierCreditNoteUseCases.cs"
-                                          ]
-                         },
-                         {
-                             "name":  "Batch Download Purchase Reception Xml",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/BatchDownloadPurchaseReceptionXml"
-                                          ]
-                         },
-                         {
-                             "name":  "Create Expense Draft From Reception",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreateExpenseDraftFromReception"
-                                          ]
-                         },
-                         {
-                             "name":  "Create Purchase Reception Draft",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft"
-                                          ]
-                         },
-                         {
-                             "name":  "Download Purchase Reception Xml",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml"
-                                          ]
-                         },
-                         {
-                             "name":  "Get Purchase Reception Xml View",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/GetPurchaseReceptionXmlView"
-                                          ]
-                         },
-                         {
-                             "name":  "Import Purchase Reception",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
-                                          ]
-                         },
-                         {
-                             "name":  "Refresh Purchase Reception Status",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/RefreshPurchaseReceptionStatus"
                                           ]
                          }
                      ]

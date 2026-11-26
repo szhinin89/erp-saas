@@ -26,6 +26,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $DataRoot = Join-Path $ProjectRoot "docs\ProgressDashboard\data"
 $DomainModulesPath = Join-Path $ProjectRoot "backend\src\ERP.Domain\Modules"
@@ -123,10 +125,7 @@ $coverageAudit = Get-ParsedJson "module-coverage-audit.json"
 $explorerIdx = Get-ParsedJson "explorer-index.json"
 
 $realModuleIds = @{}
-if(Test-Path $DomainModulesPath)
-{
-    Get-ChildItem $DomainModulesPath -Directory | ForEach-Object { $realModuleIds[$_.Name] = $true }
-}
+Get-SourceDirectories $ProjectRoot (Get-SourceRelativePath $ProjectRoot $DomainModulesPath) | ForEach-Object { $realModuleIds[$_.Name] = $true }
 $explorerModuleIds = @{}
 if($explorerIdx) { foreach($m in $explorerIdx.modules) { $explorerModuleIds[$m.id] = $true } }
 
@@ -134,6 +133,15 @@ if($explorerIdx) { foreach($m in $explorerIdx.modules) { $explorerModuleIds[$m.i
 # es un modulo real FROZEN pero vive fuera de Modules/ por completo -- no es
 # un bug, se trata como advertencia informativa, no como error critico.
 $knownOutOfTreeModules = @("BusinessPartner")
+
+# Capacidad transversal sin carpeta bajo Modules/ (DH-008). La excepcion exige
+# codigo versionado en una carpeta homonima fuera de Modules/ y de las pruebas,
+# y solo cubre referencias de gobierno (roadmap.json, blockers.json): una arista
+# tecnica de architecture-dependencies.json exige un modulo real en el grafo.
+$transversalModules = @(@("Security") | Where-Object {
+    @(Get-SourceFolders $ProjectRoot "backend/src" $_ |
+        Where-Object { $_.FullName -notmatch '\\Modules\\' -and $_.FullName -notmatch '\.Tests\\' }).Count -gt 0
+})
 
 # -----------------------------------------------------------------------------
 # Check 3: claves obligatorias por dataset (solo para los 6 con esquema
@@ -196,7 +204,7 @@ if($roadmap -and $explorerModuleIds.Count -gt 0)
     {
         foreach($modId in @($stage.modulos))
         {
-            if(-not $explorerModuleIds.ContainsKey($modId) -and $knownOutOfTreeModules -notcontains $modId)
+            if(-not $explorerModuleIds.ContainsKey($modId) -and $knownOutOfTreeModules -notcontains $modId -and $transversalModules -notcontains $modId)
             {
                 $brokenRefs += "roadmap.json ($($stage.id)) -> modulo inexistente '$modId'"
             }
@@ -212,7 +220,7 @@ if($blockers -and $explorerModuleIds.Count -gt 0)
     {
         foreach($modId in @($b.modulosAfectados))
         {
-            if(-not $explorerModuleIds.ContainsKey($modId) -and $knownOutOfTreeModules -notcontains $modId)
+            if(-not $explorerModuleIds.ContainsKey($modId) -and $knownOutOfTreeModules -notcontains $modId -and $transversalModules -notcontains $modId)
             {
                 $brokenRefs += "blockers.json ($($b.id)) -> modulo inexistente '$modId'"
             }
@@ -237,7 +245,7 @@ if($governance)
 {
     $adrDir = Join-Path $ProjectRoot "docs\decisions"
     $adrFiles = @{}
-    if(Test-Path $adrDir) { Get-ChildItem $adrDir -Filter "*.md" | ForEach-Object { $adrFiles[$_.Name] = $true } }
+    Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $adrDir) @("*.md") -TopOnly | ForEach-Object { $adrFiles[$_.Name] = $true }
     foreach($gm in $governance.modules)
     {
         $refs = [regex]::Matches($gm.adr, "ADR-\d{3}[\w\-\.]*\.md") | ForEach-Object { $_.Value }
@@ -262,11 +270,15 @@ if($explorerModuleIds.Count -gt 0)
     if($blockers) { foreach($b in $blockers.blockers) { foreach($m in @($b.modulosAfectados)) { [void]$allReferencedIds.Add($m) } } }
     if($archDeps) { foreach($e in $archDeps.edges) { [void]$allReferencedIds.Add($e.sourceModule); [void]$allReferencedIds.Add($e.targetModule) } }
 
+    $technicalIds = @()
+    if($archDeps) { $technicalIds = @($archDeps.edges | ForEach-Object { $_.sourceModule; $_.targetModule }) }
+
     foreach($modId in $allReferencedIds)
     {
         if(-not $explorerModuleIds.ContainsKey($modId))
         {
-            if($knownOutOfTreeModules -contains $modId) { $knownExceptionHits += $modId }
+            if($knownOutOfTreeModules -contains $modId -or
+               ($transversalModules -contains $modId -and $technicalIds -notcontains $modId)) { $knownExceptionHits += $modId }
             else { $nonexistentModules += $modId }
         }
     }

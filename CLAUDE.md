@@ -17,7 +17,7 @@ del propietario para la tarea tienen prioridad.
 | Procedimiento de revisión y cierre de agentes | [Flujo por fase](docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase) | Común a todos los agentes |
 | Desarrollo y Git | [CONTRIBUTING.md](CONTRIBUTING.md) (contribución/Git), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) (operación y stack) | Validación técnica en [enforcement](docs/architecture/enforcement.md); roles de ramas en [Arquitectura](docs/architecture/architecture.md#ci-y-ramas) |
 | Alcance funcional del producto | [FEATURES.md](FEATURES.md) | Catálogo de capacidades; enlaza las SSOT, no prescribe contratos técnicos |
-| Estado de entregas, gates, cierres y riesgos | [STATUS.md](STATUS.md) | [WORK_QUEUE](docs/agent/WORK_QUEUE.md): solo trabajo abierto autorizado; [ROADMAP](docs/ROADMAP.md): planificación futura |
+| Estado de entregas, gates, cierres y riesgos | [STATUS.md](STATUS.md) | [WORK_QUEUE](docs/agent/WORK_QUEUE.md): solo actuaciones abiertas (figurar no autoriza); [ROADMAP](docs/ROADMAP.md): planificación futura |
 | Navegación y descripción | [CONTEXT.md](CONTEXT.md), [README.md](README.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [ARCHITECTURE_GATES.md](ARCHITECTURE_GATES.md) | Índices/descripciones, sin normativa independiente |
 | Justificación de decisiones | [ADRs](docs/decisions/README.md) | Explican el porqué; no reemplazan la SSOT ni los gates |
 | Actas y evidencia fechada | [ERP_CORE_FREEZE.md](ERP_CORE_FREEZE.md), `RELEASES/`, `docs/archive/**` | Conservan su evidencia; no definen el inventario ni comportamiento actual |

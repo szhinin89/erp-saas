@@ -52,8 +52,8 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-047](ADR-047-historical-tsx-size-debt.md) | ADR-047 — Excepción temporal para deuda histórica de tamaño TSX (PR-7) |
 | [ADR-048](ADR-048-company-suspension-automatic-processes.md) | ADR-048 — Empresa suspendida o deshabilitada: procesos automáticos y sesiones |
 | [ADR-049](ADR-049-sales-order-v1-architecture.md) | ADR-049 — Orden de Pedido de Venta V1 (Gestión de Ventas): diseño aprobado, no implementado |
-| [ADR-050](ADR-050-employees-v1-architecture.md) | ADR-050 — Empleados V1 (módulo técnico independiente): arquitectura funcional aprobada, no implementada |
-| [ADR-051](ADR-051-spa-v1.1-architecture.md) | ADR-051 — SPA V1.1: PROPOSED / NO APROBADO; arquitectura candidata, sin implementación autorizada |
+| [ADR-050](ADR-050-employees-v1-architecture.md) | ADR-050 — Empleados V1 (módulo técnico independiente): arquitectura aprobada; implementada (Empleados V1 CLOSED, ver [STATUS](../../STATUS.md)) |
+| [ADR-051](ADR-051-spa-v1.1-architecture.md) | ADR-051 — SPA V1.1: ACCEPTED / APROBADO; Spa planificado, no implementado, sin fases autorizadas |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 
@@ -65,18 +65,18 @@ Los siguientes conservan decisiones referenciadas y no sustituyen las SSOT:
 - [RETENTIONS-MODULE-DESIGN-01.md](RETENTIONS-MODULE-DESIGN-01.md).
 - [EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md](EXPENSE-SUPPLIER-SUBCATEGORIES-DESIGN-01.md) (diseño, sin implementar).
 - [PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md](PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md) (diseño funcional de ADR-049, sin implementar; no es SSOT).
-- [EMPLOYEES-V1-CONTRACT-SPEC-01.md](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (especificación contractual de ADR-050, sin implementar; no es SSOT).
+- [EMPLOYEES-V1-CONTRACT-SPEC-01.md](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (especificación contractual de ADR-050, implementada; no es SSOT: ver [employees.md](../architecture/employees.md)).
 - [RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md](RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md).
 
-## SPA V1.1 — Módulo de Gestión de Spa y Tratamientos Estéticos: documentación oficial en revisión
+## SPA V1.1 — Módulo de Gestión de Spa y Tratamientos Estéticos: planificado, no implementado
 
-**Consolidación de planificación existente; no SSOT implementada. Ninguna fase de Spa ni de Empleados está autorizada.** El contrato concentra el comportamiento; el ADR explica arquitectura y el plan ordena dependencias. SPA-DEC-115/116 recuperadas y APROBADAS históricamente; O-23 CERRADA en inclusión funcional general. Detalles técnicos/legales y fichas O-24/V-01 siguen pendientes, sin autorización de implementar.
+**Consolidación de planificación existente; no SSOT implementada. Ninguna fase de Spa está autorizada** (Empleados V1, su dependencia, está implementado y CLOSED, sin integración con Spa). El contrato concentra el comportamiento; el ADR explica arquitectura y el plan ordena dependencias. SPA-DEC-115/116 recuperadas y APROBADAS históricamente; O-23 CERRADA en inclusión funcional general. Detalles técnicos/legales y fichas O-24/V-01 siguen pendientes, sin autorización de implementar.
 
 | Documento | Responsabilidad | Estado |
 |---|---|---|
 | [Contrato funcional](SPA-V1.1-CONTRACT-SPEC-01.md) | Planificación histórica, reglas, pantallas, datos, integraciones, estados y aceptación | Alcance funcional APROBADO; consolidación sin aprobación técnica integral ni autorización de implementación |
-| [ADR-051](ADR-051-spa-v1.1-architecture.md) | Arquitectura candidata y condiciones de aprobación | PROPOSED / NO APROBADO |
-| [Plan de implementación](SPA-V1.1-IMPLEMENTATION-PLAN-01.md) | Fases, dependencias, pruebas y cierre | PROPUESTO; ninguna fase autorizada |
+| [ADR-051](ADR-051-spa-v1.1-architecture.md) | Arquitectura de referencia y condiciones | ACCEPTED / APROBADO (2026-11-19); no implementada |
+| [Plan de implementación](SPA-V1.1-IMPLEMENTATION-PLAN-01.md) | Fases, dependencias, pruebas y cierre | Documentado; ninguna fase autorizada |
 | [Registro de decisiones](SPA-V1.1-APPROVED-DECISIONS-01.md) | SPA-DEC-115/116 históricas recuperadas, O-25/O-15 literales, Empleados aplicable y DIR-SSOT-01 | Evidencia de alcance limitado; no aprobación global |
 
 Los seis antecedentes previos (RECOVERY-01, OPERATIONS-SPEC-DRAFT-01, CARE-PRIVACY-SPEC-DRAFT-01, SECURITY-COMPLIANCE-DRAFT-01, matriz de consolidación y normalización) se retiraron tras consolidar su contenido en estos cuatro documentos; sus versiones previas están en el historial Git.

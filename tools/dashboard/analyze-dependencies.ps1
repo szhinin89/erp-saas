@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
@@ -22,7 +24,7 @@ Write-Host ""
 
 
 
-$rules = @{
+$rules = [ordered]@{
 
     "ERP.Domain" = @(
         "Microsoft.EntityFrameworkCore",
@@ -44,39 +46,35 @@ $violations = @()
 
 
 
+$analyzedScopes = @()
+$analyzedFiles = @()
+
 foreach($project in $rules.Keys)
 {
 
-    $path = Join-Path $BackendRoot $project
+    $scope = "backend/src/$project"
+
+    $files = @(Get-SourceFiles $ProjectRoot @($scope) @("*.cs"))
+
+    $analyzedScopes += $scope
+    $analyzedFiles += $files
 
 
-    if(Test-Path $path)
+    foreach($rule in $rules[$project])
     {
 
-        foreach($rule in $rules[$project])
+        foreach($match in @(Find-ForbiddenImports $files $rule))
         {
 
-            $matches = Select-String `
-                -Path "$path\**\*.cs" `
-                -Pattern $rule `
-                -SimpleMatch `
-                -ErrorAction SilentlyContinue
+            $violations += [ordered]@{
 
+                Project = $project
 
-            foreach($match in $matches)
-            {
+                Rule = "Forbidden dependency"
 
-                $violations += [ordered]@{
+                Reference = $rule
 
-                    Project = $project
-
-                    Rule = "Forbidden dependency"
-
-                    Reference = $rule
-
-                    File = $match.Path.Replace($ProjectRoot,"")
-
-                }
+                File = Get-SourceRelativePath $ProjectRoot $match.File.FullName
 
             }
 
@@ -85,6 +83,8 @@ foreach($project in $rules.Keys)
     }
 
 }
+
+Register-SourcePopulation $ProjectRoot "analyze-dependencies" $analyzedScopes @("*.cs") $analyzedFiles
 
 
 

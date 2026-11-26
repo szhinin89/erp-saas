@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
@@ -33,12 +35,12 @@ if(!(Test-Path $migrationsFolder))
 
 
 
+$migrationsScope = "backend/src/ERP.Infrastructure/Migrations"
+
 $files =
-Get-ChildItem `
--Path $migrationsFolder `
--Recurse `
--File `
--Filter "*.cs"
+@(Get-SourceFiles $ProjectRoot @($migrationsScope) @("*.cs"))
+
+Register-SourcePopulation $ProjectRoot "analyze-migrations" @($migrationsScope) @("*.cs") $files
 
 
 
@@ -58,9 +60,12 @@ foreach($file in $files)
             2
         )
 
+        # Fecha del ultimo commit del archivo: la fecha local no es reproducible.
         Modified =
-        $file.LastWriteTime.ToString(
-            "yyyy-MM-dd HH:mm:ss"
+        $(
+            $relative = (Get-SourceRelativePath $ProjectRoot $file.FullName).Replace("\", "/")
+            $committed = (Invoke-PopulationGit $ProjectRoot "log -1 --format=%cd ""--date=format:%Y-%m-%d %H:%M:%S"" -- ""$relative""").Trim()
+            if($committed) { $committed } else { "sin commit" }
         )
 
     }

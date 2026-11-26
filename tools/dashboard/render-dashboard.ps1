@@ -35,6 +35,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -2698,7 +2700,7 @@ Write-Host "Fase Dashboard 14.0: Cierre del ERP construido ($($erpClosureData.mo
 # FASE DASHBOARD 5.0 -- Dependencias Arquitectonicas y Bloqueadores
 #
 # Dos fuentes nuevas:
-#   architecture-dependencies.json -- 89 aristas derivadas MECANICAMENTE de
+#   architecture-dependencies.json -- 87 aristas derivadas MECANICAMENTE de
 #     explorer-index.json (modules[].dependencies.dependsOn/criticalDependencies/
 #     cyclesInvolved, ya real -- ninguna arista fue inventada). El unico campo
 #     curado es 'dependencyType', una clasificacion heuristica por dominio
@@ -2933,7 +2935,7 @@ Write-Host "Fase Dashboard 5.0: Dependencias Arquitectonicas ($($dependenciesDat
 $governanceData = LoadJson "architecture-governance.json"
 $PENDING_AUDIT_TEXT = "Pendiente de auditoria"
 $adrFilesOnDisk = @{}
-Get-ChildItem (Join-Path $ProjectRoot "docs\decisions") -Filter "*.md" | ForEach-Object { $adrFilesOnDisk[$_.Name] = $true }
+Get-SourceFiles $ProjectRoot @("docs/decisions") @("*.md") -TopOnly | ForEach-Object { $adrFilesOnDisk[$_.Name] = $true }
 
 $governanceWarnings = @()
 $modulesWithoutAdr = @()

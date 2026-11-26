@@ -85,6 +85,43 @@ ROADMAP, deudas históricas y mejoras futuras no se convierten en nuevas tareas 
 
 Este flujo es la instrucción vigente para el agente. Las categorías históricas de entregas no se reclasifican retroactivamente.
 
+### No reapertura de funcionalidades cerradas o aceptadas
+
+Aplica a toda funcionalidad `CLOSED` o `ACEPTADA` por el propietario, según [STATUS](../../STATUS.md):
+
+- No vuelve automáticamente a la [cola de trabajo](../agent/WORK_QUEUE.md).
+- Los cierres y aprobaciones posteriores prevalecen sobre los registros históricos.
+- La falta de evidencia histórica no justifica por sí sola reabrirla.
+- No se vuelven a pedir decisiones ya aprobadas por el propietario.
+- No se repiten pruebas históricas sin una necesidad técnica justificada.
+- Una funcionalidad nueva se registra como intervención independiente, con alcance propio.
+- Un defecto o regresión requiere evidencia concreta antes de proponer la reapertura.
+- Se respetan las restricciones `CLOSED` y `FROZEN`; toda reapertura requiere la autorización correspondiente.
+- Esta regla no suspende las obligaciones de seguridad, mantenimiento, cumplimiento normativo ni corrección de
+  defectos reales: la vulnerabilidad, el cambio normativo, la necesidad de mantenimiento o el defecto se informan con
+  su evidencia y se tratan como intervención independiente, con la misma autorización. Tampoco exime de los
+  [checks que correspondan a un cambio](#tests-pre-merge).
+
+### Vocabulario de estado
+
+Interpretación común de las etiquetas existentes; no crea estados nuevos ni reclasifica entregas. Cada etiqueta
+vale solo para el alcance literal que la acompaña (por ejemplo, «implementación CLOSED» o «CLOSED solo el gate»).
+La autoridad del estado de entrega es [STATUS](../../STATUS.md): sus títulos y notas conservan lo vigente a su fecha,
+una marca o aprobación posterior prevalece y el trabajo restante es el de la [cola](../agent/WORK_QUEUE.md).
+
+| Etiqueta | Significa | No significa |
+|---|---|---|
+| `IMPLEMENTADO` | Existe en el código, con la evidencia que se registre | Publicado, aceptado ni cerrado |
+| `PUBLICADO` | Está en un commit de `main`; el CI se registra aparte | Aceptado ni cerrado |
+| `ACEPTADO` | Confirmación expresa del propietario sobre el funcionamiento del alcance registrado | Pruebas adicionales, incidencias resueltas ni producción |
+| `CLOSED` | Fase o entrega cerrada según el flujo; no se reaudita salvo la regla anterior. En [infraestructuras CLOSED](./frozen-infrastructure.md) rige además su inmutabilidad | Ausencia de deuda o limitaciones, ni producción |
+| `FROZEN` | Componente protegido: cambiarlo exige autorización expresa y las condiciones de su SSOT o ADR | Ausencia de defectos |
+| `PENDING` | Actuación abierta | Defecto confirmado ni autorización |
+| `SUPERADO` | Sustituido por una decisión o entrega posterior; no es trabajo abierto | Aceptación de lo sustituido |
+| ADR `ACCEPTED` | Diseño aprobado | Implementado ni autorizado; sus notas de implementación valen a su fecha |
+| Autorización de implementación | Instrucción expresa del propietario para un alcance concreto | No se infiere de la cola, ROADMAP, un ADR, `DEBT`, `FALTA` ni `PENDING` |
+| Preparación para producción | Decisión propia (`GO`/`NO-GO`) registrada en STATUS, con sus [requisitos previos](../agent/WORK_QUEUE.md#c-requisitos-previos-a-producción-producción-no-go) | No se deduce de `CLOSED`, `ACEPTADO`, CI ni del avance funcional |
+
 ---
 
 ## Validación en 4 capas (datos persistidos)
@@ -133,7 +170,8 @@ y regla [SEC-01b / PR-18](./pr-rules-catalog.md#sec-01b--roles-fuente-única-sec
 `STATUS.md` es la única fuente de estado de entrega, gates y cierres. Actualizarla
 cuando cambie ese estado, sin copiar reglas funcionales ni cronologías de implementación.
 `FEATURES.md` describe capacidades actuales y enlaza la SSOT; `docs/agent/WORK_QUEUE.md`
-contiene únicamente trabajo abierto autorizado; `docs/ROADMAP.md` conserva planificación futura.
+contiene únicamente actuaciones abiertas (figurar en ella no autoriza implementarlas); `docs/ROADMAP.md` conserva
+planificación futura.
 Actualizar README o runbooks solo si cambian sus entradas o instrucciones de operación.
 No se exige un mapa visual inexistente ni otro espejo manual de avance.
 El dashboard existente tiene sus propias fuentes y scripts; no es autoridad de cierre.
@@ -149,7 +187,7 @@ Aplicar únicamente los checks correspondientes al cambio:
 | Cambio | Gate técnico |
 |---|---|
 | Backend | `dotnet test` de los proyectos/filtros afectados; PostgreSQL real para los casos del flujo por fase |
-| Frontend | Desde `frontend/`: `npm run lint`, `npx tsc --noEmit`, `npm run build` |
+| Frontend | Desde `frontend/`: `npm run lint`, `npx tsc -b`, `npm run build` |
 | Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) **y**, desde la raíz, `tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk` (límites PR-1–PR-10, handlers; mismo paso que CI). Antes de commitear: `tools/architecture/check-staged-guardrails.ps1` (Stack Audit + Architecture guardrails) sobre el contenido en staging |
 | Solo documentación | `node tools/architecture/run-all.mjs --only documentation`, referencias modificadas y `git diff --check`; sin pruebas funcionales |
 
@@ -323,6 +361,11 @@ Umbrales y allowlists: `tools/architecture/config/architecture-rules.json` → `
 - `adrs` — índice de ADRs vigentes
 
 Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1). Solo afecta reporte/CI; **cero impacto runtime**.
+
+El score y su `status` no son el gate: PASS/FAIL lo decide el ratchet (y el guardrail PowerShell para los límites de
+tamaño). PASS no significa ausencia de deuda y `critical` no significa un incumplimiento. Solo la corrida completa es
+comparable: con `--only` se descuentan todas las entradas grandfather pero solo los hallazgos del check elegido. No
+confundirlo con el indicador `Architecture` del Dashboard, de otro cálculo.
 
 #### Architecture ratchet
 

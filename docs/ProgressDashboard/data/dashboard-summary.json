@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 17:10:29",
+    "generated":  "2026-11-26 18:31:37",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -10,29 +10,27 @@
                    "productionDecisionBands":  "confidenceScore \u003c70 NOT READY, \u003c90 NEEDS REVIEW, else READY"
                },
     "securityStatus":  "RED",
-    "debtStatus":  "RED",
-    "productionReadinessScore":  57.5,
+    "debtStatus":  "GREEN",
+    "productionReadinessScore":  71.2,
     "productionStatus":  "NOT READY",
-    "maturity":  "Developing",
-    "confidenceScore":  52.54,
+    "maturity":  "Controlled",
+    "confidenceScore":  67.7,
     "risk":  {
                  "architectureRisk":  "LOW",
                  "securityRisk":  "CRITICAL",
-                 "qualityRisk":  "CRITICAL",
-                 "technicalDebtRisk":  "HIGH",
+                 "qualityRisk":  "HIGH",
+                 "technicalDebtRisk":  "LOW",
                  "overallRisk":  "CRITICAL"
              },
     "productionDecision":  "NOT READY",
     "decisionBlockers":  [
-                             "Security blockers - Security score 0.8%",
-                             "Quality blockers - Quality score 6.9%",
-                             "Debt blockers - 38 critical findings"
+                             "Security blockers - Security score 30%",
+                             "Quality blockers - Quality score 46.2%"
                          ],
     "quickRecommendations":  [
-                                 "Remove detected secrets (196 found)",
-                                 "Improve automated tests and code quality (current: 6.9%)",
-                                 "Reduce critical findings (currently 38)",
-                                 "Review security configuration (16 anonymous access points detected)"
+                                 "Remove detected secrets (80 found)",
+                                 "Improve automated tests and code quality (current: 46.2%)",
+                                 "Review security configuration (13 anonymous access points detected)"
                              ],
     "qualityGateDetail":  {
                               "testAverage":  80,
@@ -61,19 +59,19 @@
                     {
                         "order":  1,
                         "title":  "Security Hardening",
-                        "detail":  "Score: 0.8%",
+                        "detail":  "Score: 30%",
                         "priority":  "CRITICAL"
                     },
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 6.9%",
+                        "detail":  "Score: 46.2%",
                         "priority":  "HIGH"
                     },
                     {
                         "order":  3,
                         "title":  "Technical Debt Reduction",
-                        "detail":  "Findings: 38",
+                        "detail":  "Findings: 8",
                         "priority":  "HIGH"
                     }
                 ],
@@ -81,28 +79,24 @@
                            {
                                "gate":  "Security Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 0.8%"
+                               "detail":  "Score 30%"
                            },
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 6.9%"
-                           },
-                           {
-                               "gate":  "Technical Debt Gate",
-                               "status":  "FAILED",
-                               "detail":  "38 critical findings"
+                               "detail":  "Score 46.2%"
                            }
                        ],
     "trend":  {
-                  "current":  55.49,
+                  "current":  69.19,
                   "previous":  55.49,
-                  "change":  0,
-                  "status":  "Stable"
+                  "change":  13.7,
+                  "status":  "Not comparable (methodology change)",
+                  "comparable":  false
               },
     "executiveFlags":  {
                            "securityHealth":  "NEEDS ATTENTION",
                            "qualityHealth":  "NEEDS ATTENTION",
-                           "debtHealth":  "HIGH"
+                           "debtHealth":  "LOW"
                        }
 }

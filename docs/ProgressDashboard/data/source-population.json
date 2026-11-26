@@ -1,0 +1,341 @@
+﻿{
+    "Method":  "git-tracked-v1",
+    "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+    "TreeDirty":  true,
+    "TreeModified":  [
+                         "CLAUDE.md",
+                         "docs\\agent\\WORK_QUEUE.md",
+                         "docs\\architecture\\enforcement.md",
+                         "docs\\decisions\\ADR-050-employees-v1-architecture.md",
+                         "docs\\decisions\\ADR-051-spa-v1.1-architecture.md",
+                         "docs\\decisions\\EMPLOYEES-V1-CONTRACT-SPEC-01.md",
+                         "docs\\decisions\\README.md",
+                         "docs\\decisions\\SPA-V1.1-APPROVED-DECISIONS-01.md",
+                         "docs\\decisions\\SPA-V1.1-CONTRACT-SPEC-01.md",
+                         "STATUS.md",
+                         "tools\\dashboard\\analyze-architecture.ps1",
+                         "tools\\dashboard\\analyze-backend.ps1",
+                         "tools\\dashboard\\analyze-dashboard-summary.ps1",
+                         "tools\\dashboard\\analyze-database.ps1",
+                         "tools\\dashboard\\analyze-dependencies.ps1",
+                         "tools\\dashboard\\analyze-features.ps1",
+                         "tools\\dashboard\\analyze-frontend.ps1",
+                         "tools\\dashboard\\analyze-impact.ps1",
+                         "tools\\dashboard\\analyze-migrations.ps1",
+                         "tools\\dashboard\\analyze-module-graph.ps1",
+                         "tools\\dashboard\\analyze-processes.ps1",
+                         "tools\\dashboard\\analyze-security.ps1",
+                         "tools\\dashboard\\analyze-technical-debt.ps1",
+                         "tools\\dashboard\\analyze-tests.ps1",
+                         "tools\\dashboard\\Manage-EngineeringHistory.ps1",
+                         "tools\\dashboard\\README.md",
+                         "tools\\dashboard\\render-dashboard.ps1",
+                         "tools\\dashboard\\validate-dashboard.ps1"
+                     ],
+    "Analyzers":  {
+                      "analyze-architecture":  {
+                                                   "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                   "Scope":  [
+                                                                 "backend/src/ERP.Domain",
+                                                                 "backend/src/ERP.Application",
+                                                                 "backend/src/ERP.Infrastructure",
+                                                                 "backend/src/ERP.API"
+                                                             ],
+                                                   "Include":  [
+                                                                   "*.cs"
+                                                               ],
+                                                   "FilesAnalyzed":  2624,
+                                                   "MissingTracked":  [
+
+                                                                      ],
+                                                   "ExcludedUntracked":  [
+
+                                                                         ],
+                                                   "ModifiedInScope":  [
+
+                                                                       ]
+                                               },
+                      "analyze-backend":  {
+                                              "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                              "Scope":  [
+                                                            "backend/src"
+                                                        ],
+                                              "Include":  [
+                                                              "*"
+                                                          ],
+                                              "FilesAnalyzed":  3722,
+                                              "MissingTracked":  [
+
+                                                                 ],
+                                              "ExcludedUntracked":  [
+
+                                                                    ],
+                                              "ModifiedInScope":  [
+
+                                                                  ]
+                                          },
+                      "analyze-database":  {
+                                               "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                               "Scope":  [
+                                                             "backend/src/ERP.Infrastructure"
+                                                         ],
+                                               "Include":  [
+                                                               "*.cs"
+                                                           ],
+                                               "FilesAnalyzed":  522,
+                                               "MissingTracked":  [
+
+                                                                  ],
+                                               "ExcludedUntracked":  [
+
+                                                                     ],
+                                               "ModifiedInScope":  [
+
+                                                                   ]
+                                           },
+                      "analyze-dependencies":  {
+                                                   "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                   "Scope":  [
+                                                                 "backend/src/ERP.Domain",
+                                                                 "backend/src/ERP.Application"
+                                                             ],
+                                                   "Include":  [
+                                                                   "*.cs"
+                                                               ],
+                                                   "FilesAnalyzed":  1941,
+                                                   "MissingTracked":  [
+
+                                                                      ],
+                                                   "ExcludedUntracked":  [
+
+                                                                         ],
+                                                   "ModifiedInScope":  [
+
+                                                                       ]
+                                               },
+                      "analyze-features":  {
+                                               "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                               "Scope":  [
+                                                             "backend/src/ERP.Application/Modules",
+                                                             "backend/src/ERP.Domain/Modules"
+                                                         ],
+                                               "Include":  [
+                                                               "*"
+                                                           ],
+                                               "FilesAnalyzed":  1628,
+                                               "MissingTracked":  [
+
+                                                                  ],
+                                               "ExcludedUntracked":  [
+
+                                                                     ],
+                                               "ModifiedInScope":  [
+
+                                                                   ]
+                                           },
+                      "analyze-frontend":  {
+                                               "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                               "Scope":  [
+                                                             "frontend/src"
+                                                         ],
+                                               "Include":  [
+                                                               "*.ts",
+                                                               "*.tsx"
+                                                           ],
+                                               "FilesAnalyzed":  1356,
+                                               "MissingTracked":  [
+
+                                                                  ],
+                                               "ExcludedUntracked":  [
+
+                                                                     ],
+                                               "ModifiedInScope":  [
+
+                                                                   ]
+                                           },
+                      "analyze-impact":  {
+                                             "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                             "Scope":  [
+                                                           "backend/src/ERP.Application/Modules"
+                                                       ],
+                                             "Include":  [
+                                                             "*.cs"
+                                                         ],
+                                             "FilesAnalyzed":  1036,
+                                             "MissingTracked":  [
+
+                                                                ],
+                                             "ExcludedUntracked":  [
+
+                                                                   ],
+                                             "ModifiedInScope":  [
+
+                                                                 ]
+                                         },
+                      "analyze-migrations":  {
+                                                 "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                 "Scope":  [
+                                                               "backend/src/ERP.Infrastructure/Migrations"
+                                                           ],
+                                                 "Include":  [
+                                                                 "*.cs"
+                                                             ],
+                                                 "FilesAnalyzed":  3,
+                                                 "MissingTracked":  [
+
+                                                                    ],
+                                                 "ExcludedUntracked":  [
+
+                                                                       ],
+                                                 "ModifiedInScope":  [
+
+                                                                     ]
+                                             },
+                      "analyze-module-graph":  {
+                                                   "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                   "Scope":  [
+                                                                 "backend/src/ERP.Application/Modules",
+                                                                 "backend/src/ERP.Domain/Modules",
+                                                                 "backend/src/ERP.Infrastructure"
+                                                             ],
+                                                   "Include":  [
+                                                                   "*.cs"
+                                                               ],
+                                                   "FilesAnalyzed":  2149,
+                                                   "MissingTracked":  [
+
+                                                                      ],
+                                                   "ExcludedUntracked":  [
+
+                                                                         ],
+                                                   "ModifiedInScope":  [
+
+                                                                       ]
+                                               },
+                      "analyze-processes":  {
+                                                "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                "Scope":  [
+                                                              "backend/src/ERP.Application/Modules"
+                                                          ],
+                                                "Include":  [
+                                                                "*.cs"
+                                                            ],
+                                                "FilesAnalyzed":  1036,
+                                                "MissingTracked":  [
+
+                                                                   ],
+                                                "ExcludedUntracked":  [
+
+                                                                      ],
+                                                "ModifiedInScope":  [
+
+                                                                    ]
+                                            },
+                      "analyze-security:backend":  {
+                                                       "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                       "Scope":  [
+                                                                     "backend"
+                                                                 ],
+                                                       "Include":  [
+                                                                       "*.cs",
+                                                                       "*.json",
+                                                                       "*.config"
+                                                                   ],
+                                                       "FilesAnalyzed":  3650,
+                                                       "MissingTracked":  [
+
+                                                                          ],
+                                                       "ExcludedUntracked":  [
+
+                                                                             ],
+                                                       "ModifiedInScope":  [
+
+                                                                           ]
+                                                   },
+                      "analyze-security:frontend":  {
+                                                        "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                        "Scope":  [
+                                                                      "frontend"
+                                                                  ],
+                                                        "Include":  [
+                                                                        "*.ts",
+                                                                        "*.tsx",
+                                                                        "*.js",
+                                                                        "*.jsx"
+                                                                    ],
+                                                        "FilesAnalyzed":  1384,
+                                                        "MissingTracked":  [
+
+                                                                           ],
+                                                        "ExcludedUntracked":  [
+
+                                                                              ],
+                                                        "ModifiedInScope":  [
+
+                                                                            ]
+                                                    },
+                      "analyze-technical-debt:backend":  {
+                                                             "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                             "Scope":  [
+                                                                           "backend"
+                                                                       ],
+                                                             "Include":  [
+                                                                             "*.cs"
+                                                                         ],
+                                                             "FilesAnalyzed":  3643,
+                                                             "MissingTracked":  [
+
+                                                                                ],
+                                                             "ExcludedUntracked":  [
+
+                                                                                   ],
+                                                             "ModifiedInScope":  [
+
+                                                                                 ]
+                                                         },
+                      "analyze-technical-debt:frontend":  {
+                                                              "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                                              "Scope":  [
+                                                                            "frontend"
+                                                                        ],
+                                                              "Include":  [
+                                                                              "*.ts",
+                                                                              "*.tsx",
+                                                                              "*.js",
+                                                                              "*.jsx"
+                                                                          ],
+                                                              "FilesAnalyzed":  1384,
+                                                              "MissingTracked":  [
+
+                                                                                 ],
+                                                              "ExcludedUntracked":  [
+
+                                                                                    ],
+                                                              "ModifiedInScope":  [
+
+                                                                                  ]
+                                                          },
+                      "analyze-tests":  {
+                                            "Commit":  "d4771bbe854951b714e4d4931b9640da0a0699f5",
+                                            "Scope":  [
+                                                          "backend/src",
+                                                          "frontend"
+                                                      ],
+                                            "Include":  [
+                                                            "*.cs",
+                                                            "*.ts",
+                                                            "*.tsx"
+                                                        ],
+                                            "FilesAnalyzed":  1432,
+                                            "MissingTracked":  [
+
+                                                               ],
+                                            "ExcludedUntracked":  [
+
+                                                                  ],
+                                            "ModifiedInScope":  [
+
+                                                                ]
+                                        }
+                  }
+}

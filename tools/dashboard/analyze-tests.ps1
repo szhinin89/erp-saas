@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
@@ -31,25 +33,21 @@ if (!(Test-Path $DashboardData)) {
 
 
 
-function Count-TestFiles($path) {
+$testInclude = @("*.cs", "*.ts", "*.tsx")
+$testFiles = @{}
 
-    if (!(Test-Path $path)) {
-        return 0
-    }
+function Count-TestFiles($scope) {
 
-
-    return (
-        Get-ChildItem `
-        -Path $path `
-        -Recurse `
-        -File `
-        -Include *.cs,*.ts,*.tsx |
+    $selected = @(Get-SourceFiles $ProjectRoot @($scope) $testInclude |
         Where-Object {
 
             $_.Name -match "Test|Tests|Spec|spec|test"
 
-        }
-    ).Count
+        })
+
+    foreach($file in $selected) { $testFiles[$file.FullName] = $file }
+
+    return $selected.Count
 }
 
 
@@ -58,35 +56,33 @@ $backendTests = @()
 
 
 
-if(Test-Path $BackendRoot)
-{
+Get-SourceDirectories $ProjectRoot "backend/src" |
+Where-Object {
 
-    Get-ChildItem $BackendRoot -Directory |
-    Where-Object {
+    $_.Name -like "*.Tests"
 
-        $_.Name -like "*.Tests"
-
-    }|
-    ForEach-Object {
+}|
+ForEach-Object {
 
 
-        $files = Count-TestFiles $_.FullName
+    $files = Count-TestFiles "backend/src/$($_.Name)"
 
 
-        $backendTests += [ordered]@{
+    $backendTests += [ordered]@{
 
-            Project = $_.Name
+        Project = $_.Name
 
-            Path = $_.FullName
+        Path = Get-SourceRelativePath $ProjectRoot $_.FullName
 
-            TestFiles = $files
-        }
+        TestFiles = $files
     }
 }
 
 
 
-$frontendTests = Count-TestFiles $FrontendRoot
+$frontendTests = Count-TestFiles "frontend"
+
+Register-SourcePopulation $ProjectRoot "analyze-tests" @("backend/src", "frontend") $testInclude @($testFiles.Values)
 
 
 

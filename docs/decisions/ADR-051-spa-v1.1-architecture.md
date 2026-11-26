@@ -1,6 +1,11 @@
 # ADR-051 — SPA V1.1: arquitectura del módulo de Gestión de Spa y Tratamientos Estéticos
 
-Estado: **ACCEPTED / APROBADO** — aprobación expresa del propietario registrada el 2026-11-19 ([REG §25](SPA-V1.1-APPROVED-DECISIONS-01.md#25-aprobación-arquitectónica-de-adr-051-spa-sel-0112-y-dp-0103)). Arquitectura de referencia para SPA V1.1; **no implementada**. **Ninguna fase F0–F8 está autorizada**, tampoco Empleados. La aprobación no autoriza cambios FROZEN/CLOSED/LOCKED, no cumple COND-01..13 ni valida jurídica o fiscalmente nada (§9.2). Redactado originalmente como PROPOSED (2026-11-18); los apartados fechados antes de esta aprobación conservan su redacción histórica y se leen conforme a este estado.
+Estado: **ACCEPTED / APROBADO** — aprobación expresa del propietario registrada el 2026-11-19 ([REG §25](SPA-V1.1-APPROVED-DECISIONS-01.md#25-aprobación-arquitectónica-de-adr-051-spa-sel-0112-y-dp-0103)). Arquitectura de referencia para SPA V1.1; **no implementada**. **Ninguna fase F0–F8 está autorizada**; esta aprobación tampoco autorizó Empleados (autorizado y entregado después). La aprobación no autoriza cambios FROZEN/CLOSED/LOCKED, no cumple COND-01..13 ni valida jurídica o fiscalmente nada (§9.2). Redactado originalmente como PROPOSED (2026-11-18); los apartados fechados antes de esta aprobación conservan su redacción histórica y se leen conforme a este estado.
+
+> **Actualización de estado (2026-11-26):** Empleados V1 está implementado y CLOSED, con `IEmployeeDirectory` entregado
+> (EMP-E6b) y sin consumidores: SSOT [employees.md](../architecture/employees.md), entrega en [STATUS](../../STATUS.md). Las menciones de este
+> documento a Empleados o a su directorio como no implementados, propuestos o pendientes quedan superadas. Spa sigue
+> planificado y no implementado: no se declara integración ni cumplida COND-02, `D-01`, `V-02` u otra condición.
 
 Patrón: [ADR-049](ADR-049-sales-order-v1-architecture.md). Comportamiento y pantallas: [contrato central](SPA-V1.1-CONTRACT-SPEC-01.md); evidencia de decisiones: [registro](SPA-V1.1-APPROVED-DECISIONS-01.md); fases: [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md). Entrega y gates: [STATUS](../../STATUS.md); trabajo abierto: [WORK_QUEUE](../agent/WORK_QUEUE.md). Este ADR explica alternativas y límites, no es una segunda especificación funcional ni una SSOT implementada.
 
@@ -10,7 +15,7 @@ Patrón: [ADR-049](ADR-049-sales-order-v1-architecture.md). Comportamiento y pan
 
 Spa fue planificado antes de Empleados. Existen ocho documentos con recuperación, propuestas técnicas, una matriz, normalización, decisiones aprobadas y contrato central. No se reinicia el diseño: se integran SPA-DEC-115/116 históricamente aprobadas por evidencia del propietario, conservando planificación [F]/[R] separada de las propuestas técnicas [T], de las decisiones pendientes y de las aprobaciones comprobadas.
 
-El problema arquitectónico consiste en soportar agenda y atención estética con datos sensibles y paquetes comerciales, reutilizando identidades y procesos oficiales, sin duplicar ERP ni acoplar fallos de Spa a la autorización de una factura. Empleados y su directorio aún no están implementados. Hay decisiones abiertas de privacidad, conservación, precisión y políticas de paquetes; por eso la arquitectura sigue propuesta.
+El problema arquitectónico consiste en soportar agenda y atención estética con datos sensibles y paquetes comerciales, reutilizando identidades y procesos oficiales, sin duplicar ERP ni acoplar fallos de Spa a la autorización de una factura. Al redactarse, Empleados y su directorio no estaban implementados y la arquitectura era una propuesta (estado vigente en la cabecera). Hay decisiones abiertas de privacidad, conservación, precisión y políticas de paquetes.
 
 ## 2. Alcance y exclusiones
 

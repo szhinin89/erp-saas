@@ -1,5 +1,77 @@
 # Project Status
 
+## PROJECT-CLARITY-AND-CONSISTENCY-01 — Claridad documental y Dashboard reproducible — CLOSED (gate del propietario aprobado 2026-11-26)
+
+Autorización expresa del propietario (2026-11-26). Sin cambios de código funcional, datos del ERP, permisos,
+contratos, fórmulas, umbrales, baseline, excepciones (ADR-046, ADR-047) ni guardrails. CI #1247 SUCCESS sobre `d4771bbe8`.
+
+- **Documentos:** estados vigentes de Empleados V1 (implementado y CLOSED) y ADR-051 (ACCEPTED; Spa planificado y no
+  implementado, sin condiciones declaradas cumplidas); [vocabulario de estado](docs/architecture/enforcement.md#vocabulario-de-estado);
+  la cola declara actuaciones abiertas, no autorizaciones.
+- **DH-006 y DH-007:** población única de fuentes versionadas, enumeración completa y detección de importaciones
+  reales ([contrato](docs/ProgressDashboard/DASHBOARD-CONTRACT.md#población-de-fuentes--dh-006--dh-007-2026-11-26)).
+- **DH-002:** 13 JSON legado trasladados a `tools/dashboard/archive/data/`; `roadmap.json` sigue activo.
+- **Observaciones del gate (2026-11-26):** DH-002, DH-006 y DH-007 **Resueltos** con sus
+  [limitaciones aceptadas](docs/ProgressDashboard/DASHBOARD-CONTRACT.md#población-de-fuentes--dh-006--dh-007-2026-11-26).
+  Se conserva un solo snapshot nuevo (los de corridas intermedias, sin versionar, se apartaron fuera del
+  repositorio; los 55 versionados, intactos) y el panel de tendencia advierte el cambio de método.
+- **[DH-008](docs/ProgressDashboard/DASHBOARD_HEALTH.md) Resuelto:** con autorización del propietario se retiraron
+  las 2 aristas técnicas obsoletas `Security → Access` y `Security → Common` (89 → 87); `Security` sigue como
+  capacidad transversal en los demás datasets. `validate-dashboard.ps1` finaliza sin errores críticos (107/109);
+  conserva los 2 avisos no críticos preexistentes.
+- **Cierre:** gate del propietario aprobado el 2026-11-26, condicionado a DH-008. Por autorización expresa, el agente
+  realiza staging y commit local, sin push, junto con OWNER-ACCEPTANCE-01. No acredita producción (**NO-GO**) ni
+  reabre funcionalidades cerradas o aceptadas.
+
+### Cómo leer los indicadores
+
+Cada valor corresponde a su ejecución del 2026-11-26; ninguno es constante ni acredita producción (**NO-GO**).
+
+| Indicador | Valor | Qué mide |
+|---|---|---|
+| Avance funcional V1 | Global 75/75, Core 43/43, Employees 5/5 | Capacidades aprobadas del registro funcional |
+| Gate arquitectónico (ratchet) | PASS, 0 violaciones | Hallazgos nuevos frente al baseline |
+| Architecture score, corrida completa | 33/100 | 100 − 18 advertencias de tamaño × 2 − 31 excepciones históricas |
+| Architecture score, solo documentación | 69/100 | Control parcial: 100 − 31 excepciones; no es una auditoría arquitectónica |
+
+El indicador `Architecture` del Dashboard es otro cálculo.
+
+### Dashboard: efecto del cambio de población
+
+Comparación entre la regeneración anterior (`disk-scan-legacy`) y la metodología `git-tracked-v1`. **Es un cambio de
+qué se mide, no una mejora del ERP**; las series no son comparables entre sí.
+
+| Indicador | Antes | Después | Causa |
+|---|---|---|---|
+| Seguridad: archivos / coincidencias de «secretos» | 12.540 / 196 | 5.034 / 80 | Sin `node_modules`, `dist`, `bin`, `obj` |
+| Seguridad (score) | 0,8 | 30 | Misma fórmula |
+| Deuda: TODO / FIXME / archivos grandes | 733 / 30 / 762 | 52 / 0 / 276 | Población |
+| Calidad (score) | 6,9 | 46,2 | Misma fórmula |
+| Overall | 55,49 | 69,19 | Misma fórmula; Quality Gate sigue **RED** |
+| Archivos de prueba backend / frontend | 992 / 605 | 980 / 452 | Población |
+| Commands / EntityConfigurations | 0 / 0 | 2.276 / 221 líneas | Enumeración completa (DH-007) |
+| Dependencias prohibidas | 0 | 0 | Cobertura completa, solo directivas `using` |
+
+## OWNER-ACCEPTANCE-01 — Aceptaciones funcionales del propietario — ACEPTADO (2026-11-26)
+
+El propietario confirma el 2026-11-26 que las funcionalidades existentes de Ítems, Compras, Gastos XML, Clientes y
+Proveedores ya fueron probadas, y que no corresponde repetir las comprobaciones históricas solo por falta de registro.
+
+| Entrega | Estado | Evidencia técnica registrada (independiente de la aceptación) |
+|---|---|---|
+| Imágenes de Ítems, etapa 2 (FUNC-ITEM-IMAGE-REACTIVATION-01) | **ACEPTADA** | `bfc69e5d6`, CI #1105 SUCCESS (intento 2) |
+| PURCHASES-NEW-TAB-REDESIGN-01 | **ACEPTADA** | `04619c611`, CI #1209 SUCCESS; verificación registrada con API simulada |
+| EXPENSE-UI-02 | **ACEPTADA** | `00bdef910`, CI #1193 SUCCESS |
+| Clientes y Proveedores (BP-CONSOLIDATION-01) | **ACEPTADA**; sigue CLOSED | `65c207e42`, CI #1205 SUCCESS; pruebas con mocks y navegador con API simulada |
+
+La aceptación cubre las validaciones funcionales residuales de estas entregas, incluida la validación con API real que
+figuraba pendiente. Es una confirmación del propietario: **no acredita pruebas automatizadas ni E2E adicionales**, y no
+consta fecha, entorno ni resultado detallado de las ejecuciones. No resuelve incidencias técnicas (`Test8_D`, CI-1201
+y las demás de la [cola](docs/agent/WORK_QUEUE.md)), limitaciones ni deuda registradas, ni acredita producción
+(**NO-GO**). El indicador funcional V1 no cambia. Gate de este registro y de la regla de trabajo asociada
+([no reapertura](docs/architecture/enforcement.md#no-reapertura-de-funcionalidades-cerradas-o-aceptadas)) **aprobado
+por el propietario** (2026-11-26), con regeneración del Dashboard para actualizar las huellas de las fuentes.
+
 ## ERP-V1-DOC-CONSOLIDATION-01 — Conciliación documental V1 — CLOSED (documental; gate aprobado 2026-11-26)
 
 Solo documentación (este archivo, [WORK_QUEUE](docs/agent/WORK_QUEUE.md),
@@ -46,6 +118,9 @@ ampliaciones futuras no autorizadas. Avance funcional sin cambios: Global 75/75,
 **Producción NO-GO.**
 
 ## DASHBOARD-ANALYZER-REPRODUCIBILITY-01 — Analizadores del Dashboard no reproducibles — PENDING / DIAGNÓSTICO ACREDITADO / IMPLEMENTACIÓN NO AUTORIZADA (2026-11-26)
+
+> **Marca 2026-11-26 — SUPERADO:** la implementación se autorizó y aplicó en
+> [PROJECT-CLARITY-AND-CONSISTENCY-01](#project-clarity-and-consistency-01--claridad-documental-y-dashboard-reproducible--closed-gate-del-propietario-aprobado-2026-11-26). Lo siguiente es el diagnóstico original.
 
 Detectado al regenerar el Dashboard con Empleados V1 sobre `e257aa32d` (CI #1245 SUCCESS, verificado
 en GitHub por el propietario). Se compararon dos corridas de `run-dashboard-final.ps1`, con y sin
@@ -164,6 +239,9 @@ sigue Abierto.
 
 ## PURCHASES-NEW-TAB-REDESIGN-01 — Compras V1: rediseño visual aprobado de «Nueva compra» y extracción de componentes — PUBLICADO en `04619c611`, CI #1209 SUCCESS; validación con API real y XML real PENDIENTE (2026-11-15)
 
+> **Marca 2026-11-26 — ACEPTADO:** [aceptación del propietario](#owner-acceptance-01--aceptaciones-funcionales-del-propietario--aceptado-2026-11-26). Supera la validación pendiente descrita abajo; la
+> limitación de i18n sigue registrada como deuda.
+
 > Reapertura visual autorizada por el propietario sobre la imagen de referencia aprobada; el diseño quedó aprobado.
 > Sin cambios de hooks de negocio, cálculos, contratos, backend, API, BD ni migraciones. La barra de acciones fija
 > al pie (la «Fase B» de PURCHASES-NEW-TAB-PHASE-A-01, entonces no autorizada) se implementó a petición expresa del
@@ -281,6 +359,9 @@ sigue Abierto.
   una instalación nueva la recibe del baseline.
 
 ## BP-CONSOLIDATION-01 — Business Partners — Clientes y Proveedores — COMPLETADA / CLOSED (2026-11-15)
+
+> **Marca 2026-11-26 — ACEPTADO:** [aceptación del propietario](#owner-acceptance-01--aceptaciones-funcionales-del-propietario--aceptado-2026-11-26). Supera BP-CONSOLIDATION-01-E2E como pendiente; no acredita un
+> E2E automatizado. La deuda técnica se conserva.
 
 > **Cierre autorizado por el propietario (2026-11-15):** la implementación de Clientes y Proveedores
 > (fichas separadas `/suppliers/:id` y `/customers/:id`, listados, códigos con descripción y abreviatura)
@@ -737,6 +818,8 @@ auditada en solo lectura. Historial de migraciones: única `20261101012214_Initi
 añadir fila de catálogo (un cambio del catálogo exige conciliar el registro del Dashboard, que no se regenera aquí).
 
 ## EXPENSE-UI-02 — Gastos/XML — CIERRE TÉCNICO, CI #1193 SUCCESS
+
+> **Marca 2026-11-26 — ACEPTADO:** [aceptación del propietario](#owner-acceptance-01--aceptaciones-funcionales-del-propietario--aceptado-2026-11-26). Supera la aceptación visual pendiente descrita abajo.
 
 Publicado en `00bdef9109aa4e1e14bbe245821208ba24eb6e3e`: aviso compacto persistente
 de diferencias con el XML y advertencia tras ingresar importes, sin repetirla por
@@ -2343,6 +2426,8 @@ de inactivo. Regla global y Proveedores sin cambios. Revalidado a 320/390/768/14
 recortes ni pérdida de foco. `PurchaseFormFeedback` mantiene su fallo preexistente (no tocado).
 
 ## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 2 FRONTEND PUBLICADA: commit bfc69e5d6, CI #1105 SUCCESS (intento 2); pendiente gate del propietario (2026-11-06)
+
+> **Marca 2026-11-26 — ACEPTADO:** [aceptación del propietario](#owner-acceptance-01--aceptaciones-funcionales-del-propietario--aceptado-2026-11-26). Supera los pendientes de gate descritos abajo.
 
 > Conciliación 2026-11-26: consolidación Git/CI completada en `bfc69e5d6`,
 > [CI #1105](https://github.com/szhinin89/erp-saas/actions/runs/42218006484): intento 1 `failure` en `Backend (infrastructure-06)`, causa no determinada;

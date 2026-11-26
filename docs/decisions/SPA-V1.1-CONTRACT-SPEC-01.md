@@ -2,6 +2,11 @@
 
 **ALCANCE FUNCIONAL APROBADO (SPA-DEC-115/116) — CONSOLIDACIÓN TÉCNICA EN REVISIÓN — SIN IMPLEMENTACIÓN AUTORIZADA.**
 
+> **Actualización de estado (2026-11-26):** Empleados V1 está implementado y CLOSED, con `IEmployeeDirectory` entregado
+> (EMP-E6b) y sin consumidores: SSOT [employees.md](../architecture/employees.md), entrega en [STATUS](../../STATUS.md). Las menciones de este
+> documento a Empleados o a su directorio como no implementados, propuestos o pendientes quedan superadas. Spa sigue
+> planificado y no implementado: no se declara integración ni cumplida COND-02, `D-01`, `V-02` u otra condición.
+
 Candidato a fuente única de verdad **funcional** de SPA V1.1 (2026-11-18, revisión 3 — integración de SPA-DEC-115/116 recuperadas). Responde a cuatro preguntas por funcionalidad: **qué se desarrollará, cómo debe funcionar, qué está
 aprobado y qué no lo está, y qué queda excluido.** Consolida, sin añadir decisiones de negocio, los siete documentos previos de Spa (§0.7). **No es un ADR, no es una SSOT vigente** (la SSOT de un
 módulo nace cuando existen código y pruebas: [enforcement](../architecture/enforcement.md#ssot-por-módulo)) **y no autoriza implementar SPA ni Empleados**, migraciones, endpoints, pantallas,
@@ -59,8 +64,8 @@ reconstruida, **T** propuesta técnica, **P** pendiente, **NV** no verificado; *
 
 ### 0.4 Estado global de implementabilidad
 
-**Ninguna funcionalidad es implementable hoy.** Causas comunes: (1) el alcance funcional está aprobado, ADR-051 está ACCEPTED / APROBADO (2026-11-19) y SPA-SEL-01..12 aprobadas, pero el plan no autoriza fases ni se han cumplido COND-01..13; (2) Empleados no está implementado (`IEmployeeDirectory` es propuesta;
-EMP-E1 PENDING / NO AUTORIZADA); (3) decisiones bloqueantes abiertas (§29); (4) fichas originales sin contraste (`V-01`); (5) validación jurídica pendiente (`V-06`).
+**Ninguna funcionalidad es implementable hoy.** Causas comunes: (1) el alcance funcional está aprobado, ADR-051 está ACCEPTED / APROBADO (2026-11-19) y SPA-SEL-01..12 aprobadas, pero el plan no autoriza fases ni se han cumplido COND-01..13; (2) Spa no integra Empleados (`IEmployeeDirectory` entregado, sin consumidores;
+COND-02 no declarada cumplida); (3) decisiones bloqueantes abiertas (§29); (4) fichas originales sin contraste (`V-01`); (5) validación jurídica pendiente (`V-06`).
 
 ### 0.5 Mapa de estado por área
 
@@ -210,7 +215,7 @@ Capacidades verificadas [E] que condicionan el contrato. Que existan no las conv
 
 | Módulo | Capacidad vigente | Límite o consecuencia para Spa | Estado |
 |---|---|---|---|
-| Empleados | **No implementado.** ADR-050 Proposed; EMP-E1 PENDING / NO AUTORIZADA; `IEmployeeDirectory` necesario en V1 (aprobado) con firmas propuestas (especificación §19) | Spa no puede consumirlo todavía; toda dependencia es contractual (`D-01`, `V-02`) | BLOQUEADO (§29) |
+| Empleados | **Implementado y CLOSED** (ADR-050 Accepted; EMP-E1 a E7); `IEmployeeDirectory` entregado, sin consumidores ([employees.md](../architecture/employees.md)) | Spa no lo integra todavía; la dependencia sigue sin verificar para Spa (`D-01`, `V-02`) | BLOQUEADO (§29) |
 | BusinessPartner | Identidad con rol Customer; FROZEN (ADR-017); sin fecha de nacimiento ni contacto de emergencia | Spa lee por proyección autorizada y no copia; ampliar BP exige autorización aparte | VIGENTE-ERP |
 | Items | Naturaleza `Service` sin bodega ni stock; alcance Tenant + Company; **sin duración ni `BranchId`**; precio `BaseSalePrice` ([ADR-021](ADR-021-pricing-engine-ssot.md)) | Duración, sucursales y condiciones del servicio son datos de Spa; precio e impuestos los resuelve el ERP | VIGENTE-ERP |
 | Ventas | `SalesInvoice` Draft → Authorize → Cancel; FROZEN; línea `Service` sin bodega; `SalesInvoiceAuthorizedEvent` sin cliente ni líneas, atendido en la misma transacción; sin vendedor; devolución con Nota de Crédito; reversa por un solo camino | Spa referencia la factura y su línea; no consume el evento (`O-15` #7) | VIGENTE-ERP |
@@ -287,8 +292,8 @@ permisos propios; el flujo exacto no está recuperado); **fecha de nacimiento y 
 
 SPA-ARQ-08 §4.2 regla 2 confirma propiedad laboral de Empleados y responsabilidades operativas SPA; IEmployeeDirectory sigue dependencia contractual pendiente bajo ADR-050, no implementación autorizada.
 
-**Qué hace:** identifica quién presta la atención y quién la registra, reutilizando Empleados. **Estado de la sección:** el núcleo está APROBADO (ADR-050); el contrato `IEmployeeDirectory` no existe.
-**Implementable hoy:** no (Empleados no está implementado). **Bloqueos:** BL-01, BL-09 (§29.1).
+**Qué hace:** identifica quién presta la atención y quién la registra, reutilizando Empleados. **Estado de la sección:** el núcleo está APROBADO (ADR-050); el contrato `IEmployeeDirectory` existe en el ERP y Spa no lo consume.
+**Implementable hoy:** no (ninguna fase de Spa autorizada). **Bloqueos:** BL-01, BL-09 (§29.1).
 
 | ID | Comportamiento contractual | Estado | Evid. |
 |---|---|---|---|
@@ -2821,12 +2826,12 @@ Distingue los conceptos que los documentos usan de forma entrelazada. **Todas la
 | C-03 | Auditoría y privacidad | Decisión pendiente (sin contradicción) | `SPA-AU-01`, `SPA-AU-02`, `SPA-CARE-FOT-06`, `SPA-SEC-AUD-01`, `SPA-SEC-AUD-07`, `SPA-SEC-INV-01`, `SPA-SEC-R-02` | No hay contradicción: R3 deja el registro de lectura como mecanismo inexistente; R4 §4 lo propone. Pendiente: el propio registro de accesos es dato personal y su retención (`SPA-SEC-AUD-07`) no está definida (O-03). |
 | C-04 | Fotografías y consentimiento | Compatibles; decisión pendiente | `SPA-CN-02`, `SPA-CN-03`, `SPA-CN-06`, `SPA-INV-05`, `SPA-CARE-FOT-03`, `SPA-CARE-FOT-08`, `SPA-CARE-CNS-01`, `SPA-SEC-INV-02`, `SPA-SEC-INV-10` | Compatibles: R1 `SPA-CN-06`, R3 `SPA-CARE-FOT-03` y R4 `SPA-SEC-INV-02` coinciden en que la finalidad se verifica contra autorizaciones independientes. Pendiente: retiro y conservación (`SPA-CARE-FOT-08`). |
 | C-05 | Plan de atención y paquete comercial | Relación conceptual RESUELTA SPA-TEC-03; mecanismo pendiente | `SPA-AT-01`, `SPA-AT-05`, `SPA-PQ-01` | §10.2: plan/prestaciones/contratos/documentos/pagos explícitos, varias facturas/contratos y contratación parcial; no vínculo por mismo BP ni finanzas SPA. Representación técnica pendiente. |
-| C-07 | Agenda y asignaciones de Empleados | Compatibles; dependencia no implementada | `SPA-OPS-AGE-04`, `SPA-OPS-AGE-14`, `SPA-AR-06`, `SPA-AG-03` | Compatibles con ADR-050 §8 y EMP-BR-11 y EMP-BR-12: la disponibilidad usa la elegibilidad de Empleados y no los permisos de acceso. Dependencia en un contrato **no implementado** (D-01). |
+| C-07 | Agenda y asignaciones de Empleados | Compatibles; dependencia no integrada | `SPA-OPS-AGE-04`, `SPA-OPS-AGE-14`, `SPA-AR-06`, `SPA-AG-03` | Compatibles con ADR-050 §8 y EMP-BR-11 y EMP-BR-12: la disponibilidad usa la elegibilidad de Empleados y no los permisos de acceso. Dependencia en un contrato implementado en el ERP y no integrado en Spa (D-01). |
 | C-10 | Fecha de nacimiento y contacto de emergencia | Compatibles (SECURITY amplía las alternativas de CARE-PRIVACY) | `SPA-FC-02`, `SPA-FC-07`, `SPA-CARE-EXP-01`, `SPA-SEC-R-07` | R3 §2.4 ofrece las alternativas A a C y R4 §8, A a E; son compatibles y R4 amplía a R3. Pendiente O-06. |
 
 | D | Dependencia |
 |---|---|
-| D-01 | Empleados no implementado; `IEmployeeDirectory` es propuesta (ADR-050, EMP-E1 a E6b) |
+| D-01 | Integración de Spa con `IEmployeeDirectory` (ADR-050, EMP-E1 a E6b entregadas) pendiente de verificar |
 | D-02 | BusinessPartner / MasterData (FROZEN, ADR-017) |
 | D-03 | Items naturaleza `Service` (items.md) |
 | D-04 | Ventas (FROZEN) y facturación |

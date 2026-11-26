@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
@@ -29,75 +31,35 @@ if(!(Test-Path $InfrastructureRoot))
 
 
 
-function Count-Files($path,$filter)
-{
-    if(Test-Path $path)
-    {
-        return (
-            Get-ChildItem `
-            -Path $path `
-            -Recurse `
-            -File `
-            -Filter $filter |
-            Measure-Object
-        ).Count
-    }
+$infrastructureFiles =
+@(Get-SourceFiles $ProjectRoot @("backend/src/ERP.Infrastructure") @("*.cs"))
 
-    return 0
-}
-
-
-
-function Search-Count($path,$pattern)
-{
-    if(Test-Path $path)
-    {
-        return (
-            Select-String `
-            -Path "$path\**\*.cs" `
-            -Pattern $pattern `
-            -SimpleMatch `
-            -ErrorAction SilentlyContinue
-        ).Count
-    }
-
-    return 0
-}
+Register-SourcePopulation $ProjectRoot "analyze-database" @("backend/src/ERP.Infrastructure") @("*.cs") $infrastructureFiles
 
 
 
 $dbContext =
-Search-Count $InfrastructureRoot "DbContext"
+Measure-SourceLines $infrastructureFiles "DbContext"
 
 
 
 $dbSets =
-Search-Count $InfrastructureRoot "DbSet<"
+Measure-SourceLines $infrastructureFiles "DbSet<"
 
 
 
 $configurations =
-Search-Count $InfrastructureRoot "IEntityTypeConfiguration"
+Measure-SourceLines $infrastructureFiles "IEntityTypeConfiguration"
 
 
 
 $repositories =
-Search-Count $InfrastructureRoot "Repository"
+Measure-SourceLines $infrastructureFiles "Repository"
 
 
 
-$migrationsPath =
-Join-Path $InfrastructureRoot "Migrations"
-
-
-
-$migrations = 0
-
-if(Test-Path $migrationsPath)
-{
-    $migrations =
-    Count-Files $migrationsPath "*.cs"
-}
+$migrations =
+@(Get-SourceFiles $ProjectRoot @("backend/src/ERP.Infrastructure/Migrations") @("*.cs")).Count
 
 
 

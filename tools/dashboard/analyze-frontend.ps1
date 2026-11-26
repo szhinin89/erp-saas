@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
 $FrontendRoot = Join-Path $ProjectRoot "frontend\src"
@@ -30,85 +32,36 @@ if (!(Test-Path $DashboardData)) {
 
 
 
-function Count-Files($path, $pattern) {
+$frontendScope = "frontend/src"
 
-    if (Test-Path $path) {
 
-        return (
-            Get-ChildItem `
-            -Path $path `
-            -Recurse `
-            -File `
-            -Include $pattern `
-            -ErrorAction SilentlyContinue
-        ).Count
-    }
+function Count-Files($folder, $pattern) {
 
-    return 0
+    return @(Get-SourceFiles $ProjectRoot @("$frontendScope/$folder") @($pattern)).Count
 }
 
 
 
-function Get-Folders($path) {
+function Get-Folders($folder) {
 
-    if (Test-Path $path) {
-
-        return (
-            Get-ChildItem `
-            -Path $path `
-            -Directory |
-            Sort-Object Name |
-            Select-Object -ExpandProperty Name
-        )
-    }
-
-    return @()
+    return @(Get-SourceDirectories $ProjectRoot "$frontendScope/$folder" |
+        Select-Object -ExpandProperty Name)
 }
 
 
 
-$ignored = @(
-    "node_modules",
-    "dist",
-    ".vite"
-)
+$sourceFiles = @(Get-SourceFiles $ProjectRoot @($frontendScope) @("*.ts", "*.tsx"))
+
+Register-SourcePopulation $ProjectRoot "analyze-frontend" @($frontendScope) @("*.ts", "*.tsx") $sourceFiles
 
 
 
-$sourceFiles = Get-ChildItem `
-    -Path $FrontendRoot `
-    -Recurse `
-    -File `
-    -Include *.ts,*.tsx |
-    Where-Object {
-
-        foreach($item in $ignored) {
-
-            if ($_.FullName -like "*\$item\*") {
-                return $false
-            }
-        }
-
-        return $true
-    }
-
-
-
-$pagesPath = Join-Path $FrontendRoot "pages"
-$componentsPath = Join-Path $FrontendRoot "components"
-$hooksPath = Join-Path $FrontendRoot "hooks"
-$servicesPath = Join-Path $FrontendRoot "services"
-$storesPath = Join-Path $FrontendRoot "stores"
-$routesPath = Join-Path $FrontendRoot "routes"
-
-
-
-$pages = Count-Files $pagesPath "*.tsx"
-$components = Count-Files $componentsPath "*.tsx"
-$hooks = Count-Files $hooksPath "*.ts"
-$services = Count-Files $servicesPath "*.ts"
-$stores = Count-Files $storesPath "*.ts"
-$routes = Count-Files $routesPath "*.ts"
+$pages = Count-Files "pages" "*.tsx"
+$components = Count-Files "components" "*.tsx"
+$hooks = Count-Files "hooks" "*.ts"
+$services = Count-Files "services" "*.ts"
+$stores = Count-Files "stores" "*.ts"
+$routes = Count-Files "routes" "*.ts"
 
 
 
@@ -123,12 +76,7 @@ $moduleCandidates = @(
 
 foreach($folder in $moduleCandidates) {
 
-    $target = Join-Path $FrontendRoot $folder
-
-    if(Test-Path $target) {
-
-        $moduleFolders += Get-Folders $target
-    }
+    $moduleFolders += Get-Folders $folder
 }
 
 
@@ -137,7 +85,7 @@ $result = [ordered]@{
 
     Generated = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-    FrontendRoot = $FrontendRoot
+    FrontendRoot = Get-SourceRelativePath $ProjectRoot $FrontendRoot
 
     Statistics = [ordered]@{
 

@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -32,29 +34,15 @@ Write-Host ""
 
 
 
-$files = @()
+$backendInclude = @("*.cs")
+$frontendInclude = @("*.ts", "*.tsx", "*.js", "*.jsx")
 
+$backendFiles = @(Get-SourceFiles $ProjectRoot @("backend") $backendInclude)
+$frontendFiles = @(Get-SourceFiles $ProjectRoot @("frontend") $frontendInclude)
+$files = $backendFiles + $frontendFiles
 
-
-if(Test-Path $SourceRoot)
-{
-    $files += Get-ChildItem `
-    $SourceRoot `
-    -Recurse `
-    -Include *.cs `
-    -File
-}
-
-
-
-if(Test-Path $FrontendRoot)
-{
-    $files += Get-ChildItem `
-    $FrontendRoot `
-    -Recurse `
-    -Include *.ts,*.tsx,*.js,*.jsx `
-    -File
-}
+Register-SourcePopulation $ProjectRoot "analyze-technical-debt:backend" @("backend") $backendInclude $backendFiles
+Register-SourcePopulation $ProjectRoot "analyze-technical-debt:frontend" @("frontend") $frontendInclude $frontendFiles
 
 
 
@@ -135,7 +123,7 @@ if([string]::IsNullOrWhiteSpace($content))
         $largeFiles += [ordered]@{
 
             File =
-            $file.FullName
+            Get-SourceRelativePath $ProjectRoot $file.FullName
 
             Lines =
             $lines

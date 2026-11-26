@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -32,28 +34,15 @@ Write-Host ""
 
 
 
-$files = @()
+$backendInclude = @("*.cs", "*.json", "*.config")
+$frontendInclude = @("*.ts", "*.tsx", "*.js", "*.jsx")
 
+$backendFiles = @(Get-SourceFiles $ProjectRoot @("backend") $backendInclude)
+$frontendFiles = @(Get-SourceFiles $ProjectRoot @("frontend") $frontendInclude)
+$files = $backendFiles + $frontendFiles
 
-
-if(Test-Path $BackendRoot)
-{
-    $files += Get-ChildItem `
-    $BackendRoot `
-    -Recurse `
-    -Include *.cs,*.json,*.config `
-    -File
-}
-
-
-if(Test-Path $FrontendRoot)
-{
-    $files += Get-ChildItem `
-    $FrontendRoot `
-    -Recurse `
-    -Include *.ts,*.tsx,*.js,*.jsx `
-    -File
-}
+Register-SourcePopulation $ProjectRoot "analyze-security:backend" @("backend") $backendInclude $backendFiles
+Register-SourcePopulation $ProjectRoot "analyze-security:frontend" @("frontend") $frontendInclude $frontendFiles
 
 
 
@@ -95,7 +84,7 @@ foreach($file in $files)
     )
     {
 
-        $secrets += $file.FullName
+        $secrets += Get-SourceRelativePath $ProjectRoot $file.FullName
 
     }
 
@@ -107,7 +96,7 @@ foreach($file in $files)
     )
     {
 
-        $anonymous += $file.FullName
+        $anonymous += Get-SourceRelativePath $ProjectRoot $file.FullName
 
     }
 
@@ -119,7 +108,7 @@ foreach($file in $files)
     )
     {
 
-        $connectionStrings += $file.FullName
+        $connectionStrings += Get-SourceRelativePath $ProjectRoot $file.FullName
 
     }
 

@@ -1,9 +1,10 @@
-# Empleados V1 — Especificación contractual (diseño aprobado, NO implementado)
+# Empleados V1 — Especificación contractual (diseño aprobado; implementado)
 
 Documento de diseño, **no SSOT**. Decisiones y justificación en [ADR-050](ADR-050-employees-v1-architecture.md); orden de trabajo
-en el [plan de implementación](../agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). **Nada de lo descrito está implementado ni
-autorizado.** Cuando exista código probado, la SSOT nacerá en `docs/architecture/employees.md`
-([enforcement](../architecture/enforcement.md#ssot-por-módulo)).
+en el [plan de implementación](../agent/EMPLOYEES-V1-IMPLEMENTATION-PLAN-01.md). **Estado vigente (2026-11-26): Empleados V1
+implementado y CLOSED** ([STATUS](../../STATUS.md)). El comportamiento implementado se define en la SSOT
+[employees.md](../architecture/employees.md) ([enforcement](../architecture/enforcement.md#ssot-por-módulo)), que prevalece;
+las etiquetas de este documento conservan su valor al redactarse.
 
 Etiquetas: **APROBADO** (decisión del propietario) · **EXISTENTE** (comprobado en el código) · **PROPUESTO** (mecanismo técnico
 pendiente de validación; no es decisión aprobada) · **NO VERIFICADO** (comprobación asignada a una fase posterior). Los

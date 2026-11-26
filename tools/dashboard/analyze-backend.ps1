@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $BackendRoot = Join-Path $ProjectRoot "backend\src"
 $DashboardData = Join-Path $ProjectRoot "docs\ProgressDashboard\data"
@@ -76,7 +78,10 @@ $ignored = @(
 )
 
 
-Get-ChildItem $BackendRoot -Directory |
+Register-SourcePopulation $ProjectRoot "analyze-backend" @("backend/src") @("*") @(Get-SourceFiles $ProjectRoot @("backend/src"))
+
+
+Get-SourceDirectories $ProjectRoot "backend/src" |
 Where-Object {
     $ignored -notcontains $_.Name
 }|
@@ -89,28 +94,23 @@ ForEach-Object {
 
     $project = [ordered]@{
         Name = $projectName
-        Path = $_.FullName
+        Path = Get-SourceRelativePath $ProjectRoot $_.FullName
         Layer = $layer
         Type = $type
         Modules = @()
     }
 
 
-    $modulesFolder = Join-Path $_.FullName "Modules"
-
-
-    if (Test-Path $modulesFolder) {
-
-        Get-ChildItem $modulesFolder -Directory |
-        Sort-Object Name |
-        ForEach-Object {
+    Get-SourceDirectories $ProjectRoot "backend/src/$projectName/Modules" |
+    Sort-Object Name |
+    ForEach-Object {
 
             $moduleName = $_.Name
 
 
             $module = [ordered]@{
                 Name = $moduleName
-                Path = $_.FullName
+                Path = Get-SourceRelativePath $ProjectRoot $_.FullName
             }
 
 
@@ -129,7 +129,6 @@ ForEach-Object {
 
             $moduleRegistry[$moduleName].Layers += $layer
             $moduleRegistry[$moduleName].Projects += $projectName
-        }
     }
 
 
@@ -155,7 +154,7 @@ $result = [ordered]@{
 
     Generated = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-    BackendRoot = $BackendRoot
+    BackendRoot = Get-SourceRelativePath $ProjectRoot $BackendRoot
 
     ProjectCount = $projects.Count
 

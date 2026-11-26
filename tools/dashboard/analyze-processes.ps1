@@ -13,6 +13,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot =
 (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -43,13 +45,15 @@ function Find-Evidence($module, $pattern)
 {
     $modulePath = Join-Path $AppModulesRoot $module
 
-    if(!(Test-Path $modulePath))
+    $moduleFiles = @(Get-SourceFiles $ProjectRoot @(Get-SourceRelativePath $ProjectRoot $modulePath) @("*.cs"))
+
+    if($moduleFiles.Count -eq 0)
     {
         return @()
     }
 
     $matches =
-    Get-ChildItem -Path $modulePath -Recurse -File -Filter "*.cs" -ErrorAction SilentlyContinue |
+    $moduleFiles |
     Select-String -Pattern $pattern -ErrorAction SilentlyContinue
 
     if($null -eq $matches)
@@ -90,6 +94,9 @@ function Build-Step($name, $module, $pattern)
 }
 
 
+
+$processScope = "backend/src/ERP.Application/Modules"
+Register-SourcePopulation $ProjectRoot "analyze-processes" @($processScope) @("*.cs") @(Get-SourceFiles $ProjectRoot @($processScope) @("*.cs"))
 
 $processesOutput = @()
 

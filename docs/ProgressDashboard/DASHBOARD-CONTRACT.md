@@ -88,6 +88,39 @@ node tools/architecture/run-all.mjs --only documentation
 git diff --check
 ~~~
 
+## Población de fuentes — DH-006 / DH-007 (2026-11-26)
+
+Cambio autorizado por el propietario sobre el Dashboard FROZEN, limitado a la población y enumeración de fuentes.
+Fórmulas, umbrales, secciones y navegación no cambian.
+
+- [`source-population.ps1`](../../tools/dashboard/source-population.ps1) es la única selección de fuentes: archivos
+  versionados (`git ls-files`) leídos del árbol de trabajo, en todos los niveles. `bin`, `obj`, `dist`,
+  `node_modules` y cualquier archivo sin `git add` no se analizan. Sin Git, o fuera de la raíz del repositorio,
+  el analizador falla; no existe escaneo alternativo del disco.
+- `data/source-population.json` registra método (`git-tracked-v1`), commit, estado del árbol y, por analizador,
+  alcance, archivos analizados, versionados ausentes, nuevos excluidos y modificados. Los snapshots copian la
+  población de las métricas del score.
+- Las rutas de las salidas son relativas. La fecha de cada migración es la de su último commit.
+- Los snapshots sin método declarado son `disk-scan-legacy` y se conservan intactos. `engineering-trend.json`
+  registra el método y los cambios; `dashboard-summary.json` marca `comparable: false` cuando los dos últimos
+  difieren. El panel de tendencia del HTML es histórico curado: lleva una nota fija en la plantilla que advierte
+  que el cambio entre métodos no representa una mejora funcional del ERP.
+- Las dependencias prohibidas se detectan en directivas `using` reales (no en comentarios ni literales).
+- Los conteos `Commands`, `Queries`, `DbContext`, `Repository` y similares son líneas que contienen el texto, no
+  número de elementos.
+- La reproducibilidad no mejora la seguridad ni la calidad del ERP: cambia qué se mide.
+
+Limitaciones conocidas y aceptadas, sin tarea asociada:
+
+- No se detectan referencias totalmente calificadas ni `<Using>` de proyecto; el control oficial sigue siendo el
+  guardrail arquitectónico.
+- Un archivo nuevo sin `git add` no entra en las métricas; queda listado como excluido.
+- El contenido se lee tal como está en disco: el tamaño en KB depende del fin de línea local.
+- No se verificaron consumidores externos al repositorio de los JSON legado trasladados.
+- El CI actual no ejecuta las pruebas del Dashboard.
+
+Prueba focal: `node --test tools/dashboard/source-population.test.mjs`.
+
 ## Corrección DH-004 — presentación curada (2026-09-26)
 
 La regeneración de `51f52f21` perdió cambios hechos directamente al HTML entre
@@ -107,7 +140,7 @@ El renderer sigue produciendo datos técnicos actuales y llama a
 inyecta las 7 secciones dinámicas y los 7 datasets JS del explorador/buscador en slots
 explícitos. Los datos actuales prevalecen por clave; las referencias ausentes del
 análisis actual se retienen con una etiqueta histórica. No se escriben datos históricos
-en los JSON dinámicos de `data/`. No se requiere Git para regenerar.
+en los JSON dinámicos de `data/`. La composición no usa Git; los analizadores y el render sí (DH-006).
 
 La composición falla si falta una fuente, un dataset, una sección, quedan slots sin
 resolver o cambia una sección curada fuera de los slots de datos declarados. Nunca toma el `index.html` de salida como fuente.
@@ -124,7 +157,7 @@ Código real del ERP (backend/, frontend/)
         |
         v
 build-dashboard-data.ps1  (orquestador de DATOS -- Fase Dashboard 9.0)
-        |  valida/regenera 29 generadores automatizados
+        |  valida/regenera 31 generadores automatizados
         |  valida (sin regenerar) 3 semillas + 7 archivos manuales
         |  corre validate-dashboard.ps1 (Quality Gate) al final
         v
@@ -141,7 +174,7 @@ En paralelo, **`PROGRESS.html`** (raíz del repo) es el mapa maestro de arquitec
 
 ### Dos puntos de entrada válidos
 
-**1) Regenerar todo desde cero** (re-escanea `backend/`/`frontend/`, corre los 29 generadores en orden, valida todo, renderiza):
+**1) Regenerar todo desde cero** (re-escanea `backend/`/`frontend/`, corre los 31 generadores en orden, valida todo, renderiza):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dashboard\run-dashboard-final.ps1
@@ -155,7 +188,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\dashboard\render-dashboard.ps1
 
 `render-dashboard.ps1` primero valida sus 24 fuentes de datos declaradas (`$requiredDataFiles`, ver sección 3). Si todas existen, no están vacías y son JSON válido, **no regenera nada** — carga y renderiza directamente (camino usado en la mayoría de las fases de esta bitácora). Si falta o es inválida alguna, invoca automáticamente `build-dashboard-data.ps1` y solo continúa si logra resolverlas todas; si una fuente **manual** sigue faltando después, el pipeline se detiene con un error explícito (no inventa el contenido).
 
-`run-dashboard-final.ps1` y `build-dashboard-data.ps1` corren la misma lista de 29 generadores, en el mismo orden (ver sección 4) — `run-dashboard-final.ps1` además llama a `render-dashboard.ps1` al final; `build-dashboard-data.ps1` en cambio termina con el Quality Gate (`validate-dashboard.ps1`) y nunca renderiza.
+`run-dashboard-final.ps1` y `build-dashboard-data.ps1` corren la misma lista de 31 generadores, en el mismo orden (ver sección 4) — `run-dashboard-final.ps1` además llama a `render-dashboard.ps1` al final; `build-dashboard-data.ps1` en cambio termina con el Quality Gate (`validate-dashboard.ps1`) y nunca renderiza.
 
 ---
 
@@ -165,7 +198,8 @@ powershell -ExecutionPolicy Bypass -File .\tools\dashboard\render-dashboard.ps1
 |---|---|---|
 | `PROGRESS.html` (raíz del repo) | Mapa maestro de arquitectura: diagrama visual, capas, progreso por etapas. Página estática que carga `architecture-progress-source.js` vía `<script src>`. | Ser generado, sobrescrito o editado por ningún script de `tools/dashboard/`. |
 | `tools/dashboard/analyze-*.ps1` | Cada uno escanea una porción real del código (`backend/`, `frontend/`) o del modelo de datos ya generado, y produce un fragmento de evidencia real. | Inventar datos que no salgan de una fuente real. Escribir HTML. Escribir directamente a `index.html`. |
-| `tools/dashboard/build-dashboard-data.ps1` | Orquestador único de la capa de datos (Fase 9.0): corre los 29 generadores en orden, valida (sin regenerar) semillas y archivos manuales, corre el Quality Gate al final. | Renderizar HTML. Regenerar un archivo semilla o manual — si falta, detiene el pipeline y exige creación manual. |
+| `tools/dashboard/build-dashboard-data.ps1` | Orquestador único de la capa de datos (Fase 9.0): corre los 31 generadores en orden, valida (sin regenerar) semillas y archivos manuales, corre el Quality Gate al final. | Renderizar HTML. Regenerar un archivo semilla o manual — si falta, detiene el pipeline y exige creación manual. |
+| `tools/dashboard/source-population.ps1` | Selección única de fuentes y registro de su procedencia (DH-006/DH-007). | Escanear el disco como alternativa cuando Git no determina la población. |
 | JSON models (`docs/ProgressDashboard/data/*.json`) | Única fuente de verdad intermedia entre "código real" y "HTML". Cada archivo tiene una fuente de verdad declarada (ver sección 3). | Ser editados a mano con datos inventados (salvo los explícitamente manuales, que sí se editan a mano pero **citando evidencia real**). Ser el destino de escritura del renderer. |
 | `tools/dashboard/render-dashboard.ps1` | Único renderer. Lee los JSON, calcula **solo derivaciones de presentación** (bandas de riesgo, agregados, HTML de navegación) y escribe `index.html` **una sola vez** al final (`$html \| Out-File $Output -Encoding utf8`). | Escanear código fuente directamente. Inventar relaciones no presentes en el JSON. Escribir a los archivos de `data/`. Modificar navegación/secciones/cálculos fuera de una fase aprobada (ver Mantenimiento). |
 | `docs/ProgressDashboard/index.html` | Salida final, desechable y 100% regenerable — nunca se edita a mano. | Ser tratado como fuente de verdad; siempre se debe regenerar desde el pipeline. |
@@ -198,12 +232,12 @@ Cada uno declara en su propio campo `method`/`source` que es "revisión manual, 
 | `roadmap.json` | 7 etapas del Roadmap Maestro, curado contra `docs/ROADMAP.md` | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `blockers.json` | Bloqueadores reales, cada uno trazable a un campo `bloqueadores` de `roadmap.json`/`docs/ROADMAP.md` | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `architecture-governance.json` | Estado de gobierno (freeze/accepted/draft) por módulo | `build-dashboard-data.ps1` (`$manualFiles`) |
-| `architecture-dependencies.json` | 89 aristas derivadas mecánicamente de `explorer-index.json`, con clasificación heurística de dominio documentada en su propio campo `method` | `build-dashboard-data.ps1` (`$manualFiles`) |
+| `architecture-dependencies.json` | 87 aristas (89 hasta DH-008) derivadas mecánicamente de `explorer-index.json`, con clasificación heurística de dominio documentada en su propio campo `method` | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `erp-closure.json` | Reestructuración a JSON de la Auditoría Técnica del ERP y su Plan Maestro (Fase Dashboard 14.0) | `build-dashboard-data.ps1` (`$manualFiles`) |
 | `architecture-progress-source.json` | Único lugar donde se mantiene a mano el progreso por etapas/fases/tareas (reemplaza el antiguo array embebido en `PROGRESS.html`) | `build-dashboard-data.ps1`, **antes** de correr los generadores (`analyze-progress-map.ps1` depende de que exista) |
 | `module-coverage-audit.json` | Comparación mecánica de sets de IDs de módulo entre datasets de gobernanza, contra `backend/src/ERP.Domain/Modules/` (Fase Dashboard 10.0) | ⚠️ **Gap conocido, documentado, no corregido en Fase 20.0** — no está en `$requiredDataFiles` de `render-dashboard.ps1` ni en `$manualFiles`/`$seedFiles` de `build-dashboard-data.ps1`. Si falta, `render-dashboard.ps1` falla con un error genérico de `LoadJson` en vez del mensaje guiado que reciben los otros 7. Corregirlo es un cambio de pipeline — queda fuera del alcance de esta fase (solo documentación) |
 
-### 3.3 — Generados automáticamente (29) — vía `build-dashboard-data.ps1`
+### 3.3 — Generados automáticamente (31) — vía `build-dashboard-data.ps1`
 
 Mismo orden en que corren `run-dashboard-final.ps1` y `build-dashboard-data.ps1`:
 
@@ -227,6 +261,7 @@ Mismo orden en que corren `run-dashboard-final.ps1` y `build-dashboard-data.ps1`
 | 16 | `analyze-progress-map.ps1` | `architecture-progress.json` | lee `architecture-progress-source.json` (manual) y replica sus fórmulas (`calcPhase`/`calcStage`/`calcGlobal`) |
 | 17 | `analyze-modules.ps1` | `modules.json` | mapea módulos reales a dominios reales (`domains.json`) |
 | 18 | `analyze-features.ps1` | `features.json` | escanea `UseCases`/`*Query.cs`/`*Command.cs` por módulo |
+| — | `analyze-functional-v1.ps1` | `functional-v1.json` | registro del avance funcional V1; corre antes de `analyze-processes.ps1` |
 | 19 | `analyze-processes.ps1` | `processes.json` | procesos de negocio verificados por grep contra código real |
 | 20 | `analyze-tasks.ps1` | `tasks.json` | deriva tareas desde Quality Gate/deuda técnica/seguridad ya calculados |
 | 21 | `validate-dashboard-model.ps1` | `model-health.json` | integridad referencial del modelo (referencias rotas, evidencia faltante) |
@@ -240,17 +275,28 @@ Mismo orden en que corren `run-dashboard-final.ps1` y `build-dashboard-data.ps1`
 | 29 | `analyze-dashboard-summary.ps1` | `dashboard-summary.json` | Engineering Confidence, bandas de riesgo, Production Decision, Quality Gate Detail |
 | — | `analyze-explorer-index.ps1` | `explorer-index.json` | índice inverso consolidado (módulos, `reverseFileIndex`, `searchEntries`) — corre al final de la lista de generadores |
 
+`source-population.json` lo escribe `source-population.ps1` desde los analizadores y lo consume `Manage-EngineeringHistory.ps1`; el renderer no lo carga.
+
 **Nota de nombres**: `analyze-dependencies.ps1` (#5, `dependency-analysis.json`) es distinto de `analyze-module-graph.ps1` (#24, `dependencies.json`) — mismo prefijo, propósito y salida completamente distintos.
 
 ### 3.4 — Quality Gate (1)
 
 | Archivo | Generado por | Cuándo corre |
 |---|---|---|
-| `dashboard-validation.json` | `validate-dashboard.ps1` | al final de `build-dashboard-data.ps1`, después de validar los 29+3+8 archivos anteriores. Si detecta un error crítico, detiene el pipeline completo |
+| `dashboard-validation.json` | `validate-dashboard.ps1` | al final de `build-dashboard-data.ps1`, después de validar los 31+3+8 archivos anteriores. Si detecta un error crítico, detiene el pipeline completo |
+
+**Criterio de módulos (check 7).** Todo módulo citado por `roadmap.json`, `blockers.json` o
+`architecture-dependencies.json` debe existir en `explorer-index.json`. Excepciones sin carpeta bajo `Modules/`:
+`BusinessPartner` y la capacidad transversal `Security` (DH-008, 2026-11-26). `Security` solo se admite en
+referencias de gobierno y mientras exista código versionado en una carpeta homónima fuera de `Modules/` y de las
+pruebas; una arista técnica de `architecture-dependencies.json` sigue exigiendo un módulo real en el grafo.
+Regresión: `node --test tools/dashboard/validate-dashboard.test.mjs`.
 
 ### 3.5 — Legado sin consumidor activo (no forma parte del contrato)
 
-Confirmado por ausencia en la lista `LoadJson` de `render-dashboard.ps1` (auditorías de Fases 16.0/18.0): `dashboard-model.json`, `dashboard-model-v7.json`, `dashboard-model-v9.json`, `dashboard-model-v10.json` (superados por `dashboard-model-v12.json`), `api-analysis.json`/`analyze-api.ps1`, `docs-analysis.json`/`analyze-docs.ps1` (ambos scripts retirados de la orquestación automática, no eliminados), `risks.json`, `history.json`, `production.json` (placeholders vacíos), `project-model.json`, `project-tree.json`, `dashboard-diff.json`, `dashboard-state.json`, `git-analysis.json`, `metrics.json`, `history-retention.json`. Ninguno se borra en esta fase (fuera de alcance — solo documentación) ni en ninguna fase de hardening anterior; se documentan para que un mantenedor futuro no los confunda con datasets activos.
+Sin consumidor activo y todavía en `data/`: `dashboard-model-v10.json` (superado por `dashboard-model-v12.json`), `api-analysis.json`/`analyze-api.ps1` y `docs-analysis.json`/`analyze-docs.ps1` (scripts retirados de la orquestación, no eliminados).
+
+Trasladados el 2026-11-26 (DH-002) a [`tools/dashboard/archive/data/`](../../tools/dashboard/archive/data/), sin eliminar ni modificar: `dashboard-model.json`, `dashboard-model-v7.json`, `dashboard-model-v9.json`, `dashboard-diff.json`, `dashboard-state.json`, `git-analysis.json`, `history.json`, `history-retention.json`, `metrics.json`, `production.json`, `project-model.json`, `project-tree.json` y `risks.json`. Dentro del repositorio solo los referenciaban scripts archivados, que no forman parte del flujo oficial y siguen apuntando a `data/`; no se verificaron consumidores externos. `roadmap.json` es una fuente manual activa (sección 3.2).
 
 ---
 
@@ -261,7 +307,7 @@ analyze-backend → analyze-frontend → analyze-tests → analyze-architecture 
 analyze-dependencies → analyze-database → analyze-migrations →
 analyze-technical-debt → analyze-security → analyze-module-health → health-score →
 calculate-engineering-score → Manage-EngineeringHistory → quality-gate → build-dashboard-v12 →
-analyze-progress-map → analyze-modules → analyze-features → analyze-processes → analyze-tasks →
+analyze-progress-map → analyze-modules → analyze-features → analyze-functional-v1 → analyze-processes → analyze-tasks →
 validate-dashboard-model → analyze-impact → analyze-completion → analyze-module-graph →
 analyze-critical-path → analyze-release-simulation → analyze-recommendations →
 analyze-navigation-map → analyze-dashboard-summary → analyze-explorer-index
@@ -298,7 +344,7 @@ Mecánica (JS embebido en `render-dashboard.ps1`, sección `$jsHtml`): `showGrou
 1. Código real del ERP cambia (backend/ o frontend/)
         ↓
 2. build-dashboard-data.ps1 (o run-dashboard-final.ps1)
-   - 29 generadores re-escanean el código real
+   - 31 generadores re-escanean las fuentes versionadas
    - 3 semillas + 8 manuales se validan (nunca se regeneran)
    - validate-dashboard.ps1 corre el Quality Gate
         ↓
@@ -357,7 +403,7 @@ Declarado en **Fase Dashboard 20.0**, tras el cierre acumulado de las Fases 15.0
 | 19.0 | Determinismo: detección de ciclos de dependencias 100% reproducible (verificado con hash SHA-256 idéntico en 3 corridas consecutivas) |
 | 20.0 | Esta documentación — cierre formal |
 
-**Lo que queda FROZEN**: 36 secciones, 6 categorías de navegación con sub-navegación, todos los cálculos y fórmulas de presentación existentes, el pipeline de 29 generadores + 8 manuales + 3 semillas + 1 Quality Gate, el orden de ejecución de la sección 4.
+**Lo que queda FROZEN**: 36 secciones, 6 categorías de navegación con sub-navegación, todos los cálculos y fórmulas de presentación existentes, el pipeline de 31 generadores + 8 manuales + 3 semillas + 1 Quality Gate, el orden de ejecución de la sección 4.
 
 **Lo que NO está congelado**: el *contenido* de los datasets (números, porcentajes, listas) — esos cambian cada vez que se corre el pipeline sobre código real actualizado, por diseño. Congelar el Dashboard significa congelar su *estructura*, no sus mediciones.
 

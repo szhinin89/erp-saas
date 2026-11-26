@@ -550,20 +550,6 @@
       "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
     },
     {
-      "sourceModule": "Security",
-      "targetModule": "Access",
-      "dependencyType": "Core",
-      "critical": false,
-      "observaciones": "Dependencia tecnica estandar (import/reference), sin criticidad ni ciclo detectado"
-    },
-    {
-      "sourceModule": "Security",
-      "targetModule": "Common",
-      "dependencyType": "Core",
-      "critical": true,
-      "observaciones": "Dependencia critica segun explorer-index.json (criticalDependencies, formula changeRisk)"
-    },
-    {
       "sourceModule": "Session",
       "targetModule": "Access",
       "dependencyType": "Core",

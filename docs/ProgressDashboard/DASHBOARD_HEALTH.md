@@ -8,13 +8,13 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 
 ## Dashboard Health Summary
 
-- Hallazgos abiertos: 2
-- Hallazgos resueltos: 4
+- Hallazgos abiertos: 0
+- Hallazgos resueltos: 8
 - Hallazgos críticos: 0
-- Hallazgos importantes: 2
+- Hallazgos importantes: 0
 - Hallazgos menores: 0
-- Última auditoría: 2026-10-24 (DH-006 registrado el 2026-11-26, sin nueva auditoría del pipeline)
-- Estado general: Advertencia
+- Última auditoría: 2026-10-24 (DH-002 y DH-006 a DH-008 se trataron el 2026-11-26, sin nueva auditoría general)
+- Estado general: Sin hallazgos abiertos
 
 ---
 
@@ -35,14 +35,14 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ### DH-002 — 14 archivos JSON huérfanos sin documentar en `data/`
 
 - **Fecha de detección:** 2026-07-24
-- **Estado:** Abierto
+- **Estado:** Resuelto
 - **Prioridad:** 🟧 Importante
 - **Descripción:** `dashboard-model-v7.json`, `dashboard-model-v9.json`, `dashboard-model.json`, `dashboard-diff.json`, `dashboard-state.json`, `git-analysis.json`, `history.json`, `history-retention.json`, `metrics.json`, `production.json`, `project-model.json`, `project-tree.json`, `risks.json`, `roadmap.json` no son leídos por ningún script de `tools/dashboard/*.ps1` (verificado por grep cruzado del nombre de archivo contra todos los `.ps1`). A diferencia de otros huérfanos ya aceptados y documentados (`dashboard-model-v10.json`, `api-analysis.json`, `docs-analysis.json` — ver `tools/dashboard/README.md` líneas 78-80), estos 14 no figuran en ningún lado como deuda conocida.
 - **Impacto:** ~750 KB de datos obsoletos en el repositorio; riesgo de que un futuro agente o desarrollador los confunda con la fuente de verdad vigente del pipeline.
 - **Recomendación:** Documentar en `tools/dashboard/README.md` como deuda aceptada (mismo patrón que `dashboard-model-v10.json`), o archivar/eliminar tras confirmación explícita del usuario.
 - **Responsable:** Decisión conjunta
-- **Fecha de resolución:** —
-- **Observaciones:** Ninguna corrección automática — requiere decisión explícita del usuario sobre documentar vs. archivar/eliminar.
+- **Fecha de resolución:** 2026-11-26
+- **Observaciones:** Ninguna corrección automática — requiere decisión explícita del usuario sobre documentar vs. archivar/eliminar. **2026-11-26:** la descripción original era inexacta en dos puntos: `roadmap.json` es fuente manual activa (la exigen `build-dashboard-data.ps1`, `render-dashboard.ps1` y `validate-dashboard.ps1`) y los otros 13 ya figuraban como legado en [DASHBOARD-CONTRACT §3.5](DASHBOARD-CONTRACT.md). Con autorización del propietario, los 13 se trasladaron sin cambios (SHA256 idénticos) a `tools/dashboard/archive/data/`. Referencias en el repositorio: solo scripts archivados, que no se ejecutan en el flujo oficial; `ci_changes.test.mjs` usa `production.json` como cadena de ruta. No se verificaron consumidores externos (limitación registrada). **Criterios acreditados:** 13/13 idénticos a su versión versionada, `roadmap.json` activo y [README](../../tools/dashboard/README.md#archivo-histórico-archive) que declara el archivo fuera del pipeline.
 
 ### DH-003 — `render-dashboard.ps1` falla: lee `docs/adr`, eliminado al consolidar la documentación
 
@@ -87,8 +87,8 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ### DH-006 — Analizadores no reproducibles (DASHBOARD-ANALYZER-REPRODUCIBILITY-01)
 
 - **Fecha de detección:** 2026-11-26 (regeneración con Empleados V1 sobre `e257aa32d`)
-- **Estado:** Abierto
-- **Persistencia:** Nuevo
+- **Estado:** Resuelto
+- **Persistencia:** Resuelto
 - **Prioridad:** 🟧 Importante
 - **Descripción:** Diagnóstico acreditado comparando dos corridas de `run-dashboard-final.ps1`, con y sin `frontend/dist`: los analizadores dependen de archivos locales no versionados. En la segunda corrida, 7.504 de los 12.538 archivos analizados por seguridad no estaban versionados y 116 de las 196 coincidencias de patrones de secretos procedían de `node_modules`. `frontend/dist` añadía 267 archivos analizados y 19 coincidencias (215 frente a 196), además de 267 archivos en deuda técnica.
 - **Impacto:** Puntajes y tendencias no son reproducibles; las tendencias históricas pueden comparar poblaciones distintas.
@@ -96,8 +96,40 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 - **Recomendación (no autorizada):** población reproducible de archivos versionados, revisión de todos los analizadores afectados, registro de procedencia, commit y población, nueva línea base sin reescribir históricos y acreditación de invariancia ante artefactos locales.
 - **Esfuerzo:** no estimado. **Riesgo:** cambio de línea base en un pipeline FROZEN v1.0. **Dependencias:** autorización del propietario. **Momento recomendado:** tarea propia del pipeline.
 - **Responsable:** Decisión conjunta
-- **Fecha de resolución:** —
-- **Observaciones:** **Implementación no autorizada.** El avance funcional V1 usa un registro y un cálculo propios; este diagnóstico no lo evaluó como afectado. Evidencia en [STATUS](../../STATUS.md); seguimiento en la [cola](../agent/WORK_QUEUE.md).
+- **Fecha de resolución:** 2026-11-26
+- **Observaciones:** El avance funcional V1 usa un registro y un cálculo propios; no está afectado. **2026-11-26:** implementación autorizada y aplicada (población `git-tracked-v1`, [contrato](DASHBOARD-CONTRACT.md#población-de-fuentes--dh-006--dh-007-2026-11-26), prueba `source-population.test.mjs`). **Criterios acreditados:** invariancia ante artefactos locales, procedencia registrada, fórmulas intactas, historial conservado y método visible. Limitaciones en el [contrato](DASHBOARD-CONTRACT.md#población-de-fuentes--dh-006--dh-007-2026-11-26). Resultados en [STATUS](../../STATUS.md).
+
+---
+
+### DH-007 — Enumeración incompleta en analizadores de arquitectura, base de datos y dependencias
+
+- **Fecha de detección:** 2026-11-26
+- **Estado:** Resuelto
+- **Persistencia:** Resuelto
+- **Prioridad:** 🟧 Importante
+- **Descripción:** `Select-String -Path "<carpeta>\**\*.cs"` solo cubría un nivel (en Domain, 33 de 738 archivos). `Commands` y `EntityConfigurations` daban 0 y las reglas de dependencias prohibidas revisaban una parte del código.
+- **Impacto:** Indicadores incompletos y «Dependency rules respected» sin cobertura total.
+- **Corrección:** enumeración de la población común en todos los niveles; las dependencias prohibidas se detectan en directivas `using` reales, porque la búsqueda por texto recursiva contaría comentarios. Mismo alcance de reglas; el guardrail oficial no cambia.
+- **Límites:** no detecta referencias totalmente calificadas ni `<Using>` de proyecto.
+- **Responsable:** Pipeline Dashboard
+- **Fecha de resolución:** 2026-11-26
+- **Observaciones:** Autorizado por el propietario el 2026-11-26. **Criterios acreditados:** enumeración en varios niveles y detección de importaciones sin falsos positivos por comentarios.
+
+---
+
+### DH-008 — Datos manuales citan el módulo retirado `Security`
+
+- **Fecha de detección:** 2026-11-26
+- **Estado:** Resuelto
+- **Persistencia:** Resuelto
+- **Prioridad:** 🟧 Importante
+- **Descripción:** `validate-dashboard.ps1` termina con 1 error crítico (check 7). Causa raíz: `1399ada16` (2026-11-11) eliminó el código de `Modules/Security`; el explorador, derivado del código, dejó de listarlo, y los datos manuales siguieron citándolo.
+- **Impacto:** El Quality Gate de datos del Dashboard fallaba. La regeneración oficial no lo ejecuta.
+- **Corregido (pipeline):** `Security` es una capacidad transversal vigente fuera de `Modules/`; sus referencias de gobierno (`roadmap.json`, `blockers.json`) se admiten con evidencia de código versionado. Regresión `validate-dashboard.test.mjs`.
+- **Corregido (datos, autorizado por el propietario):** se retiraron las 2 aristas técnicas `Security → Access` y `Security → Common` de `architecture-dependencies.json` (89 → 87, sin otras relaciones modificadas). No eran dependencias vigentes del grafo de módulos: no hay código ni nodo `Security` en el grafo actual. El código transversal de carpetas `Security` solo consume interfaces compartidas de `ERP.Application.Common`, que el grafo de módulos no modela. `Security` se conserva en los demás datasets; `module-coverage-audit.json` es una auditoría fechada y no se modificó.
+- **Criterios acreditados:** `validate-dashboard.ps1` sin errores críticos (107/109; 2 avisos no críticos preexistentes).
+- **Responsable:** Decisión conjunta
+- **Fecha de resolución:** 2026-11-26
 
 ---
 

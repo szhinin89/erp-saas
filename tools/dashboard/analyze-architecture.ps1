@@ -6,6 +6,8 @@
 
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "source-population.ps1")
+
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 
@@ -29,50 +31,29 @@ if(!(Test-Path $BackendRoot))
 
 
 
-function Count-CSFiles($path)
+function Get-LayerFiles($scope)
 {
-    if(Test-Path $path)
-    {
-        return (
-            Get-ChildItem `
-            -Path $path `
-            -Recurse `
-            -File `
-            -Filter *.cs |
-            Measure-Object
-        ).Count
-    }
-
-    return 0
+    return @(Get-SourceFiles $ProjectRoot @($scope) @("*.cs"))
 }
 
 
 
-function Search-Code($path,$pattern)
-{
-    if(Test-Path $path)
-    {
-        return (
-            Select-String `
-            -Path "$path\**\*.cs" `
-            -Pattern $pattern `
-            -SimpleMatch `
-            -ErrorAction SilentlyContinue
-        ).Count
-    }
+$layerScopes = @(
+    "backend/src/ERP.Domain",
+    "backend/src/ERP.Application",
+    "backend/src/ERP.Infrastructure",
+    "backend/src/ERP.API"
+)
 
-    return 0
-}
+$domain = @(Get-LayerFiles $layerScopes[0])
 
+$application = @(Get-LayerFiles $layerScopes[1])
 
+$infrastructure = @(Get-LayerFiles $layerScopes[2])
 
-$domain = Join-Path $BackendRoot "ERP.Domain"
+$api = @(Get-LayerFiles $layerScopes[3])
 
-$application = Join-Path $BackendRoot "ERP.Application"
-
-$infrastructure = Join-Path $BackendRoot "ERP.Infrastructure"
-
-$api = Join-Path $BackendRoot "ERP.API"
+Register-SourcePopulation $ProjectRoot "analyze-architecture" $layerScopes @("*.cs") ($domain + $application + $infrastructure + $api)
 
 
 
@@ -80,9 +61,9 @@ $violations = @()
 
 
 
-$domainEF = Search-Code $domain "Microsoft.EntityFrameworkCore"
+$domainEF = @(Find-ForbiddenImports $domain "Microsoft.EntityFrameworkCore").Count
 
-$domainAsp = Search-Code $domain "Microsoft.AspNetCore"
+$domainAsp = @(Find-ForbiddenImports $domain "Microsoft.AspNetCore").Count
 
 
 
@@ -119,39 +100,39 @@ Layers = [ordered]@{
 
 
 Domain = @{
-    Files = Count-CSFiles $domain
+    Files = $domain.Count
 }
 
 
 Application = @{
 
-    Files = Count-CSFiles $application
+    Files = $application.Count
 
-    Commands = Search-Code $application "Command"
+    Commands = Measure-SourceLines $application "Command"
 
-    Queries = Search-Code $application "Query"
+    Queries = Measure-SourceLines $application "Query"
 
-    Validators = Search-Code $application "Validator"
+    Validators = Measure-SourceLines $application "Validator"
 }
 
 
 
 Infrastructure = @{
 
-    Files = Count-CSFiles $infrastructure
+    Files = $infrastructure.Count
 
-    DbContext = Search-Code $infrastructure "DbContext"
+    DbContext = Measure-SourceLines $infrastructure "DbContext"
 
-    Repository = Search-Code $infrastructure "Repository"
+    Repository = Measure-SourceLines $infrastructure "Repository"
 }
 
 
 
 API = @{
 
-    Files = Count-CSFiles $api
+    Files = $api.Count
 
-    Controllers = Search-Code $api "Controller"
+    Controllers = Measure-SourceLines $api "Controller"
 }
 
 

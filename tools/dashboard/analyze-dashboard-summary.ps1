@@ -314,6 +314,15 @@ if($null -ne $model.Trend -and $model.Trend.History.Count -gt 0)
     elseif($trendChange -lt 0) { $trendStatus = "Declining" }
 }
 
+# DH-006: dos snapshots de metodos distintos no miden lo mismo.
+$trendComparable = $true
+if($null -ne $model.Trend -and $model.Trend.History.Count -gt 1 -and
+   [string]$model.Trend.History[-1].Method -ne [string]$model.Trend.History[-2].Method)
+{
+    $trendComparable = $false
+    $trendStatus = "Not comparable (methodology change)"
+}
+
 Write-Host "Trend: Current=$currentTrend Previous=$previousTrend Change=$trendChange Status=$trendStatus"
 
 
@@ -389,6 +398,7 @@ $result = [ordered]@{
         previous = $previousTrend
         change = $trendChange
         status = $trendStatus
+        comparable = $trendComparable
     }
     executiveFlags = [ordered]@{
         securityHealth = $securityHealth

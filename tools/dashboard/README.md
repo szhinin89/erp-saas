@@ -39,6 +39,45 @@ docs/ProgressDashboard/index.html
 
 El renderer **nunca infiere ni inventa** relaciones o riesgos — solo agrega y presenta lo que los analizadores ya calcularon con evidencia real (rutas de archivo, conteos de código, coincidencias de grep). Si un dato no existe todavía, el HTML lo dice explícitamente ("No features mapped yet", "N/A - pending") en vez de rellenar con contenido ficticio.
 
+## Población de fuentes
+
+Los analizadores solo leen archivos versionados mediante `source-population.ps1`; requieren Git. Reglas, registro de
+procedencia y límites: [DASHBOARD-CONTRACT § Población de fuentes](../../docs/ProgressDashboard/DASHBOARD-CONTRACT.md#población-de-fuentes--dh-006--dh-007-2026-11-26).
+Para que un archivo nuevo entre en las métricas, debe estar en el índice de Git antes de regenerar.
+
+```powershell
+node --test tools/dashboard/source-population.test.mjs
+```
+
+```powershell
+node --test tools/dashboard/validate-dashboard.test.mjs
+```
+
+## Archivo histórico (`archive/`)
+
+Los scripts de `archive/` **no pertenecen al pipeline activo** ni son herramientas vigentes: se conservan solo por
+trazabilidad. Varios leen o escriben rutas anteriores (entre ellas los JSON legado en `docs/ProgressDashboard/data/`),
+así que no deben ejecutarse, reactivarse ni adaptarse. El único flujo vigente es el descrito en este documento.
+`roadmap.json` no es legado: es una fuente manual activa.
+
+Los 13 JSON legado se trasladaron sin cambios a `archive/data/` el 2026-11-26 (DH-002). SHA256:
+
+| Archivo | SHA256 |
+|---|---|
+| `dashboard-model-v7.json` | `137d1478d614bb5c0f08a9f074495eac47f48c283ee6567446b1d43a091ea161` |
+| `dashboard-model-v9.json` | `dbd0005f376982eef8a265d19f1290f27aa31a7c94b91249a4df344e24518a4a` |
+| `dashboard-model.json` | `ac73b42b8829eba5c9da8ef9631ed2dc51b0edff4a8163df9d078cad7dccb3d4` |
+| `dashboard-diff.json` | `75b2b6af47e7bdb46d7daf94421bc56181b15cbaa6a35115e471a9e6edfeec4d` |
+| `dashboard-state.json` | `4e9b5d18b67882413be4617996a4e20e9996b3ecb4ec05a428cf96ce8e262b3f` |
+| `git-analysis.json` | `8c0a62e64a92478a8af2404dee37792acf9f67d1f3cf8c5d9f5eb097d4541d12` |
+| `history.json` | `9e1ab83190bccc9ea53ba40f856fbe5e5718bbc45eaf43a0cbd4f42fd4f01657` |
+| `history-retention.json` | `e66c75ec19a8fd89e6ed6a646a8555946cf4433cf95b98a7600b8c4d8b0ce689` |
+| `metrics.json` | `4e3c04011c73ba3124bbc9d7b14f580c4de85fa59657100647c69fada8ddb53b` |
+| `production.json` | `9e1ab83190bccc9ea53ba40f856fbe5e5718bbc45eaf43a0cbd4f42fd4f01657` |
+| `project-model.json` | `a1aa0a4efad6eca66a7fc21881bd9ff8d798a7f8454ab60fb81edb89c8aab36c` |
+| `project-tree.json` | `e29b57a3e0b920ca8af1b48eff70e348a1d69011a647099757da3539d16ec0cf` |
+| `risks.json` | `9e1ab83190bccc9ea53ba40f856fbe5e5718bbc45eaf43a0cbd4f42fd4f01657` |
+
 ## Analizadores y su salida
 
 | Script | Genera | Fuente de evidencia |

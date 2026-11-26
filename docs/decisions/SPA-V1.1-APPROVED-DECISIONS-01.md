@@ -5,7 +5,12 @@
 Registro canónico de las aprobaciones de Spa. Conserva O-25/O-15, aprobadas el 2026-11-18, y añade la evidencia histórica SPA-DEC-115/116 recuperada por el propietario en el encargo de integración del 2026-11-18. Las decisiones históricas fueron aprobadas antes de planificar Empleados; su fecha original exacta no fue aportada.
 Estado de entrega: [STATUS](../../STATUS.md); cola: [WORK_QUEUE](../agent/WORK_QUEUE.md).
 
-Comportamiento consolidado: [contrato central](SPA-V1.1-CONTRACT-SPEC-01.md). Arquitectura candidata: [ADR-051](ADR-051-spa-v1.1-architecture.md), PROPOSED / NO APROBADO. Fases: [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md), ninguna autorizada. DIR-SSOT-01 (§7) es una instrucción de propiedad, no una aprobación de diseño financiero.
+> **Actualización de estado (2026-11-26):** Empleados V1 está implementado y CLOSED, con `IEmployeeDirectory` entregado
+> (EMP-E6b) y sin consumidores: SSOT [employees.md](../architecture/employees.md), entrega en [STATUS](../../STATUS.md). Las menciones de este
+> documento a Empleados o a su directorio como no implementados, propuestos o pendientes quedan superadas. Spa sigue
+> planificado y no implementado: no se declara integración ni cumplida COND-02, `D-01`, `V-02` u otra condición.
+
+Comportamiento consolidado: [contrato central](SPA-V1.1-CONTRACT-SPEC-01.md). Arquitectura: [ADR-051](ADR-051-spa-v1.1-architecture.md), ACCEPTED / APROBADO desde el 2026-11-19 (§25); las entradas anteriores a esa fecha conservan su redacción histórica. Fases: [plan](SPA-V1.1-IMPLEMENTATION-PLAN-01.md), ninguna autorizada. DIR-SSOT-01 (§7) es una instrucción de propiedad, no una aprobación de diseño financiero.
 
 ## 0. Naturaleza y límites
 

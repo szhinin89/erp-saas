@@ -1,12 +1,12 @@
 ﻿{
-    "timestamp":  "2026-10-25 10:36:41",
+    "timestamp":  "2026-11-26 18:31:57",
     "totalChecks":  109,
     "passed":  107,
     "failed":  2,
     "criticalErrors":  0,
     "warnings":  2,
     "score":  98.2,
-    "tiempoMs":  764,
+    "tiempoMs":  3840,
     "metodo":  "Checks 1/2/12 (existencia/JSON valido/no vacio) aplicados a las 25 fuentes que consume render-dashboard.ps1. Checks 3-11 (claves obligatorias, duplicados, referencias rotas, modulos vs codigo fuente, rangos 0-100, estados conocidos, fechas, nulls) aplicados solo a los 6 datasets con esquema de modulo verificado (modules-status.json/architecture-governance.json/roadmap.json/blockers.json/architecture-dependencies.json/module-coverage-audit.json) mas explorer-index.json como referencia de codigo fuente real. Score = 100 * passed / totalChecks.",
     "errores":  [
 
@@ -20,7 +20,7 @@
                          {
                              "check":  "9. Sin estados desconocidos",
                              "severity":  "Media",
-                             "detail":  "modules-status.json (Companies).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Finance).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Navigation).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Purchases).functionalStatus = \u0027Listo / cerrado (2026-09-12)\u0027 no coincide con ningun estado conocido; modules-status.json (Sales).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Security).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Session).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Accounting).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; blockers.json (BLK-011).estado = \u0027Implementado; cierre por verificar\u0027 no es un valor conocido (Abierto/En progreso/Resuelto); blockers.json (BLK-012).estado = \u0027Futuro\u0027 no es un valor conocido (Abierto/En progreso/Resuelto)"
+                             "detail":  "modules-status.json (Companies).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Finance).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Navigation).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Purchases).functionalStatus = \u0027Listo / cerrado (2026-09-12)\u0027 no coincide con ningun estado conocido; modules-status.json (Sales).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Security).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Session).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Accounting).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Employees).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; blockers.json (BLK-011).estado = \u0027Implementado; cierre por verificar\u0027 no es un valor conocido (Abierto/En progreso/Resuelto); blockers.json (BLK-012).estado = \u0027Futuro\u0027 no es un valor conocido (Abierto/En progreso/Resuelto)"
                          }
                      ],
     "checksCompletos":  [
@@ -34,7 +34,7 @@
                                 "check":  "12. No vacio: dashboard-model-v12.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (304050 bytes)"
+                                "detail":  "OK (138692 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: dashboard-model-v12.json",
@@ -58,7 +58,7 @@
                                 "check":  "12. No vacio: dashboard-summary.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (5480 bytes)"
+                                "detail":  "OK (5141 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: dashboard-summary.json",
@@ -154,7 +154,7 @@
                                 "check":  "12. No vacio: modules.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (9082 bytes)"
+                                "detail":  "OK (9083 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: modules.json",
@@ -178,7 +178,7 @@
                                 "check":  "12. No vacio: features.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (124243 bytes)"
+                                "detail":  "OK (128366 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: features.json",
@@ -202,7 +202,7 @@
                                 "check":  "12. No vacio: processes.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (7321 bytes)"
+                                "detail":  "OK (7255 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: processes.json",
@@ -226,7 +226,7 @@
                                 "check":  "12. No vacio: tasks.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (108997 bytes)"
+                                "detail":  "OK (118393 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: tasks.json",
@@ -250,7 +250,7 @@
                                 "check":  "12. No vacio: impact.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (27839 bytes)"
+                                "detail":  "OK (28164 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: impact.json",
@@ -274,7 +274,7 @@
                                 "check":  "12. No vacio: model-health.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (3470 bytes)"
+                                "detail":  "OK (3589 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: model-health.json",
@@ -298,7 +298,7 @@
                                 "check":  "12. No vacio: architecture-progress.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (160577 bytes)"
+                                "detail":  "OK (160569 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: architecture-progress.json",
@@ -322,7 +322,7 @@
                                 "check":  "12. No vacio: completion-intelligence.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (3297 bytes)"
+                                "detail":  "OK (2995 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: completion-intelligence.json",
@@ -346,7 +346,7 @@
                                 "check":  "12. No vacio: navigation-map.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (29144 bytes)"
+                                "detail":  "OK (29091 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: navigation-map.json",
@@ -370,7 +370,7 @@
                                 "check":  "12. No vacio: explorer-index.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (2351662 bytes)"
+                                "detail":  "OK (2439981 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: explorer-index.json",
@@ -394,7 +394,7 @@
                                 "check":  "12. No vacio: modules-status.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (24231 bytes)"
+                                "detail":  "OK (25262 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: modules-status.json",
@@ -418,7 +418,7 @@
                                 "check":  "12. No vacio: dependencies.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (212994 bytes)"
+                                "detail":  "OK (223983 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: dependencies.json",
@@ -442,7 +442,7 @@
                                 "check":  "12. No vacio: critical-path.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (173306 bytes)"
+                                "detail":  "OK (182573 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: critical-path.json",
@@ -466,7 +466,7 @@
                                 "check":  "12. No vacio: release-simulation.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (10250 bytes)"
+                                "detail":  "OK (10244 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: release-simulation.json",
@@ -490,7 +490,7 @@
                                 "check":  "12. No vacio: recommendations.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (24423 bytes)"
+                                "detail":  "OK (21791 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: recommendations.json",
@@ -538,7 +538,7 @@
                                 "check":  "12. No vacio: architecture-dependencies.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (24983 bytes)"
+                                "detail":  "OK (24476 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: architecture-dependencies.json",
@@ -586,7 +586,7 @@
                                 "check":  "12. No vacio: architecture-governance.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (30330 bytes)"
+                                "detail":  "OK (31329 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: architecture-governance.json",
@@ -652,7 +652,7 @@
                                 "check":  "7b. Excepciones conocidas (fuera del arbol Modules/, ya documentadas)",
                                 "ok":  true,
                                 "severity":  "Informativa",
-                                "detail":  "BusinessPartner -- ver Fase Dashboard 3.0/10.0"
+                                "detail":  "BusinessPartner Security -- ver Fase Dashboard 3.0/10.0"
                             },
                             {
                                 "check":  "8. Porcentajes dentro de rango 0-100",
@@ -664,7 +664,7 @@
                                 "check":  "9. Sin estados desconocidos",
                                 "ok":  false,
                                 "severity":  "Media",
-                                "detail":  "modules-status.json (Companies).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Finance).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Navigation).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Purchases).functionalStatus = \u0027Listo / cerrado (2026-09-12)\u0027 no coincide con ningun estado conocido; modules-status.json (Sales).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Security).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Session).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Accounting).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; blockers.json (BLK-011).estado = \u0027Implementado; cierre por verificar\u0027 no es un valor conocido (Abierto/En progreso/Resuelto); blockers.json (BLK-012).estado = \u0027Futuro\u0027 no es un valor conocido (Abierto/En progreso/Resuelto)"
+                                "detail":  "modules-status.json (Companies).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Finance).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Navigation).functionalStatus = \u0027Implementado\u0027 no coincide con ningun estado conocido; modules-status.json (Purchases).functionalStatus = \u0027Listo / cerrado (2026-09-12)\u0027 no coincide con ningun estado conocido; modules-status.json (Sales).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Security).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Session).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; modules-status.json (Accounting).functionalStatus = \u0027En piloto\u0027 no coincide con ningun estado conocido; modules-status.json (Employees).functionalStatus = \u0027Completado\u0027 no coincide con ningun estado conocido; blockers.json (BLK-011).estado = \u0027Implementado; cierre por verificar\u0027 no es un valor conocido (Abierto/En progreso/Resuelto); blockers.json (BLK-012).estado = \u0027Futuro\u0027 no es un valor conocido (Abierto/En progreso/Resuelto)"
                             },
                             {
                                 "check":  "10. Sin fechas invalidas",

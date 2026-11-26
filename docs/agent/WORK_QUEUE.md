@@ -1,8 +1,11 @@
-# Cola de trabajo abierto autorizado
+# Cola de actuaciones abiertas
 
 Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
-No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
+No incluye entregas terminadas ni autoriza desarrollos por mencionarlos: solo hay autorización cuando la entrada la
+declara de forma expresa y para ese alcance ([vocabulario](../architecture/enforcement.md#vocabulario-de-estado)). Sus entradas no son funcionalidades V1
+pendientes de implementación; lo cerrado o aceptado no regresa salvo la
+[regla de no reapertura](../architecture/enforcement.md#no-reapertura-de-funcionalidades-cerradas-o-aceptadas).
 
 ## A. Aceptaciones y validaciones funcionales
 
@@ -11,19 +14,6 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   2026-11-11, evidencia en [STATUS](../../STATUS.md); sin siguiente fase IAM autorizada): administración de Perfiles, Permisos y Usuarios, visibilidad
   fail-closed y protección de rutas por permisos efectivos. Estado, evidencia y archivos en
   [STATUS](../../STATUS.md).
-- EXPENSE-UI-02 (cierre técnico `00bdef910`, CI #1193 SUCCESS): confirmar aceptación visual del propietario antes de declarar cierre funcional; no autoriza cambios. Evidencia en [STATUS](../../STATUS.md).
-- FUNC-ITEM-IMAGE-REACTIVATION-01 (publicado en `bfc69e5d6`, CI #1105 SUCCESS en el intento 2; Ítems FROZEN):
-  pendiente la aceptación del propietario de la etapa 2. Evidencia en [STATUS](../../STATUS.md).
-- PURCHASES-NEW-TAB-REDESIGN-01 (publicado en `04619c611`, CI #1209 SUCCESS; reapertura visual de Compras V1, que sigue CLOSED en
-  lo funcional; sustituye a PURCHASES-NEW-TAB-PHASE-A-01, publicada en `130d23267`, CI #1208 SUCCESS): rediseño de «Nueva compra» aprobado por el propietario,
-  extracción de componentes de `PurchasesPage.tsx` y barra de acciones fija. Pendiente: validación con API real,
-  sesión autenticada y una compra desde XML real con productos pendientes (lo verificado fue con API simulada). Limitación conocida de i18n: al cambiar de idioma, los mensajes de
-  validación ya visibles conservan el idioma anterior hasta revalidar (requiere cambio en `usePurchasesPage.ts`; sin
-  decisión del propietario). Alcance, pruebas y evidencia en [STATUS](../../STATUS.md).
-- BP-CONSOLIDATION-01-E2E (PENDING; independiente, **no bloquea el cierre**): validación E2E de Clientes y
-  Proveedores con API real y sesión autorizada; hasta ahora solo mocks y navegador con API simulada.
-  BP-CONSOLIDATION-01 está COMPLETADA / CLOSED (commit `65c207e42`, CI #1205 SUCCESS; #1201 es CI-1201,
-  ajeno). Evidencia en [STATUS](../../STATUS.md).
 - SRI-ID-TYPE-SHORT-NAME-01 (PUBLICADO en `f4f04c272`; CI #1206 SUCCESS): `short_name`
   en `global.sri_id_type` vía baseline inicial. Pendiente: verificar
   `shortName` en la API real con sesión autorizada. Estado y evidencia en [STATUS](../../STATUS.md).
@@ -48,19 +38,13 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
+- Compras, «Nueva compra» (deuda; no reabre la entrega aceptada): al cambiar de idioma, los mensajes de validación
+  visibles conservan el idioma anterior hasta revalidar (`usePurchasesPage.ts`; sin autorización de implementación).
 - BP-CONSOLIDATION-01-DEBT (deuda técnica independiente; **no bloquea el cierre**; sin autorización de
   implementación): flechas/*roving tabindex* en `ZHTabBar`; auditoría de contraste y axe-core con herramienta
   aprobada; accesibilidad de `ZHPromptModal`; rama `section="review"` de `MasterDataBpFormFields` y rama de
   edición no embebida del wizard; y las limitaciones de BP-NAV-GUARD-01 (overlay de bloqueo, shell AdminCore,
   confirmación abierta al terminar la sesión).
-- DASHBOARD-ANALYZER-REPRODUCIBILITY-01 (**PENDING / DIAGNÓSTICO ACREDITADO / IMPLEMENTACIÓN NO
-  AUTORIZADA**; Dashboard FROZEN v1.0): los analizadores dependen de archivos locales no versionados,
-  por lo que puntajes y tendencias no son reproducibles. Propuesta pendiente de autorización:
-  población reproducible de archivos versionados, revisión de todos los analizadores afectados,
-  registro de procedencia, commit y población analizada, nueva línea base sin reescribir resultados
-  históricos y acreditación de invariancia ante artefactos locales no versionados. Diagnóstico y
-  límites en [STATUS](../../STATUS.md).
-  DH-002 sigue abierto en [DASHBOARD_HEALTH](../ProgressDashboard/DASHBOARD_HEALTH.md).
 - CI-SELECTIVE-ARCHITECTURE-01 (PENDING): retirar una excepción de
   `tools/architecture/architecture-grandfather.json` clasifica hoy como perfil completo (ruta fuera
   de las listas de `ci_changes.mjs`; p. ej. CI #1121 sobre `bd816be40`). Evitar el FULL innecesario
