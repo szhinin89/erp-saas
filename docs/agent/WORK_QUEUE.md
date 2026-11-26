@@ -10,7 +10,7 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   EMP-E4 **COMPLETADO / CLOSED** (`acec540691`, [CI #1239](https://github.com/szhinin89/erp-saas/actions/runs/45616251609)); EMP-E5 **COMPLETADO / CLOSED** (`6d87fe1087`,
   [CI #1240](https://github.com/szhinin89/erp-saas/actions/runs/45637843595)); EMP-E6 **COMPLETADO / CLOSED** (`877d99d04f`, CI #1241); EMP-E6b **COMPLETADO / CLOSED**
   (`b78edc11a9350f3a148a03c649ccd69e621b4609`, [CI #1242 SUCCESS](https://github.com/szhinin89/erp-saas/actions/runs/45663558911) en segundo intento; el primero falló por la incidencia
-  histórica de Compras, causa raíz NO CONFIRMADA). **Abierto:** CI de EMP-E7 antes de declararlo CLOSED y de cerrar Empleados V1;
+  histórica de Compras, causa raíz NO CONFIRMADA). [CI #1243 FAILURE](https://github.com/szhinin89/erp-saas/actions/runs/45703470406) (`dfe6c6936`, Backend API 1902/1903) por el snapshot `app-features.txt` desactualizado, corregido y verificado en local. **Abierto:** CI satisfactorio de EMP-E7 antes de declararlo CLOSED y de cerrar Empleados V1;
   definición del propietario sobre asignaciones futuras al dar de baja; regeneración del Dashboard por el procedimiento oficial.
   La integración con SPA no está autorizada. Evidencia y limitaciones en [STATUS](../../STATUS.md); comportamiento en
   [employees.md](../architecture/employees.md); diseño en [ADR-050](../decisions/ADR-050-employees-v1-architecture.md),

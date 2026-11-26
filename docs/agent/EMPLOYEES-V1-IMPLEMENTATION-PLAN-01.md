@@ -174,7 +174,7 @@ mediante puertos de lectura; si hiciera falta tocar Access, autorización separa
 
 ## EMP-E7 — Frontend, Kernel y launcher
 
-**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI.** Decisiones aprobadas D-1 (wizard de MasterData con rol Employee, incluidos sus dos componentes internos), D-2 (`AppFeature`) y D-3 (etiquetas de permisos); línea `/api/employees` autorizada en la guarda de plataforma. Aceptación visual y funcional del propietario aprobada, con las correcciones del wizard en contexto Employee. No se declara CLOSED hasta CI satisfactorio. Cobertura T-01 a T-15, resultados y limitaciones en [STATUS](../../STATUS.md); comportamiento en [employees.md](../architecture/employees.md).
+**Estado (2026-11-25): IMPLEMENTADO / GATE APROBADO / ACEPTACIÓN DEL PROPIETARIO / PENDIENTE CI.** Decisiones aprobadas D-1 (wizard de MasterData con rol Employee, incluidos sus dos componentes internos), D-2 (`AppFeature`) y D-3 (etiquetas de permisos); línea `/api/employees` autorizada en la guarda de plataforma. Aceptación visual y funcional del propietario aprobada, con las correcciones del wizard en contexto Employee. No se declara CLOSED hasta CI satisfactorio. CI #1243 FAILURE (Backend API 1902/1903) por el snapshot `app-features.txt` sin las dos filas de D-2; corregido el 2026-11-26 y verificado en local. Cobertura T-01 a T-15, resultados y limitaciones en [STATUS](../../STATUS.md); comportamiento en [employees.md](../architecture/employees.md).
 
 **Dependencias:** E4–E6b. **Alcance:** `EmployeesModule.cs`, claves i18n, `frontend/src/modules/employees/**`,
 `MODULE_ICON_BY_ID`, pantallas, ficha de tres secciones, catálogos laborales, guard de cambios sin guardar. Si el wizard de BP no
