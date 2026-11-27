@@ -122,6 +122,25 @@ public static class PostingFactCatalog
         "CollectionApplied",
         [PostingAmountKind.GrandTotal]
     );
+    /// <summary>
+    /// CUSTOMER-ADVANCES-V1 — la regla fija ambos lados; en recepción y devolución la caja o banco real
+    /// del movimiento sustituye la cuenta de la línea GrandTotal (Debe y Haber respectivamente).
+    /// </summary>
+    public static readonly PostingFactDefinition CustomerAdvanceReceived = new(
+        "Finance",
+        "CustomerAdvanceReceived",
+        [PostingAmountKind.GrandTotal]
+    );
+    public static readonly PostingFactDefinition CustomerAdvanceApplied = new(
+        "Finance",
+        "CustomerAdvanceApplied",
+        [PostingAmountKind.GrandTotal]
+    );
+    public static readonly PostingFactDefinition CustomerAdvanceRefunded = new(
+        "Finance",
+        "CustomerAdvanceRefunded",
+        [PostingAmountKind.GrandTotal]
+    );
     public static readonly PostingFactDefinition SupplierPaymentConfirmed = new(
         "Payables",
         "SupplierPaymentConfirmed",
@@ -238,6 +257,9 @@ public static class PostingFactCatalog
         SupplierCreditApplied,
         SupplierCreditRefunded,
         CollectionApplied,
+        CustomerAdvanceReceived,
+        CustomerAdvanceApplied,
+        CustomerAdvanceRefunded,
         SupplierPaymentConfirmed,
         RetentionDocumentIssued,
         ExpenseDocumentConfirmed,

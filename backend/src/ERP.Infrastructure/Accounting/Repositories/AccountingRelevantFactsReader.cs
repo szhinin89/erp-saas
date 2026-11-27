@@ -15,7 +15,8 @@ namespace ERP.Infrastructure.Accounting.Repositories;
 
 /// <summary>
 /// ACCOUNTING-CONTINUITY-05 — documentos que generan hechos contables (venta, devolución de venta,
-/// compra, gasto, NC y devolución de compra, pago a proveedor, cobro/pago financiero), excluidos
+/// compra, gasto, NC y devolución de compra, pago a proveedor, cobro/pago financiero, movimientos
+/// contabilizables de anticipos de clientes), excluidos
 /// borradores y descartes. Las devoluciones sin fecha de negocio propia se evalúan por su instante de
 /// registro desde el inicio del día de negocio en la zona horaria de la empresa (<see cref="ICompanyClock"/>).
 /// </summary>
@@ -40,6 +41,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
                    && x.PaymentDate >= date, ct)
             || await db.Payments.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.Status != PaymentStatus.Draft && x.PaymentDate >= date, ct)
+            || await AccountableCustomerAdvanceMovements(tenantId, companyId).AnyAsync(m => m.EffectiveDate >= date, ct)
             || await ValuedStockAdjustments(tenantId, companyId, date, null).AnyAsync(ct)
             || await AccountableCashMovements(tenantId, companyId).AnyAsync(m => m.CreatedAt >= instant, ct)
             || await CashSessionsWithDifference(tenantId, companyId).AnyAsync(s => s.ClosedAt >= instant, ct);
@@ -60,6 +62,18 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
                         || m.MovementType == CashMovementType.ManualExpense
                         || m.MovementType == CashMovementType.Withdrawal))
                 || m.MovementType == CashMovementType.BankDeposit);
+
+    /// <summary>
+    /// CUSTOMER-ADVANCES-V1 — movimientos con hecho contable propio (recepción, aplicación y
+    /// devolución). Las reversas y anulaciones no son orígenes: espejan o cancelan la obligación del
+    /// original, que sigue contando aunque el anticipo se revierta o anule.
+    /// </summary>
+    private IQueryable<ERP.Domain.Modules.Finance.Entities.CustomerAdvanceMovement> AccountableCustomerAdvanceMovements(
+        Guid tenantId, Guid companyId) =>
+        db.CustomerAdvanceMovements.Where(m => m.TenantId == tenantId && m.CompanyId == companyId
+            && (m.MovementType == CustomerAdvanceMovementType.Received
+                || m.MovementType == CustomerAdvanceMovementType.Application
+                || m.MovementType == CustomerAdvanceMovementType.Refund));
 
     /// <summary>ACCOUNTING-12C — sesiones cerradas con diferencia de arqueo (sobrante o faltante).</summary>
     private IQueryable<ERP.Domain.Modules.Caja.Entities.CashSession> CashSessionsWithDifference(Guid tenantId, Guid companyId) =>
@@ -102,6 +116,8 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
     /// <item>Retentions/DocumentIssued — retención Issued o Cancelled (Cancel exige Issued); IssueDate.</item>
     /// <item>Payables/SupplierPaymentConfirmed — todo pago a proveedor (no hay borrador); PaymentDate.</item>
     /// <item>Finance/CollectionApplied — cobro (Collection) Applied o Reversed; PaymentDate.</item>
+    /// <item>Finance/CustomerAdvanceReceived|Applied|Refunded — movimiento Received, Application o Refund
+    /// (identidad = movimiento), aun revertido o anulado después; EffectiveDate.</item>
     /// <item>Inventory/StockAdjustmentIn|Out — ajuste Executed o Cancelled con valor Kardex; EffectiveDate del movimiento Kardex de la ejecución.</item>
     /// <item>Caja/ManualIncome|ManualExpense|Withdrawal|BankDeposit — movimiento manual con motivo o depósito; día Company de CreatedAt.</item>
     /// <item>Caja/CashCountSurplus|CashCountShortage — sesión Closed con Difference distinta de cero (identidad = sesión); día Company de ClosedAt.</item>
@@ -127,6 +143,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
         var retentions = Accounted(RetentionDocumentIssuedPostingTranslator.SourceModuleName);
         var adjustments = Accounted(StockAdjustmentExecutedPostingTranslator.SourceModuleName);
         var cash = Accounted(CashManualMovementPostingTranslator.SourceModuleName);
+        var advances = Accounted(CustomerAdvanceReceivedPostingTranslator.SourceModuleName);
 
         // Orígenes fechados por el instante del acto: día de empresa [from, to] como rango UTC.
         var (fromUtc, toUtcExclusive) = await clock.DaysUtcRangeAsync(companyId, tenantId, from, to, ct);
@@ -166,6 +183,8 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
                    && x.Direction == PaymentDirection.Collection
                    && (x.Status == PaymentStatus.Applied || x.Status == PaymentStatus.Reversed)
                    && x.PaymentDate >= from && x.PaymentDate <= to && !collections.Contains(x.Id), ct)
+            + await AccountableCustomerAdvanceMovements(tenantId, companyId).CountAsync(m => m.EffectiveDate >= from
+                   && m.EffectiveDate <= to && !advances.Contains(m.Id), ct)
             + await ValuedStockAdjustments(tenantId, companyId, from, to).CountAsync(x => !adjustments.Contains(x.Id), ct)
             + await AccountableCashMovements(tenantId, companyId).CountAsync(m => m.CreatedAt >= startUtc
                    && m.CreatedAt < endUtc && !cash.Contains(m.Id), ct)

@@ -717,11 +717,28 @@ public sealed class CustomerAdvancePersistencePostgreSqlTests
 
         var first = _f.OperateAsync(
             advanceId,
-            async (a, _) =>
+            async (a, sp) =>
             {
                 locked.SetResult();
                 await release.Task;
-                a.RegisterRefund(100m, Fixture.Undo(), _f.BranchId, Fixture.UserId, Fixture.Key());
+                var movement = a.RegisterRefund(
+                    100m,
+                    Fixture.Undo(),
+                    _f.BranchId,
+                    Fixture.UserId,
+                    Fixture.Key()
+                );
+                // CA-F2: la devolución se contabiliza con el destino de su transacción.
+                await sp.GetRequiredService<ICustomerAdvanceRefundTransactionRepository>()
+                    .AddAsync(
+                        CustomerAdvanceRefundTransaction.CreateRefund(
+                            a,
+                            movement,
+                            _f.TransferMethodId,
+                            _f.BankAccountId,
+                            null
+                        )
+                    );
             }
         );
         await locked.Task;
@@ -1359,6 +1376,18 @@ public sealed class CustomerAdvancePersistencePostgreSqlTests
             );
 
             await using var db = PlainContext(TenantId, CompanyId);
+            // CA-F2: cada movimiento pasa por los traductores contables, que exigen una decisión
+            // operativa de la empresa. Esta clase prueba persistencia: Accounting deshabilitado.
+            db.AccountingOperationalPolicies.Add(
+                AccountingOperationalPolicy.Create(
+                    TenantId,
+                    CompanyId,
+                    AccountingOperationalMode.Disabled,
+                    new DateOnly(1900, 1, 1),
+                    "Persistencia sin contabilidad",
+                    UserId
+                )
+            );
             var branch = NewBranch("B01", true);
             var otherBranch = NewBranch("B02", false);
             db.Branches.AddRange(branch, otherBranch);

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 20:18:47",
+    "generated":  "2026-11-26 22:23:00",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -930,12 +930,12 @@
                   },
                   {
                       "id":  "Accounting",
-                      "filesScanned":  136,
+                      "filesScanned":  137,
                       "fanIn":  9,
                       "fanOut":  14,
                       "coupling":  23,
                       "instability":  0.609,
-                      "cohesionApprox":  0.591,
+                      "cohesionApprox":  0.59,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -2297,13 +2297,13 @@
                   {
                       "from":  "Accounting",
                       "to":  "Finance",
-                      "referenceCount":  6,
+                      "referenceCount":  8,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingFactBuilder.cs",
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/CollectionAppliedPostingTranslator.cs",
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/CollectionReversedPostingTranslator.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SupplierCreditRefundedPostingTranslator.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Queries/JournalEntrySourceResolution.cs"
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/CustomerAdvancePostingTranslators.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/CustomerAdvancePostingTranslators.cs"
                                    ]
                   },
                   {

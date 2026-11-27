@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-26 20:17:43",
-    "FilesAnalyzed":  5047,
+    "Generated":  "2026-11-26 22:21:42",
+    "FilesAnalyzed":  5050,
     "TODO":  52,
     "FIXME":  0,
     "HACK":  0,
@@ -632,7 +632,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
-                           "Lines":  1497
+                           "Lines":  1522
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\ExpensesCatalogBootstrapStep.cs",
@@ -661,6 +661,10 @@
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CloseAccountingPeriodIntegrationTests.cs",
                            "Lines":  666
+                       },
+                       {
+                           "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
+                           "Lines":  1304
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\PostingEngineIntegrationTests.cs",
@@ -756,7 +760,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                           "Lines":  1635
+                           "Lines":  1664
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\OpeningBalanceReconciliationTests.cs",
@@ -884,7 +888,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                           "Lines":  1337
+                           "Lines":  1384
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\ExpensesCatalogBootstrapStepTests.cs",

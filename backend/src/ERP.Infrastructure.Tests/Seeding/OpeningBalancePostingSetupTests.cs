@@ -156,7 +156,7 @@ public sealed class OpeningBalancePostingSetupTests
         (await check.PostingRules.CountAsync(r => r.SourceModule == "InitialLoad")).Should().Be(0);
         (await check.PostingRules.CountAsync())
             .Should()
-            .Be(21, "el resto de reglas se siembra con normalidad (25 del seed − 4 InitialLoad/*)");
+            .Be(24, "el resto de reglas se siembra con normalidad (28 del seed − 4 InitialLoad/*)");
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

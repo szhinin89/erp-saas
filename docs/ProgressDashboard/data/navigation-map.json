@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 20:18:54",
+    "generated":  "2026-11-26 22:23:10",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -442,17 +442,17 @@
                                           "mostRecent":  [
                                                              {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-11-24 12:57:52",
+                                                                 "modified":  "2026-11-26 20:26:41",
                                                                  "sizeKB":  998.32
                                                              },
                                                              {
                                                                  "name":  "20261101012214_InitialProductionBaseline.Designer",
-                                                                 "modified":  "2026-11-24 12:57:52",
+                                                                 "modified":  "2026-11-26 20:26:41",
                                                                  "sizeKB":  998.45
                                                              },
                                                              {
                                                                  "name":  "20261101012214_InitialProductionBaseline",
-                                                                 "modified":  "2026-11-24 12:57:52",
+                                                                 "modified":  "2026-11-26 20:26:41",
                                                                  "sizeKB":  754.77
                                                              }
                                                          ]

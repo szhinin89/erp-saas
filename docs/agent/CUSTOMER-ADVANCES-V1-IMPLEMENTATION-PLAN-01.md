@@ -1,11 +1,11 @@
-# Anticipos de Clientes V1 — Plan de implementación (CA-F1 implementado y verificado)
+# Anticipos de Clientes V1 — Plan de implementación (CA-F1 cerrada; CA-F2 implementada y verificada)
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) (**ACCEPTED**, 2026-11-26). Reglas y mecanismos:
 [diseño](../decisions/CUSTOMER-ADVANCES-V1-DESIGN-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
-**Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-26): CA-F0 aprobada; **CA-F1 autorizada, implementada
-y verificada en su gate final**; CA-F2 a CA-F6 **NO AUTORIZADAS**. Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
+**Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-26): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
+SUCCESS); **CA-F2 autorizada, implementada y verificada en su gate final**; CA-F3 a CA-F6 **NO AUTORIZADAS**. Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
 rutas (incluidos los componentes protegidos), gate del propietario y staging y commit del propietario
 ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa; PostgreSQL real
 para locks, transacciones, scope e invariantes de persistencia.
@@ -72,7 +72,7 @@ infraestructura de auditoría, Identity y Access.
 
 ## CA-F1 — Dominio, persistencia y auditoría
 
-**Estado (2026-11-26): IMPLEMENTADO Y VERIFICADO.** Resultado, evidencia y límites en [STATUS](../../STATUS.md). El gate
+**Estado (2026-11-26): CLOSED** (commit `1b37c5d72`, CI #1249 SUCCESS). Resultado, evidencia y límites en [STATUS](../../STATUS.md). El gate
 agregó en `ErpDbContext` (archivo 18) el rechazo de bajas y reescrituras del historial de anticipos.
 
 - **Objetivo:** modelo de ADR-052 §4 con sus invariantes de dominio y de base de datos.
@@ -135,6 +135,12 @@ modificada.
 **Autorización necesaria:** CA-F1 con sus 27 archivos. Recrear una BD de desarrollo es una operación aparte y expresa.
 
 ## CA-F2 — Hechos contables y completitud
+
+**Estado (2026-11-26): IMPLEMENTADO Y VERIFICADO.** Resultado y evidencia en
+[STATUS](../../STATUS.md); contrato en [Accounting §28](../architecture/accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2).
+Traductores en un solo archivo (`CustomerAdvancePostingTranslators.cs`). `postingRuleView.ts` no cambió: sus textos solo
+aplican a lados dinámicos y estos hechos sustituyen una línea fija. La sustitución en el Haber quedó verificada. Pruebas
+ajustadas fuera de la lista de rutas: `CustomerAdvancePersistencePostgreSqlTests.cs` y `OpeningBalancePostingSetupTests.cs`.
 
 - **Objetivo:** ADR-052 §10.
 - **Alcance:** catálogo, reglas, traductores (tres hechos y reversas por espejo), completitud, etiquetas de la pantalla de reglas.

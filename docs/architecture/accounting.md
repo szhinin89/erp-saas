@@ -25,6 +25,7 @@ El sistema está en preproducción. No existe compatibilidad con políticas cont
 | IMPLEMENTADO | ACCOUNTING-12A: Estado de Resultados con signo por sección (coincide con el Resultado del ejercicio del Balance) y contabilización de ajustes de inventario `Inventory/StockAdjustmentIn` y `StockAdjustmentOut` con cuenta del motivo (§24) |
 | IMPLEMENTADO | ACCOUNTING-12C: Caja contable — movimientos manuales con cuenta del motivo, depósito bancario explícito y diferencia de arqueo al cerrar (§25) |
 | IMPLEMENTADO | ACCOUNTING-12D: cierre anual — asiento de cierre generado en Draft desde Períodos, publicado con el flujo de manuales, y `YEAR_END_CLOSING_MISSING` en el último período (§26) |
+| IMPLEMENTADO | CUSTOMER-ADVANCES-V1 CA-F2: hechos contables y completitud de anticipos de clientes; ninguna operación de anticipos está expuesta todavía (§28) |
 
 El resto del documento define el contrato vigente de lo implementado. Las prohibiciones
 (§15) y los límites de alcance describen lo que el sistema no hace; no son capacidades pendientes.
@@ -705,7 +706,8 @@ Authorized (día Company de su autorización: Authorized es terminal y Cancel so
 compra Confirmed/Cancelled (IssueDate); devolución de compra y NC Discount con `AuthorizedAtUtc` (día
 Company); aplicación de saldo a favor (movimiento Application, día Company); reembolso de saldo a favor
 (transacción RefundReceived, EffectiveDate); gasto Confirmed/Cancelled (AccountingDate); retención
-Issued/Cancelled (IssueDate); pago a proveedor (PaymentDate); cobro Applied/Reversed (PaymentDate). Una
+Issued/Cancelled (IssueDate); pago a proveedor (PaymentDate); cobro Applied/Reversed (PaymentDate);
+movimientos contabilizables de anticipos de clientes (EffectiveDate, §28). Una
 obligación en cualquier estado o un asiento histórico de la misma identidad resuelve el origen. El costo
 de ventas se cubre con sus obligaciones y `SALE_COST_PENDING`.
 
@@ -967,3 +969,36 @@ por `OriginalJournalEntryId`. Si pasa, los `Reversed` heredados quedan Posted (l
 intactos) y se eliminan la tabla y la columna. `Down` restaura solo el esquema vacío. Histórico: consolidada
 en la baseline única `20261101012214_InitialProductionBaseline`, que nace sin la tabla, sin la columna y sin
 el estado `Reversed`.
+
+## 28. Anticipos de clientes CUSTOMER-ADVANCES-V1 (CA-F2)
+
+Contrato contable de [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) §10 (TA-09). Solo existe la
+traducción de los eventos del agregado `CustomerAdvance`: no hay casos de uso, API ni permisos que lo operen.
+
+| Hecho (`Finance`) | Identidad (movimiento) | Fecha | Regla sembrada (monto `GrandTotal`) |
+|---|---|---|---|
+| `CustomerAdvanceReceived` | `Received` | Fecha del anticipo | Debe 1.1.01.001, sustituida por la caja o banco del anticipo / Haber 2.1.01.002 |
+| `CustomerAdvanceApplied` | Cada `Application` (N líneas → N obligaciones) | Efectiva de la aplicación | Debe 2.1.01.002 / Haber 1.1.03.001 |
+| `CustomerAdvanceRefunded` | `Refund` | Efectiva de la devolución | Debe 2.1.01.002 / Haber 1.1.01.001, sustituida por la caja o banco de la transacción de devolución |
+
+La obligación se registra con `AccountingPostingRecorder` en la transacción de la operación (§5, §21): sin decisión
+operativa o con período Closed/Locked la operación se rechaza; sin regla, cuenta válida o destino con cuenta queda
+`Failed` reprocesable (§6, §17). La devolución exige su `CustomerAdvanceRefundTransaction` persistida en la misma
+operación. No se genera `CollectionApplied` ni el movimiento interno de Caja (sin motivo) produce un hecho de Caja.
+
+**Reversas** (sin regla ni FactType propios; reverso común §7 y §18, fecha del día Company del acto):
+
+| Movimiento | Origen revertido | Efecto |
+|---|---|---|
+| `ReversalOfApplication` | Su `Application` (una por línea) | Espejo del asiento, u obligación pendiente `Canceled` |
+| `ReversalOfRefund` | Su `Refund` | Igual |
+| `IncomeReversed` | El `Received` | Igual |
+| `SourceCancelled` (anulación administrativa) | El `Received` | Solo cancela la obligación sin asiento; con asiento publicado rechaza toda la operación |
+
+**Completitud** (§20, §21): `Received`, `Application` y `Refund` son orígenes conciliados por `EffectiveDate` y cuentan
+para la vigencia retroactiva; siguen siendo origen aunque se reviertan o anulen. Las reversas no son orígenes.
+
+**Empresas existentes.** El bootstrap siembra las tres reglas solo al aprovisionar; no hay backfill. Antes de habilitar
+operaciones de anticipos en una empresa ya aprovisionada se configuran en Contabilidad › Configuración › Reglas
+contables («Configurar», §23): las tres reglas de la tabla, con 2.1.01.002 «Anticipos de clientes» y 1.1.03.001 activas
+e imputables, y cada caja y cuenta bancaria destino con su cuenta contable.

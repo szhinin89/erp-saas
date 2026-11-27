@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-26 20:17:53",
-    "FilesAnalyzed":  5054,
+    "Generated":  "2026-11-26 22:21:56",
+    "FilesAnalyzed":  5057,
     "SecretsFound":  80,
     "SecretFiles":  [
                         "backend\\src\\ERP.API\\Program.cs",
@@ -100,7 +100,7 @@
                            "backend\\src\\ERP.Domain\\Modules\\Access\\Interfaces\\IUserSessionRepository.cs",
                            "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\UserSessionRepository.cs"
                        ],
-    "ConnectionStringsFound":  15,
+    "ConnectionStringsFound":  16,
     "ConnectionStringFiles":  [
                                   "backend\\src\\ERP.API\\Program.cs",
                                   "backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
@@ -110,6 +110,7 @@
                                   "backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
                                   "backend\\src\\ERP.API.Tests\\Support\\FirstRunHttpProcess.cs",
                                   "backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
+                                  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.CreditNoteRecovery.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentUncertainSriPostgreSqlTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
@@ -118,5 +119,5 @@
                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                               ],
-    "Warnings":  108
+    "Warnings":  109
 }

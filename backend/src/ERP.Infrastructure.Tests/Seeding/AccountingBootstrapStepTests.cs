@@ -70,8 +70,11 @@ public sealed class AccountingBootstrapStepTests
     ///
     /// ACCOUNTING-FINAL-FIX: − 1 — "Payables"/"SupplierPaymentReversed" deja de sembrarse (la reversa
     /// del pago espeja el asiento histórico, sin PostingRule). Total 25.
+    ///
+    /// CUSTOMER-ADVANCES-V1 CA-F2: + 3 — "Finance"/"CustomerAdvanceReceived", "CustomerAdvanceApplied"
+    /// y "CustomerAdvanceRefunded". Total 28.
     /// </summary>
-    private const int ExpectedPostingRulesCount = 25;
+    private const int ExpectedPostingRulesCount = 28;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -458,6 +461,9 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "InvoiceReceived"),
                     ("Purchases", "PurchaseCreditNoteAuthorized"),
                     ("Finance", "CollectionApplied"),
+                    ("Finance", "CustomerAdvanceReceived"),
+                    ("Finance", "CustomerAdvanceApplied"),
+                    ("Finance", "CustomerAdvanceRefunded"),
                     ("Payables", "SupplierPaymentConfirmed"),
                     ("Retentions", "DocumentIssued"),
                     ("Expenses", "DocumentConfirmed"),
@@ -996,6 +1002,47 @@ public sealed class AccountingBootstrapStepTests
         rules
             .Should()
             .NotContain(r => r.SourceModule == "Sales" && r.FactType == "InvoiceIssued");
+        // CUSTOMER-ADVANCES-V1 — recepción y devolución usan esa cuenta por defecto; la aplicación no.
+        rules
+            .Where(r => r.FactType.StartsWith("CustomerAdvance"))
+            .Select(r => r.FactType)
+            .Should()
+            .Equal("CustomerAdvanceApplied");
+    }
+
+    [Theory]
+    [InlineData("CustomerAdvanceReceived", "1.1.01.001", "2.1.01.002")]
+    [InlineData("CustomerAdvanceApplied", "2.1.01.002", "1.1.03.001")]
+    [InlineData("CustomerAdvanceRefunded", "2.1.01.002", "1.1.01.001")]
+    public async Task Seed_crea_las_reglas_de_anticipos_de_clientes_con_cuentas_propias_de_la_empresa(
+        string factType,
+        string debitCode,
+        string creditCode
+    )
+    {
+        await using var db = NewDbContext(Guid.NewGuid().ToString());
+        var step = new AccountingBootstrapStep(
+            db,
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
+            NullLogger<AccountingBootstrapStep>.Instance
+        );
+
+        await step.ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        var rule = await db
+            .PostingRules.Include(r => r.Lines)
+            .SingleAsync(r => r.CompanyId == _companyId && r.SourceModule == "Finance" && r.FactType == factType);
+        rule.Lines.Should().HaveCount(2);
+        rule.Lines.Should().OnlyContain(l => l.AmountKind == PostingAmountKind.GrandTotal);
+        var accounts = await db.Accounts.Where(a => a.CompanyId == _companyId).ToDictionaryAsync(a => a.Id);
+        accounts[rule.Lines.Single(l => l.Nature == AccountNature.Debit).AccountId].Code.Value.Should().Be(debitCode);
+        accounts[rule.Lines.Single(l => l.Nature == AccountNature.Credit).AccountId].Code.Value.Should().Be(creditCode);
+        rule.Lines.Select(l => accounts[l.AccountId])
+            .Should()
+            .OnlyContain(a => a.IsActive && a.AllowsPosting);
+        var advances = accounts.Values.Single(a => a.Code.Value == "2.1.01.002");
+        advances.AccountType.Should().Be(AccountType.Liability);
+        advances.Nature.Should().Be(AccountNature.Credit);
     }
 
     [Fact]

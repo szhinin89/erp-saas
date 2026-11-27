@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 20:18:49",
+    "generated":  "2026-11-26 22:23:03",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -439,8 +439,8 @@
                                                   "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                   "Refactor large file (701 lines): backend/src/ERP.API.Tests/Integration/SalesCancelCollectionConcurrencyTests.cs",
                                                   "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
-                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                   "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                   "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
@@ -1159,7 +1159,7 @@
                              "percentOfErp":  102.25,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (1635 lines): backend/src/ERP.Infrastructure.Tests/Finance/CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                  "Refactor large file (1664 lines): backend/src/ERP.Infrastructure.Tests/Finance/CustomerAdvancePersistencePostgreSqlTests.cs",
                                                   "Refactor large file (995 lines): backend/src/ERP.Infrastructure.Tests/Finance/CollectionPostingIntegrationTests.cs",
                                                   "Refactor large file (876 lines): backend/src/ERP.Application.Tests/Finance/RegisterSupplierCreditRefundUseCasesTests.cs",
                                                   "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
@@ -1469,8 +1469,8 @@
                                                   "Refactor large file (1042 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/ExpenseDocumentDraftUseCases.cs",
                                                   "Refactor large file (818 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/ExpenseDocumentConfirmUseCases.cs",
                                                   "Refactor large file (787 lines): backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
-                                                  "Refactor large file (707 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
                                                   "Refactor large file (707 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Categories/ExpenseCategoryUseCases.cs",
+                                                  "Refactor large file (707 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
                                                   "Refactor large file (671 lines): backend/src/ERP.API.Tests/Expenses/ExpensesControllerTests.cs",
                                                   "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
                                                   "Refactor large file (577 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
@@ -1946,6 +1946,7 @@
                              "relatedTasks":  [
                                                   "Refactor large file (1458 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SalesInvoiceAuthorizedPostingIntegrationTests.cs",
                                                   "Refactor large file (1446 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseInvoiceConfirmedPostingIntegrationTests.cs",
+                                                  "Refactor large file (1304 lines): backend/src/ERP.Infrastructure.Tests/Accounting/CustomerAdvancePostingPostgreSqlTests.cs",
                                                   "Refactor large file (1214 lines): backend/src/ERP.Application.Tests/Accounting/JournalEntrySourceResolverTests.cs",
                                                   "Refactor large file (1067 lines): backend/src/ERP.Application.Tests/Accounting/GetAccountingReportsUseCasesTests.cs",
                                                   "Refactor large file (1047 lines): backend/src/ERP.Infrastructure.Tests/Accounting/AccountingContinuityIntegrationTests.cs",

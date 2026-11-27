@@ -1,14 +1,40 @@
 # Project Status
 
-## CUSTOMER-ADVANCES-V1 CA-F1 — Dominio, persistencia y auditoría — IMPLEMENTADO Y VERIFICADO (2026-11-26)
+## CUSTOMER-ADVANCES-V1 CA-F2 — Hechos contables y completitud — IMPLEMENTADO Y VERIFICADO (2026-11-26)
+
+Autorizada y aprobada técnicamente por el propietario el 2026-11-26, con commit local condicionado a su gate final de
+comprobaciones; **sin push ni CI de estos cambios**. **CA-F3 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está CLOSED ni
+implementado como funcionalidad:** sin casos de uso, API, permisos, Caja ni frontend operativo; no cuenta en el control V1.
+Contrato vigente: [Accounting §28](docs/architecture/accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2).
+
+- **Entregado:** hechos `Finance/CustomerAdvanceReceived|Applied|Refunded`, tres reglas en el bootstrap, traductores y
+  reversas por el reverso común, completitud y vigencia de sus orígenes y etiquetas es/en. Sin cambio de esquema.
+- **Anulación administrativa:** su traductor solo cancela la obligación sin asiento y rechaza toda la operación si ya existe
+  uno publicado (ADR-052 §6).
+- **Verificación local (agente), sin omitidas:** `CustomerAdvance` Domain 30/30 y PostgreSQL 16 desechable 77/77 (24 nuevas);
+  Application Accounting y anticipos 263/263; regresión PostgreSQL de Accounting, bootstrap y apertura 679/680, con el único
+  fallo (conteo de reglas sembradas en una prueba de apertura) corregido y su selección repetida 105/105; contrato de permiso
+  de reglas 7/7; Architecture 158/158; pantalla de reglas (Vitest), `tsc -b`, lint y `architecture:check`.
+- **Pruebas anteriores ajustadas:** la clase PostgreSQL de CA-F1 ahora declara Accounting deshabilitado para su empresa y
+  persiste la transacción de devolución en la prueba de bloqueo; los conteos de reglas sembradas suben en 3.
+- **Empresas existentes:** configurar las tres reglas en la pantalla oficial antes de habilitar operaciones; sin backfill ni
+  cambios de datos.
+- **Incompatibilidad esperada de esquema:** una base que aplicó la baseline antes de CA-F1 no tiene
+  `customer_advance_movements`; la completitud la consulta cuando el rango intersecta una ventana Enabled (reportes
+  contables, pre-cierre y cierre) y al validar una vigencia Enabled pasada, y esas operaciones fallan. Se mantiene TA-11
+  (baseline única, sin migraciones incrementales ni compatibilidad temporal). Ninguna base de trabajo se modificó; recrearla
+  usa el procedimiento oficial y requiere autorización expresa posterior. No reproducido contra una base de trabajo.
+- **Límites:** CA-F3 a F5 deben persistir la transacción de devolución en la misma operación que su movimiento y exigir la
+  fecha efectiva de la reversa igual al día del acto (TA-07). La pantalla de reglas muestra la cuenta fija de la línea que la
+  caja o el banco del movimiento sustituyen, igual que en el cobro. El asiento no resuelve documento de origen.
+
+## CUSTOMER-ADVANCES-V1 CA-F1 — Dominio, persistencia y auditoría — CLOSED (CI #1249 SUCCESS, 2026-11-26)
 
 [ADR-052](docs/decisions/ADR-052-customer-advances-v1-architecture.md) **ACCEPTED** (TA-01 a TA-13) y CA-F1 autorizada por el
 propietario el 2026-11-26 con el inventario del
 [plan](docs/agent/CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md#ca-f1--dominio-persistencia-y-auditoría). TA-11 **RESUELTA**
-(sin producción; baseline única; no autoriza eliminar bases de datos). Gate final de comprobaciones del propietario
-ejecutado el 2026-11-26, con commit local condicionado a su resultado; **sin push ni CI de estos cambios** (CI #1248 SUCCESS
-es anterior). **CA-F2 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está CLOSED ni implementado como funcionalidad:** sin
-casos de uso, API, permisos, Caja, Contabilidad ni frontend; no cuenta en el control V1.
+(sin producción; baseline única; no autoriza eliminar bases de datos). Commit `1b37c5d72`; CI #1249 SUCCESS confirmado y
+fase aceptada definitivamente por el propietario.
 
 - **Entregado:** agregado, libro de movimientos, transacción de devolución, eventos, Entity Audit, repositorios y cuatro
   tablas `customer_advance*` en la baseline única (cambio solo aditivo; ninguna base de trabajo modificada).

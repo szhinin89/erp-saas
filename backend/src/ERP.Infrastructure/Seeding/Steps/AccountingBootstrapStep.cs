@@ -1018,6 +1018,31 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.03.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // CUSTOMER-ADVANCES-V1 (ADR-052 §10) — pasivo "2.1.01.002 Anticipos de clientes". En la
+        // recepción (Debe) y en la devolución (Haber) la línea de "1.1.01.001 Caja general" es la
+        // cuenta por defecto que sustituye la caja o banco real del movimiento. Las reversas espejan
+        // el asiento histórico y no tienen regla.
+        new(
+            PostingFactCatalog.CustomerAdvanceReceived,
+            [
+                new("1.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("2.1.01.002", AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
+        new(
+            PostingFactCatalog.CustomerAdvanceApplied,
+            [
+                new("2.1.01.002", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("1.1.03.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
+        new(
+            PostingFactCatalog.CustomerAdvanceRefunded,
+            [
+                new("2.1.01.002", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("1.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" (pago a
         // proveedor) se eliminó junto con RegisterPaymentCommand/SupplierPaymentAppliedPostingTranslator:
         // sin nada que dispare ese FactType, sembrar la PostingRule por empresa nueva sería
