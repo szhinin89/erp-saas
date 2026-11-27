@@ -112,6 +112,7 @@ public sealed class ApplyCustomerAdvanceHandler
 
     public ApplyCustomerAdvanceHandler(
         ICustomerAdvanceRepository advances,
+        ICustomerAdvanceRefundTransactionRepository transactions,
         ISalesReceivableRepository receivables,
         IBusinessPartnerRepository partners,
         IUnitOfWork uow,
@@ -129,7 +130,7 @@ public sealed class ApplyCustomerAdvanceHandler
         _t = t;
         _b = b;
         _u = u;
-        _intent = new(advances, partners, uow, databaseErrors, t);
+        _intent = new(advances, transactions, partners, uow, databaseErrors, t);
         _chronology = new(invoices, openingBalance, clock);
     }
 

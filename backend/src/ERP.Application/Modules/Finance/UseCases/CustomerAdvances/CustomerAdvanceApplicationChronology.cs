@@ -82,5 +82,25 @@ internal sealed class CustomerAdvanceApplicationChronology
         }
     }
 
+    /// <summary>
+    /// ADR-052 §17 — la fecha de la evidencia de una reversa va de la operación que compensa al día de
+    /// negocio. Es trazabilidad: la fecha contable sigue siendo la de la reversa (TA-07).
+    /// </summary>
+    public static void EnsureEvidenceDate(
+        DateOnly evidenceDate,
+        DateOnly originalDate,
+        DateOnly today
+    )
+    {
+        if (evidenceDate > today)
+            throw Rejected(
+                $"La fecha de la evidencia {evidenceDate:yyyy-MM-dd} es posterior al día de negocio {today:yyyy-MM-dd}."
+            );
+        if (evidenceDate < originalDate)
+            throw Rejected(
+                $"La fecha de la evidencia {evidenceDate:yyyy-MM-dd} es anterior a la operación original del {originalDate:yyyy-MM-dd}."
+            );
+    }
+
     private static DomainRuleViolationException Rejected(string message) => new(message);
 }

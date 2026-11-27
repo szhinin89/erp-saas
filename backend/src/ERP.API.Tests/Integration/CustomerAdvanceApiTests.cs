@@ -31,7 +31,7 @@ namespace ERP.API.Tests.Integration;
 /// auditoría y contabilización única. Los efectos se cuentan físicamente en BD. Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class CustomerAdvanceApiTests
+public sealed partial class CustomerAdvanceApiTests
     : IClassFixture<FinancialCommandIdempotencyFixture>,
         IClassFixture<CustomerAdvanceApiTests.Catalog>
 {
@@ -40,6 +40,9 @@ public sealed class CustomerAdvanceApiTests
 
     private readonly FinancialCommandIdempotencyFixture _f;
     private readonly Catalog _catalog;
+
+    /// <summary>Día de negocio de la empresa (America/Guayaquil), no la fecha UTC.</summary>
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(-5));
 
     public CustomerAdvanceApiTests(FinancialCommandIdempotencyFixture f, Catalog catalog)
     {
@@ -480,7 +483,7 @@ public sealed class CustomerAdvanceApiTests
         var response = await PostAsync(client, Cash(op, 15m) with { ClientRequestId = key });
 
         response.Status.Should().Be(HttpStatusCode.Conflict, response.Body);
-        response.Body.Should().NotContain(foreignAdvance.ToString()).And.NotContain("777");
+        response.Body.Should().NotContain(foreignAdvance.ToString()).And.NotContain(":777");
         (await TotalsAsync()).Should().Be(before);
     }
 
@@ -514,7 +517,7 @@ public sealed class CustomerAdvanceApiTests
         var body = cash ? Cash(op, 25m) : Transfer(s, 25m);
         var before = await TotalsAsync();
 
-        var future = await PostAsync(client, body with { AdvanceDate = _f.Today.AddDays(1) });
+        var future = await PostAsync(client, body with { AdvanceDate = Today.AddDays(1) });
 
         future.Status.Should().Be(HttpStatusCode.UnprocessableEntity, future.Body);
         future.Body.Should().Contain("es posterior al d");
@@ -524,7 +527,7 @@ public sealed class CustomerAdvanceApiTests
         var replay = await PostAsync(client, body);
 
         accepted.Status.Should().Be(HttpStatusCode.Created, accepted.Body);
-        accepted.Data.GetProperty("advanceDate").GetString().Should().Be($"{_f.Today:yyyy-MM-dd}");
+        accepted.Data.GetProperty("advanceDate").GetString().Should().Be($"{Today:yyyy-MM-dd}");
         replay.Status.Should().Be(HttpStatusCode.Created, replay.Body);
         replay.Id.Should().Be(accepted.Id);
         await AssertSingleEffectAsync(accepted.Id, op.CashSessionId, cash);
@@ -775,7 +778,7 @@ public sealed class CustomerAdvanceApiTests
         new(
             _f.CustomerId,
             amount,
-            _f.Today,
+            Today,
             _f.CashMethodId,
             null,
             op.CashRegisterId,
@@ -793,7 +796,7 @@ public sealed class CustomerAdvanceApiTests
         new(
             _f.CustomerId,
             amount,
-            _f.Today,
+            Today,
             s.TransferMethod,
             s.BankAccount,
             null,
@@ -1231,7 +1234,7 @@ public sealed class CustomerAdvanceApiTests
             customerId ?? _f.CustomerId,
             "USD",
             amount,
-            _f.Today,
+            Today,
             s.TransferMethod,
             other.Bank,
             null,

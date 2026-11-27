@@ -249,6 +249,11 @@ Instruida por el propietario en CA-F4; complementa §5 y §7 sin modificar decis
 - No cambia TA-07, el gate de modo y período contable ni las fechas de los cobros.
 - **Registro:** `CustomerAdvance.AdvanceDate` no puede ser posterior al día de negocio oficial de la empresa; se evalúa
   después del replay y un rechazo (422) no produce efectos ni consume la clave.
+- **Devolución (CA-F5):** su fecha efectiva no es anterior a la fecha del anticipo ni posterior al día de negocio.
+  Ninguna reversa ni anulación es anterior a la operación que compensa; su fecha contable sigue TA-07 y la fecha de la
+  evidencia externa es solo trazabilidad.
+- **Fecha de evidencia:** en la reversa del ingreso y de una devolución no es posterior al día de negocio ni anterior a
+  la operación que se compensa; se evalúa después del replay y un rechazo (422) no produce efectos ni consume la clave.
 
 ## Referencias
 

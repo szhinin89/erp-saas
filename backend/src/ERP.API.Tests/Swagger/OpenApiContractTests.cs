@@ -538,7 +538,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     /// </summary>
     private static readonly string[] Phase2B6Employees = ["Employees", "EmployeeCatalogs", "EmployeeBranchAssignments"];
 
-    /// <summary>CUSTOMER-ADVANCES-V1: registro y consultas (CA-F3, 4), aplicación, reversa y aplicaciones por CxC (CA-F4, 3).</summary>
+    /// <summary>CUSTOMER-ADVANCES-V1: registro y consultas (CA-F3, 4), aplicación, reversa y aplicaciones por CxC (CA-F4, 3), devolución, reversas y anulación (CA-F5, 4).</summary>
     private static readonly string[] Phase2B7CustomerAdvances = ["CustomerAdvance"];
 
     /// <summary>
@@ -721,12 +721,12 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     public void El_inventario_total_no_omite_ni_duplica_operaciones()
     {
         var all = Operations().ToList();
-        all.Should().HaveCount(545);
+        all.Should().HaveCount(549);
         all.Select(o => o.Op["operationId"]!.GetValue<string>()).Should().OnlyHaveUniqueItems();
         all.Select(o => $"{o.Method} {o.Path}").Should().OnlyHaveUniqueItems();
 
-        DocumentedOperations().Should().HaveCount(541);
-        OperationsOf(Phase2B7CustomerAdvances).Should().HaveCount(7);
+        DocumentedOperations().Should().HaveCount(545);
+        OperationsOf(Phase2B7CustomerAdvances).Should().HaveCount(11);
         OperationsOf(Phase2B6Employees).Should().HaveCount(18);
         OperationsOf(NotDocumentedControllers).Should().HaveCount(4);
 

@@ -35,7 +35,28 @@ public sealed record CustomerAdvanceDto(
     Guid? CashRegisterId,
     string? ExternalReference,
     string? Note,
-    IReadOnlyList<CustomerAdvanceMovementDto> Movements
+    IReadOnlyList<CustomerAdvanceMovementDto> Movements,
+    IReadOnlyList<CustomerAdvanceRefundTransactionDto> RefundTransactions
+);
+
+/// <summary>Devolución de un anticipo o su reversa, con el destino realmente usado.</summary>
+public sealed record CustomerAdvanceRefundTransactionDto(
+    Guid Id,
+    Guid MovementId,
+    string TransactionType,
+    Guid? OriginalTransactionId,
+    Guid PaymentMethodId,
+    Guid? CompanyBankAccountId,
+    Guid? CashRegisterId,
+    decimal Amount,
+    DateOnly EffectiveDate,
+    string Reference,
+    string Reason,
+    Guid? CashSessionId,
+    Guid? CashMovementId,
+    Guid CreatedByUserId,
+    DateTime CreatedAtUtc,
+    bool IsReversed
 );
 
 /// <summary>Movimiento del libro único del anticipo, en orden cronológico.</summary>
@@ -110,7 +131,11 @@ internal static class CustomerAdvanceMap
             a.ExternalReference
         );
 
-    public static CustomerAdvanceDto ToDto(CustomerAdvance a, string? customerName) =>
+    public static CustomerAdvanceDto ToDto(
+        CustomerAdvance a,
+        string? customerName,
+        IReadOnlyList<CustomerAdvanceRefundTransaction> refunds
+    ) =>
         new(
             a.Id,
             a.CustomerId,
@@ -129,6 +154,10 @@ internal static class CustomerAdvanceMap
             a.Movements.OrderBy(m => m.CreatedAtUtc)
                 .ThenBy(m => m.LineNumber)
                 .Select(ToDto)
+                .ToList(),
+            refunds
+                .OrderBy(t => t.CreatedAtUtc)
+                .Select(t => ToDto(t, refunds.Any(other => other.OriginalTransactionId == t.Id)))
                 .ToList()
         );
 
@@ -149,6 +178,29 @@ internal static class CustomerAdvanceMap
             reversal is not null,
             reversal?.Id,
             reversal?.EffectiveDate
+        );
+
+    private static CustomerAdvanceRefundTransactionDto ToDto(
+        CustomerAdvanceRefundTransaction t,
+        bool isReversed
+    ) =>
+        new(
+            t.Id,
+            t.CustomerAdvanceMovementId,
+            t.TransactionType.ToString(),
+            t.OriginalTransactionId,
+            t.PaymentMethodId,
+            t.CompanyBankAccountId,
+            t.CashRegisterId,
+            t.Amount,
+            t.EffectiveDate,
+            t.Reference,
+            t.Reason,
+            t.CashSessionId,
+            t.CashMovementId,
+            t.CreatedByUserId,
+            t.CreatedAtUtc,
+            isReversed
         );
 
     private static CustomerAdvanceMovementDto ToDto(CustomerAdvanceMovement m) =>

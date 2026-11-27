@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-27 10:03:30",
-    "FilesAnalyzed":  5070,
+    "Generated":  "2026-11-27 11:13:26",
+    "FilesAnalyzed":  5076,
     "SecretsFound":  80,
     "SecretFiles":  [
                         "backend\\src\\ERP.API\\Program.cs",

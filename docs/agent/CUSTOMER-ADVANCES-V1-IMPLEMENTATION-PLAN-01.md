@@ -1,4 +1,4 @@
-# Anticipos de Clientes V1 — Plan de implementación (CA-F1 a CA-F3 cerradas; CA-F4 aceptada localmente)
+# Anticipos de Clientes V1 — Plan de implementación (CA-F1 a CA-F4 cerradas; CA-F5 aceptada localmente)
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) (**ACCEPTED**, 2026-11-26). Reglas y mecanismos:
 [diseño](../decisions/CUSTOMER-ADVANCES-V1-DESIGN-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
@@ -6,7 +6,7 @@ Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md)
 
 **Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-27): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
 SUCCESS); **CA-F2 CLOSED** (CI #1250 SUCCESS); **CA-F3 CLOSED** (CI #1252 SUCCESS);
-**CA-F4 aceptada localmente, pendiente de push y CI**; CA-F5 y CA-F6 **NO AUTORIZADAS**.
+**CA-F4 CLOSED** (CI #1253 SUCCESS); **CA-F5 aceptada localmente, pendiente de push y CI**; CA-F6 **NO AUTORIZADA**.
 Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
 rutas (incluidos los componentes protegidos), gate del propietario y staging y commit del propietario
 ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa; PostgreSQL real
@@ -185,7 +185,7 @@ repositorio del anticipo y su interfaz (consultas), inventario de `OpenApiContra
 
 ## CA-F4 — Aplicación a CxC y reversa
 
-**Estado (2026-11-27): IMPLEMENTADO Y ACEPTADO LOCALMENTE, pendiente de push y CI.** Resultado en [STATUS](../../STATUS.md); contrato en
+**Estado (2026-11-27): CLOSED** (`23c899297`, CI #1253 SUCCESS). Resultado en [STATUS](../../STATUS.md); contrato en
 la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lista: repositorio del anticipo y su interfaz
 (aplicaciones por CxC), inventario de OpenAPI y snapshot OpenAPI de Companies (tag global del controller).
 
@@ -218,6 +218,11 @@ la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lis
 - **Autorización necesaria:** fase, cambio acotado en cobros y `backend.md`.
 
 ## CA-F5 — Devolución, reversa de devolución, reversa del ingreso y anulación
+
+**Estado (2026-11-27): IMPLEMENTADO Y ACEPTADO LOCALMENTE, pendiente de push y CI.** Resultado en
+[STATUS](../../STATUS.md); contrato en la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lista: casos de uso existentes (reglas
+comunes de dinero y detalle con transacciones), repositorio de transacciones de devolución y su interfaz, inventario y
+snapshot de OpenAPI. Sin clases de prueba nuevas (la de API de CA-F3 pasa a parcial).
 
 - **Objetivo:** ADR-052 §6 y diseño §6.2–6.5.
 - **Rutas:** casos de uso y controller de anticipos; `backend.md`, `docs/architecture/receivables.md` («Límites vigentes»: la

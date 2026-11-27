@@ -15,6 +15,7 @@ namespace ERP.Application.Modules.Finance.UseCases.CustomerAdvances;
 /// </summary>
 internal sealed class CustomerAdvanceIntentRunner(
     ICustomerAdvanceRepository advances,
+    ICustomerAdvanceRefundTransactionRepository transactions,
     IBusinessPartnerRepository partners,
     IUnitOfWork uow,
     IDatabaseExceptionTranslator databaseErrors,
@@ -24,6 +25,8 @@ internal sealed class CustomerAdvanceIntentRunner(
     public const string ClientRequestConflict =
         "Ya existe una operación con este identificador pero con datos distintos.";
     private const string KeyIndexPrefix = "uq_customer_advance_movements_tenant_request";
+    private const string TransactionKeyIndex =
+        "uq_customer_advance_refund_transactions_tenant_client_request";
 
     public async Task<Result<CustomerAdvanceDto>> ExecuteAsync(
         ClientRequestKey key,
@@ -89,8 +92,9 @@ internal sealed class CustomerAdvanceIntentRunner(
     )
     {
         var names = await partners.GetNamesByIdsAsync([advance.CustomerId], ct);
+        var refunds = await transactions.ListByAdvanceIdAsync(advance.TenantId, advance.Id, ct);
         return Result<CustomerAdvanceDto>.Success(
-            CustomerAdvanceMap.ToDto(advance, names.GetValueOrDefault(advance.CustomerId))
+            CustomerAdvanceMap.ToDto(advance, names.GetValueOrDefault(advance.CustomerId), refunds)
         );
     }
 
@@ -104,5 +108,8 @@ internal sealed class CustomerAdvanceIntentRunner(
 
     private bool IsKeyViolation(Exception ex) =>
         databaseErrors.TryGetUniqueViolation(ex, out var violation)
-        && violation.ConstraintName?.StartsWith(KeyIndexPrefix, StringComparison.Ordinal) == true;
+        && violation.ConstraintName is { } name
+        && (
+            name.StartsWith(KeyIndexPrefix, StringComparison.Ordinal) || name == TransactionKeyIndex
+        );
 }

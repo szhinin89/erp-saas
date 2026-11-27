@@ -1,14 +1,14 @@
 ﻿{
-    "Generated":  "2026-11-27 10:02:17",
+    "Generated":  "2026-11-27 11:12:53",
     "Layers":  {
                    "Domain":  {
                                   "Files":  742
                               },
                    "Application":  {
-                                       "Commands":  2304,
-                                       "Validators":  980,
+                                       "Commands":  2334,
+                                       "Validators":  992,
                                        "Queries":  1320,
-                                       "Files":  1220
+                                       "Files":  1225
                                    },
                    "Infrastructure":  {
                                           "DbContext":  425,

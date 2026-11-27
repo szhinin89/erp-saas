@@ -139,6 +139,7 @@ public sealed class GetCustomerAdvanceListHandler(
 
 public sealed class GetCustomerAdvanceByIdHandler(
     ICustomerAdvanceRepository advances,
+    ICustomerAdvanceRefundTransactionRepository transactions,
     IBusinessPartnerRepository partners,
     ICurrentTenant tenant
 ) : IRequestHandler<GetCustomerAdvanceByIdQuery, Result<CustomerAdvanceDto>>
@@ -152,9 +153,10 @@ public sealed class GetCustomerAdvanceByIdHandler(
         if (advance is null)
             return Result<CustomerAdvanceDto>.NotFound("El anticipo indicado no existe.");
         var names = await partners.GetNamesByIdsAsync([advance.CustomerId], ct);
+        var refunds = await transactions.ListByAdvanceIdAsync(tenant.TenantId, advance.Id, ct);
 
         return Result<CustomerAdvanceDto>.Success(
-            CustomerAdvanceMap.ToDto(advance, names.GetValueOrDefault(advance.CustomerId))
+            CustomerAdvanceMap.ToDto(advance, names.GetValueOrDefault(advance.CustomerId), refunds)
         );
     }
 }

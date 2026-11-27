@@ -1,8 +1,9 @@
 # Anticipos de clientes — SSOT (Finance)
 
-Fuente vigente del comportamiento **implementado y probado** de Anticipos de Clientes: registro y consultas (CA-F3) y
-aplicación a CxC con su reversa (CA-F4) sobre el dominio de CA-F1 y la contabilidad de CA-F2. **No existen** devolución,
-reversa de devolución o del ingreso, anulación administrativa, pantallas ni menú.
+Fuente vigente del comportamiento **implementado y probado** de Anticipos de Clientes: registro y consultas (CA-F3),
+aplicación a CxC con su reversa (CA-F4) y devolución, reversa de devolución, reversa del ingreso y anulación
+administrativa (CA-F5), sobre el dominio de CA-F1 y la contabilidad de CA-F2. **No existen** pantallas, menú ni
+asignación de permisos a perfiles.
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md). Contrato contable:
 [Accounting §28](accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2). Idempotencia y locks:
@@ -29,12 +30,19 @@ Base `api/v1/finance/customer-advances`, envelope `ApiResponse<T>`.
 | `POST /{id}/applications` → 200 | `finance.customer-advances.apply` | Empresa y sucursal activa autorizada |
 | `POST /{id}/applications/{operationId}/reverse` → 200 | `finance.customer-advances.reverse` | Empresa y sucursal activa autorizada |
 | `GET /by-receivable/{receivableId}` (sin paginación) | `finance.view` | Empresa; aplicaciones de la CxC, vigentes y revertidas |
+| `POST /{id}/refunds` → 200 | `finance.customer-advances.refund` | Empresa y sucursal activa autorizada |
+| `POST /{id}/refunds/{transactionId}/reverse` → 200 | `finance.customer-advances.refund` | Empresa y sucursal activa autorizada |
+| `POST /{id}/reverse-income` → 200 | `finance.customer-advances.refund` | Empresa y sucursal activa autorizada |
+| `POST /{id}/cancel` → 200 | `finance.customer-advances.reverse` | Empresa y sucursal activa autorizada |
+
+El detalle incluye los movimientos y `refundTransactions` (devoluciones y sus reversas, con destino, caja y marca de
+revertida); `{transactionId}` es el `id` de una devolución de esa lista.
 
 La sucursal identifica el origen y es un filtro opcional del listado: nunca limita el detalle ni el saldo.
 
-**Permisos.** El catálogo del Kernel declara además `finance.customer-advances.refund`, sin operación que lo use. Ninguno
-de los cuatro está relacionado todavía con un ítem de navegación, por lo que **no son asignables a perfiles**: hoy opera
-solo quien tiene acceso de administrador.
+**Permisos.** Toda operación que mueve dinero real exige `.refund`. Ninguno de los cuatro permisos
+`finance.customer-advances.*` está relacionado todavía con un ítem de navegación, por lo que **no son asignables a
+perfiles**: hoy opera solo quien tiene acceso de administrador.
 
 ## 3. Registro
 
@@ -101,15 +109,63 @@ cuotas que no cuadran (TA-06); período cerrado para la fecha de la reversa (422
 cobro o a una aplicación reconstruye las cuotas con cobrado 0 y deja esa CxC desalineada: no se corrigen saldos y la
 aplicación no puede revertirse mientras siga así.
 
-## 6. Idempotencia y concurrencia
+## 6. Devolución de dinero
 
-Huella canónica V1 con el tipo de operación y solo los datos del usuario. Replay por tenant + empresa + clave, también bajo
-el lock del anticipo: misma huella → el mismo anticipo en su estado vigente (201 en el registro, 200 en las demás); otra
-huella, operación o anticipo → 409; clave ya usada en otra empresa del tenant → 409 sin datos de ella. Un rechazo no
-consume la clave. Barrera definitiva: índices únicos de la clave. Orden de locks:
+Entrada: `clientRequestId`, `amount`, `effectiveDate`, `paymentMethodId`, `companyBankAccountId` **o**
+`cashRegisterId`, `reference` (≤ 100) y `reason` (≤ 500), todos obligatorios. Devuelve hasta el saldo disponible; lo
+aplicado a CxC no se devuelve sin revertir antes la aplicación. Medio, destino y cuenta contable siguen las reglas del
+registro (§3) y el destino puede ser distinto del ingreso. La fecha efectiva va de la fecha del anticipo al día de
+negocio de la empresa y es la fecha contable.
+
+En efectivo: turno abierto de esa caja, usuario titular y sin sobregiro; `ManualExpense` con
+`ReferenceType = CustomerAdvance` y `ReferenceId` = transacción de devolución. La transferencia **solo se registra**: no
+se ejecuta en el banco ni crea movimiento de caja. Se crean el movimiento `Refund`, su transacción, auditoría,
+obligación `CustomerAdvanceRefunded` y outbox en una transacción.
+
+## 7. Reversa de una devolución
+
+Solo para una devolución que no llegó a ejecutarse y cuyo dinero sigue en la empresa. Entrada: `clientRequestId`,
+`reason`, `reference` de la recuperación y `evidenceDate`, obligatorios. Importe, destino y medio salen de la
+transacción original; la fecha contable es el día de negocio de la reversa (TA-07), nunca anterior a la devolución.
+`evidenceDate` es trazabilidad, no fecha contable: entre la fecha de la devolución y el día de negocio (422). En efectivo: turno abierto de la caja original, titular, `ManualIncome` con la
+misma referencia que el egreso. Genera `ReversalOfRefund`, la transacción compensatoria, restaura exactamente el
+importe y espeja el asiento (sin asiento, cancela la obligación). Se rechaza si ya fue revertida o el anticipo está
+cancelado. Una devolución entregada al cliente no se revierte: un reintegro es un nuevo anticipo. El sistema exige la
+evidencia declarada; no puede comprobar que el dinero se haya recuperado.
+
+## 8. Reversa del ingreso
+
+Para un ingreso que realmente se deshizo. Entrada: `clientRequestId`, `reason`, `reference` y `evidenceDate`,
+obligatorios; `evidenceDate` entre la fecha del ingreso y el día de negocio (422). Exige el anticipo vigente e íntegro (sin aplicaciones ni devoluciones vigentes); importe y destino salen
+del ingreso. En efectivo: turno abierto de la caja original, titular, sin sobregiro y `ManualExpense` referido al
+movimiento `Received`; en transferencia no hay movimiento de caja. Genera `IncomeReversed`, saldo cero, estado
+`Cancelled`, y espeja el asiento (sin asiento, cancela la obligación).
+
+## 9. Anulación administrativa
+
+Solo para un registro cuyo dinero **nunca se recibió**. Entrada: `clientRequestId`, `reason`, `reference` de evidencia
+y `moneyNotReceived = true`. Exige anticipo vigente, íntegro, **por transferencia** (uno en efectivo tiene movimiento
+de caja y no es elegible) y sin asiento publicado: si lo hay, toda la operación se rechaza. Genera `SourceCancelled`,
+saldo cero y estado `Cancelled`, y cancela la obligación `Pending`/`Failed`; sin asiento, caja ni banco.
+
+**Destinos históricos.** Las reversas conservan el destino original, que la entrada no admite elegir, y no exigen que
+siga activo; el espejo usa las cuentas del asiento original. En efectivo rigen turno abierto, titularidad y, en las
+salidas, fondos.
+
+**Período contable** (en §7 a §9): se exige período abierto para el espejo de un asiento publicado
+([Accounting §7](accounting.md#7-reversos-fecha-efectiva-e-inmutabilidad)). Cancelar una obligación sin asiento —incluida
+la anulación administrativa— no registra efecto contable y no la bloquea un período cerrado.
+
+## 10. Idempotencia y concurrencia
+
+Huella canónica V1 con el tipo de operación y solo los datos del usuario. Replay por tenant + empresa + clave, también
+bajo el lock del anticipo y antes de reevaluar fechas, saldo o estado: misma huella → el mismo anticipo en su estado
+vigente (201 en el registro, 200 en las demás); otra huella, operación o anticipo → 409; clave ya usada en otra empresa
+del tenant → 409 sin datos de ella. Un rechazo no consume la clave. Barrera definitiva: índices únicos de la clave.
+Entre operaciones que compiten por un anticipo gana la primera que lo bloquea y las demás se reevalúan. Orden de locks:
 [backend.md](backend.md#saldos-compartidos-lock-pesimista-antes-de-decidir-zh-collections-receivable-concurrency-01).
 
-## 7. Evidencia
+## 11. Evidencia
 
 `ERP.API.Tests/Integration/CustomerAdvanceApiTests`, `CustomerAdvanceApplicationApiTests` y
 `CustomerAdvanceOpeningBalanceApiTests` (HTTP + PostgreSQL),

@@ -270,7 +270,7 @@ Declarar `[ProducesResponseType]` por cada status que aplique.
 
 ## Idempotencia de comandos financieros creadores de dinero (ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01)
 
-Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, movimiento manual de caja, solicitud de efectivo, aplicación/reembolso de crédito de proveedor, registro, aplicación y reversa de anticipo de cliente) sigue una sola convención. Una intención del usuario produce **como máximo un** efecto económico, aunque haya doble clic, Enter repetido, reintento, timeout o requests concurrentes. El estado `saving` de la UI no cuenta como garantía.
+Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, movimiento manual de caja, solicitud de efectivo, aplicación/reembolso de crédito de proveedor, registro, aplicación, devolución, reversas y anulación de anticipo de cliente) sigue una sola convención. Una intención del usuario produce **como máximo un** efecto económico, aunque haya doble clic, Enter repetido, reintento, timeout o requests concurrentes. El estado `saving` de la UI no cuenta como garantía.
 
 | Pieza | Regla |
 |---|---|
@@ -303,6 +303,8 @@ Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, 
 5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento). Integración contable: [Accounting](./accounting.md).
 
 **Registro de anticipo de cliente** ([SSOT](customer-advances.md)): fila nueva (sin lock de saldo) → destino `FOR SHARE` (cuenta bancaria o caja) → su cuenta contable `FOR SHARE` → `CashSession FOR UPDATE` (solo efectivo) → locks contables. El turno se toma después de los destinos y nunca junto con una CxC. La clave de la intención vive en el libro de movimientos, única por `(tenant_id, client_request_id, line_number)`; usada por otra empresa del tenant responde 409 sin datos de ella.
+
+**Devolución, reversas y anulación de anticipo** ([SSOT](customer-advances.md)): `CustomerAdvance FOR UPDATE` → destino `FOR SHARE` → su cuenta contable `FOR SHARE` (solo la devolución valida destino) → `CashSession FOR UPDATE` (solo efectivo) → locks contables. Nunca se toman CxC junto con el turno; saldo, estado y efectivo se deciden con lo recargado tras bloquear.
 
 **Aplicación de anticipo y su reversa** ([SSOT](customer-advances.md)): `CustomerAdvance FOR UPDATE` → `SalesReceivable FOR UPDATE` en Id ascendente → locks contables. El anticipo se toma antes de la posición 4 y ningún flujo de Ventas lo toma; no se toma `Payment`, factura ni `CashSession`. El reintento se resuelve bajo el lock del anticipo y los saldos se deciden con lo recargado tras bloquear.
 

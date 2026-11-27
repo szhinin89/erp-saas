@@ -1,11 +1,34 @@
 # Project Status
 
-## CUSTOMER-ADVANCES-V1 CA-F4 — Aplicación a CxC y reversa — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
+## CUSTOMER-ADVANCES-V1 CA-F5 — Devolución, reversas y anulación — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
 
-Autorizada y aprobada técnicamente por el propietario el 2026-11-27, con commit local autorizado tras CI #1252 SUCCESS;
-**sin push ni CI de estos cambios: CA-F4 no está CLOSED**. **CA-F5 y CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está
-CLOSED ni implementado como funcionalidad:** sin devolución, reversa de ingreso, anulación, pantallas ni menú; no cuenta en
-el control V1. Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+Autorizada y aprobada técnicamente por el propietario el 2026-11-27, con commit local autorizado tras sus comprobaciones
+finales; **sin push ni CI de estos cambios: CA-F5 no está CLOSED**. **CA-F6 NO AUTORIZADA. CUSTOMER-ADVANCES-V1 no está
+CLOSED ni implementado como funcionalidad:** sin pantallas, menú ni permisos asignables; no cuenta en el control V1.
+Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+
+- **Entregado:** devolución parcial o total (efectivo o transferencia), reversa de una devolución no ejecutada, reversa
+  íntegra del ingreso y anulación administrativa; el detalle expone `refundTransactions`. Sin cambio de esquema, Caja,
+  Contabilidad ni Kernel.
+- **Cambios sobre lo anterior:** registro y devolución comparten las reglas de medio, destino y turno.
+- **Defecto de prueba corregido (de CA-F4):** las pruebas de API del registro usaban la fecha UTC como fecha del anticipo y
+  habrían fallado entre las 00:00 y las 05:00 UTC; ahora usan el día de la empresa.
+- **Límites:** la transferencia se registra, no se ejecuta; la recuperación y la no recepción del dinero se acreditan con la
+  referencia declarada; cancelar una obligación sin asiento no la bloquea un período cerrado (gate contable vigente).
+- **Verificación local (agente), sin omitidas:** HTTP con PostgreSQL 16 desechable de registro y compensaciones 150/150 (95 de CA-F5),
+  dentro de la selección de API de anticipos, snapshots, idempotencia financiera y permisos 306/306; contrato OpenAPI
+  122/122 (inventario 545 → 549); Domain Kernel, anticipos y Caja 97/97; Application Finance, Caja, Accounting y anticipos
+  523/523; Infrastructure anticipos, Caja y aislamiento 101/101; Architecture 158/158; guardrail PowerShell, Stack Audit,
+  ratchet (0 violaciones nuevas) y documentación.
+- **Comprobaciones finales:** fecha de evidencia entre la operación original y el día de negocio, aislamiento entre
+  tenants y destinos históricos. API de registro y compensaciones 158/158; aplicación, saldo inicial y snapshots 67/67; contrato
+  OpenAPI 122/122; Architecture 158/158; guardrail PowerShell, Stack Audit, ratchet y documentación.
+
+## CUSTOMER-ADVANCES-V1 CA-F4 — Aplicación a CxC y reversa — CLOSED (CI #1253 SUCCESS, 2026-11-27)
+
+Autorizada y aprobada por el propietario el 2026-11-27. Commit `23c899297b0371ef9cc688d1671eb478fa56aa9e`; CI #1253
+SUCCESS confirmado por el propietario. Entregó aplicación y reversa, sin devolución, reversa de ingreso ni anulación
+(CA-F5). Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
 
 - **Entregado:** aplicación parcial o total a una o varias CxC, reversa completa de la operación, aplicaciones por CxC,
   regla compartida con cobros (TA-12) y control TA-06. Sin cambio de esquema.

@@ -1226,7 +1226,7 @@
       "name": "CreditTerms"
     },
     {
-      "description": "CUSTOMER-ADVANCES-V1 (ADR-052) \u2014 anticipos de clientes: registro, consultas, aplicaci\u00F3n a cuentas\r\npor cobrar y reversi\u00F3n de aplicaciones. Controller delgado: HTTP \u2192 MediatR \u2192 \u0060Result\u0060. Sin\r\n\u0060[AppFeature]\u0060: no tiene navegaci\u00F3n propia.",
+      "description": "CUSTOMER-ADVANCES-V1 (ADR-052) \u2014 anticipos de clientes: registro, consultas, aplicaci\u00F3n a cuentas\r\npor cobrar y su reversi\u00F3n, devoluci\u00F3n de dinero y su reversi\u00F3n, reversa del ingreso y anulaci\u00F3n\r\nadministrativa. Controller delgado: HTTP \u2192 MediatR \u2192 \u0060Result\u0060. Sin \u0060[AppFeature]\u0060: no\r\ntiene navegaci\u00F3n propia.",
       "name": "CustomerAdvance"
     },
     {

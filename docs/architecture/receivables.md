@@ -108,6 +108,7 @@ durables; ver
 
 - Los cobros se consultan desde la CxC; no existe un listado global independiente.
 - Las devoluciones de dinero por cobros quedan fuera de esta corrección documental y pendientes
-  de una decisión funcional separada.
+  de una decisión funcional separada. La [devolución de anticipos](customer-advances.md#6-devolución-de-dinero) devuelve
+  solo saldo no aplicado y no modifica ninguna CxC.
 - Una cuota cobrada antes de que la cuota acumulara lo cobrado conserva cobrado 0; no se reparan
   datos existentes.

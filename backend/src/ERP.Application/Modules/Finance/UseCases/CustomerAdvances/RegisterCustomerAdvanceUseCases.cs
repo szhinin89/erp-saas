@@ -2,19 +2,15 @@ using ERP.Application.Common;
 using ERP.Application.Common.Idempotency;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
-using ERP.Application.Modules.Caja;
 using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Interfaces;
-using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Entities;
 using ERP.Domain.Modules.Finance.Interfaces;
-using ERP.Domain.Modules.Sales.Entities;
-using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
@@ -106,18 +102,12 @@ public sealed class RegisterCustomerAdvanceCommandValidator
 public sealed class RegisterCustomerAdvanceHandler
     : IRequestHandler<RegisterCustomerAdvanceCommand, Result<CustomerAdvanceDto>>
 {
-    internal const string MethodNotAllowed =
-        "Los anticipos de clientes solo admiten efectivo o transferencia bancaria.";
     private const string CashMovementDescription = "Anticipo de cliente";
 
     private readonly ICustomerAdvanceRepository _advances;
     private readonly IBusinessPartnerRepository _partners;
     private readonly IBusinessPartnerRoleRepository _roles;
-    private readonly IPaymentMethodRepository _paymentMethods;
-    private readonly ICompanyBankAccountRepository _bankAccounts;
-    private readonly ICashRegisterRepository _cashRegisters;
-    private readonly ICashSessionRepository _cashSessions;
-    private readonly IAccountRepository _accounts;
+    private readonly CustomerAdvanceMoney _money;
     private readonly ICompanyRepository _companies;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -128,6 +118,7 @@ public sealed class RegisterCustomerAdvanceHandler
 
     public RegisterCustomerAdvanceHandler(
         ICustomerAdvanceRepository advances,
+        ICustomerAdvanceRefundTransactionRepository transactions,
         IBusinessPartnerRepository partners,
         IBusinessPartnerRoleRepository roles,
         IPaymentMethodRepository paymentMethods,
@@ -148,18 +139,14 @@ public sealed class RegisterCustomerAdvanceHandler
         _advances = advances;
         _partners = partners;
         _roles = roles;
-        _paymentMethods = paymentMethods;
-        _bankAccounts = bankAccounts;
-        _cashRegisters = cashRegisters;
-        _cashSessions = cashSessions;
-        _accounts = accounts;
+        _money = new(paymentMethods, bankAccounts, cashRegisters, cashSessions, accounts);
         _companies = companies;
         _t = t;
         _c = c;
         _b = b;
         _u = u;
         _clock = clock;
-        _intent = new(advances, partners, uow, dbEx, t);
+        _intent = new(advances, transactions, partners, uow, dbEx, t);
     }
 
     public Task<Result<CustomerAdvanceDto>> Handle(
@@ -207,33 +194,27 @@ public sealed class RegisterCustomerAdvanceHandler
                 "El socio de negocio no tiene rol de Cliente."
             );
 
-        var method = await _paymentMethods.GetByIdAsync(tenantId, cmd.PaymentMethodId, ct);
-        if (method is null)
-            return Result<CustomerAdvanceDto>.NotFound("El método de pago indicado no existe.");
-        if (ValidatePaymentMethod(method, cmd) is { } methodError)
-            return Result<CustomerAdvanceDto>.ValidationFailure(methodError);
+        var target = new CustomerAdvanceMoneyTarget(
+            cmd.PaymentMethodId,
+            cmd.CompanyBankAccountId,
+            cmd.CashRegisterId,
+            cmd.Reference
+        );
+        if (await _money.ValidateTargetAsync(tenantId, companyId, target, ct) is { } targetError)
+            return targetError;
 
-        if (await LockDestinationAsync(cmd, tenantId, companyId, ct) is { } destinationError)
-            return destinationError;
-
-        CashSession? session = null;
-        if (cmd.CashRegisterId is { } cashRegisterId)
-        {
-            session = await _cashSessions.GetOpenByCashRegisterForUpdateAsync(
+        var (session, sessionError) = cmd.CashRegisterId is { } cashRegisterId
+            ? await _money.LockSessionAsync(
                 tenantId,
+                companyId,
                 cashRegisterId,
+                _u.UserId,
+                outflow: null,
                 ct
-            );
-            if (session is null || session.CompanyId != companyId)
-                return Result<CustomerAdvanceDto>.ValidationFailure(
-                    "No existe una sesión de caja activa para la caja indicada."
-                );
-            // TA-13 — solo el titular del turno recibe efectivo en esa caja.
-            if (!session.IsControlledBy(_u.UserId))
-                return Result<CustomerAdvanceDto>.ValidationFailure(
-                    CashSessionOwnership.RejectionMessage(session)
-                );
-        }
+            )
+            : default;
+        if (sessionError is not null)
+            return sessionError;
 
         var advance = CustomerAdvance.Register(
             tenantId,
@@ -243,7 +224,7 @@ public sealed class RegisterCustomerAdvanceHandler
             company.CurrencyCode,
             cmd.Amount,
             cmd.AdvanceDate,
-            method.Id,
+            cmd.PaymentMethodId,
             cmd.CompanyBankAccountId,
             cmd.CashRegisterId,
             _u.UserId,
@@ -263,7 +244,7 @@ public sealed class RegisterCustomerAdvanceHandler
                 _u.UserId,
                 CashReferenceType.CustomerAdvance,
                 received.Id,
-                VisibleReference(advance.ExternalReference)
+                CustomerAdvanceMoney.VisibleReference(advance.ExternalReference)
             );
             advance.LinkCashMovement(received.Id, session.Id, cashMovement.Id);
         }
@@ -273,81 +254,4 @@ public sealed class RegisterCustomerAdvanceHandler
 
         return await _intent.SuccessAsync(advance, ct);
     }
-
-    /// <summary>Medio activo, coherente con su destino, permitido por TA-02 y con su referencia.</summary>
-    private static string? ValidatePaymentMethod(
-        PaymentMethod method,
-        RegisterCustomerAdvanceCommand cmd
-    )
-    {
-        if (!method.IsActive)
-            return "El método de pago indicado no está activo.";
-        var destinationError = PaymentMethodDestinationPolicy.Validate(
-            method,
-            hasBankAccount: cmd.CompanyBankAccountId is not null,
-            hasCashRegister: cmd.CashRegisterId is not null
-        );
-        if (destinationError is not null)
-            return destinationError;
-        // TA-02 — la restricción vive en Anticipos; la política compartida no cambia.
-        if (!method.AffectsPhysicalCash && method.DetailType != PaymentMethodDetailType.Transfer)
-            return MethodNotAllowed;
-        return method.RequiresReference && string.IsNullOrWhiteSpace(cmd.Reference)
-            ? "El método de pago seleccionado exige una referencia externa."
-            : null;
-    }
-
-    /// <summary>
-    /// Bloquea y valida el destino y la pertenencia de su cuenta contable. Que la cuenta esté activa e
-    /// imputable lo decide Contabilidad en cada intento (obligación Failed, accounting.md §19).
-    /// </summary>
-    private async Task<Result<CustomerAdvanceDto>?> LockDestinationAsync(
-        RegisterCustomerAdvanceCommand cmd,
-        Guid tenantId,
-        Guid companyId,
-        CancellationToken ct
-    )
-    {
-        Guid? accountId;
-        if (cmd.CompanyBankAccountId is { } bankAccountId)
-        {
-            var bank = await _bankAccounts.GetByIdForShareAsync(tenantId, bankAccountId, ct);
-            if (bank is null || bank.CompanyId != companyId)
-                return Result<CustomerAdvanceDto>.NotFound(
-                    "La cuenta bancaria indicada no existe."
-                );
-            if (!bank.IsActive)
-                return Result<CustomerAdvanceDto>.ValidationFailure(
-                    "La cuenta bancaria indicada no está activa."
-                );
-            accountId = bank.AccountingAccountId;
-        }
-        else
-        {
-            var register = await _cashRegisters.GetByIdForShareAsync(
-                tenantId,
-                cmd.CashRegisterId!.Value,
-                ct
-            );
-            if (register is null || register.CompanyId != companyId)
-                return Result<CustomerAdvanceDto>.NotFound("La caja indicada no existe.");
-            if (!register.IsActive)
-                return Result<CustomerAdvanceDto>.ValidationFailure(
-                    "La caja indicada no está activa."
-                );
-            accountId = register.AccountingAccountId;
-        }
-
-        return
-            accountId is { } id
-            && await _accounts.GetByIdForShareAsync(tenantId, companyId, id, ct) is null
-            ? Result<CustomerAdvanceDto>.ValidationFailure(
-                "La cuenta contable del destino no pertenece a esta empresa."
-            )
-            : null;
-    }
-
-    /// <summary>Nunca se trunca: si no cabe en Caja, se resuelve por el movimiento referenciado.</summary>
-    private static string? VisibleReference(string? reference) =>
-        reference is { Length: <= CashMovement.ReferenceNumberMaxLen } ? reference : null;
 }

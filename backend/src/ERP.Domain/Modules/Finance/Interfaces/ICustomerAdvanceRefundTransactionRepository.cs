@@ -20,6 +20,13 @@ public interface ICustomerAdvanceRefundTransactionRepository
         CancellationToken ct = default
     );
 
+    /// <summary>Devoluciones y reversas de un anticipo de la empresa.</summary>
+    Task<IReadOnlyList<CustomerAdvanceRefundTransaction>> ListByAdvanceIdAsync(
+        Guid tenantId,
+        Guid advanceId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(CustomerAdvanceRefundTransaction transaction, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

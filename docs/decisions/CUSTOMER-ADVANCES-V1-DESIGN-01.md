@@ -226,6 +226,8 @@ Son cuatro operaciones distintas que no se sustituyen entre sí:
 
 La reversa de una devolución (§6.5) no es otra vía de corrección del ingreso: solo deshace una salida que no llegó a ocurrir.
 
+**Cronología (precisión aprobada en CA-F5, [ADR-052 §17](ADR-052-customer-advances-v1-architecture.md)):** una devolución no es anterior al anticipo ni posterior al día de negocio; ninguna reversa ni anulación es anterior a lo que compensa; la fecha de evidencia va de la operación original al día de negocio.
+
 ### 6.1 Reversa de una aplicación (PROPUESTO)
 
 Movimiento `ReversalOfApplication` por la aplicación completa; restaura la CxC con `SalesReceivable.ReverseCollection` (cuota de la aplicación; sin cobrado negativo) y devuelve el saldo al anticipo. Exige CxC sin cancelar y con cobrado suficiente; una operación posterior incompatible bloquea la reversa. Motivo obligatorio (≤ 500). Doble reversa rechazada sin efecto. No toca Caja/Bancos. Precedente: `ReverseCollection`; `ReverseSupplierCreditApplication`.

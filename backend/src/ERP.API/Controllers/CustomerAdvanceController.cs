@@ -11,8 +11,9 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// CUSTOMER-ADVANCES-V1 (ADR-052) — anticipos de clientes: registro, consultas, aplicación a cuentas
-/// por cobrar y reversión de aplicaciones. Controller delgado: HTTP → MediatR → <c>Result</c>. Sin
-/// <c>[AppFeature]</c>: no tiene navegación propia.
+/// por cobrar y su reversión, devolución de dinero y su reversión, reversa del ingreso y anulación
+/// administrativa. Controller delgado: HTTP → MediatR → <c>Result</c>. Sin <c>[AppFeature]</c>: no
+/// tiene navegación propia.
 /// </summary>
 [ApiController]
 [Route("api/v1/finance/customer-advances")]
@@ -145,6 +146,204 @@ public sealed class CustomerAdvanceController : ControllerBase
                     operationId,
                     request.Reason,
                     request.Reference,
+                    request.ClientRequestId
+                ),
+                ct
+            )
+        );
+
+    /// <summary>Cuerpo de <see cref="Refund"/>.</summary>
+    /// <param name="Amount">Monto a devolver; mayor a cero y no superior al saldo disponible.</param>
+    /// <param name="EffectiveDate">Fecha efectiva: entre la fecha del anticipo y el día de negocio.</param>
+    /// <param name="PaymentMethodId">Medio de pago: efectivo o transferencia bancaria.</param>
+    /// <param name="CompanyBankAccountId">Cuenta bancaria de origen; excluyente con la caja.</param>
+    /// <param name="CashRegisterId">Caja de la que sale el efectivo; excluyente con la cuenta bancaria.</param>
+    /// <param name="Reference">Referencia de ejecución; obligatoria, máximo 100.</param>
+    /// <param name="Reason">Motivo; obligatorio, máximo 500.</param>
+    /// <param name="ClientRequestId">Intención del cliente, estable en reintentos; obligatoria.</param>
+    public sealed record RefundRequest(
+        decimal Amount,
+        DateOnly EffectiveDate,
+        Guid PaymentMethodId,
+        Guid? CompanyBankAccountId,
+        Guid? CashRegisterId,
+        string Reference,
+        string Reason,
+        Guid ClientRequestId
+    );
+
+    /// <summary>Cuerpo de una reversa respaldada por evidencia de que el dinero se movió de vuelta.</summary>
+    /// <param name="Reason">Motivo; obligatorio, máximo 500.</param>
+    /// <param name="Reference">Referencia de la evidencia; obligatoria, máximo 100.</param>
+    /// <param name="EvidenceDate">Fecha que consta en la evidencia, entre la operación original y el día de negocio; no es la fecha contable.</param>
+    /// <param name="ClientRequestId">Intención del cliente, estable en reintentos; obligatoria.</param>
+    public sealed record EvidencedReversalRequest(
+        string Reason,
+        string Reference,
+        DateOnly EvidenceDate,
+        Guid ClientRequestId
+    );
+
+    /// <summary>Cuerpo de <see cref="Cancel"/>.</summary>
+    /// <param name="Reason">Motivo; obligatorio, máximo 500.</param>
+    /// <param name="Reference">Referencia de la evidencia; obligatoria, máximo 100.</param>
+    /// <param name="MoneyNotReceived">Declaración expresa de que el dinero no fue recibido; obligatoria.</param>
+    /// <param name="ClientRequestId">Intención del cliente, estable en reintentos; obligatoria.</param>
+    public sealed record CancelRequest(
+        string Reason,
+        string Reference,
+        bool MoneyNotReceived,
+        Guid ClientRequestId
+    );
+
+    /// <summary>Devuelve al cliente, total o parcialmente, el saldo disponible del anticipo.</summary>
+    /// <remarks>
+    /// Efectivo desde el turno abierto de una caja propia y con fondos, o transferencia contra una cuenta
+    /// bancaria; el destino puede ser distinto del ingreso. No devuelve lo aplicado a cuentas por cobrar.
+    /// La transferencia solo se registra: no se ejecuta en el banco.
+    /// </remarks>
+    /// <param name="id">Identificador del anticipo.</param>
+    /// <param name="request">Datos de la operación e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Anticipo con la devolución registrada.</response>
+    /// <response code="404">El anticipo, el medio o el destino no existen en la empresa.</response>
+    /// <response code="409">El <c>clientRequestId</c> ya se usó con datos distintos.</response>
+    /// <response code="422">Datos inválidos, saldo insuficiente, anticipo cancelado, destino no admitido o inactivo, turno o fondos insuficientes, fecha incompatible o período contable cerrado.</response>
+    [HttpPost("{id:guid}/refunds")]
+    [Authorize(Policy = $"perm:{FinancePermissions.CustomerAdvancesRefund}")]
+    [ProducesResponseType(typeof(ApiResponse<CustomerAdvanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Refund(
+        Guid id,
+        [FromBody] RefundRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new RegisterCustomerAdvanceRefundCommand(
+                    id,
+                    request.Amount,
+                    request.EffectiveDate,
+                    request.PaymentMethodId,
+                    request.CompanyBankAccountId,
+                    request.CashRegisterId,
+                    request.Reference,
+                    request.Reason,
+                    request.ClientRequestId
+                ),
+                ct
+            )
+        );
+
+    /// <summary>Revierte una devolución que no llegó a ejecutarse y cuyo dinero sigue en la empresa.</summary>
+    /// <remarks>
+    /// Restaura exactamente el importe de la devolución en su mismo destino; en efectivo ingresa en el
+    /// turno abierto de la caja original. La fecha contable es el día de negocio de la reversa. Una
+    /// devolución entregada al cliente no se revierte.
+    /// </remarks>
+    /// <param name="id">Identificador del anticipo.</param>
+    /// <param name="transactionId">Transacción de devolución (<c>refundTransactions[].id</c>).</param>
+    /// <param name="request">Datos de la operación e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Anticipo con la devolución revertida.</response>
+    /// <response code="404">El anticipo o la devolución no existen en la empresa.</response>
+    /// <response code="409">El <c>clientRequestId</c> ya se usó con datos distintos.</response>
+    /// <response code="422">Falta motivo, referencia o fecha de evidencia, devolución ya revertida, anticipo cancelado, turno no disponible o período contable cerrado.</response>
+    [HttpPost("{id:guid}/refunds/{transactionId:guid}/reverse")]
+    [Authorize(Policy = $"perm:{FinancePermissions.CustomerAdvancesRefund}")]
+    [ProducesResponseType(typeof(ApiResponse<CustomerAdvanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ReverseRefund(
+        Guid id,
+        Guid transactionId,
+        [FromBody] EvidencedReversalRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new ReverseCustomerAdvanceRefundCommand(
+                    id,
+                    transactionId,
+                    request.Reason,
+                    request.Reference,
+                    request.EvidenceDate,
+                    request.ClientRequestId
+                ),
+                ct
+            )
+        );
+
+    /// <summary>Revierte completo el ingreso del anticipo porque el dinero realmente se deshizo.</summary>
+    /// <remarks>
+    /// Exige el anticipo íntegro y evidencia. En efectivo el dinero sale del turno abierto de la caja
+    /// original, con fondos; en transferencia no hay movimiento de caja. El anticipo queda cancelado y su
+    /// asiento se espeja.
+    /// </remarks>
+    /// <param name="id">Identificador del anticipo.</param>
+    /// <param name="request">Datos de la operación e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Anticipo cancelado por la reversa del ingreso.</response>
+    /// <response code="404">El anticipo no existe en la empresa.</response>
+    /// <response code="409">El <c>clientRequestId</c> ya se usó con datos distintos.</response>
+    /// <response code="422">Falta motivo, referencia o fecha de evidencia, anticipo no íntegro o cancelado, turno o fondos insuficientes o período contable cerrado.</response>
+    [HttpPost("{id:guid}/reverse-income")]
+    [Authorize(Policy = $"perm:{FinancePermissions.CustomerAdvancesRefund}")]
+    [ProducesResponseType(typeof(ApiResponse<CustomerAdvanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ReverseIncome(
+        Guid id,
+        [FromBody] EvidencedReversalRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new ReverseCustomerAdvanceIncomeCommand(
+                    id,
+                    request.Reason,
+                    request.Reference,
+                    request.EvidenceDate,
+                    request.ClientRequestId
+                ),
+                ct
+            )
+        );
+
+    /// <summary>Anula administrativamente un anticipo cuyo dinero nunca fue recibido.</summary>
+    /// <remarks>
+    /// Solo un anticipo íntegro, por transferencia y sin asiento publicado; con la declaración expresa.
+    /// No mueve caja ni banco ni genera asientos: cancela la obligación contable pendiente.
+    /// </remarks>
+    /// <param name="id">Identificador del anticipo.</param>
+    /// <param name="request">Datos de la operación e identificador de idempotencia.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Anticipo anulado.</response>
+    /// <response code="404">El anticipo no existe en la empresa.</response>
+    /// <response code="409">El <c>clientRequestId</c> ya se usó con datos distintos.</response>
+    /// <response code="422">Falta motivo, referencia o declaración, anticipo no íntegro, en efectivo, cancelado o ya contabilizado.</response>
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = $"perm:{FinancePermissions.CustomerAdvancesReverse}")]
+    [ProducesResponseType(typeof(ApiResponse<CustomerAdvanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Cancel(
+        Guid id,
+        [FromBody] CancelRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new CancelCustomerAdvanceCommand(
+                    id,
+                    request.Reason,
+                    request.Reference,
+                    request.MoneyNotReceived,
                     request.ClientRequestId
                 ),
                 ct

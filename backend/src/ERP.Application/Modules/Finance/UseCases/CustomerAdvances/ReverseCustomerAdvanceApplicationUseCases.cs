@@ -91,6 +91,7 @@ public sealed class ReverseCustomerAdvanceApplicationHandler
 
     public ReverseCustomerAdvanceApplicationHandler(
         ICustomerAdvanceRepository advances,
+        ICustomerAdvanceRefundTransactionRepository transactions,
         ISalesReceivableRepository receivables,
         IBusinessPartnerRepository partners,
         IUnitOfWork uow,
@@ -109,7 +110,7 @@ public sealed class ReverseCustomerAdvanceApplicationHandler
         _c = c;
         _b = b;
         _u = u;
-        _intent = new(advances, partners, uow, databaseErrors, t);
+        _intent = new(advances, transactions, partners, uow, databaseErrors, t);
     }
 
     public Task<Result<CustomerAdvanceDto>> Handle(

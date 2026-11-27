@@ -36,6 +36,17 @@ public sealed class CustomerAdvanceRefundTransactionRepository
             .CustomerAdvanceRefundTransactions.ForOperationalScope(tenantId, _company)
             .FirstOrDefaultAsync(x => x.CustomerAdvanceMovementId == movementId, ct);
 
+    public async Task<IReadOnlyList<CustomerAdvanceRefundTransaction>> ListByAdvanceIdAsync(
+        Guid tenantId,
+        Guid advanceId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .CustomerAdvanceRefundTransactions.ForOperationalScope(tenantId, _company)
+            .Where(x => x.CustomerAdvanceId == advanceId)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(ct);
+
     public Task AddAsync(
         CustomerAdvanceRefundTransaction transaction,
         CancellationToken ct = default
