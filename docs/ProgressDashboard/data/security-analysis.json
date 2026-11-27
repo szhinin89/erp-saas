@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-26 18:30:41",
-    "FilesAnalyzed":  5034,
+    "Generated":  "2026-11-26 20:17:53",
+    "FilesAnalyzed":  5054,
     "SecretsFound":  80,
     "SecretFiles":  [
                         "backend\\src\\ERP.API\\Program.cs",
@@ -100,7 +100,7 @@
                            "backend\\src\\ERP.Domain\\Modules\\Access\\Interfaces\\IUserSessionRepository.cs",
                            "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\UserSessionRepository.cs"
                        ],
-    "ConnectionStringsFound":  14,
+    "ConnectionStringsFound":  15,
     "ConnectionStringFiles":  [
                                   "backend\\src\\ERP.API\\Program.cs",
                                   "backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
@@ -112,10 +112,11 @@
                                   "backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.CreditNoteRecovery.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentUncertainSriPostgreSqlTests.cs",
+                                  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyProvisioningAtomicityPostgreSqlTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                               ],
-    "Warnings":  107
+    "Warnings":  108
 }

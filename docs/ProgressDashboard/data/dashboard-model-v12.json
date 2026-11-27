@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-11-26 18:30:50",
+    "Generated":  "2026-11-26 20:18:05",
     "EngineeringScore":  {
-                             "Generated":  "2026-11-26 18:30:45",
+                             "Generated":  "2026-11-26 20:17:58",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  46.2,
-                             "Security":  30,
+                             "Quality":  46.05,
+                             "Security":  28,
                              "Dependencies":  100,
-                             "Overall":  69.19
+                             "Overall":  68.76
                          },
     "QualityGate":  {
-                        "Generated":  "2026-11-26 18:30:49",
+                        "Generated":  "2026-11-26 20:18:03",
                         "Status":  "RED",
-                        "EngineeringScore":  69.19,
+                        "EngineeringScore":  68.76,
                         "Warnings":  [
                                          "Engineering score needs improvement",
                                          "High number of possible secrets detected",
@@ -24,8 +24,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-11-26 18:30:47",
-                  "Snapshots":  51,
+                  "Generated":  "2026-11-26 20:18:02",
+                  "Snapshots":  52,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -331,6 +331,12 @@
                                       "Date":  "2026-11-26 18:30:46",
                                       "File":  "dashboard-2026-11-26-1830-v2.json",
                                       "Score":  69.19,
+                                      "Method":  "git-tracked-v1"
+                                  },
+                                  {
+                                      "Date":  "2026-11-26 20:17:59",
+                                      "File":  "dashboard-2026-11-26-2017-v2.json",
+                                      "Score":  68.76,
                                       "Method":  "git-tracked-v1"
                                   }
                               ],
@@ -691,8 +697,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-11-26 18:30:41",
-                     "FilesAnalyzed":  5034,
+                     "Generated":  "2026-11-26 20:17:53",
+                     "FilesAnalyzed":  5054,
                      "SecretsFound":  80,
                      "SecretFiles":  [
                                          "backend\\src\\ERP.API\\Program.cs",
@@ -792,7 +798,7 @@
                                             "backend\\src\\ERP.Domain\\Modules\\Access\\Interfaces\\IUserSessionRepository.cs",
                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\UserSessionRepository.cs"
                                         ],
-                     "ConnectionStringsFound":  14,
+                     "ConnectionStringsFound":  15,
                      "ConnectionStringFiles":  [
                                                    "backend\\src\\ERP.API\\Program.cs",
                                                    "backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
@@ -804,16 +810,17 @@
                                                    "backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.CreditNoteRecovery.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentUncertainSriPostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyProvisioningAtomicityPostgreSqlTests.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                                    "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                                                ],
-                     "Warnings":  107
+                     "Warnings":  108
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-11-26 18:30:31",
-                          "FilesAnalyzed":  5027,
+                          "Generated":  "2026-11-26 20:17:43",
+                          "FilesAnalyzed":  5047,
                           "TODO":  52,
                           "FIXME":  0,
                           "HACK":  0,
@@ -1340,6 +1347,10 @@
                                                  "Lines":  858
                                              },
                                              {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                 "Lines":  615
+                                             },
+                                             {
                                                  "File":  "backend\\src\\ERP.Domain\\Modules\\Items\\Entities\\Item.cs",
                                                  "Lines":  554
                                              },
@@ -1380,6 +1391,10 @@
                                                  "Lines":  510
                                              },
                                              {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                 "Lines":  598
+                                             },
+                                             {
                                                  "File":  "backend\\src\\ERP.Domain.Tests\\Kernel\\KernelRegistryTests.cs",
                                                  "Lines":  1193
                                              },
@@ -1409,23 +1424,23 @@
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
-                                                 "Lines":  1264
+                                                 "Lines":  1273
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
-                                                 "Lines":  12383
+                                                 "Lines":  12853
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
-                                                 "Lines":  23331
+                                                 "Lines":  24048
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                                                 "Lines":  23328
+                                                 "Lines":  24045
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
-                                                 "Lines":  549
+                                                 "Lines":  596
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -1558,6 +1573,10 @@
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CollectionPostingIntegrationTests.cs",
                                                  "Lines":  995
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                 "Lines":  1635
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\OpeningBalanceReconciliationTests.cs",
@@ -1927,21 +1946,21 @@
                           "CriticalFindings":  8
                       },
     "Architecture":  {
-                         "Generated":  "2026-11-26 18:30:09",
+                         "Generated":  "2026-11-26 20:17:20",
                          "Layers":  {
                                         "Domain":  {
-                                                       "Files":  732
+                                                       "Files":  742
                                                    },
                                         "Application":  {
                                                             "Commands":  2276,
                                                             "Validators":  958,
                                                             "Queries":  1299,
-                                                            "Files":  1209
+                                                            "Files":  1210
                                                         },
                                         "Infrastructure":  {
-                                                               "DbContext":  421,
-                                                               "Files":  522,
-                                                               "Repository":  603
+                                                               "DbContext":  425,
+                                                               "Files":  528,
+                                                               "Repository":  614
                                                            },
                                         "API":  {
                                                     "Controllers":  540,
@@ -1953,7 +1972,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-11-26 18:30:15",
+                         "Generated":  "2026-11-26 20:17:26",
                          "Violations":  [
 
                                         ],

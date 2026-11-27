@@ -1,20 +1,20 @@
 ﻿{
-    "generated":  "2026-11-26 18:31:13",
+    "generated":  "2026-11-26 20:18:32",
     "source":  "architecture-progress.json, dashboard-model-v12.json, model-health.json, modules.json, features.json, processes.json, tasks.json",
     "erpCompletion":  84,
-    "engineeringHealth":  69.19,
+    "engineeringHealth":  68.76,
     "architectureHealth":  100,
     "productionReadiness":  "NOT READY",
     "overallStatus":  "NOT READY",
     "criticalGaps":  [
-                         "Security Score bajo: 30% (Secrets detectados: 80, endpoints anonimos: 13)",
-                         "Quality Score bajo: 46.2%",
+                         "Security Score bajo: 28% (Secrets detectados: 80, endpoints anonimos: 13)",
+                         "Quality Score bajo: 46.05%",
                          "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                          "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
                          "Etapa incompleta: Operaciones al 83% (81 / 98 tareas)"
                      ],
     "recommendedOrder":  [
-                             "1. Resolver problemas de seguridad (Security Score 30%, 80 secretos, 13 endpoints anonimos)",
+                             "1. Resolver problemas de seguridad (Security Score 28%, 80 secretos, 13 endpoints anonimos)",
                              "2. Completar fases parcialmente implementadas: 45 items abiertos, priorizar Futuro (70%), Fiscal / SRI (75%), Operaciones (83%)",
                              "3. Completar fases sin iniciar (10 items en: Fiscal / SRI, Futuro)",
                              "4. Revalidar el modelo (23 items sin mapear, integrityScore 100%)"

@@ -6,6 +6,8 @@ Solo documentación. El diseño técnico de este documento es **PROPUESTA** salv
 
 Fecha: 2026-11-24 (revisión 4: aprobación funcional del propietario, §0.1; cierre técnico, §13–§14). Responde al vacío registrado como `O-14` / `C-08` en SPA ([contrato §20.4](SPA-V1.1-CONTRACT-SPEC-01.md#204-anticipos-de-clientes-proceso-independiente-y-transversal-dir-ssot-01), [REG §7](SPA-V1.1-APPROVED-DECISIONS-01.md#7-dir-ssot-01--anticipos-de-clientes-como-proceso-transversal)) con el alcance aprobado en §0.1. Este documento no modifica SPA ni actualiza `O-14` allí, y no es una SSOT: una SSOT de módulo nace cuando existen código y pruebas ([enforcement](../architecture/enforcement.md#ssot-por-módulo)). Un ADR, un plan por fases y la SSOT requerirán instrucción posterior del propietario.
 
+**Actualización 2026-11-26 (prevalece sobre los estados de autorización anteriores de este documento):** [ADR-052](ADR-052-customer-advances-v1-architecture.md) fue **aprobado**; donde precisa o sustituye una propuesta técnica de aquí (por ejemplo, el destino opcional, TA-02), rige el ADR. Solo la fase CA-F1 del [plan](../agent/CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md) está autorizada; estado en [STATUS](../../STATUS.md).
+
 Estado de entrega: [STATUS](../../STATUS.md) · Cola: [WORK_QUEUE](../agent/WORK_QUEUE.md) · Índice: [decisiones](README.md).
 
 ## 0. Cómo leer este documento

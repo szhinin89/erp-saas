@@ -1,5 +1,40 @@
 # Project Status
 
+## CUSTOMER-ADVANCES-V1 CA-F1 — Dominio, persistencia y auditoría — IMPLEMENTADO Y VERIFICADO (2026-11-26)
+
+[ADR-052](docs/decisions/ADR-052-customer-advances-v1-architecture.md) **ACCEPTED** (TA-01 a TA-13) y CA-F1 autorizada por el
+propietario el 2026-11-26 con el inventario del
+[plan](docs/agent/CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md#ca-f1--dominio-persistencia-y-auditoría). TA-11 **RESUELTA**
+(sin producción; baseline única; no autoriza eliminar bases de datos). Gate final de comprobaciones del propietario
+ejecutado el 2026-11-26, con commit local condicionado a su resultado; **sin push ni CI de estos cambios** (CI #1248 SUCCESS
+es anterior). **CA-F2 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está CLOSED ni implementado como funcionalidad:** sin
+casos de uso, API, permisos, Caja, Contabilidad ni frontend; no cuenta en el control V1.
+
+- **Entregado:** agregado, libro de movimientos, transacción de devolución, eventos, Entity Audit, repositorios y cuatro
+  tablas `customer_advance*` en la baseline única (cambio solo aditivo; ninguna base de trabajo modificada).
+- **Idempotencia (garantía de CA-F1):** el agregado rechaza reutilizar una clave y numera las líneas; la base impone único
+  `(tenant, clave, línea)` y una sola línea inicial por `(tenant, clave)`, de modo que dos operaciones o dos anticipos no
+  comparten clave y una operación multilínea se confirma entera o nada. El reintento (huella, respuesta original o 409) es de
+  los casos de uso futuros.
+- **Historial (corregido en el gate):** una sonda en PostgreSQL mostró que el contexto EF permitía borrar movimientos,
+  quitarlos de la colección, borrar transacciones y auditoría, reescribir el vínculo de caja y editar la auditoría.
+  `ErpDbContext.SaveChangesAsync` lo rechaza ahora solo para las entidades de anticipos.
+- **Verificación local (agente):** `CustomerAdvance` Domain 30/30, Application 5/5, Infrastructure 53/53 con PostgreSQL 16
+  desechable, sin omitidas; baseline y tracking de hijos 30/30; Architecture 158/158; migración arriba, abajo y arriba;
+  guardrail PowerShell, Stack Audit, ratchet (0 violaciones nuevas) e inventario de `infrastructure-02`.
+- **Límites:** SQL directo, `ExecuteDelete`/`ExecuteUpdate` y el `Down` de la migración no pasan por esa comprobación; un
+  `INSERT` manual de una línea 2 o superior podría reutilizar una clave. La base no comprueba que el disponible sea la suma
+  del libro ni que CxC, cuota, banco, caja, sucursal, turno o cliente correspondan a la empresa y operación: las validaciones
+  están asignadas a CA-F3, F4 y F5 en el plan.
+- **Dashboard:** regenerado antes del commit con la metodología `git-tracked-v1`; Global 75/75, Core 43/43 y Employees 5/5
+  sin cambio.
+- **Bases de desarrollo ya migradas:** no reciben las tablas al conservar el identificador de la baseline; recrearlas exige
+  autorización expresa.
+
+Hallazgo observado por lectura de código, no reproducido y sin acción autorizada: tras el crédito por devolución de venta,
+las cuotas de CxC se reconstruyen con cobrado 0 y una reversa de cobro posterior no les devuelve saldo
+([ADR-052 §8](docs/decisions/ADR-052-customer-advances-v1-architecture.md#8-aislamiento-multiempresa-e-integración-con-cxc)).
+
 ## PROJECT-CLARITY-AND-CONSISTENCY-01 — Claridad documental y Dashboard reproducible — CLOSED (gate del propietario aprobado 2026-11-26)
 
 Autorización expresa del propietario (2026-11-26). Sin cambios de código funcional, datos del ERP, permisos,

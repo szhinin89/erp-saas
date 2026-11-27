@@ -1,0 +1,1960 @@
+﻿{
+    "Generated":  "2026-11-26 20:17:59",
+    "EngineeringScore":  {
+                             "Generated":  "2026-11-26 20:17:58",
+                             "Architecture":  100,
+                             "ModuleHealth":  79.82,
+                             "Quality":  46.05,
+                             "Security":  28,
+                             "Dependencies":  100,
+                             "Overall":  68.76
+                         },
+    "Health":  [
+                   {
+                       "Module":  "Company",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Dashboard",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Payables",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Media",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Companies",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Menu",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Auth",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Settings",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "OrgConfig",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Integration",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Access",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Sales",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Items",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Purchases",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Employees",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Tenants",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Session",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Retentions",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Common",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Inventory",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Finance",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Branches",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "DocTypes",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Pricing",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Caja",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Expenses",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "ElectronicInvoicing",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Configuration",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Ride",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "InitialLoad",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Catalog",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "ElectronicDocuments",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "Auxiliary",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Communications",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Accounting",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  90,
+                       "Frontend":  70,
+                       "Score":  81.5
+                   },
+                   {
+                       "Module":  "SriCatalogs",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Audit",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   },
+                   {
+                       "Module":  "Navigation",
+                       "Architecture":  90,
+                       "Tests":  80,
+                       "Documentation":  70,
+                       "Backend":  65,
+                       "Frontend":  70,
+                       "Score":  77.75
+                   }
+               ],
+    "Security":  {
+                     "Generated":  "2026-11-26 20:17:53",
+                     "FilesAnalyzed":  5054,
+                     "SecretsFound":  80,
+                     "SecretFiles":  [
+                                         "backend\\src\\ERP.API\\Program.cs",
+                                         "backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Extensions\\ExceptionClassificationTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\CompanyInitialAdministratorHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\CompanySettingsIsolationHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\ForgotPasswordSecurityHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\IamIdentityIsolationHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Integration\\InternalCapabilitiesHttpTests.cs",
+                                         "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.FindingFixes.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\Communications\\UseCases\\UpdateCompanyEmailSettings\\UpdateCompanyEmailSettingsCommandHandler.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\Companies\\UseCases\\CreateCompany\\CreateCompanyHandler.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\Company\\UseCases\\CompanyAdministratorsForAdminCore\\CompanyAdministratorsForAdminCore.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\ElectronicDocuments\\Services\\ElectronicDocumentSigningService.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing\\Services\\SriCertificateStatusResolver.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing\\UseCases\\UploadSriCertificate\\UploadSriCertificateCommandHandler.cs",
+                                         "backend\\src\\ERP.Application\\Modules\\ElectronicInvoicing\\UseCases\\UpsertSriConfiguration\\UpsertSriConfigurationCommandHandler.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Access\\AssignTemporaryPasswordAdminHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Auth\\CompletePasswordResetHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Auth\\GlobalLoginHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Auth\\LoginHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Auth\\ReauthenticateHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Auth\\ResetPasswordWithTokenHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Communications\\CommunicationEmailSettingsHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\Communications\\SendTestEmailHandlerTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentSigningServiceTests.cs",
+                                         "backend\\src\\ERP.Application.Tests\\ElectronicInvoicing\\UpsertSriConfigurationCommandHandlerTests.cs",
+                                         "backend\\src\\ERP.Domain\\Kernel\\Permissions\\AccessPermissions.cs",
+                                         "backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
+                                         "backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
+                                         "backend\\src\\ERP.Infrastructure\\Communications\\CommunicationSettingsResolver.cs",
+                                         "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                         "backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
+                                         "backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
+                                         "backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
+                                         "frontend\\e2e\\enterprise-auth.spec.ts",
+                                         "frontend\\e2e\\helpers\\api.ts",
+                                         "frontend\\src\\lib\\session\\reauthenticate.test.ts",
+                                         "frontend\\src\\lib\\session\\reauthenticate.ts",
+                                         "frontend\\src\\modules\\access\\iamV1Phase2.rules.test.ts",
+                                         "frontend\\src\\modules\\access\\users\\api\\membershipService.ts",
+                                         "frontend\\src\\modules\\access\\users\\components\\AssignTemporaryPasswordModal.test.tsx",
+                                         "frontend\\src\\modules\\access\\users\\components\\AssignTemporaryPasswordModal.tsx",
+                                         "frontend\\src\\modules\\access\\users\\config\\userConfigForm.ts",
+                                         "frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.test.tsx",
+                                         "frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.tsx",
+                                         "frontend\\src\\modules\\access\\users\\sections\\UserSecuritySection.tsx",
+                                         "frontend\\src\\modules\\admin-core\\components\\CompanyAdministratorsModal.test.tsx",
+                                         "frontend\\src\\modules\\admin-core\\components\\CompanyAdministratorsModal.tsx",
+                                         "frontend\\src\\modules\\admin-core\\components\\TemporaryCredentialsPanel.tsx",
+                                         "frontend\\src\\modules\\admin-core\\pages\\AdminCoreCompanyCreatePage.test.tsx",
+                                         "frontend\\src\\modules\\admin-core\\pages\\AdminCoreCompanyCreatePage.tsx",
+                                         "frontend\\src\\modules\\admin-core\\pages\\AdminCoreLoginPage.test.tsx",
+                                         "frontend\\src\\modules\\admin-core\\pages\\AdminCoreLoginPage.tsx",
+                                         "frontend\\src\\modules\\auth\\api\\authPublicFlows.test.ts",
+                                         "frontend\\src\\modules\\auth\\api\\authService.ts",
+                                         "frontend\\src\\modules\\auth\\api\\setupService.ts",
+                                         "frontend\\src\\modules\\auth\\pages\\CompletePasswordResetPage.tsx",
+                                         "frontend\\src\\modules\\auth\\pages\\ForgotPasswordPage.test.tsx",
+                                         "frontend\\src\\modules\\auth\\pages\\LoginPage.tsx",
+                                         "frontend\\src\\modules\\auth\\pages\\ResetPasswordPage.tsx",
+                                         "frontend\\src\\modules\\auth\\pages\\SetupPage.tsx",
+                                         "frontend\\src\\modules\\configuracion\\comunicaciones\\api\\communicationsEmailSettingsService.ts",
+                                         "frontend\\src\\modules\\configuracion\\comunicaciones\\schemas\\communicationEmailSettingsSchema.ts",
+                                         "frontend\\src\\modules\\configuracion\\comunicaciones\\sections\\useCommunicationsEmailSettingsPage.ts",
+                                         "frontend\\src\\modules\\configuracion\\facturacionElectronica\\api\\electronicInvoicingService.ts",
+                                         "frontend\\src\\modules\\configuracion\\facturacionElectronica\\schemas\\sriConfigurationSchema.ts",
+                                         "frontend\\src\\modules\\configuracion\\facturacionElectronica\\sections\\useSriConfigPage.ts",
+                                         "frontend\\src\\modules\\sales\\api\\printAgentClient.test.ts",
+                                         "frontend\\src\\modules\\sales\\api\\printAgentClient.ts",
+                                         "frontend\\src\\schemas\\access\\assignTemporaryPasswordSchema.ts",
+                                         "frontend\\src\\schemas\\access\\createSystemUserSchema.ts",
+                                         "frontend\\src\\schemas\\access\\userConfigSchema.ts",
+                                         "frontend\\src\\schemas\\auth\\completePasswordResetSchema.ts",
+                                         "frontend\\src\\schemas\\auth\\loginSchema.ts",
+                                         "frontend\\src\\schemas\\auth\\resetWithTokenSchema.ts",
+                                         "frontend\\src\\types\\access.ts",
+                                         "frontend\\src\\types\\adminCore.ts",
+                                         "frontend\\src\\types\\auth.ts",
+                                         "frontend\\src\\types\\companyManagement.ts"
+                                     ],
+                     "AnonymousDetected":  13,
+                     "AnonymousFiles":  [
+                                            "backend\\src\\ERP.API\\Controllers\\AuthController.cs",
+                                            "backend\\src\\ERP.API\\Controllers\\DevCacheController.cs",
+                                            "backend\\src\\ERP.API\\Controllers\\PublicController.cs",
+                                            "backend\\src\\ERP.API\\Controllers\\SetupController.cs",
+                                            "backend\\src\\ERP.API\\Extensions\\SwaggerExtensions.cs",
+                                            "backend\\src\\ERP.API\\Swagger\\OpenApiOperationFilters.cs",
+                                            "backend\\src\\ERP.API.Tests\\EmployeesPermissionContractTests.cs",
+                                            "backend\\src\\ERP.API.Tests\\Auth\\AdminCoreCompanyUpdateControllerTests.cs",
+                                            "backend\\src\\ERP.API.Tests\\Integration\\CompaniesApiSurfaceSnapshotTests.cs",
+                                            "backend\\src\\ERP.API.Tests\\Integration\\StockApiSurfaceSnapshotTests.cs",
+                                            "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                            "backend\\src\\ERP.Domain\\Modules\\Access\\Interfaces\\IUserSessionRepository.cs",
+                                            "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\UserSessionRepository.cs"
+                                        ],
+                     "ConnectionStringsFound":  15,
+                     "ConnectionStringFiles":  [
+                                                   "backend\\src\\ERP.API\\Program.cs",
+                                                   "backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
+                                                   "backend\\src\\ERP.API\\Hosting\\ErpHostRegistration.cs",
+                                                   "backend\\src\\ERP.API.Tests\\Hangfire\\RecurringJobRunnerPostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.API.Tests\\Hangfire\\WorkerHostRegistrationTests.cs",
+                                                   "backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
+                                                   "backend\\src\\ERP.API.Tests\\Support\\FirstRunHttpProcess.cs",
+                                                   "backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.CreditNoteRecovery.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentUncertainSriPostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyProvisioningAtomicityPostgreSqlTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
+                                                   "backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
+                                               ],
+                     "Warnings":  108
+                 },
+    "TechnicalDebt":  {
+                          "Generated":  "2026-11-26 20:17:43",
+                          "FilesAnalyzed":  5047,
+                          "TODO":  52,
+                          "FIXME":  0,
+                          "HACK":  0,
+                          "NotImplemented":  8,
+                          "LargeFiles":  [
+                                             {
+                                                 "File":  "backend\\src\\ERP.API\\Program.cs",
+                                                 "Lines":  630
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API\\Controllers\\PurchasesController.cs",
+                                                 "Lines":  553
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API\\Controllers\\Accounting\\AccountingController.cs",
+                                                 "Lines":  917
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Employees\\EmployeesHttpAuthorizationTests.cs",
+                                                 "Lines":  549
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Expenses\\ExpensesControllerTests.cs",
+                                                 "Lines":  671
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
+                                                 "Lines":  622
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\BranchDefaultWarehouseHttpTests.cs",
+                                                 "Lines":  555
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CajaVentasEndToEndTests.cs",
+                                                 "Lines":  1035
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CashRegisterDefaultsEndToEndTests.cs",
+                                                 "Lines":  603
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CompanyAccessProfilesIsolationHttpTests.cs",
+                                                 "Lines":  704
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CompanySettingsIsolationHttpTests.cs",
+                                                 "Lines":  664
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
+                                                 "Lines":  690
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyTests.cs",
+                                                 "Lines":  664
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\IamIdentityIsolationHttpTests.cs",
+                                                 "Lines":  1079
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
+                                                 "Lines":  513
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\InventoryAdjustmentsEndToEndTests.cs",
+                                                 "Lines":  1642
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\PurchaseReturnEndToEndTests.cs",
+                                                 "Lines":  1566
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\SalesCancelAuthorizedReturnRuleTests.cs",
+                                                 "Lines":  571
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\SalesCancelCollectionConcurrencyTests.cs",
+                                                 "Lines":  701
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\SalesPreferencesIntegrityHttpTests.cs",
+                                                 "Lines":  575
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\SalesReturnEndToEndTests.cs",
+                                                 "Lines":  1765
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\SalesReturnInvoiceStateConcurrencyTests.cs",
+                                                 "Lines":  511
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                                 "Lines":  870
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Unit\\RefreshTokenServiceTests.cs",
+                                                 "Lines":  683
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Common\\MessageCatalog.cs",
+                                                 "Lines":  636
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Accounting\\Queries\\JournalEntrySourceResolution.cs",
+                                                 "Lines":  554
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Accounting\\UseCases\\AccountingPeriods\\AccountingPeriodUseCases.cs",
+                                                 "Lines":  582
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Accounting\\UseCases\\Accounts\\AccountUseCases.cs",
+                                                 "Lines":  656
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Accounting\\UseCases\\PostingRules\\PostingRuleUseCases.cs",
+                                                 "Lines":  588
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Accounting\\UseCases\\Reports\\GetAccountingReportsUseCases.cs",
+                                                 "Lines":  735
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Caja\\FundingRequests\\CashFundingRequestQueries.cs",
+                                                 "Lines":  668
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Caja\\FundingRequests\\CashFundingRequestUseCases.cs",
+                                                 "Lines":  739
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\ElectronicDocuments\\Services\\ElectronicDocumentIssuer.cs",
+                                                 "Lines":  1485
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Categories\\ExpenseCategoryUseCases.cs",
+                                                 "Lines":  707
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Documents\\ExpenseDocumentConfirmUseCases.cs",
+                                                 "Lines":  818
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Documents\\ExpenseDocumentDraftUseCases.cs",
+                                                 "Lines":  1042
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\RegisterSupplierCreditRefundUseCases.cs",
+                                                 "Lines":  511
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
+                                                 "Lines":  513
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\InitialLoad\\OpeningPosting\\GetOpeningBalanceReconciliation.cs",
+                                                 "Lines":  554
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\InitialLoad\\Processors\\ItemImportProcessor.cs",
+                                                 "Lines":  685
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Inventory\\ItemMatching\\UseCases\\ResolveLines\\ResolvePurchaseReceptionLinesHandler.cs",
+                                                 "Lines":  821
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Payables\\Services\\SupplierPaymentRegistrar.cs",
+                                                 "Lines":  602
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\AuthorizePurchaseReturnUseCases.cs",
+                                                 "Lines":  549
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\ConfirmPurchaseUseCases.cs",
+                                                 "Lines":  599
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseCreditNoteDraftUseCases.cs",
+                                                 "Lines":  995
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseDraftUseCases.cs",
+                                                 "Lines":  1993
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseReturnDraftUseCases.cs",
+                                                 "Lines":  591
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Retentions\\Services\\RetentionAnnulmentService.cs",
+                                                 "Lines":  720
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\AuthorizeSalesUseCases.cs",
+                                                 "Lines":  742
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\PaymentMethodUseCases.cs",
+                                                 "Lines":  521
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\SalesDraftUseCases.cs",
+                                                 "Lines":  1876
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application\\Modules\\Settings\\Operations\\UseCases\\UpdateOperationalPreferences\\UpdateOperationalPreferencesCommandHandler.cs",
+                                                 "Lines":  558
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Access\\CompanyUserPreferencesTests.cs",
+                                                 "Lines":  816
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Access\\RevokeCompanyUserMembershipHandlerTests.cs",
+                                                 "Lines":  605
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Access\\UpsertCompanyUserMembershipTests.cs",
+                                                 "Lines":  1612
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\AccountUseCasesTests.cs",
+                                                 "Lines":  765
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\GetAccountingReportsUseCasesTests.cs",
+                                                 "Lines":  1067
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\GetJournalEntriesUseCasesTests.cs",
+                                                 "Lines":  864
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\JournalEntrySourceResolverTests.cs",
+                                                 "Lines":  1214
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\JournalFactoryTests.cs",
+                                                 "Lines":  655
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\PostingEngineTests.cs",
+                                                 "Lines":  603
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\PostingRuleUseCasesTests.cs",
+                                                 "Lines":  515
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Accounting\\PurchaseReturnPostingAmountKindRemediationTests.cs",
+                                                 "Lines":  507
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Auth\\LoginHandlerTests.cs",
+                                                 "Lines":  990
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Auth\\SwitchCompanyHandlerTests.cs",
+                                                 "Lines":  720
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Caja\\CashSessionBranchScopeTests.cs",
+                                                 "Lines":  651
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Caja\\CashSessionCollectionSummaryHandlerTests.cs",
+                                                 "Lines":  851
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Caja\\CashSessionListSummaryHandlerTests.cs",
+                                                 "Lines":  529
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Caja\\OpenCashSessionHandlerTests.cs",
+                                                 "Lines":  660
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Caja\\SalesInvoiceAuthorizedHandlerTests.cs",
+                                                 "Lines":  508
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Communications\\ElectronicDocumentAuthorizedCommunicationHandlerTests.cs",
+                                                 "Lines":  771
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Companies\\CompanyPrecisionPolicyUseCasesTests.cs",
+                                                 "Lines":  559
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentCorrectedRetransmissionTests.cs",
+                                                 "Lines":  663
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentIssuerEmissionSwitchTests.cs",
+                                                 "Lines":  526
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentIssuerReceptionTests.cs",
+                                                 "Lines":  868
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Expenses\\CancelExpenseDocumentUseCasesTests.cs",
+                                                 "Lines":  787
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Expenses\\CreateConfirmedExpenseUseCasesTests.cs",
+                                                 "Lines":  636
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Expenses\\ExpenseDocumentConfirmUseCasesTests.cs",
+                                                 "Lines":  1259
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Expenses\\ExpenseDocumentDraftUseCasesTests.cs",
+                                                 "Lines":  1128
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Finance\\ApplySupplierCreditUseCasesTests.cs",
+                                                 "Lines":  516
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Finance\\RegisterCollectionCommandHandlerTests.cs",
+                                                 "Lines":  705
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Finance\\RegisterSupplierCreditRefundUseCasesTests.cs",
+                                                 "Lines":  876
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Finance\\ReverseSupplierCreditRefundUseCasesTests.cs",
+                                                 "Lines":  636
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\InitialLoad\\InitialPayableImportProcessorTests.cs",
+                                                 "Lines":  527
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\InitialLoad\\InitialReceivableImportProcessorTests.cs",
+                                                 "Lines":  586
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\InitialLoad\\ItemImportProcessorTests.cs",
+                                                 "Lines":  719
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Inventory\\ItemMatching\\ResolvePurchaseReceptionLinesHandlerTests.cs",
+                                                 "Lines":  671
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Inventory\\Stock\\StockAdjustmentBranchOwnershipTests.cs",
+                                                 "Lines":  705
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Inventory\\Stock\\StockAdjustmentExecuteCancelTests.cs",
+                                                 "Lines":  616
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\MasterData\\BpNestedResourceOwnershipHandlerTests.cs",
+                                                 "Lines":  583
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\OrgConfig\\CompanySalesPreferencesIntegrityTests.cs",
+                                                 "Lines":  543
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Payables\\AccountsPayableQueryUseCasesTests.cs",
+                                                 "Lines":  592
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Payables\\PayablesCompanyLevelBranchIndependenceTests.cs",
+                                                 "Lines":  547
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Payables\\RegisterSupplierPaymentUseCasesTests.cs",
+                                                 "Lines":  1892
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Payables\\ReverseSupplierPaymentUseCasesTests.cs",
+                                                 "Lines":  1090
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\AuthorizePurchaseCreditNoteHandlerTests.cs",
+                                                 "Lines":  578
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\AuthorizePurchaseReturnHandlerTests.cs",
+                                                 "Lines":  1282
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\CancelPurchaseHandlerTests.cs",
+                                                 "Lines":  1145
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\CancelPurchaseReturnUseCasesTests.cs",
+                                                 "Lines":  721
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\ConfirmPurchaseHandlerTests.cs",
+                                                 "Lines":  2171
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\GetPurchaseReturnByIdHandlerTests.cs",
+                                                 "Lines":  519
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseCreditNoteDraftUseCasesTests.cs",
+                                                 "Lines":  1150
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseCreditNoteTaxSummaryDraftUseCasesTests.cs",
+                                                 "Lines":  643
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseDraftExplicitCostAllocationTests.cs",
+                                                 "Lines":  872
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseDraftRecoveryTests.cs",
+                                                 "Lines":  717
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReturnDraftUseCasesTests.cs",
+                                                 "Lines":  709
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
+                                                 "Lines":  512
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\CreatePurchaseReceptionDraftHandlerTests.cs",
+                                                 "Lines":  1646
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\DownloadPurchaseReceptionXmlHandlerTests.cs",
+                                                 "Lines":  667
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\GetPurchaseReceptionXmlViewHandlerTests.cs",
+                                                 "Lines":  702
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\ImportPurchaseReceptionHandlerTests.cs",
+                                                 "Lines":  528
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\PurchaseXmlDraftParserTests.cs",
+                                                 "Lines":  629
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Retentions\\RetentionElectronicDocumentDataProviderTests.cs",
+                                                 "Lines":  813
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Retentions\\RetentionIssuerTests.cs",
+                                                 "Lines":  1013
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Ride\\RidePipelineTests.cs",
+                                                 "Lines":  841
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\AuthorizeSalesInvoiceHandlerTests.cs",
+                                                 "Lines":  3296
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\AuthorizeSalesReturnCreditNoteWiringTests.cs",
+                                                 "Lines":  541
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\AuthorizeSalesReturnHandlerTests.cs",
+                                                 "Lines":  1250
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\CreateSalesDraftHandlerTests.cs",
+                                                 "Lines":  2619
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\GetSalesReceiptPrintPayloadHandlerTests.cs",
+                                                 "Lines":  618
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\PreviewSalesRepricingQueryHandlerTests.cs",
+                                                 "Lines":  548
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\SalesDraftSpecialTaxTests.cs",
+                                                 "Lines":  594
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\SalesInvoiceElectronicDocumentDataProviderTests.cs",
+                                                 "Lines":  946
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\SalesReturnCreditNoteDataProviderTests.cs",
+                                                 "Lines":  875
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\SalesReturnDraftHandlerTests.cs",
+                                                 "Lines":  616
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\SalesReturnRefundHandlerTests.cs",
+                                                 "Lines":  533
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Application.Tests\\Sales\\UpdateSalesDraftScheduleTests.cs",
+                                                 "Lines":  1103
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Architecture.Tests\\CommunicationsBoundaryTests.cs",
+                                                 "Lines":  524
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Company\\Entities\\Company.cs",
+                                                 "Lines":  572
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\ElectronicDocuments\\Entities\\ElectronicDocument.cs",
+                                                 "Lines":  858
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                 "Lines":  615
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Items\\Entities\\Item.cs",
+                                                 "Lines":  554
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Payables\\Entities\\AccountsPayable.cs",
+                                                 "Lines":  598
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Purchases\\Entities\\PurchaseCreditNote.cs",
+                                                 "Lines":  624
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Purchases\\Entities\\PurchaseInvoice.cs",
+                                                 "Lines":  840
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Purchases\\Entities\\PurchaseInvoiceDetail.cs",
+                                                 "Lines":  719
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Purchases\\Entities\\PurchaseReturn.cs",
+                                                 "Lines":  622
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Purchases\\Entities\\SupplierCredit.cs",
+                                                 "Lines":  517
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Sales\\Entities\\SalesInvoice.cs",
+                                                 "Lines":  651
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain\\Modules\\Sales\\Entities\\SalesInvoiceDetail.cs",
+                                                 "Lines":  578
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Expenses\\ExpenseDocumentTests.cs",
+                                                 "Lines":  510
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                 "Lines":  598
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Kernel\\KernelRegistryTests.cs",
+                                                 "Lines":  1193
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Payables\\SupplierPaymentTests.cs",
+                                                 "Lines":  865
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Purchases\\PurchaseCreditNoteTests.cs",
+                                                 "Lines":  806
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Purchases\\PurchaseReturnTests.cs",
+                                                 "Lines":  841
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Purchases\\PurchaseReception\\PurchaseReceptionDocumentTests.cs",
+                                                 "Lines":  543
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Retentions\\RetentionDocumentTests.cs",
+                                                 "Lines":  639
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Domain.Tests\\Retentions\\RetentionSriAnnulmentDomainTests.cs",
+                                                 "Lines":  502
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                 "Lines":  1273
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                 "Lines":  12853
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                 "Lines":  24048
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                 "Lines":  24045
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                 "Lines":  596
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
+                                                 "Lines":  821
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Items\\ItemRepository.cs",
+                                                 "Lines":  570
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
+                                                 "Lines":  1497
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\ExpensesCatalogBootstrapStep.cs",
+                                                 "Lines":  1102
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Services\\CompanyOperationalReadinessResolver.cs",
+                                                 "Lines":  815
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Services\\RefreshTokenService.cs",
+                                                 "Lines":  520
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure\\Services\\Sri\\SriSoapClient.cs",
+                                                 "Lines":  1010
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\AccountingContinuityIntegrationTests.cs",
+                                                 "Lines":  1047
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\AccountingReportsRepositoryTests.cs",
+                                                 "Lines":  816
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CloseAccountingPeriodIntegrationTests.cs",
+                                                 "Lines":  666
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\PostingEngineIntegrationTests.cs",
+                                                 "Lines":  676
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\PurchaseInvoiceConfirmedPostingIntegrationTests.cs",
+                                                 "Lines":  1446
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\PurchaseReturnAuthorizedPostingIntegrationTests.cs",
+                                                 "Lines":  799
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\PurchaseReturnCancelledPostingIntegrationTests.cs",
+                                                 "Lines":  704
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.cs",
+                                                 "Lines":  1458
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceAuthorizedPostingIntegrationTests.ReadinessGap.cs",
+                                                 "Lines":  671
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationTests.cs",
+                                                 "Lines":  775
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SupplierCreditApplicationReversedPostingIntegrationTests.cs",
+                                                 "Lines":  653
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SupplierCreditAppliedPostingIntegrationTests.cs",
+                                                 "Lines":  598
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SupplierCreditApplyPayablesIntegrationTests.cs",
+                                                 "Lines":  859
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SupplierCreditReadModelIntegrationTests.cs",
+                                                 "Lines":  913
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\SupplierCreditRefundPostingIntegrationTests.cs",
+                                                 "Lines":  791
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Caja\\CashFundingRequestRepositoryTests.cs",
+                                                 "Lines":  565
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Caja\\CashFundingRequestWorkflowIntegrationTests.cs",
+                                                 "Lines":  1033
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Communications\\CommunicationContractIntegrationTests.cs",
+                                                 "Lines":  552
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Communications\\CommunicationOutboxDeliveryIntegrationTests.cs",
+                                                 "Lines":  736
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Communications\\ElectronicDocumentCommunicationFlow.cs",
+                                                 "Lines":  620
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Communications\\ElectronicDocumentCommunicationIntegrationTests.cs",
+                                                 "Lines":  605
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Dashboard\\DashboardKpiReaderTests.cs",
+                                                 "Lines":  862
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
+                                                 "Lines":  986
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\ElectronicDocuments\\SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
+                                                 "Lines":  733
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Expenses\\RetentionExpenseEndToEndTests.cs",
+                                                 "Lines":  1642
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CollectionPostingIntegrationTests.cs",
+                                                 "Lines":  995
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                 "Lines":  1635
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\OpeningBalanceReconciliationTests.cs",
+                                                 "Lines":  695
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\PublishOpeningJournalEntryPostgreSqlTests.cs",
+                                                 "Lines":  719
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\BusinessPartnerEmploymentGuardPostgreSqlTests.cs",
+                                                 "Lines":  683
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeDirectoryPostgreSqlTests.cs",
+                                                 "Lines":  728
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeLifecyclePostgreSqlTests.cs",
+                                                 "Lines":  1098
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeManagementPostgreSqlTests.cs",
+                                                 "Lines":  1306
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Employees\\EmployeeUserLinkPostgreSqlTests.cs",
+                                                 "Lines":  788
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.cs",
+                                                 "Lines":  1308
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                                                 "Lines":  676
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
+                                                 "Lines":  854
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseReception\\ResolvePurchaseReceptionLinesIntegrationTests.cs",
+                                                 "Lines":  945
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Payables\\SupplierPaymentEndToEndTests.cs",
+                                                 "Lines":  2905
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\ApplySupplierCreditConcurrencyTests.cs",
+                                                 "Lines":  1049
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\AuthorizePurchaseReturnConcurrencyTests.cs",
+                                                 "Lines":  661
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\AuthorizePurchaseReturnLockAConcurrencyTests.cs",
+                                                 "Lines":  555
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
+                                                 "Lines":  602
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseCreditNoteConstraintsTests.cs",
+                                                 "Lines":  970
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
+                                                 "Lines":  1095
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseReturnCrossInvariantTests.cs",
+                                                 "Lines":  927
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\RegisterSupplierCreditNoteIntegrationTests.cs",
+                                                 "Lines":  564
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\StockRepositoryCompanyScopeIntegrationTests.cs",
+                                                 "Lines":  584
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\SupplierCreditRefundConcurrencyTests.cs",
+                                                 "Lines":  1402
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\Payables\\AccountsPayableSearchTests.cs",
+                                                 "Lines":  529
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\Purchases\\PurchaseReceptionDocumentRepositoryTests.cs",
+                                                 "Lines":  538
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\Sales\\CashSessionCollectionSummaryRepositoryTests.cs",
+                                                 "Lines":  532
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\Sales\\SalesReturnRepositoryTests.cs",
+                                                 "Lines":  546
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\Sales\\UpdateSalesDraftAtomicityPostgreSqlTests.cs",
+                                                 "Lines":  690
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\SriCatalogs\\SriCatalogComplianceTests.cs",
+                                                 "Lines":  624
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Persistence\\SriCatalogs\\SriRetentionCatalogResolutionIntegrationTests.cs",
+                                                 "Lines":  686
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Ride\\ElectronicDocumentRideSourceXmlProviderTests.cs",
+                                                 "Lines":  606
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Ride\\RidePipelineStorageAndCacheIntegrationTests.cs",
+                                                 "Lines":  736
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
+                                                 "Lines":  1337
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\ExpensesCatalogBootstrapStepTests.cs",
+                                                 "Lines":  732
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\IgnoreQueryFiltersScopeIntegrationTests.cs",
+                                                 "Lines":  639
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Services\\BranchAccessGuardTests.cs",
+                                                 "Lines":  631
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyOperationalReadinessResolverTests.cs",
+                                                 "Lines":  1644
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Services\\CompanyProvisioningAtomicityPostgreSqlTests.cs",
+                                                 "Lines":  1086
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\SriSoapClientTests.cs",
+                                                 "Lines":  730
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\components\\ReportPageTemplate.tsx",
+                                                 "Lines":  591
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\components\\items\\ItemEditorModal\\ItemEditorForm.tsx",
+                                                 "Lines":  634
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\components\\zh\\ZHMoneyValue.test.tsx",
+                                                 "Lines":  515
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\components\\zh\\inputs\\ZhDecimalInput.test.tsx",
+                                                 "Lines":  883
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\lib\\config\\precisionPolicy.config.test.ts",
+                                                 "Lines":  561
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\access\\pages\\PermissionsAssignmentPage.tsx",
+                                                 "Lines":  502
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.test.tsx",
+                                                 "Lines":  796
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.tsx",
+                                                 "Lines":  510
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\accounting\\api\\accountingApi.ts",
+                                                 "Lines":  637
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\accounting\\pages\\AccountingPeriodsPage.tsx",
+                                                 "Lines":  506
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\accounting\\pages\\AccountingPostingsPage.tsx",
+                                                 "Lines":  522
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\accounting\\pages\\ChartOfAccountsPage.tsx",
+                                                 "Lines":  506
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\branches\\components\\BranchGeneralSection.tsx",
+                                                 "Lines":  573
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\caja\\hooks\\useCajaPage.test.tsx",
+                                                 "Lines":  1428
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\caja\\pages\\CajaPage.tsx",
+                                                 "Lines":  870
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\configuracion\\documentFlows\\pages\\DocumentFlowPoliciesPage.tsx",
+                                                 "Lines":  597
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\configuracion\\empresa\\sections\\BrandingSettingsSection.tsx",
+                                                 "Lines":  633
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\expenses\\pages\\ExpenseCategoriesPage.test.tsx",
+                                                 "Lines":  508
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\expenses\\pages\\ExpenseCategoriesPage.tsx",
+                                                 "Lines":  518
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\expenses\\pages\\ExpenseDocumentFormPage.retention.test.tsx",
+                                                 "Lines":  577
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\expenses\\pages\\ExpenseDocumentFormPage.tsx",
+                                                 "Lines":  707
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\initialLoad\\components\\OpeningReconciliationCard.test.tsx",
+                                                 "Lines":  621
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\inventory\\adjustments\\hooks\\useStockAdjustmentFormPage.ts",
+                                                 "Lines":  523
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\inventory\\adjustments\\pages\\StockAdjustmentFormPage.test.tsx",
+                                                 "Lines":  512
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\items\\catalog\\wizard\\TreeEditor.tsx",
+                                                 "Lines":  529
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\items\\detail\\components\\CollectionSection.tsx",
+                                                 "Lines":  826
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\masterData\\components\\MasterDataPartnerWizard.test.tsx",
+                                                 "Lines":  961
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\masterData\\components\\MasterDataPartnerWizard.tsx",
+                                                 "Lines":  654
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\pricing\\pages\\PriceListExceptionsTab.tsx",
+                                                 "Lines":  604
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\pricing\\pages\\PriceListsPage.tsx",
+                                                 "Lines":  535
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
+                                                 "Lines":  559
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
+                                                 "Lines":  580
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",
+                                                 "Lines":  804
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.draftRecovery.test.ts",
+                                                 "Lines":  897
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.pilotFix.test.ts",
+                                                 "Lines":  632
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.retention.test.ts",
+                                                 "Lines":  605
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.ts",
+                                                 "Lines":  2433
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\pages\\PurchaseCreditNoteDetailPage.tsx",
+                                                 "Lines":  670
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\pages\\PurchaseCreditNoteFormPage.tsx",
+                                                 "Lines":  626
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\pages\\PurchaseReceptionPage.tsx",
+                                                 "Lines":  501
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\utils\\purchaseLinePresentation.registration.test.ts",
+                                                 "Lines":  562
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\utils\\purchaseLinePresentation.test.ts",
+                                                 "Lines":  1282
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\purchases\\utils\\purchaseLinePresentation.ts",
+                                                 "Lines":  1169
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\components\\PaymentMethodsSection.tsx",
+                                                 "Lines":  517
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\components\\SalesInvoiceLineGridRow.tsx",
+                                                 "Lines":  598
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\hooks\\useSalesCustomerRepricing.test.ts",
+                                                 "Lines":  650
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\hooks\\useSalesPage.ts",
+                                                 "Lines":  2229
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\pages\\SalesPage.moneyValues.test.tsx",
+                                                 "Lines":  598
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\pages\\SalesPage.ride.test.tsx",
+                                                 "Lines":  594
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\pages\\SalesPage.tsx",
+                                                 "Lines":  805
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\sales\\utils\\salesCalc.test.ts",
+                                                 "Lines":  895
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\modules\\supplier-payments\\pages\\SupplierPaymentFormPage.test.tsx",
+                                                 "Lines":  559
+                                             },
+                                             {
+                                                 "File":  "frontend\\src\\routes\\catalogRoutes.tsx",
+                                                 "Lines":  610
+                                             }
+                                         ],
+                          "CriticalFindings":  8
+                      },
+    "Methodology":  {
+                        "Method":  "git-tracked-v1",
+                        "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                        "TreeDirty":  true,
+                        "TreeModified":  [
+                                             "backend\\src\\ERP.Application.Tests\\Finance\\CustomerAdvanceAuditHandlerTests.cs",
+                                             "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                             "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                             "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                             "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                             "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                             "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs",
+                                             "docs\\agent\\CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md",
+                                             "docs\\agent\\WORK_QUEUE.md",
+                                             "docs\\decisions\\ADR-052-customer-advances-v1-architecture.md",
+                                             "docs\\decisions\\CUSTOMER-ADVANCES-V1-DESIGN-01.md",
+                                             "docs\\decisions\\README.md",
+                                             "STATUS.md",
+                                             "tools\\ci\\backend-test-groups.json"
+                                         ],
+                        "Analyzers":  {
+                                          "analyze-security:backend":  {
+                                                                           "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                           "Scope":  [
+                                                                                         "backend"
+                                                                                     ],
+                                                                           "Include":  [
+                                                                                           "*.cs",
+                                                                                           "*.json",
+                                                                                           "*.config"
+                                                                                       ],
+                                                                           "FilesAnalyzed":  3670,
+                                                                           "MissingTracked":  [
+
+                                                                                              ],
+                                                                           "ExcludedUntracked":  [
+
+                                                                                                 ],
+                                                                           "ModifiedInScope":  [
+                                                                                                   "backend\\src\\ERP.Application.Tests\\Finance\\CustomerAdvanceAuditHandlerTests.cs",
+                                                                                                   "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                                   "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                                   "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                                                                                   "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
+                                                                                               ]
+                                                                       },
+                                          "analyze-security:frontend":  {
+                                                                            "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                            "Scope":  [
+                                                                                          "frontend"
+                                                                                      ],
+                                                                            "Include":  [
+                                                                                            "*.ts",
+                                                                                            "*.tsx",
+                                                                                            "*.js",
+                                                                                            "*.jsx"
+                                                                                        ],
+                                                                            "FilesAnalyzed":  1384,
+                                                                            "MissingTracked":  [
+
+                                                                                               ],
+                                                                            "ExcludedUntracked":  [
+
+                                                                                                  ],
+                                                                            "ModifiedInScope":  [
+
+                                                                                                ]
+                                                                        },
+                                          "analyze-technical-debt:backend":  {
+                                                                                 "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                                 "Scope":  [
+                                                                                               "backend"
+                                                                                           ],
+                                                                                 "Include":  [
+                                                                                                 "*.cs"
+                                                                                             ],
+                                                                                 "FilesAnalyzed":  3663,
+                                                                                 "MissingTracked":  [
+
+                                                                                                    ],
+                                                                                 "ExcludedUntracked":  [
+
+                                                                                                       ],
+                                                                                 "ModifiedInScope":  [
+                                                                                                         "backend\\src\\ERP.Application.Tests\\Finance\\CustomerAdvanceAuditHandlerTests.cs",
+                                                                                                         "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                                         "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                                                                                         "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
+                                                                                                     ]
+                                                                             },
+                                          "analyze-technical-debt:frontend":  {
+                                                                                  "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                                  "Scope":  [
+                                                                                                "frontend"
+                                                                                            ],
+                                                                                  "Include":  [
+                                                                                                  "*.ts",
+                                                                                                  "*.tsx",
+                                                                                                  "*.js",
+                                                                                                  "*.jsx"
+                                                                                              ],
+                                                                                  "FilesAnalyzed":  1384,
+                                                                                  "MissingTracked":  [
+
+                                                                                                     ],
+                                                                                  "ExcludedUntracked":  [
+
+                                                                                                        ],
+                                                                                  "ModifiedInScope":  [
+
+                                                                                                      ]
+                                                                              },
+                                          "analyze-architecture":  {
+                                                                       "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                       "Scope":  [
+                                                                                     "backend/src/ERP.Domain",
+                                                                                     "backend/src/ERP.Application",
+                                                                                     "backend/src/ERP.Infrastructure",
+                                                                                     "backend/src/ERP.API"
+                                                                                 ],
+                                                                       "Include":  [
+                                                                                       "*.cs"
+                                                                                   ],
+                                                                       "FilesAnalyzed":  2641,
+                                                                       "MissingTracked":  [
+
+                                                                                          ],
+                                                                       "ExcludedUntracked":  [
+
+                                                                                             ],
+                                                                       "ModifiedInScope":  [
+                                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
+                                                                                           ]
+                                                                   },
+                                          "analyze-dependencies":  {
+                                                                       "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                       "Scope":  [
+                                                                                     "backend/src/ERP.Domain",
+                                                                                     "backend/src/ERP.Application"
+                                                                                 ],
+                                                                       "Include":  [
+                                                                                       "*.cs"
+                                                                                   ],
+                                                                       "FilesAnalyzed":  1952,
+                                                                       "MissingTracked":  [
+
+                                                                                          ],
+                                                                       "ExcludedUntracked":  [
+
+                                                                                             ],
+                                                                       "ModifiedInScope":  [
+                                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs"
+                                                                                           ]
+                                                                   },
+                                          "analyze-backend":  {
+                                                                  "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                  "Scope":  [
+                                                                                "backend/src"
+                                                                            ],
+                                                                  "Include":  [
+                                                                                  "*"
+                                                                              ],
+                                                                  "FilesAnalyzed":  3742,
+                                                                  "MissingTracked":  [
+
+                                                                                     ],
+                                                                  "ExcludedUntracked":  [
+
+                                                                                        ],
+                                                                  "ModifiedInScope":  [
+                                                                                          "backend\\src\\ERP.Application.Tests\\Finance\\CustomerAdvanceAuditHandlerTests.cs",
+                                                                                          "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                          "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                                                                          "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
+                                                                                      ]
+                                                              },
+                                          "analyze-frontend":  {
+                                                                   "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                   "Scope":  [
+                                                                                 "frontend/src"
+                                                                             ],
+                                                                   "Include":  [
+                                                                                   "*.ts",
+                                                                                   "*.tsx"
+                                                                               ],
+                                                                   "FilesAnalyzed":  1356,
+                                                                   "MissingTracked":  [
+
+                                                                                      ],
+                                                                   "ExcludedUntracked":  [
+
+                                                                                         ],
+                                                                   "ModifiedInScope":  [
+
+                                                                                       ]
+                                                               },
+                                          "analyze-tests":  {
+                                                                "Commit":  "ebcda171d1a0af6bb44c1cd22b958c984ca1d2ce",
+                                                                "Scope":  [
+                                                                              "backend/src",
+                                                                              "frontend"
+                                                                          ],
+                                                                "Include":  [
+                                                                                "*.cs",
+                                                                                "*.ts",
+                                                                                "*.tsx"
+                                                                            ],
+                                                                "FilesAnalyzed":  1435,
+                                                                "MissingTracked":  [
+
+                                                                                   ],
+                                                                "ExcludedUntracked":  [
+
+                                                                                      ],
+                                                                "ModifiedInScope":  [
+                                                                                        "backend\\src\\ERP.Application.Tests\\Finance\\CustomerAdvanceAuditHandlerTests.cs",
+                                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\EventHandlers\\CustomerAdvanceAuditHandler.cs",
+                                                                                        "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceAudit.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceMovement.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvanceRefundTransaction.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceMovementType.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceRefundTransactionType.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Enums\\CustomerAdvanceStatus.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Events\\CustomerAdvanceEvents.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRefundTransactionRepository.cs",
+                                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceAuditConfiguration.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceConfiguration.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceMovementConfiguration.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Configurations\\Finance\\CustomerAdvanceRefundTransactionConfiguration.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRefundTransactionRepository.cs",
+                                                                                        "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
+                                                                                    ]
+                                                            }
+                                      }
+                    }
+}

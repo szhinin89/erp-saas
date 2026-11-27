@@ -100,6 +100,7 @@ public class ErpDbContext : DbContext
     )
     {
         LastSaveFailureIsRetryable = true;
+        EnsureCustomerAdvanceHistoryIsPreserved();
         var entitiesWithEvents = ChangeTracker
             .Entries<IHasDomainEvents>()
             .Where(e => e.Entity.DomainEvents.Count > 0)
@@ -143,6 +144,7 @@ public class ErpDbContext : DbContext
             foreach (var @event in domainEvents)
                 await _publisher.Publish((INotification)@event, cancellationToken);
 
+            EnsureCustomerAdvanceHistoryIsPreserved();
             if (ChangeTracker.HasChanges())
                 result += await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
@@ -169,6 +171,43 @@ public class ErpDbContext : DbContext
         {
             if (ownsTransaction)
                 await tx!.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// CUSTOMER-ADVANCES-V1 (ADR-052, CA-INV-02) — el historial financiero de un anticipo no se
+    /// borra ni se reescribe a través del contexto: rechaza antes de escribir cualquier baja (directa
+    /// o por sacar un movimiento de la colección), cambiar un vínculo de caja ya fijado y modificar
+    /// su auditoría. No cubre SQL directo ni <c>ExecuteDelete</c>/<c>ExecuteUpdate</c>.
+    /// </summary>
+    private void EnsureCustomerAdvanceHistoryIsPreserved()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (
+                entry.Entity
+                is not (
+                    CustomerAdvance
+                    or CustomerAdvanceMovement
+                    or CustomerAdvanceRefundTransaction
+                    or CustomerAdvanceAudit
+                )
+            )
+                continue;
+
+            var rewritten =
+                entry.State == EntityState.Modified
+                && entry.Entity is not CustomerAdvance
+                && entry.Properties.Any(p =>
+                    p.IsModified
+                    && !Equals(p.OriginalValue, p.CurrentValue)
+                    // Único cambio legítimo posterior al alta: fijar el vínculo de caja (era null).
+                    && (entry.Entity is CustomerAdvanceAudit || p.OriginalValue is not null)
+                );
+            if (entry.State == EntityState.Deleted || rewritten)
+                throw new InvalidOperationException(
+                    $"Invariante violada: el historial de anticipos de clientes es inmutable ({entry.Entity.GetType().Name})."
+                );
         }
     }
 
@@ -409,6 +448,14 @@ public class ErpDbContext : DbContext
     public DbSet<SupplierCreditAudit> SupplierCreditAudits => Set<SupplierCreditAudit>();
     public DbSet<SupplierCreditRefundTransaction> SupplierCreditRefundTransactions =>
         Set<SupplierCreditRefundTransaction>();
+
+    // CUSTOMER-ADVANCES-V1 (ADR-052)
+    public DbSet<CustomerAdvance> CustomerAdvances => Set<CustomerAdvance>();
+    public DbSet<CustomerAdvanceMovement> CustomerAdvanceMovements =>
+        Set<CustomerAdvanceMovement>();
+    public DbSet<CustomerAdvanceRefundTransaction> CustomerAdvanceRefundTransactions =>
+        Set<CustomerAdvanceRefundTransaction>();
+    public DbSet<CustomerAdvanceAudit> CustomerAdvanceAudits => Set<CustomerAdvanceAudit>();
 
     // TREASURY-BANK-ACCOUNTS-01
     public DbSet<CompanyBankAccount> CompanyBankAccounts => Set<CompanyBankAccount>();

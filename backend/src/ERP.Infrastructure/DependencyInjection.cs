@@ -981,6 +981,15 @@ public static class DependencyInjection
             ERP.Domain.Modules.Finance.Interfaces.ISupplierCreditRefundTransactionRepository,
             ERP.Infrastructure.Persistence.Repositories.Finance.SupplierCreditRefundTransactionRepository
         >();
+        // CUSTOMER-ADVANCES-V1 (ADR-052)
+        services.AddScoped<
+            ERP.Domain.Modules.Finance.Interfaces.ICustomerAdvanceRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.CustomerAdvanceRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Finance.Interfaces.ICustomerAdvanceRefundTransactionRepository,
+            ERP.Infrastructure.Persistence.Repositories.Finance.CustomerAdvanceRefundTransactionRepository
+        >();
         // TREASURY-BANK-ACCOUNTS-01
         services.AddScoped<
             ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository,

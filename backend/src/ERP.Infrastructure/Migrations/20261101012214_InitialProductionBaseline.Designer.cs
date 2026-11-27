@@ -7593,6 +7593,592 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("credit_terms", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("AdvanceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("advance_date");
+
+                    b.Property<decimal>("AvailableAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("available_amount");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("ExternalReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("external_reference");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<Guid>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "TenantId", "CompanyId")
+                        .HasName("ak_customer_advances_id_scope");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CashRegisterId");
+
+                    b.HasIndex("CompanyBankAccountId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PaymentMethodId");
+
+                    b.HasIndex("TenantId", "CompanyId", "CustomerId")
+                        .HasDatabaseName("ix_customer_advances_tenant_company_customer");
+
+                    b.ToTable("customer_advances", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_customer_advances_available_amount_range", "\"available_amount\" >= 0 AND \"available_amount\" <= \"original_amount\"");
+
+                            t.HasCheckConstraint("chk_customer_advances_destination_xor", "(\"company_bank_account_id\" IS NULL) <> (\"cash_register_id\" IS NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advances_original_amount_positive", "\"original_amount\" > 0");
+
+                            t.HasCheckConstraint("chk_customer_advances_status", "\"status\" = 1 OR (\"status\" = 2 AND \"available_amount\" = 0)");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_after");
+
+                    b.Property<decimal>("BalanceBefore")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_before");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CashMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_movement_id");
+
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<Guid?>("CashSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_session_id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<DateOnly?>("EvidenceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("evidence_date");
+
+                    b.Property<Guid?>("InstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installment_id");
+
+                    b.Property<Guid>("MovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("movement_id");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("integer")
+                        .HasColumnName("movement_type");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReceivableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receivable_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<Guid?>("ReversalOfMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversal_of_movement_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<string>("StatusAfter")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_after");
+
+                    b.Property<string>("StatusBefore")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_before");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CustomerId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_customer_advance_audit_customer_occurred_at");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_customer_advance_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_customer_advance_audit_user_occurred_at");
+
+                    b.ToTable("customer_advance_audit", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CashMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_movement_id");
+
+                    b.Property<Guid?>("CashSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_session_id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("CustomerAdvanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_advance_id");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<DateOnly?>("EvidenceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("evidence_date");
+
+                    b.Property<Guid?>("InstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installment_id");
+
+                    b.Property<short>("LineNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("line_number");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("integer")
+                        .HasColumnName("movement_type");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReceivableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receivable_id");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("RequestPayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_payload_hash");
+
+                    b.Property<Guid?>("ReversalOfMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversal_of_movement_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasName("ak_customer_advance_movements_id_scope");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CashMovementId");
+
+                    b.HasIndex("CashSessionId");
+
+                    b.HasIndex("ReceivableId");
+
+                    b.HasIndex("ReversalOfMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_movements_reversal_of_movement")
+                        .HasFilter("\"reversal_of_movement_id\" IS NOT NULL");
+
+                    b.HasIndex("TenantId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_movements_tenant_request_operation")
+                        .HasFilter("\"line_number\" <= 1");
+
+                    b.HasIndex("TenantId", "CustomerAdvanceId")
+                        .HasDatabaseName("ix_customer_advance_movements_tenant_advance");
+
+                    b.HasIndex("CustomerAdvanceId", "TenantId", "CompanyId");
+
+                    b.HasIndex("TenantId", "ClientRequestId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_movements_tenant_request_line");
+
+                    b.HasIndex("ReversalOfMovementId", "CustomerAdvanceId", "TenantId", "CompanyId");
+
+                    b.HasIndex(new[] { "CustomerAdvanceId" }, "uq_customer_advance_movements_received")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_movements_received")
+                        .HasFilter("\"movement_type\" = 1");
+
+                    b.HasIndex(new[] { "CustomerAdvanceId" }, "uq_customer_advance_movements_termination")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_movements_termination")
+                        .HasFilter("\"movement_type\" IN (6, 7)");
+
+                    b.ToTable("customer_advance_movements", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_customer_advance_movements_amount_positive", "\"amount\" > 0");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_cash_link", "(\"cash_session_id\" IS NULL AND \"cash_movement_id\" IS NULL) OR (\"movement_type\" IN (1, 7) AND \"cash_session_id\" IS NOT NULL AND \"cash_movement_id\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_compensation_data", "\"movement_type\" IN (1, 2) OR (\"reason\" IS NOT NULL AND \"reference\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_evidence_date", "\"movement_type\" NOT IN (5, 7) OR \"evidence_date\" IS NOT NULL");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_line_number", "(\"movement_type\" IN (2, 3) AND \"line_number\" >= 1) OR (\"movement_type\" NOT IN (2, 3) AND \"line_number\" = 0)");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_receivable", "(\"movement_type\" IN (2, 3) AND \"receivable_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (2, 3) AND \"receivable_id\" IS NULL AND \"installment_id\" IS NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_reversal_ref", "(\"movement_type\" IN (3, 5, 6, 7) AND \"reversal_of_movement_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (3, 5, 6, 7) AND \"reversal_of_movement_id\" IS NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_movements_type", "\"movement_type\" BETWEEN 1 AND 7");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceRefundTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("CashMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_movement_id");
+
+                    b.Property<Guid?>("CashRegisterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_register_id");
+
+                    b.Property<Guid?>("CashSessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cash_session_id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid?>("CompanyBankAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_bank_account_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<Guid>("CustomerAdvanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_advance_id");
+
+                    b.Property<Guid>("CustomerAdvanceMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_advance_movement_id");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<Guid?>("OriginalTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("original_transaction_id");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("payload_hash");
+
+                    b.Property<Guid>("PaymentMethodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_method_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("TransactionType")
+                        .HasColumnType("integer")
+                        .HasColumnName("transaction_type");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasName("ak_customer_advance_refund_transactions_id_scope");
+
+                    b.HasIndex("CashMovementId");
+
+                    b.HasIndex("CashRegisterId");
+
+                    b.HasIndex("CashSessionId");
+
+                    b.HasIndex("CompanyBankAccountId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CustomerAdvanceMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_refund_transactions_movement");
+
+                    b.HasIndex("OriginalTransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_refund_transactions_original")
+                        .HasFilter("\"original_transaction_id\" IS NOT NULL");
+
+                    b.HasIndex("PaymentMethodId");
+
+                    b.HasIndex("TenantId", "ClientRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_customer_advance_refund_transactions_tenant_client_request");
+
+                    b.HasIndex("TenantId", "CompanyId", "CustomerAdvanceId")
+                        .HasDatabaseName("ix_customer_advance_refund_transactions_tenant_company_advance");
+
+                    b.HasIndex("CustomerAdvanceMovementId", "CustomerAdvanceId", "TenantId", "CompanyId");
+
+                    b.HasIndex("OriginalTransactionId", "CustomerAdvanceId", "TenantId", "CompanyId");
+
+                    b.ToTable("customer_advance_refund_transactions", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_customer_advance_refund_transactions_amount_positive", "\"amount\" > 0");
+
+                            t.HasCheckConstraint("chk_customer_advance_refund_transactions_cash_link", "(\"cash_session_id\" IS NULL AND \"cash_movement_id\" IS NULL) OR (\"cash_register_id\" IS NOT NULL AND \"cash_session_id\" IS NOT NULL AND \"cash_movement_id\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_refund_transactions_destination_xor", "(\"company_bank_account_id\" IS NULL) <> (\"cash_register_id\" IS NULL)");
+
+                            t.HasCheckConstraint("chk_customer_advance_refund_transactions_original", "(\"transaction_type\" = 1 AND \"original_transaction_id\" IS NULL) OR (\"transaction_type\" = 2 AND \"original_transaction_id\" IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -21531,6 +22117,132 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvance", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
+                        .WithMany()
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.MasterData.Entities.BusinessPartner", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceMovement", b =>
+                {
+                    b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashMovement", null)
+                        .WithMany()
+                        .HasForeignKey("CashMovementId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashSession", null)
+                        .WithMany()
+                        .HasForeignKey("CashSessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesReceivable", null)
+                        .WithMany()
+                        .HasForeignKey("ReceivableId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CustomerAdvance", null)
+                        .WithMany("Movements")
+                        .HasForeignKey("CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_advance_movements_advance_scope");
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceMovement", null)
+                        .WithMany()
+                        .HasForeignKey("ReversalOfMovementId", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_customer_advance_movements_reversal_scope");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceRefundTransaction", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashMovement", null)
+                        .WithMany()
+                        .HasForeignKey("CashMovementId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
+                        .WithMany()
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Caja.Entities.CashSession", null)
+                        .WithMany()
+                        .HasForeignKey("CashSessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CompanyBankAccount", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Sales.Entities.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceMovement", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerAdvanceMovementId", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_advance_refund_transactions_movement_scope");
+
+                    b.HasOne("ERP.Domain.Modules.Finance.Entities.CustomerAdvanceRefundTransaction", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalTransactionId", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .HasPrincipalKey("Id", "CustomerAdvanceId", "TenantId", "CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_customer_advance_refund_transactions_original_scope");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Caja.Entities.CashRegister", null)
@@ -23169,6 +23881,11 @@ namespace ERP.Infrastructure.Migrations
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CreditTerm", b =>
                 {
                     b.Navigation("Installments");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.CustomerAdvance", b =>
+                {
+                    b.Navigation("Movements");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Finance.Entities.Payment", b =>

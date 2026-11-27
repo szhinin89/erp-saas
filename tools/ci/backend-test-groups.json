@@ -71,6 +71,7 @@
         "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicEmissionSwitchPostgreSqlTests",
         "ERP.Infrastructure.Tests.ElectronicDocuments.SalesElectronicSourceConcurrencyPostgreSqlTests",
         "ERP.Infrastructure.Tests.Finance.CollectionPostingIntegrationTests",
+        "ERP.Infrastructure.Tests.Finance.CustomerAdvancePersistencePostgreSqlTests",
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CompanyFiscalDesignationsPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CreateAuthenticatedSessionIntegrationTests",

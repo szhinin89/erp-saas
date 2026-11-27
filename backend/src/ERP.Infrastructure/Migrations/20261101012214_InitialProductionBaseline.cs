@@ -11483,6 +11483,464 @@ namespace ERP.Infrastructure.Migrations
                 unique: true,
                 filter: "identity_user_id IS NOT NULL");
 
+            migrationBuilder.CreateTable(
+                name: "customer_advance_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    movement_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    movement_type = table.Column<int>(type: "integer", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    balance_before = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    balance_after = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    status_before = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    status_after = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    client_request_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    effective_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    evidence_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    receivable_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    installment_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    reversal_of_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_customer_advance_audit", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "customer_advances",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    original_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    available_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    advance_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    external_reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    status = table.Column<int>(type: "integer", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_customer_advances", x => x.id);
+                    table.UniqueConstraint("ak_customer_advances_id_scope", x => new { x.id, x.tenant_id, x.company_id });
+                    table.CheckConstraint("chk_customer_advances_available_amount_range", "\"available_amount\" >= 0 AND \"available_amount\" <= \"original_amount\"");
+                    table.CheckConstraint("chk_customer_advances_destination_xor", "(\"company_bank_account_id\" IS NULL) <> (\"cash_register_id\" IS NULL)");
+                    table.CheckConstraint("chk_customer_advances_original_amount_positive", "\"original_amount\" > 0");
+                    table.CheckConstraint("chk_customer_advances_status", "\"status\" = 1 OR (\"status\" = 2 AND \"available_amount\" = 0)");
+                    table.ForeignKey(
+                        name: "FK_customer_advances_branches_branch_id",
+                        column: x => x.branch_id,
+                        principalTable: "branches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advances_cash_registers_cash_register_id",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advances_company_bank_accounts_company_bank_accoun~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advances_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advances_master_business_partners_customer_id",
+                        column: x => x.customer_id,
+                        principalTable: "master_business_partners",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advances_payment_methods_payment_method_id",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "customer_advance_movements",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_advance_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    movement_type = table.Column<int>(type: "integer", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    client_request_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    line_number = table.Column<short>(type: "smallint", nullable: false),
+                    request_payload_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    branch_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    effective_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    evidence_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    receivable_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    installment_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    reversal_of_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_customer_advance_movements", x => x.id);
+                    table.UniqueConstraint("ak_customer_advance_movements_id_scope", x => new { x.id, x.customer_advance_id, x.tenant_id, x.company_id });
+                    table.CheckConstraint("chk_customer_advance_movements_amount_positive", "\"amount\" > 0");
+                    table.CheckConstraint("chk_customer_advance_movements_cash_link", "(\"cash_session_id\" IS NULL AND \"cash_movement_id\" IS NULL) OR (\"movement_type\" IN (1, 7) AND \"cash_session_id\" IS NOT NULL AND \"cash_movement_id\" IS NOT NULL)");
+                    table.CheckConstraint("chk_customer_advance_movements_compensation_data", "\"movement_type\" IN (1, 2) OR (\"reason\" IS NOT NULL AND \"reference\" IS NOT NULL)");
+                    table.CheckConstraint("chk_customer_advance_movements_evidence_date", "\"movement_type\" NOT IN (5, 7) OR \"evidence_date\" IS NOT NULL");
+                    table.CheckConstraint("chk_customer_advance_movements_line_number", "(\"movement_type\" IN (2, 3) AND \"line_number\" >= 1) OR (\"movement_type\" NOT IN (2, 3) AND \"line_number\" = 0)");
+                    table.CheckConstraint("chk_customer_advance_movements_receivable", "(\"movement_type\" IN (2, 3) AND \"receivable_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (2, 3) AND \"receivable_id\" IS NULL AND \"installment_id\" IS NULL)");
+                    table.CheckConstraint("chk_customer_advance_movements_reversal_ref", "(\"movement_type\" IN (3, 5, 6, 7) AND \"reversal_of_movement_id\" IS NOT NULL) OR (\"movement_type\" NOT IN (3, 5, 6, 7) AND \"reversal_of_movement_id\" IS NULL)");
+                    table.CheckConstraint("chk_customer_advance_movements_type", "\"movement_type\" BETWEEN 1 AND 7");
+                    table.ForeignKey(
+                        name: "FK_customer_advance_movements_branches_branch_id",
+                        column: x => x.branch_id,
+                        principalTable: "branches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_movements_cash_movements_cash_movement_id",
+                        column: x => x.cash_movement_id,
+                        principalTable: "cash_movements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_movements_cash_sessions_cash_session_id",
+                        column: x => x.cash_session_id,
+                        principalTable: "cash_sessions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_movements_sales_receivables_receivable_id",
+                        column: x => x.receivable_id,
+                        principalTable: "sales_receivables",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_customer_advance_movements_advance_scope",
+                        columns: x => new { x.customer_advance_id, x.tenant_id, x.company_id },
+                        principalTable: "customer_advances",
+                        principalColumns: new[] { "id", "tenant_id", "company_id" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_customer_advance_movements_reversal_scope",
+                        columns: x => new { x.reversal_of_movement_id, x.customer_advance_id, x.tenant_id, x.company_id },
+                        principalTable: "customer_advance_movements",
+                        principalColumns: new[] { "id", "customer_advance_id", "tenant_id", "company_id" },
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "customer_advance_refund_transactions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_advance_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_advance_movement_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    transaction_type = table.Column<int>(type: "integer", nullable: false),
+                    original_transaction_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    payment_method_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    effective_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    reference = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    cash_session_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    cash_movement_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    created_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    client_request_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    payload_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_customer_advance_refund_transactions", x => x.id);
+                    table.UniqueConstraint("ak_customer_advance_refund_transactions_id_scope", x => new { x.id, x.customer_advance_id, x.tenant_id, x.company_id });
+                    table.CheckConstraint("chk_customer_advance_refund_transactions_amount_positive", "\"amount\" > 0");
+                    table.CheckConstraint("chk_customer_advance_refund_transactions_cash_link", "(\"cash_session_id\" IS NULL AND \"cash_movement_id\" IS NULL) OR (\"cash_register_id\" IS NOT NULL AND \"cash_session_id\" IS NOT NULL AND \"cash_movement_id\" IS NOT NULL)");
+                    table.CheckConstraint("chk_customer_advance_refund_transactions_destination_xor", "(\"company_bank_account_id\" IS NULL) <> (\"cash_register_id\" IS NULL)");
+                    table.CheckConstraint("chk_customer_advance_refund_transactions_original", "(\"transaction_type\" = 1 AND \"original_transaction_id\" IS NULL) OR (\"transaction_type\" = 2 AND \"original_transaction_id\" IS NOT NULL)");
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_cash_movements_cash_mo~",
+                        column: x => x.cash_movement_id,
+                        principalTable: "cash_movements",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_cash_registers_cash_re~",
+                        column: x => x.cash_register_id,
+                        principalTable: "cash_registers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_cash_sessions_cash_ses~",
+                        column: x => x.cash_session_id,
+                        principalTable: "cash_sessions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_company_bank_accounts_~",
+                        column: x => x.company_bank_account_id,
+                        principalTable: "company_bank_accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_customer_advance_refund_transactions_payment_methods_paymen~",
+                        column: x => x.payment_method_id,
+                        principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_customer_advance_refund_transactions_movement_scope",
+                        columns: x => new { x.customer_advance_movement_id, x.customer_advance_id, x.tenant_id, x.company_id },
+                        principalTable: "customer_advance_movements",
+                        principalColumns: new[] { "id", "customer_advance_id", "tenant_id", "company_id" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_customer_advance_refund_transactions_original_scope",
+                        columns: x => new { x.original_transaction_id, x.customer_advance_id, x.tenant_id, x.company_id },
+                        principalTable: "customer_advance_refund_transactions",
+                        principalColumns: new[] { "id", "customer_advance_id", "tenant_id", "company_id" },
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advance_audit_customer_occurred_at",
+                table: "customer_advance_audit",
+                columns: new[] { "tenant_id", "customer_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advance_audit_entity_occurred_at",
+                table: "customer_advance_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advance_audit_user_occurred_at",
+                table: "customer_advance_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_branch_id",
+                table: "customer_advance_movements",
+                column: "branch_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_cash_movement_id",
+                table: "customer_advance_movements",
+                column: "cash_movement_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_cash_session_id",
+                table: "customer_advance_movements",
+                column: "cash_session_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_customer_advance_id_tenant_id_co~",
+                table: "customer_advance_movements",
+                columns: new[] { "customer_advance_id", "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_receivable_id",
+                table: "customer_advance_movements",
+                column: "receivable_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_movements_reversal_of_movement_id_customer~",
+                table: "customer_advance_movements",
+                columns: new[] { "reversal_of_movement_id", "customer_advance_id", "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advance_movements_tenant_advance",
+                table: "customer_advance_movements",
+                columns: new[] { "tenant_id", "customer_advance_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_movements_received",
+                table: "customer_advance_movements",
+                column: "customer_advance_id",
+                unique: true,
+                filter: "\"movement_type\" = 1");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_movements_reversal_of_movement",
+                table: "customer_advance_movements",
+                column: "reversal_of_movement_id",
+                unique: true,
+                filter: "\"reversal_of_movement_id\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_movements_tenant_request_line",
+                table: "customer_advance_movements",
+                columns: new[] { "tenant_id", "client_request_id", "line_number" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_movements_tenant_request_operation",
+                table: "customer_advance_movements",
+                columns: new[] { "tenant_id", "client_request_id" },
+                unique: true,
+                filter: "\"line_number\" <= 1");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_movements_termination",
+                table: "customer_advance_movements",
+                column: "customer_advance_id",
+                unique: true,
+                filter: "\"movement_type\" IN (6, 7)");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_cash_movement_id",
+                table: "customer_advance_refund_transactions",
+                column: "cash_movement_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_cash_register_id",
+                table: "customer_advance_refund_transactions",
+                column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_cash_session_id",
+                table: "customer_advance_refund_transactions",
+                column: "cash_session_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_company_bank_account_id",
+                table: "customer_advance_refund_transactions",
+                column: "company_bank_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_company_id",
+                table: "customer_advance_refund_transactions",
+                column: "company_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_customer_advance_movem~",
+                table: "customer_advance_refund_transactions",
+                columns: new[] { "customer_advance_movement_id", "customer_advance_id", "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_original_transaction_i~",
+                table: "customer_advance_refund_transactions",
+                columns: new[] { "original_transaction_id", "customer_advance_id", "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advance_refund_transactions_payment_method_id",
+                table: "customer_advance_refund_transactions",
+                column: "payment_method_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advance_refund_transactions_tenant_company_advance",
+                table: "customer_advance_refund_transactions",
+                columns: new[] { "tenant_id", "company_id", "customer_advance_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_refund_transactions_movement",
+                table: "customer_advance_refund_transactions",
+                column: "customer_advance_movement_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_refund_transactions_original",
+                table: "customer_advance_refund_transactions",
+                column: "original_transaction_id",
+                unique: true,
+                filter: "\"original_transaction_id\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_customer_advance_refund_transactions_tenant_client_request",
+                table: "customer_advance_refund_transactions",
+                columns: new[] { "tenant_id", "client_request_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_branch_id",
+                table: "customer_advances",
+                column: "branch_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_cash_register_id",
+                table: "customer_advances",
+                column: "cash_register_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_company_bank_account_id",
+                table: "customer_advances",
+                column: "company_bank_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_company_id",
+                table: "customer_advances",
+                column: "company_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_customer_id",
+                table: "customer_advances",
+                column: "customer_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_customer_advances_payment_method_id",
+                table: "customer_advances",
+                column: "payment_method_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_customer_advances_tenant_company_customer",
+                table: "customer_advances",
+                columns: new[] { "tenant_id", "company_id", "customer_id" });
+
             migrationBuilder.Sql(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification
@@ -11670,6 +12128,18 @@ namespace ERP.Infrastructure.Migrations
                 DROP INDEX IF EXISTS uq_mbp_identification;
                 """
             );
+
+            migrationBuilder.DropTable(
+                name: "customer_advance_audit");
+
+            migrationBuilder.DropTable(
+                name: "customer_advance_refund_transactions");
+
+            migrationBuilder.DropTable(
+                name: "customer_advance_movements");
+
+            migrationBuilder.DropTable(
+                name: "customer_advances");
 
             migrationBuilder.DropTable(
                 name: "employee_catalog_audit");

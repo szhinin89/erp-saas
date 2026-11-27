@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-26 18:30:31",
-    "FilesAnalyzed":  5027,
+    "Generated":  "2026-11-26 20:17:43",
+    "FilesAnalyzed":  5047,
     "TODO":  52,
     "FIXME":  0,
     "HACK":  0,
@@ -527,6 +527,10 @@
                            "Lines":  858
                        },
                        {
+                           "File":  "backend\\src\\ERP.Domain\\Modules\\Finance\\Entities\\CustomerAdvance.cs",
+                           "Lines":  615
+                       },
+                       {
                            "File":  "backend\\src\\ERP.Domain\\Modules\\Items\\Entities\\Item.cs",
                            "Lines":  554
                        },
@@ -567,6 +571,10 @@
                            "Lines":  510
                        },
                        {
+                           "File":  "backend\\src\\ERP.Domain.Tests\\Finance\\CustomerAdvanceTests.cs",
+                           "Lines":  598
+                       },
+                       {
                            "File":  "backend\\src\\ERP.Domain.Tests\\Kernel\\KernelRegistryTests.cs",
                            "Lines":  1193
                        },
@@ -596,23 +604,23 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
-                           "Lines":  1264
+                           "Lines":  1273
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
-                           "Lines":  12383
+                           "Lines":  12853
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
-                           "Lines":  23331
+                           "Lines":  24048
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                           "Lines":  23328
+                           "Lines":  24045
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
-                           "Lines":  549
+                           "Lines":  596
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -745,6 +753,10 @@
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CollectionPostingIntegrationTests.cs",
                            "Lines":  995
+                       },
+                       {
+                           "File":  "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
+                           "Lines":  1635
                        },
                        {
                            "File":  "backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\OpeningBalanceReconciliationTests.cs",

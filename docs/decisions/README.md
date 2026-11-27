@@ -54,6 +54,7 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-049](ADR-049-sales-order-v1-architecture.md) | ADR-049 — Orden de Pedido de Venta V1 (Gestión de Ventas): diseño aprobado, no implementado |
 | [ADR-050](ADR-050-employees-v1-architecture.md) | ADR-050 — Empleados V1 (módulo técnico independiente): arquitectura aprobada; implementada (Empleados V1 CLOSED, ver [STATUS](../../STATUS.md)) |
 | [ADR-051](ADR-051-spa-v1.1-architecture.md) | ADR-051 — SPA V1.1: ACCEPTED / APROBADO; Spa planificado, no implementado, sin fases autorizadas |
+| [ADR-052](ADR-052-customer-advances-v1-architecture.md) | ADR-052 — Anticipos de Clientes V1: ACCEPTED / APROBADO (2026-11-26); solo CA-F1 autorizada, sin funcionalidad operativa |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 
@@ -67,6 +68,7 @@ Los siguientes conservan decisiones referenciadas y no sustituyen las SSOT:
 - [PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md](PEDIDOS-VENTA-V1-FUNCTIONAL-SPEC-01.md) (diseño funcional de ADR-049, sin implementar; no es SSOT).
 - [EMPLOYEES-V1-CONTRACT-SPEC-01.md](EMPLOYEES-V1-CONTRACT-SPEC-01.md) (especificación contractual de ADR-050, implementada; no es SSOT: ver [employees.md](../architecture/employees.md)).
 - [RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md](RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B.md).
+- [CUSTOMER-ADVANCES-V1-DESIGN-01.md](CUSTOMER-ADVANCES-V1-DESIGN-01.md) (diseño de ADR-052, con decisiones funcionales aprobadas; sin funcionalidad operativa; no es SSOT; [plan](../agent/CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md)).
 
 ## SPA V1.1 — Módulo de Gestión de Spa y Tratamientos Estéticos: planificado, no implementado
 
