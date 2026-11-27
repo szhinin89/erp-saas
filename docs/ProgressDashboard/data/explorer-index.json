@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-27 06:11:26",
+    "generated":  "2026-11-27 10:04:40",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -120,13 +120,13 @@
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Ride -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Ride -\u003e Communications -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Company",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Company",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company"
                                                                 ]
@@ -732,6 +732,16 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Expenses",
+                                                                    "Payables -\u003e Finance -\u003e InitialLoad -\u003e Payables",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "Payables -\u003e Finance -\u003e Payables",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
@@ -1662,7 +1672,6 @@
                                                                           "Configuration"
                                                                       ],
                                              "cyclesInvolved":  [
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Company",
@@ -1676,6 +1685,9 @@
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Inventory",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Company",
@@ -1696,12 +1708,10 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Audit",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e Companies",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Inventory",
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Inventory",
-                                                                    "Companies -\u003e Accounting -\u003e InitialLoad -\u003e Companies",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Companies -\u003e Accounting -\u003e Companies",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company"
                                                                 ]
                                          },
@@ -2923,7 +2933,15 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
-                                                            "lines":  1282
+                                                            "lines":  1311
+                                                        },
+                                                        {
+                                                            "file":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
+                                                            "lines":  1977
+                                                        },
+                                                        {
+                                                            "file":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
+                                                            "lines":  532
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
@@ -2970,7 +2988,7 @@
                                                             "lines":  511
                                                         }
                                                     ],
-                                     "largeFilesCount":  18,
+                                     "largeFilesCount":  20,
                                      "globalTodo":  52,
                                      "globalFixme":  0,
                                      "globalHack":  0,
@@ -3027,22 +3045,24 @@
 
                                                              ],
                                        "relatedTasks":  [
+                                                            "Refactor large file (1977 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
                                                             "Refactor large file (1765 lines): backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
                                                             "Refactor large file (1642 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentsEndToEndTests.cs",
                                                             "Refactor large file (1566 lines): backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs",
-                                                            "Refactor large file (1282 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
+                                                            "Refactor large file (1311 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
                                                             "Refactor large file (1079 lines): backend/src/ERP.API.Tests/Integration/IamIdentityIsolationHttpTests.cs",
                                                             "Refactor large file (1035 lines): backend/src/ERP.API.Tests/Integration/CajaVentasEndToEndTests.cs",
                                                             "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                             "Refactor large file (701 lines): backend/src/ERP.API.Tests/Integration/SalesCancelCollectionConcurrencyTests.cs",
                                                             "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
-                                                            "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                             "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                            "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                             "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                             "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                             "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
                                                             "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
                                                             "Refactor large file (555 lines): backend/src/ERP.API.Tests/Integration/BranchDefaultWarehouseHttpTests.cs",
+                                                            "Refactor large file (532 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
                                                             "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                             "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                                                             "Review possible secrets in source files (80 real matches, excluding node_modules)"
@@ -3058,7 +3078,7 @@
                                            "inputs":  {
                                                           "score":  77.75,
                                                           "coupling":  3,
-                                                          "largeFilesCount":  18,
+                                                          "largeFilesCount":  20,
                                                           "riskOfModifying":  "MEDIUM",
                                                           "transitiveDependentCount":  0,
                                                           "busFactor":  1
@@ -3885,6 +3905,11 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Inventory",
@@ -4290,8 +4315,8 @@
                                                             "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
                                                             "Refactor large file (618 lines): backend/src/ERP.Application.Tests/Sales/GetSalesReceiptPrintPayloadHandlerTests.cs",
                                                             "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnDraftHandlerTests.cs",
-                                                            "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                                                            "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (594 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
                                                             "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Sales/SalesDraftSpecialTaxTests.cs",
                                                             "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
@@ -4453,6 +4478,13 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -5236,6 +5268,14 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -5628,8 +5668,8 @@
                                                             "Refactor large file (1993 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                             "Refactor large file (1646 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
                                                             "Refactor large file (1308 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.cs",
-                                                            "Refactor large file (1282 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
                                                             "Refactor large file (1282 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseReturnHandlerTests.cs",
+                                                            "Refactor large file (1282 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
                                                             "Refactor large file (1169 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                                                             "Refactor large file (1150 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteDraftUseCasesTests.cs",
                                                             "Refactor large file (1145 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
@@ -6487,6 +6527,14 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -7529,7 +7577,6 @@
                                                                           "Common"
                                                                       ],
                                              "cyclesInvolved":  [
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Company",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Audit",
@@ -7541,6 +7588,8 @@
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Inventory",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Branches",
@@ -7557,10 +7606,9 @@
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Audit",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Inventory",
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Inventory",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Audit"
@@ -7926,8 +7974,8 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
+                                                            "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                             "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                             "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
@@ -7962,9 +8010,9 @@
                         "documentation":  70,
                         "backend":  90,
                         "frontend":  70,
-                        "filesScanned":  44,
+                        "filesScanned":  50,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-11-26",
+                        "lastEvidenceDate":  "2026-11-27",
                         "featuresCount":  11,
                         "featureNames":  [
                                              "Credit Terms",
@@ -7991,7 +8039,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
-                                                            "lines":  513
+                                                            "lines":  506
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
@@ -8049,6 +8097,7 @@
                                                                "Caja",
                                                                "Common",
                                                                "Company",
+                                                               "InitialLoad",
                                                                "Payables",
                                                                "Purchases",
                                                                "Sales"
@@ -8060,10 +8109,10 @@
                                                                   "Payables",
                                                                   "Sales"
                                                               ],
-                                             "coupling":  14,
+                                             "coupling":  15,
                                              "fanIn":  5,
-                                             "fanOut":  9,
-                                             "instability":  0.643,
+                                             "fanOut":  10,
+                                             "instability":  0.667,
                                              "criticalDependencies":  [
                                                                           "Access",
                                                                           "Audit",
@@ -8073,6 +8122,17 @@
                                              "cyclesInvolved":  [
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Expenses",
+                                                                    "Payables -\u003e Finance -\u003e InitialLoad -\u003e Payables",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Finance -\u003e InitialLoad -\u003e Finance",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "Payables -\u003e Finance -\u003e Payables",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
@@ -8454,20 +8514,20 @@
                                                             "Refactor large file (615 lines): backend/src/ERP.Domain/Modules/Finance/Entities/CustomerAdvance.cs",
                                                             "Refactor large file (598 lines): backend/src/ERP.Domain.Tests/Finance/CustomerAdvanceTests.cs",
                                                             "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
-                                                            "Refactor large file (513 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
-                                                            "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs"
+                                                            "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                                                            "Refactor large file (506 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs"
                                                         ],
                                        "percentOfErp":  102.56,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
                         "changeRisk":  {
-                                           "score":  58.62,
+                                           "score":  59.62,
                                            "band":  "Medium Risk",
                                            "formula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
                                            "inputs":  {
                                                           "score":  81.5,
-                                                          "coupling":  14,
+                                                          "coupling":  15,
                                                           "largeFilesCount":  10,
                                                           "riskOfModifying":  "MEDIUM",
                                                           "transitiveDependentCount":  30,
@@ -8565,6 +8625,7 @@
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Ride -\u003e Communications -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Branches",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Branches",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Company",
@@ -8573,7 +8634,6 @@
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Branches",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Branches"
@@ -9864,7 +9924,7 @@
                         "frontend":  70,
                         "filesScanned":  38,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-11-12",
+                        "lastEvidenceDate":  "2026-11-27",
                         "featuresCount":  13,
                         "featureNames":  [
                                              "Cash Movement Reason",
@@ -10509,6 +10569,15 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Expenses",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -12372,25 +12441,38 @@
                                                                "Sales",
                                                                "SriCatalogs"
                                                            ],
-                                             "dependedOnBy":  "Accounting",
-                                             "coupling":  15,
-                                             "fanIn":  1,
+                                             "dependedOnBy":  [
+                                                                  "Accounting",
+                                                                  "Finance"
+                                                              ],
+                                             "coupling":  16,
+                                             "fanIn":  2,
                                              "fanOut":  14,
-                                             "instability":  0.933,
+                                             "instability":  0.875,
                                              "criticalDependencies":  [
                                                                           "Access",
                                                                           "Common",
                                                                           "Company"
                                                                       ],
                                              "cyclesInvolved":  [
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Inventory",
-                                                                    "Companies -\u003e Accounting -\u003e InitialLoad -\u003e Companies",
-                                                                    "Accounting -\u003e InitialLoad -\u003e Accounting",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company"
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Expenses",
+                                                                    "Payables -\u003e Finance -\u003e InitialLoad -\u003e Payables",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Finance -\u003e InitialLoad -\u003e Finance",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company"
                                                                 ]
                                          },
                         "impact":  {
-                                       "directDependents":  "Accounting",
+                                       "directDependents":  [
+                                                                "Accounting",
+                                                                "Finance"
+                                                            ],
                                        "transitiveDependents":  [
                                                                     "Access",
                                                                     "Accounting",
@@ -12740,8 +12822,8 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (719 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/PublishOpeningJournalEntryPostgreSqlTests.cs",
                                                             "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
+                                                            "Refactor large file (719 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/PublishOpeningJournalEntryPostgreSqlTests.cs",
                                                             "Refactor large file (695 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/OpeningBalanceReconciliationTests.cs",
                                                             "Refactor large file (685 lines): backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
                                                             "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
@@ -12754,12 +12836,12 @@
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
                         "changeRisk":  {
-                                           "score":  56.62,
+                                           "score":  57.62,
                                            "band":  "Medium Risk",
                                            "formula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
                                            "inputs":  {
                                                           "score":  81.5,
-                                                          "coupling":  15,
+                                                          "coupling":  16,
                                                           "largeFilesCount":  8,
                                                           "riskOfModifying":  "MEDIUM",
                                                           "transitiveDependentCount":  30,
@@ -12993,6 +13075,14 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -14190,7 +14280,6 @@
                                                                           "Company"
                                                                       ],
                                              "cyclesInvolved":  [
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Company",
@@ -14204,6 +14293,10 @@
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Inventory",
@@ -14230,13 +14323,10 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Audit",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e Companies",
                                                                     "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Inventory",
-                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Inventory",
-                                                                    "Companies -\u003e Accounting -\u003e InitialLoad -\u003e Companies",
-                                                                    "Accounting -\u003e InitialLoad -\u003e Accounting",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Companies -\u003e Accounting -\u003e Companies",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Audit",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company"
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory"
                                                                 ]
                                          },
                         "impact":  {
@@ -14741,6 +14831,12 @@
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                                                                     "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                                                                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                                                                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                                                                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                                                                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                                                                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                                                                     "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
                                                                     "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Companies",
@@ -15243,6 +15339,7 @@
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
+                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e Branches",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Company",
@@ -15255,7 +15352,6 @@
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Company",
                                                                     "Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Branches",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Audit",
-                                                                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                                                                     "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Audit",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
                                                                     "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company",
@@ -16649,7 +16745,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Finance",
-                                                          "label":  "Refactor large file (513 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
+                                                          "label":  "Refactor large file (506 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
                                                           "domainId":  "accounting",
                                                           "domainName":  "Accounting"
                                                       }
@@ -17155,6 +17251,18 @@
                                                           "label":  "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
                                                           "domainId":  "accounting",
                                                           "domainName":  "Accounting"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  null,
+                                                          "label":  "Refactor large file (815 lines): backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
+                                                          "domainId":  null,
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -19950,13 +20058,13 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
+                                 "file":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  null,
-                                                          "label":  "Refactor large file (815 lines): backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
-                                                          "domainId":  null,
+                                                          "module":  "Integration",
+                                                          "label":  "Refactor large file (1977 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
+                                                          "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
                                                   ]
@@ -20162,6 +20270,18 @@
                                                           "label":  "Update Emission Point",
                                                           "domainId":  "configuration",
                                                           "domainName":  "Configuration"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Integration",
+                                                          "label":  "Refactor large file (532 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -21869,7 +21989,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Integration",
-                                                          "label":  "Refactor large file (1282 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
+                                                          "label":  "Refactor large file (1311 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -23522,14 +23642,14 @@
                              }
                          ],
     "executive":  {
-                      "engineeringScoreOverall":  68.34,
+                      "engineeringScoreOverall":  68.32,
                       "erpCompletion":  84,
                       "productionDecision":  "NOT READY",
                       "overallStatus":  "NOT READY",
                       "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
                       "blockers":  [
                                        "Security Score bajo: 26% (Secrets detectados: 80, endpoints anonimos: 13)",
-                                       "Quality Score bajo: 45.95%",
+                                       "Quality Score bajo: 45.85%",
                                        "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                                        "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
                                        "Etapa incompleta: Operaciones al 83% (81 / 98 tareas)"
@@ -23566,6 +23686,11 @@
                                             "band":  "High Risk"
                                         },
                                         {
+                                            "module":  "Finance",
+                                            "riskScore":  59.62,
+                                            "band":  "Medium Risk"
+                                        },
+                                        {
                                             "module":  "Company",
                                             "riskScore":  59.56,
                                             "band":  "Medium Risk"
@@ -23578,11 +23703,6 @@
                                         {
                                             "module":  "Payables",
                                             "riskScore":  59.12,
-                                            "band":  "Medium Risk"
-                                        },
-                                        {
-                                            "module":  "Finance",
-                                            "riskScore":  58.62,
                                             "band":  "Medium Risk"
                                         }
                                     ],
@@ -23601,7 +23721,7 @@
                                         },
                                         {
                                             "module":  "Integration",
-                                            "largeFilesCount":  18
+                                            "largeFilesCount":  20
                                         },
                                         {
                                             "module":  "Expenses",
@@ -25595,6 +25715,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1977 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1892 lines): backend/src/ERP.Application.Tests/Payables/RegisterSupplierPaymentUseCasesTests.cs",
                               "moduleId":  null
                           },
@@ -25680,6 +25805,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1311 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1308 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.cs",
                               "moduleId":  null
                           },
@@ -25695,17 +25825,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (1282 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
+                              "label":  "Refactor large file (1282 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseReturnHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (1282 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (1282 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseReturnHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25905,12 +26030,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (875 lines): backend/src/ERP.API.Tests/Swagger/OpenApiContractTests.cs",
+                              "label":  "Refactor large file (875 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnCreditNoteDataProviderTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (875 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnCreditNoteDataProviderTests.cs",
+                              "label":  "Refactor large file (875 lines): backend/src/ERP.API.Tests/Swagger/OpenApiContractTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25985,12 +26110,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                              "label":  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
+                              "label":  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                               "moduleId":  null
                           },
                           {
@@ -26000,12 +26125,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (816 lines): backend/src/ERP.Infrastructure.Tests/Accounting/AccountingReportsRepositoryTests.cs",
+                              "label":  "Refactor large file (816 lines): backend/src/ERP.Application.Tests/Access/CompanyUserPreferencesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (816 lines): backend/src/ERP.Application.Tests/Access/CompanyUserPreferencesTests.cs",
+                              "label":  "Refactor large file (816 lines): backend/src/ERP.Infrastructure.Tests/Accounting/AccountingReportsRepositoryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26085,12 +26210,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Ride/RidePipelineStorageAndCacheIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Ride/RidePipelineStorageAndCacheIntegrationTests.cs",
+                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26125,12 +26250,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (720 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (720 lines): backend/src/ERP.Application.Tests/Auth/SwitchCompanyHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (720 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26141,11 +26271,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26170,12 +26295,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
+                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
+                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26205,12 +26330,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
+                              "label":  "Refactor large file (690 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/UpdateSalesDraftAtomicityPostgreSqlTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (690 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/UpdateSalesDraftAtomicityPostgreSqlTests.cs",
+                              "label":  "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
                               "moduleId":  null
                           },
                           {
@@ -26225,17 +26350,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (683 lines): backend/src/ERP.Infrastructure.Tests/Modules/Employees/BusinessPartnerEmploymentGuardPostgreSqlTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (683 lines): backend/src/ERP.API.Tests/Unit/RefreshTokenServiceTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                              "label":  "Refactor large file (683 lines): backend/src/ERP.Infrastructure.Tests/Modules/Employees/BusinessPartnerEmploymentGuardPostgreSqlTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26245,17 +26365,22 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (671 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SalesInvoiceAuthorizedPostingIntegrationTests.ReadinessGap.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (671 lines): backend/src/ERP.API.Tests/Expenses/ExpensesControllerTests.cs",
+                              "label":  "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+                              "label":  "Refactor large file (671 lines): backend/src/ERP.API.Tests/Expenses/ExpensesControllerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26280,12 +26405,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
+                              "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                              "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26345,12 +26470,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Infrastructure.Tests/Seeding/IgnoreQueryFiltersScopeIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Infrastructure.Tests/Seeding/IgnoreQueryFiltersScopeIntegrationTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26365,12 +26490,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Finance/ReverseSupplierCreditRefundUseCasesTests.cs",
+                              "label":  "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
+                              "label":  "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Finance/ReverseSupplierCreditRefundUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26410,22 +26535,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
+                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
                               "moduleId":  null
                           },
                           {
@@ -26490,17 +26615,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (603 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
+                              "label":  "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26510,17 +26630,27 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (602 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (599 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
+                              "label":  "Refactor large file (598 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditAppliedPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26531,11 +26661,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (598 lines): backend/src/ERP.Domain.Tests/Finance/CustomerAdvanceTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (598 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditAppliedPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26665,7 +26790,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
+                              "label":  "Refactor large file (559 lines): frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26675,7 +26800,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (559 lines): frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
+                              "label":  "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26685,17 +26810,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (555 lines): backend/src/ERP.API.Tests/Integration/BranchDefaultWarehouseHttpTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (555 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnLockAConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (554 lines): backend/src/ERP.Domain/Modules/Items/Entities/Item.cs",
+                              "label":  "Refactor large file (555 lines): backend/src/ERP.API.Tests/Integration/BranchDefaultWarehouseHttpTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                               "moduleId":  null
                           },
                           {
@@ -26705,7 +26830,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
+                              "label":  "Refactor large file (554 lines): backend/src/ERP.Domain/Modules/Items/Entities/Item.cs",
                               "moduleId":  null
                           },
                           {
@@ -26720,12 +26845,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (549 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
+                              "label":  "Refactor large file (549 lines): backend/src/ERP.API.Tests/Employees/EmployeesHttpAuthorizationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (549 lines): backend/src/ERP.API.Tests/Employees/EmployeesHttpAuthorizationTests.cs",
+                              "label":  "Refactor large file (549 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -26745,12 +26870,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (543 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
+                              "label":  "Refactor large file (543 lines): backend/src/ERP.Application.Tests/OrgConfig/CompanySalesPreferencesIntegrityTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (543 lines): backend/src/ERP.Application.Tests/OrgConfig/CompanySalesPreferencesIntegrityTests.cs",
+                              "label":  "Refactor large file (543 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26771,6 +26896,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (533 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnRefundHandlerTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (532 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26845,12 +26975,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
+                              "label":  "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
+                              "label":  "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26875,11 +27005,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (513 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (512 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
                               "moduleId":  null
                           },
@@ -26890,22 +27015,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (510 lines): backend/src/ERP.Domain.Tests/Expenses/ExpenseDocumentTests.cs",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (510 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (510 lines): backend/src/ERP.Domain.Tests/Expenses/ExpenseDocumentTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26926,6 +27051,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (506 lines): frontend/src/modules/accounting/pages/AccountingPeriodsPage.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (506 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -27402,6 +27532,11 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
                               "moduleId":  "Finance"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
+                              "moduleId":  null
                           },
                           {
                               "type":  "File",
@@ -28530,8 +28665,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Infrastructure/Services/CompanyOperationalReadinessResolver.cs",
-                              "moduleId":  null
+                              "label":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
+                              "moduleId":  "Integration"
                           },
                           {
                               "type":  "File",
@@ -28617,6 +28752,11 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Company/UseCases/UpdateEmissionPoint",
                               "moduleId":  "Company"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
+                              "moduleId":  "Integration"
                           },
                           {
                               "type":  "File",

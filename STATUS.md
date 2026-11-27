@@ -1,11 +1,43 @@
 # Project Status
 
-## CUSTOMER-ADVANCES-V1 CA-F3 — Registro, consultas, Caja y permisos — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
+## CUSTOMER-ADVANCES-V1 CA-F4 — Aplicación a CxC y reversa — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
 
-Autorizada por el propietario el 2026-11-26 y aprobada técnicamente el 2026-11-27, con commit local condicionado a su gate
-final de comprobaciones; **sin push ni CI de estos cambios**. **CA-F4 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está
-CLOSED ni implementado como funcionalidad:** sin aplicación, devolución, reversas, anulación, pantallas ni menú; no cuenta
-en el control V1. Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+Autorizada y aprobada técnicamente por el propietario el 2026-11-27, con commit local autorizado tras CI #1252 SUCCESS;
+**sin push ni CI de estos cambios: CA-F4 no está CLOSED**. **CA-F5 y CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está
+CLOSED ni implementado como funcionalidad:** sin devolución, reversa de ingreso, anulación, pantallas ni menú; no cuenta en
+el control V1. Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+
+- **Entregado:** aplicación parcial o total a una o varias CxC, reversa completa de la operación, aplicaciones por CxC,
+  regla compartida con cobros (TA-12) y control TA-06. Sin cambio de esquema.
+- **Cambios sobre lo anterior:** el registro (CA-F3) usa el mismo camino de idempotencia que las operaciones nuevas; el
+  detalle del anticipo expone `operationId` por movimiento.
+- **Límites:** una CxC sin cuotas o desalineada no admite anticipos; tras una devolución de venta posterior, la aplicación
+  de esa CxC no puede revertirse mientras siga desalineada (limitación existente de CxC, sin corrección autorizada). Los
+  mensajes de saldo provienen de `SalesReceivable` y mencionan «cobro».
+- **Cronología ([ADR-052 §17](docs/decisions/ADR-052-customer-advances-v1-architecture.md#17-precisión-posterior-cronología-de-las-aplicaciones-aprobado-2026-11-27)):**
+  fecha efectiva no anterior al anticipo ni al origen contable de cada CxC (factura: emisión; saldo inicial:
+  `Company.OpeningBalanceDate`) ni posterior al día de negocio. El registro tampoco admite una fecha de anticipo futura.
+- **Verificación local previa al gate (agente), sin omitidas:** HTTP con PostgreSQL 16 desechable de aplicación y reversa 52/52 (prueba
+  mixta de dos cuotas incluida), dentro de la selección de API de anticipos, cobros, anulación y devolución 273/273;
+  contrato OpenAPI 122/122 (inventario 542 → 545); Application Finance, Payables, Sales y Accounting 803/803; Domain Kernel,
+  anticipos y CxC 131/131; Infrastructure anticipos, cobros y CxC 98/98; Architecture 158/158; guardrail PowerShell, Stack
+  Audit, documentación y ratchet (0 violaciones nuevas).
+- **Gate (2026-11-27):** CxC de saldo inicial por el proceso oficial y reglas cronológicas. Verificación local, sin omitidas: aplicación y reversa 60/60 y saldo inicial 1/1
+  dentro de la selección de API de anticipos, cobros, anulación, devolución y snapshots 288/288; contrato OpenAPI 122/122;
+  Architecture 158/158; guardrail PowerShell, Stack Audit, ratchet (0 violaciones nuevas) y documentación.
+
+- **Registro con fecha futura (gate definitivo):** API de anticipos (registro, aplicación, saldo inicial) y snapshots
+  122/122; contrato OpenAPI repetido tras el último ajuste 122/122; Architecture 158/158; guardrail PowerShell, Stack Audit,
+  ratchet y documentación.
+
+## CUSTOMER-ADVANCES-V1 CA-F3 — Registro, consultas, Caja y permisos — CLOSED (CI #1252 SUCCESS, 2026-11-27)
+
+Autorizada por el propietario el 2026-11-26 y aprobada técnicamente el 2026-11-27. Commit
+`c174596d46afbc2deeb9ecc337f10402791f6818`: CI #1251 **FAILURE** por un único fallo, el snapshot OpenAPI de Companies
+(tag global nuevo `CustomerAdvance`), corregido solo en el snapshot por
+`0ae1cce5eef46289c675cef1eb1e7cd9166aacd5`; CI #1252 SUCCESS confirmado por el propietario. Entregó registro y consultas,
+sin aplicación, devolución, reversas, anulación, pantallas ni menú. Contrato vigente:
+[customer-advances.md](docs/architecture/customer-advances.md).
 
 - **Entregado:** registro idempotente y atómico (efectivo con ingreso en el turno; transferencia contra banco), listado,
   detalle con historial, saldo por cliente y empresa, cuatro permisos en el catálogo y `CashReferenceType.CustomerAdvance = 6`.

@@ -501,6 +501,35 @@ public sealed class CustomerAdvanceApiTests
         await AssertSingleEffectAsync(retried.Id, op.CashSessionId, cash: true);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Una_fecha_futura_se_rechaza_sin_efectos_y_la_misma_clave_registra_hoy(
+        bool cash
+    )
+    {
+        var s = await SeedAsync();
+        var op = await _f.CreateOperatorAsync();
+        var client = _f.CreateClient(op.UserId);
+        var body = cash ? Cash(op, 25m) : Transfer(s, 25m);
+        var before = await TotalsAsync();
+
+        var future = await PostAsync(client, body with { AdvanceDate = _f.Today.AddDays(1) });
+
+        future.Status.Should().Be(HttpStatusCode.UnprocessableEntity, future.Body);
+        future.Body.Should().Contain("es posterior al d");
+        (await TotalsAsync()).Should().Be(before);
+
+        var accepted = await PostAsync(client, body);
+        var replay = await PostAsync(client, body);
+
+        accepted.Status.Should().Be(HttpStatusCode.Created, accepted.Body);
+        accepted.Data.GetProperty("advanceDate").GetString().Should().Be($"{_f.Today:yyyy-MM-dd}");
+        replay.Status.Should().Be(HttpStatusCode.Created, replay.Body);
+        replay.Id.Should().Be(accepted.Id);
+        await AssertSingleEffectAsync(accepted.Id, op.CashSessionId, cash);
+    }
+
     // ── Atomicidad y contrato contable ───────────────────────────────────
 
     [Fact]

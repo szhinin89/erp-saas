@@ -1,12 +1,13 @@
-# Anticipos de Clientes V1 — Plan de implementación (CA-F1 y CA-F2 cerradas; CA-F3 aceptada localmente)
+# Anticipos de Clientes V1 — Plan de implementación (CA-F1 a CA-F3 cerradas; CA-F4 aceptada localmente)
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) (**ACCEPTED**, 2026-11-26). Reglas y mecanismos:
 [diseño](../decisions/CUSTOMER-ADVANCES-V1-DESIGN-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
 **Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-27): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
-SUCCESS); **CA-F2 CLOSED** (CI #1250 SUCCESS); **CA-F3 implementada y aceptada localmente, pendiente de push y CI**; CA-F4 a
-CA-F6 **NO AUTORIZADAS**. Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
+SUCCESS); **CA-F2 CLOSED** (CI #1250 SUCCESS); **CA-F3 CLOSED** (CI #1252 SUCCESS);
+**CA-F4 aceptada localmente, pendiente de push y CI**; CA-F5 y CA-F6 **NO AUTORIZADAS**.
+Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
 rutas (incluidos los componentes protegidos), gate del propietario y staging y commit del propietario
 ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa; PostgreSQL real
 para locks, transacciones, scope e invariantes de persistencia.
@@ -184,7 +185,16 @@ repositorio del anticipo y su interfaz (consultas), inventario de `OpenApiContra
 
 ## CA-F4 — Aplicación a CxC y reversa
 
+**Estado (2026-11-27): IMPLEMENTADO Y ACEPTADO LOCALMENTE, pendiente de push y CI.** Resultado en [STATUS](../../STATUS.md); contrato en
+la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lista: repositorio del anticipo y su interfaz
+(aplicaciones por CxC), inventario de OpenAPI y snapshot OpenAPI de Companies (tag global del controller).
+
 - **Objetivo:** aplicar parcial o totalmente a una o varias CxC y revertir la operación completa.
+- **Cronología ([ADR-052 §17](../decisions/ADR-052-customer-advances-v1-architecture.md), 2026-11-27):** fecha efectiva
+  entre las fechas de origen y el día de negocio. Pruebas HTTP + PostgreSQL: límites aceptados; anterior al anticipo,
+  factura o apertura y futura rechazadas sin efectos; origen indeterminable; varias CxC con una incompatible; clave
+  reutilizable tras rechazo; replay sin reevaluar; regresión de cobros. El registro rechaza además una fecha de anticipo
+  futura (efectivo y transferencia, sin efectos y con la clave reutilizable).
 - **Rutas:** casos de uso y controller de F3 (incluye `GET /by-receivable/{id}`); regla compartida nueva `A/Modules/Finance/ReceivableApplicationPolicy.cs`;
   `PaymentUseCases.cs`; `backend.md`, `docs/architecture/receivables.md`, SSOT de anticipos.
 - **Protegidos:** cobros, `backend.md`, CI. **Esquema:** ninguno. **Invariantes:** CA-INV-01, 03, 05, 06, 07, 10.

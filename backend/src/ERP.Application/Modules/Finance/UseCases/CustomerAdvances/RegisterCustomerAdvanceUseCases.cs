@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Idempotency;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Caja;
 using ERP.Domain.Common;
 using ERP.Domain.MasterData.Enums;
@@ -105,11 +106,8 @@ public sealed class RegisterCustomerAdvanceCommandValidator
 public sealed class RegisterCustomerAdvanceHandler
     : IRequestHandler<RegisterCustomerAdvanceCommand, Result<CustomerAdvanceDto>>
 {
-    internal const string ClientRequestConflict =
-        "Ya existe una operación con este identificador pero con datos distintos.";
     internal const string MethodNotAllowed =
         "Los anticipos de clientes solo admiten efectivo o transferencia bancaria.";
-    private const string KeyIndexPrefix = "uq_customer_advance_movements_tenant_request";
     private const string CashMovementDescription = "Anticipo de cliente";
 
     private readonly ICustomerAdvanceRepository _advances;
@@ -121,12 +119,12 @@ public sealed class RegisterCustomerAdvanceHandler
     private readonly ICashSessionRepository _cashSessions;
     private readonly IAccountRepository _accounts;
     private readonly ICompanyRepository _companies;
-    private readonly IUnitOfWork _uow;
-    private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly CustomerAdvanceIntentRunner _intent;
+    private readonly ICompanyClock _clock;
 
     public RegisterCustomerAdvanceHandler(
         ICustomerAdvanceRepository advances,
@@ -143,7 +141,8 @@ public sealed class RegisterCustomerAdvanceHandler
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        ICompanyClock clock
     )
     {
         _advances = advances;
@@ -155,15 +154,15 @@ public sealed class RegisterCustomerAdvanceHandler
         _cashSessions = cashSessions;
         _accounts = accounts;
         _companies = companies;
-        _uow = uow;
-        _dbEx = dbEx;
         _t = t;
         _c = c;
         _b = b;
         _u = u;
+        _clock = clock;
+        _intent = new(advances, partners, uow, dbEx, t);
     }
 
-    public async Task<Result<CustomerAdvanceDto>> Handle(
+    public Task<Result<CustomerAdvanceDto>> Handle(
         RegisterCustomerAdvanceCommand cmd,
         CancellationToken ct
     )
@@ -172,37 +171,7 @@ public sealed class RegisterCustomerAdvanceHandler
             cmd.ClientRequestId,
             CustomerAdvanceRegistrationIntentV1.ComputeHash(cmd)
         );
-
-        // Camino rápido del replay: ningún efecto.
-        if (await ReplayAsync(key, ct) is { } replay)
-            return replay;
-
-        await _uow.BeginTransactionAsync(ct);
-        Result<CustomerAdvanceDto> result;
-        try
-        {
-            result = await RegisterAsync(cmd, key, ct);
-            if (result.IsSuccess)
-                await _uow.CommitAsync(ct);
-            else
-                await _uow.RollbackAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            // El intento perdedor se revierte completo y libera los locks; si la misma intención ya
-            // quedó registrada, se responde con ella.
-            await _uow.RollbackAsync(ct);
-            if (await ReplayAsync(key, ct) is { } raced)
-                return raced;
-            // La clave pertenece a otra empresa del tenant: conflicto sin revelar nada de ella.
-            if (IsClientRequestViolation(ex))
-                return Result<CustomerAdvanceDto>.Conflict(ClientRequestConflict);
-            throw;
-        }
-        if (result.IsSuccess)
-            return result;
-
-        return await ReplayAsync(key, ct) ?? result;
+        return _intent.ExecuteAsync(key, token => RegisterAsync(cmd, key, token), ct);
     }
 
     private async Task<Result<CustomerAdvanceDto>> RegisterAsync(
@@ -217,6 +186,13 @@ public sealed class RegisterCustomerAdvanceHandler
         var company = await _companies.GetByIdAsync(companyId, ct);
         if (company is null)
             return Result<CustomerAdvanceDto>.NotFound("La empresa activa no fue encontrada.");
+
+        // ADR-052 §17 — se evalúa después del replay: el dinero no puede recibirse en el futuro.
+        var today = await _clock.TodayAsync(companyId, tenantId, ct);
+        if (cmd.AdvanceDate > today)
+            return Result<CustomerAdvanceDto>.ValidationFailure(
+                $"La fecha del anticipo {cmd.AdvanceDate:yyyy-MM-dd} es posterior al día de negocio {today:yyyy-MM-dd}."
+            );
 
         // El socio de negocio es del tenant (compartido por sus empresas); debe ser cliente activo.
         var customer = await _partners.GetByIdAsync(cmd.CustomerId, ct);
@@ -295,9 +271,7 @@ public sealed class RegisterCustomerAdvanceHandler
         await _advances.AddAsync(advance, ct);
         await _advances.SaveChangesAsync(ct);
 
-        return Result<CustomerAdvanceDto>.Success(
-            CustomerAdvanceMap.ToDto(advance, await CustomerNameAsync(advance.CustomerId, ct))
-        );
+        return await _intent.SuccessAsync(advance, ct);
     }
 
     /// <summary>Medio activo, coherente con su destino, permitido por TA-02 y con su referencia.</summary>
@@ -372,33 +346,6 @@ public sealed class RegisterCustomerAdvanceHandler
             )
             : null;
     }
-
-    /// <summary>Misma clave y huella → el anticipo ya registrado; otra huella → Conflict; sin clave → null.</summary>
-    private async Task<Result<CustomerAdvanceDto>?> ReplayAsync(
-        ClientRequestKey key,
-        CancellationToken ct
-    )
-    {
-        var existing = await _advances.GetByClientRequestIdAsync(_t.TenantId, key.Id, ct);
-        if (existing is null)
-            return null;
-        var original = existing
-            .Movements.Where(m => m.ClientRequestId == key.Id)
-            .OrderBy(m => m.LineNumber)
-            .First();
-        return key.Matches(original.RequestPayloadHash)
-            ? Result<CustomerAdvanceDto>.Success(
-                CustomerAdvanceMap.ToDto(existing, await CustomerNameAsync(existing.CustomerId, ct))
-            )
-            : Result<CustomerAdvanceDto>.Conflict(ClientRequestConflict);
-    }
-
-    private async Task<string?> CustomerNameAsync(Guid customerId, CancellationToken ct) =>
-        (await _partners.GetNamesByIdsAsync([customerId], ct)).GetValueOrDefault(customerId);
-
-    private bool IsClientRequestViolation(Exception ex) =>
-        _dbEx.TryGetUniqueViolation(ex, out var violation)
-        && violation.ConstraintName?.StartsWith(KeyIndexPrefix, StringComparison.Ordinal) == true;
 
     /// <summary>Nunca se trunca: si no cabe en Caja, se resuelve por el movimiento referenciado.</summary>
     private static string? VisibleReference(string? reference) =>

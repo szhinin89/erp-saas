@@ -1226,7 +1226,7 @@
       "name": "CreditTerms"
     },
     {
-      "description": "CUSTOMER-ADVANCES-V1 CA-F3 (ADR-052) \u2014 registro y consulta de anticipos de clientes. Controller\r\ndelgado: HTTP \u2192 MediatR \u2192 \u0060Result\u0060. Sin \u0060[AppFeature]\u0060: la navegaci\u00F3n del m\u00F3dulo no\r\npertenece a esta fase.",
+      "description": "CUSTOMER-ADVANCES-V1 (ADR-052) \u2014 anticipos de clientes: registro, consultas, aplicaci\u00F3n a cuentas\r\npor cobrar y reversi\u00F3n de aplicaciones. Controller delgado: HTTP \u2192 MediatR \u2192 \u0060Result\u0060. Sin\r\n\u0060[AppFeature]\u0060: no tiene navegaci\u00F3n propia.",
       "name": "CustomerAdvance"
     },
     {

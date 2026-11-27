@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-27 06:11:05",
+    "generated":  "2026-11-27 10:04:22",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -579,12 +579,12 @@
                   },
                   {
                       "id":  "Finance",
-                      "filesScanned":  44,
+                      "filesScanned":  50,
                       "fanIn":  5,
-                      "fanOut":  9,
-                      "coupling":  14,
-                      "instability":  0.643,
-                      "cohesionApprox":  0.34,
+                      "fanOut":  10,
+                      "coupling":  15,
+                      "instability":  0.667,
+                      "cohesionApprox":  0.32,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -594,6 +594,7 @@
                                         "Caja",
                                         "Common",
                                         "Company",
+                                        "InitialLoad",
                                         "Payables",
                                         "Purchases",
                                         "Sales"
@@ -811,10 +812,10 @@
                   {
                       "id":  "InitialLoad",
                       "filesScanned":  99,
-                      "fanIn":  1,
+                      "fanIn":  2,
                       "fanOut":  14,
-                      "coupling":  15,
-                      "instability":  0.933,
+                      "coupling":  16,
+                      "instability":  0.875,
                       "cohesionApprox":  0.594,
                       "busFactor":  1,
                       "isolated":  false,
@@ -835,7 +836,8 @@
                                         "SriCatalogs"
                                     ],
                       "dependedOnBy":  [
-                                           "Accounting"
+                                           "Accounting",
+                                           "Finance"
                                        ]
                   },
                   {
@@ -1273,13 +1275,13 @@
                   {
                       "from":  "Finance",
                       "to":  "Sales",
-                      "referenceCount":  8,
+                      "referenceCount":  17,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/PaymentMethodDestinationPolicy.cs",
+                                       "backend/src/ERP.Application/Modules/Finance/ReceivableApplicationPolicy.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditQueryUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/RegisterCustomerAdvanceUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/RegisterCustomerAdvanceUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/ApplyCustomerAdvanceUseCases.cs"
                                    ]
                   },
                   {
@@ -1303,15 +1305,12 @@
                                    ]
                   },
                   {
-                      "from":  "Accounting",
-                      "to":  "Inventory",
-                      "referenceCount":  11,
+                      "from":  "Finance",
+                      "to":  "InitialLoad",
+                      "referenceCount":  2,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingCompletenessService.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingModeChangePreconditions.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingFactBuilder.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SaleCostRecognizedPostingTranslator.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SalesInvoiceCogsPostingTranslator.cs"
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/ApplyCustomerAdvanceUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/CustomerAdvanceApplicationChronology.cs"
                                    ]
                   },
                   {
@@ -1821,7 +1820,7 @@
                   {
                       "from":  "Finance",
                       "to":  "Common",
-                      "referenceCount":  31,
+                      "referenceCount":  46,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs",
@@ -3299,6 +3298,18 @@
                                    ]
                   },
                   {
+                      "from":  "Accounting",
+                      "to":  "Inventory",
+                      "referenceCount":  11,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingCompletenessService.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingModeChangePreconditions.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingFactBuilder.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SaleCostRecognizedPostingTranslator.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SalesInvoiceCogsPostingTranslator.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Company",
                       "to":  "Configuration",
                       "referenceCount":  4,
@@ -3392,7 +3403,6 @@
                    "Company -\u003e Branches -\u003e Audit -\u003e Access -\u003e Auth -\u003e Company",
                    "Company -\u003e Branches -\u003e Audit -\u003e Access -\u003e Company",
                    "Branches -\u003e Audit -\u003e Access -\u003e Branches",
-                   "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                    "Items -\u003e Purchases -\u003e Items",
                    "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies",
                    "Items -\u003e Purchases -\u003e Pricing -\u003e Items",
@@ -3416,6 +3426,17 @@
                    "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Audit",
                    "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Audit",
                    "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Sales",
+                   "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Inventory",
+                   "Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Expenses",
+                   "Payables -\u003e Finance -\u003e InitialLoad -\u003e Payables",
+                   "Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Companies",
+                   "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Accounting",
+                   "Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Purchases",
+                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e SriCatalogs",
+                   "Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Items",
+                   "Finance -\u003e InitialLoad -\u003e Finance",
+                   "Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Sales",
+                   "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e InitialLoad -\u003e Company",
                    "Accounting -\u003e Sales -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Accounting",
                    "Payables -\u003e Finance -\u003e Payables",
                    "SriCatalogs -\u003e Items -\u003e Purchases -\u003e ElectronicDocuments -\u003e Retentions -\u003e Expenses -\u003e Payables -\u003e Finance -\u003e Caja -\u003e SriCatalogs",
@@ -3456,40 +3477,37 @@
                    "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Audit",
                    "Companies -\u003e Accounting -\u003e Sales -\u003e Companies",
                    "Inventory -\u003e Companies -\u003e Accounting -\u003e Sales -\u003e Inventory",
-                   "Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Inventory",
-                   "Companies -\u003e Accounting -\u003e InitialLoad -\u003e Companies",
-                   "Accounting -\u003e InitialLoad -\u003e Accounting",
-                   "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e InitialLoad -\u003e Company",
                    "Companies -\u003e Accounting -\u003e Companies",
                    "Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Audit",
                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Accounting -\u003e Company",
+                   "Inventory -\u003e Companies -\u003e Accounting -\u003e Inventory",
                    "Company -\u003e Branches -\u003e Audit -\u003e Inventory -\u003e Companies -\u003e Company",
                    "Branches -\u003e Audit -\u003e Inventory -\u003e Branches",
                    "Audit -\u003e Inventory -\u003e Audit"
                ],
     "depthByModule":  {
-                          "Company":  20,
+                          "Company":  19,
                           "Dashboard":  1,
                           "Payables":  6,
                           "Media":  1,
-                          "Companies":  16,
+                          "Companies":  15,
                           "Menu":  0,
                           "Auth":  2,
                           "Settings":  10,
-                          "OrgConfig":  20,
-                          "Integration":  21,
+                          "OrgConfig":  19,
+                          "Integration":  20,
                           "Access":  3,
                           "Sales":  13,
                           "Items":  11,
                           "Purchases":  10,
-                          "Employees":  19,
+                          "Employees":  18,
                           "Tenants":  1,
-                          "Session":  21,
+                          "Session":  20,
                           "Retentions":  8,
                           "Common":  0,
-                          "Inventory":  17,
+                          "Inventory":  16,
                           "Finance":  5,
-                          "Branches":  19,
+                          "Branches":  18,
                           "DocTypes":  1,
                           "Pricing":  1,
                           "Caja":  4,
@@ -3497,17 +3515,17 @@
                           "ElectronicInvoicing":  2,
                           "Configuration":  1,
                           "Ride":  3,
-                          "InitialLoad":  14,
+                          "InitialLoad":  4,
                           "Catalog":  13,
                           "ElectronicDocuments":  9,
                           "Auxiliary":  0,
                           "Communications":  2,
-                          "Accounting":  15,
+                          "Accounting":  14,
                           "SriCatalogs":  12,
-                          "Audit":  18,
+                          "Audit":  17,
                           "Navigation":  1
                       },
-    "maxDependencyDepth":  21,
+    "maxDependencyDepth":  20,
     "centralModules":  [
                            "Common",
                            "Company",

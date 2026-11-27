@@ -52,6 +52,15 @@ public interface ICustomerAdvanceRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// Aplicaciones recibidas por una CxC y sus reversas, de la empresa, en orden de registro.
+    /// </summary>
+    Task<IReadOnlyList<CustomerAdvanceMovement>> ListReceivableMovementsAsync(
+        Guid tenantId,
+        Guid receivableId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(CustomerAdvance advance, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

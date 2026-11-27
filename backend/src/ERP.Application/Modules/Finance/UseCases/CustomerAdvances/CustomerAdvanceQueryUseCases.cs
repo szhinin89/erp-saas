@@ -3,6 +3,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -27,6 +28,10 @@ public sealed record GetCustomerAdvanceBalanceQuery(Guid CustomerId)
     : IRequest<Result<CustomerAdvanceBalanceDto>>,
         ICompanyScopedRequest;
 
+public sealed record GetReceivableAdvanceApplicationsQuery(Guid ReceivableId)
+    : IRequest<Result<IReadOnlyList<CustomerAdvanceReceivableApplicationDto>>>,
+        ICompanyScopedRequest;
+
 public sealed class GetCustomerAdvanceListQueryValidator
     : AbstractValidator<GetCustomerAdvanceListQuery>
 {
@@ -44,6 +49,53 @@ public sealed class GetCustomerAdvanceBalanceQueryValidator
     public GetCustomerAdvanceBalanceQueryValidator()
     {
         RuleFor(x => x.CustomerId).NotEmpty();
+    }
+}
+
+public sealed class GetReceivableAdvanceApplicationsQueryValidator
+    : AbstractValidator<GetReceivableAdvanceApplicationsQuery>
+{
+    public GetReceivableAdvanceApplicationsQueryValidator()
+    {
+        RuleFor(x => x.ReceivableId).NotEmpty();
+    }
+}
+
+public sealed class GetReceivableAdvanceApplicationsHandler(
+    ICustomerAdvanceRepository advances,
+    ISalesReceivableRepository receivables,
+    ICurrentTenant tenant
+)
+    : IRequestHandler<
+        GetReceivableAdvanceApplicationsQuery,
+        Result<IReadOnlyList<CustomerAdvanceReceivableApplicationDto>>
+    >
+{
+    public async Task<Result<IReadOnlyList<CustomerAdvanceReceivableApplicationDto>>> Handle(
+        GetReceivableAdvanceApplicationsQuery q,
+        CancellationToken ct
+    )
+    {
+        if (await receivables.GetByIdAsync(tenant.TenantId, q.ReceivableId, ct) is null)
+            return Result<IReadOnlyList<CustomerAdvanceReceivableApplicationDto>>.NotFound(
+                "La cuenta por cobrar indicada no existe."
+            );
+
+        var movements = await advances.ListReceivableMovementsAsync(
+            tenant.TenantId,
+            q.ReceivableId,
+            ct
+        );
+        var reversals = movements
+            .Where(m => m.ReversalOfMovementId is not null)
+            .ToDictionary(m => m.ReversalOfMovementId!.Value);
+
+        return Result<IReadOnlyList<CustomerAdvanceReceivableApplicationDto>>.Success(
+            movements
+                .Where(m => m.MovementType == CustomerAdvanceMovementType.Application)
+                .Select(m => CustomerAdvanceMap.ToApplication(m, reversals.GetValueOrDefault(m.Id)))
+                .ToList()
+        );
     }
 }
 

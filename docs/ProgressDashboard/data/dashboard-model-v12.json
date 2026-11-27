@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-11-27 06:10:05",
+    "Generated":  "2026-11-27 10:03:41",
     "EngineeringScore":  {
-                             "Generated":  "2026-11-27 06:09:58",
+                             "Generated":  "2026-11-27 10:03:35",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  45.95,
+                             "Quality":  45.85,
                              "Security":  26,
                              "Dependencies":  100,
-                             "Overall":  68.34
+                             "Overall":  68.32
                          },
     "QualityGate":  {
-                        "Generated":  "2026-11-27 06:10:03",
+                        "Generated":  "2026-11-27 10:03:40",
                         "Status":  "RED",
-                        "EngineeringScore":  68.34,
+                        "EngineeringScore":  68.32,
                         "Warnings":  [
                                          "Engineering score needs improvement",
                                          "High number of possible secrets detected",
@@ -24,8 +24,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-11-27 06:10:01",
-                  "Snapshots":  54,
+                  "Generated":  "2026-11-27 10:03:38",
+                  "Snapshots":  55,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -349,6 +349,12 @@
                                       "Date":  "2026-11-27 06:10:00",
                                       "File":  "dashboard-2026-11-27-0610-v2.json",
                                       "Score":  68.34,
+                                      "Method":  "git-tracked-v1"
+                                  },
+                                  {
+                                      "Date":  "2026-11-27 10:03:37",
+                                      "File":  "dashboard-2026-11-27-1003-v2.json",
+                                      "Score":  68.32,
                                       "Method":  "git-tracked-v1"
                                   }
                               ],
@@ -709,8 +715,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-11-27 06:09:51",
-                     "FilesAnalyzed":  5062,
+                     "Generated":  "2026-11-27 10:03:30",
+                     "FilesAnalyzed":  5070,
                      "SecretsFound":  80,
                      "SecretFiles":  [
                                          "backend\\src\\ERP.API\\Program.cs",
@@ -832,8 +838,8 @@
                      "Warnings":  109
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-11-27 06:09:37",
-                          "FilesAnalyzed":  5055,
+                          "Generated":  "2026-11-27 10:03:19",
+                          "FilesAnalyzed":  5063,
                           "TODO":  52,
                           "FIXME":  0,
                           "HACK":  0,
@@ -885,7 +891,15 @@
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
-                                                 "Lines":  1282
+                                                 "Lines":  1311
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                                                 "Lines":  1977
+                                             },
+                                             {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
+                                                 "Lines":  532
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
@@ -993,7 +1007,7 @@
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
-                                                 "Lines":  513
+                                                 "Lines":  506
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.Application\\Modules\\InitialLoad\\OpeningPosting\\GetOpeningBalanceReconciliation.cs",
@@ -1967,16 +1981,16 @@
                           "CriticalFindings":  8
                       },
     "Architecture":  {
-                         "Generated":  "2026-11-27 06:09:02",
+                         "Generated":  "2026-11-27 10:02:17",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  742
                                                    },
                                         "Application":  {
-                                                            "Commands":  2286,
-                                                            "Validators":  967,
-                                                            "Queries":  1314,
-                                                            "Files":  1214
+                                                            "Commands":  2304,
+                                                            "Validators":  980,
+                                                            "Queries":  1320,
+                                                            "Files":  1220
                                                         },
                                         "Infrastructure":  {
                                                                "DbContext":  425,
@@ -1993,7 +2007,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-11-27 06:09:12",
+                         "Generated":  "2026-11-27 10:02:23",
                          "Violations":  [
 
                                         ],

@@ -44,6 +44,8 @@ public sealed record CustomerAdvanceMovementDto(
     string MovementType,
     decimal Amount,
     int LineNumber,
+    /// <summary>Operación a la que pertenece el movimiento; identifica una aplicación a revertir.</summary>
+    Guid OperationId,
     Guid BranchId,
     DateOnly EffectiveDate,
     DateOnly? EvidenceDate,
@@ -56,6 +58,22 @@ public sealed record CustomerAdvanceMovementDto(
     Guid? CashMovementId,
     Guid CreatedByUserId,
     DateTime CreatedAtUtc
+);
+
+/// <summary>Aplicación de anticipo recibida por una CxC, vigente o ya revertida.</summary>
+public sealed record CustomerAdvanceReceivableApplicationDto(
+    Guid CustomerAdvanceId,
+    Guid OperationId,
+    Guid MovementId,
+    Guid? InstallmentId,
+    decimal Amount,
+    DateOnly EffectiveDate,
+    Guid BranchId,
+    Guid CreatedByUserId,
+    DateTime CreatedAtUtc,
+    bool IsReversed,
+    Guid? ReversalMovementId,
+    DateOnly? ReversalDate
 );
 
 /// <summary>Saldo disponible de un cliente en la empresa activa, sin distinguir sucursal.</summary>
@@ -114,12 +132,32 @@ internal static class CustomerAdvanceMap
                 .ToList()
         );
 
+    public static CustomerAdvanceReceivableApplicationDto ToApplication(
+        CustomerAdvanceMovement application,
+        CustomerAdvanceMovement? reversal
+    ) =>
+        new(
+            application.CustomerAdvanceId,
+            application.ClientRequestId,
+            application.Id,
+            application.InstallmentId,
+            application.Amount,
+            application.EffectiveDate,
+            application.BranchId,
+            application.CreatedByUserId,
+            application.CreatedAtUtc,
+            reversal is not null,
+            reversal?.Id,
+            reversal?.EffectiveDate
+        );
+
     private static CustomerAdvanceMovementDto ToDto(CustomerAdvanceMovement m) =>
         new(
             m.Id,
             m.MovementType.ToString(),
             m.Amount,
             m.LineNumber,
+            m.ClientRequestId,
             m.BranchId,
             m.EffectiveDate,
             m.EvidenceDate,

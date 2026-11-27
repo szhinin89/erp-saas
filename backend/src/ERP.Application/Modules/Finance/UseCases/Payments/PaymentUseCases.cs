@@ -288,32 +288,25 @@ public sealed class RegisterCollectionCommandHandler
         );
         foreach (var line in cmd.Lines)
         {
-            if (!receivablesByDocId.TryGetValue(line.DocumentId, out var receivable))
-                return Result<PaymentDto>.NotFound(
-                    $"Cuenta por cobrar {line.DocumentId} no encontrada."
-                );
-
             // ZH-COLLECTIONS-CUSTOMER-SCOPE-01 — validado ya bajo lock y antes de modificar nada: un
             // cobro de un cliente nunca reduce la CxC de otro (el saldo bajaría en B mientras el
             // pago, sus eventos y el asiento quedan a nombre de A), y una cuota informada debe ser
             // de esa misma CxC. No se confía en el cliente: cualquier línea inválida rechaza el
-            // cobro completo y Handle revierte la transacción.
-            if (receivable.CustomerId != cmd.CustomerId)
-                return Result<PaymentDto>.ValidationFailure(
-                    $"La cuenta por cobrar {line.DocumentId} no pertenece al cliente del cobro."
-                );
-            var installment = receivable.Installments.FirstOrDefault(i =>
-                i.Id == line.InstallmentId
+            // cobro completo y Handle revierte la transacción. Regla compartida con Anticipos
+            // (ADR-052 TA-12).
+            receivablesByDocId.TryGetValue(line.DocumentId, out var receivable);
+            var rejection = ReceivableApplicationPolicy.Validate(
+                receivable,
+                line.DocumentId,
+                line.InstallmentId,
+                line.AppliedAmount,
+                cmd.CustomerId,
+                "del cobro"
             );
-            if (line.InstallmentId is not null && installment is null)
-                return Result<PaymentDto>.ValidationFailure(
-                    $"La cuota {line.InstallmentId} no pertenece a la cuenta por cobrar {line.DocumentId}."
-                );
-            // CXC-E2E-01 — el cobro se acumula en la cuota elegida: no puede exceder su saldo.
-            if (installment is not null && line.AppliedAmount > installment.OutstandingAmount)
-                return Result<PaymentDto>.ValidationFailure(
-                    $"El monto aplicado excede el saldo pendiente de la cuota #{installment.InstallmentNumber}."
-                );
+            if (rejection is not null)
+                return rejection.IsNotFound
+                    ? Result<PaymentDto>.NotFound(rejection.Message)
+                    : Result<PaymentDto>.ValidationFailure(rejection.Message);
 
             try
             {

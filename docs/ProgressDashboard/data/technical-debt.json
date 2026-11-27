@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-27 06:09:37",
-    "FilesAnalyzed":  5055,
+    "Generated":  "2026-11-27 10:03:19",
+    "FilesAnalyzed":  5063,
     "TODO":  52,
     "FIXME":  0,
     "HACK":  0,
@@ -52,7 +52,15 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
-                           "Lines":  1282
+                           "Lines":  1311
+                       },
+                       {
+                           "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                           "Lines":  1977
+                       },
+                       {
+                           "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
+                           "Lines":  532
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
@@ -160,7 +168,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
-                           "Lines":  513
+                           "Lines":  506
                        },
                        {
                            "File":  "backend\\src\\ERP.Application\\Modules\\InitialLoad\\OpeningPosting\\GetOpeningBalanceReconciliation.cs",

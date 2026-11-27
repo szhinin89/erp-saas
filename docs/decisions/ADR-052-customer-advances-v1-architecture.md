@@ -236,6 +236,20 @@ Ventas; motor financiero, contable, de seguridad o de auditoría paralelo.
 | 6 | Anticipos sin asiento no detectados | Completitud contable en la misma fase que las reglas |
 | 7 | Efectivo operable solo por el titular del turno | Regla vigente confirmada (TA-13) |
 
+## 17. Precisión posterior: cronología de las aplicaciones (APROBADO 2026-11-27)
+
+Instruida por el propietario en CA-F4; complementa §5 y §7 sin modificar decisiones anteriores.
+
+- La fecha efectiva de una aplicación es igual o posterior a la fecha del anticipo (`CustomerAdvance.AdvanceDate`) y a la
+  fecha de origen contable de **todas** las CxC involucradas, y no posterior al día de negocio oficial de la empresa.
+- Fecha de origen contable: CxC de factura → `SalesInvoice.IssueDate`; CxC de saldo inicial →
+  `Company.OpeningBalanceDate` (cuando la deuda entra en los libros; la emisión del documento nunca es posterior).
+- Una fecha incompatible o que no pueda determinarse rechaza la operación completa (422) sin efectos ni consumo de la clave.
+- Se valida después del replay y con anticipo y CxC bloqueados: un reintento de una aplicación aceptada no se reevalúa.
+- No cambia TA-07, el gate de modo y período contable ni las fechas de los cobros.
+- **Registro:** `CustomerAdvance.AdvanceDate` no puede ser posterior al día de negocio oficial de la empresa; se evalúa
+  después del replay y un rechazo (422) no produce efectos ni consume la clave.
+
 ## Referencias
 
 [Diseño](CUSTOMER-ADVANCES-V1-DESIGN-01.md) · [Plan](../agent/CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md) ·

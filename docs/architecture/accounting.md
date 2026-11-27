@@ -25,7 +25,7 @@ El sistema está en preproducción. No existe compatibilidad con políticas cont
 | IMPLEMENTADO | ACCOUNTING-12A: Estado de Resultados con signo por sección (coincide con el Resultado del ejercicio del Balance) y contabilización de ajustes de inventario `Inventory/StockAdjustmentIn` y `StockAdjustmentOut` con cuenta del motivo (§24) |
 | IMPLEMENTADO | ACCOUNTING-12C: Caja contable — movimientos manuales con cuenta del motivo, depósito bancario explícito y diferencia de arqueo al cerrar (§25) |
 | IMPLEMENTADO | ACCOUNTING-12D: cierre anual — asiento de cierre generado en Draft desde Períodos, publicado con el flujo de manuales, y `YEAR_END_CLOSING_MISSING` en el último período (§26) |
-| IMPLEMENTADO | CUSTOMER-ADVANCES-V1 CA-F2: hechos contables y completitud de anticipos de clientes; solo el registro está expuesto (§28) |
+| IMPLEMENTADO | CUSTOMER-ADVANCES-V1 CA-F2: hechos contables y completitud de anticipos de clientes; con operación expuesta el registro (CA-F3) y la aplicación y su reversa (CA-F4) (§28) |
 
 El resto del documento define el contrato vigente de lo implementado. Las prohibiciones
 (§15) y los límites de alcance describen lo que el sistema no hace; no son capacidades pendientes.
@@ -973,8 +973,9 @@ el estado `Reversed`.
 ## 28. Anticipos de clientes CUSTOMER-ADVANCES-V1 (CA-F2)
 
 Contrato contable de [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) §10 (TA-09): traducción de los
-eventos del agregado `CustomerAdvance`. Solo el registro tiene operación expuesta ([SSOT](customer-advances.md));
-aplicación, devolución, reversas y anulación no.
+eventos del agregado `CustomerAdvance`. Tienen operación expuesta el registro, la aplicación a CxC y la reversa de
+aplicaciones ([SSOT](customer-advances.md)); la devolución, su reversa, la reversa del ingreso y la anulación administrativa
+no.
 
 | Hecho (`Finance`) | Identidad (movimiento) | Fecha | Regla sembrada (monto `GrandTotal`) |
 |---|---|---|---|

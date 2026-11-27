@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-27 06:11:07",
+    "generated":  "2026-11-27 10:04:25",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -431,22 +431,24 @@
                              "percentOfErp":  0.96,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
+                                                  "Refactor large file (1977 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
                                                   "Refactor large file (1765 lines): backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
                                                   "Refactor large file (1642 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentsEndToEndTests.cs",
                                                   "Refactor large file (1566 lines): backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs",
-                                                  "Refactor large file (1282 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
+                                                  "Refactor large file (1311 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
                                                   "Refactor large file (1079 lines): backend/src/ERP.API.Tests/Integration/IamIdentityIsolationHttpTests.cs",
                                                   "Refactor large file (1035 lines): backend/src/ERP.API.Tests/Integration/CajaVentasEndToEndTests.cs",
                                                   "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                   "Refactor large file (701 lines): backend/src/ERP.API.Tests/Integration/SalesCancelCollectionConcurrencyTests.cs",
                                                   "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
-                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                   "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                   "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
                                                   "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
                                                   "Refactor large file (555 lines): backend/src/ERP.API.Tests/Integration/BranchDefaultWarehouseHttpTests.cs",
+                                                  "Refactor large file (532 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceOpeningBalanceApiTests.cs",
                                                   "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                   "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                                                   "Review possible secrets in source files (80 real matches, excluding node_modules)"
@@ -596,8 +598,8 @@
                                                   "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
                                                   "Refactor large file (618 lines): backend/src/ERP.Application.Tests/Sales/GetSalesReceiptPrintPayloadHandlerTests.cs",
                                                   "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnDraftHandlerTests.cs",
-                                                  "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                   "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                                                  "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                   "Refactor large file (594 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
                                                   "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Sales/SalesDraftSpecialTaxTests.cs",
                                                   "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
@@ -735,8 +737,8 @@
                                                   "Refactor large file (1993 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                   "Refactor large file (1646 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
                                                   "Refactor large file (1308 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.cs",
-                                                  "Refactor large file (1282 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
                                                   "Refactor large file (1282 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseReturnHandlerTests.cs",
+                                                  "Refactor large file (1282 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
                                                   "Refactor large file (1169 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                                                   "Refactor large file (1150 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteDraftUseCasesTests.cs",
                                                   "Refactor large file (1145 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
@@ -1097,8 +1099,8 @@
                              "percentOfErp":  110.58,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                   "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
+                                                  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                   "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                   "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                   "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
@@ -1110,7 +1112,7 @@
                              "module":  "Finance",
                              "score":  81.5,
                              "fanIn":  5,
-                             "fanOut":  9,
+                             "fanOut":  10,
                              "directDependents":  [
                                                       "Accounting",
                                                       "Caja",
@@ -1168,8 +1170,8 @@
                                                   "Refactor large file (615 lines): backend/src/ERP.Domain/Modules/Finance/Entities/CustomerAdvance.cs",
                                                   "Refactor large file (598 lines): backend/src/ERP.Domain.Tests/Finance/CustomerAdvanceTests.cs",
                                                   "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
-                                                  "Refactor large file (513 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
-                                                  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs"
+                                                  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                                                  "Refactor large file (506 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs"
                                               ]
                          },
                          {
@@ -1657,10 +1659,11 @@
                          {
                              "module":  "InitialLoad",
                              "score":  81.5,
-                             "fanIn":  1,
+                             "fanIn":  2,
                              "fanOut":  14,
                              "directDependents":  [
-                                                      "Accounting"
+                                                      "Accounting",
+                                                      "Finance"
                                                   ],
                              "transitiveDependents":  [
                                                           "Access",
@@ -1704,8 +1707,8 @@
                              "percentOfErp":  102.56,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (719 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/PublishOpeningJournalEntryPostgreSqlTests.cs",
                                                   "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
+                                                  "Refactor large file (719 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/PublishOpeningJournalEntryPostgreSqlTests.cs",
                                                   "Refactor large file (695 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/OpeningBalanceReconciliationTests.cs",
                                                   "Refactor large file (685 lines): backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
                                                   "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
@@ -2342,7 +2345,7 @@
                              "order":  20,
                              "module":  "InitialLoad",
                              "currentScore":  81.5,
-                             "directUnblocks":  1,
+                             "directUnblocks":  2,
                              "transitiveUnblocks":  30,
                              "unlockedProcesses":  2,
                              "rationale":  "Completing \u0027InitialLoad\u0027 (score 81.5%) removes it as a dependency blocker for 30 module(s) reachable via the real dependency graph (dependencies.json), touching 2 distinct process(es) (impact.json)."

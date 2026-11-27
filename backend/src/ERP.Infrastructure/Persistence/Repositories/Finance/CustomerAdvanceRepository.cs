@@ -101,6 +101,19 @@ public sealed class CustomerAdvanceRepository : ICustomerAdvanceRepository
             .Where(x => x.CustomerId == customerId && x.Status == CustomerAdvanceStatus.Confirmed)
             .SumAsync(x => x.AvailableAmount, ct);
 
+    public async Task<IReadOnlyList<CustomerAdvanceMovement>> ListReceivableMovementsAsync(
+        Guid tenantId,
+        Guid receivableId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .CustomerAdvanceMovements.ForOperationalScope(tenantId, _company)
+            .AsNoTracking()
+            .Where(x => x.ReceivableId == receivableId)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ThenBy(x => x.LineNumber)
+            .ToListAsync(ct);
+
     public Task AddAsync(CustomerAdvance advance, CancellationToken ct = default) =>
         _db.CustomerAdvances.AddAsync(advance, ct).AsTask();
 

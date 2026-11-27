@@ -81,11 +81,19 @@ Precondiciones, antes de mutar y dentro de la transacción existente:
 Implementación con validación unitaria focal; prueba funcional integrada de UI/HTTP/PostgreSQL
 pendiente por instrucción del propietario. Estado y gates: [STATUS](../../STATUS.md).
 
+## Aplicación de anticipos de cliente
+
+Un anticipo aplicado reduce la CxC sin `Payment` ni dinero nuevo, con `SalesReceivable.RegisterCollection`, y su reversa
+la restaura con `ReverseCollection`. `PaidAmount` = cobros vigentes + aplicaciones vigentes, y cada reversa se limita a su
+propio importe. Cobros y aplicaciones comparten las validaciones de cliente y cuota (`ReceivableApplicationPolicy`) y el
+lock de la CxC. Solo Anticipos exige además que Σ cobrado de las cuotas = `PaidAmount`. Las aplicaciones no aparecen en la
+consulta ni en la anulación de cobros. Contrato: [customer-advances.md](./customer-advances.md#4-aplicación-a-cuentas-por-cobrar).
+
 ## Devolución y anulación
 
 - Devolución de venta autorizada con crédito a CxC: reduce `OriginalAmount` (nunca lo cobrado) y
   reconstruye las cuotas sobre el saldo, con sus números y vencimientos.
-- Anular una factura cuya CxC tiene cobros se rechaza. Caminos excluyentes y bloqueos:
+- Anular una factura cuya CxC tiene cobros o anticipos aplicados se rechaza. Caminos excluyentes y bloqueos:
   [backend.md](./backend.md#revertir-una-venta-un-solo-camino-por-factura-zh-sales-cancel-authorized-return-rule-01).
 
 ## Contabilidad

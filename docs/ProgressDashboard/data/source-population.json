@@ -1,18 +1,25 @@
 ﻿{
     "Method":  "git-tracked-v1",
-    "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+    "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
     "TreeDirty":  true,
     "TreeModified":  [
                          "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                         "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                         "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
+                         "backend\\src\\ERP.API.Tests\\Snapshots\\companies-openapi.json",
                          "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
                          "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
                          "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                         "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                          "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                          "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                          "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                         "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                         "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                          "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                          "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs",
                          "docs\\agent\\CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md",
@@ -20,12 +27,14 @@
                          "docs\\architecture\\accounting.md",
                          "docs\\architecture\\backend.md",
                          "docs\\architecture\\customer-advances.md",
-                         "docs\\architecture\\README.md",
+                         "docs\\architecture\\receivables.md",
+                         "docs\\decisions\\ADR-052-customer-advances-v1-architecture.md",
+                         "docs\\decisions\\CUSTOMER-ADVANCES-V1-DESIGN-01.md",
                          "STATUS.md"
                      ],
     "Analyzers":  {
                       "analyze-architecture":  {
-                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                   "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Domain",
                                                                  "backend/src/ERP.Application",
@@ -35,7 +44,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  2646,
+                                                   "FilesAnalyzed":  2652,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -44,25 +53,29 @@
                                                                          ],
                                                    "ModifiedInScope":  [
                                                                            "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                           "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                            "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                            "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-backend":  {
-                                              "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                              "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                               "Scope":  [
                                                             "backend/src"
                                                         ],
                                               "Include":  [
                                                               "*"
                                                           ],
-                                              "FilesAnalyzed":  3750,
+                                              "FilesAnalyzed":  3758,
                                               "MissingTracked":  [
 
                                                                  ],
@@ -71,21 +84,28 @@
                                                                     ],
                                               "ModifiedInScope":  [
                                                                       "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                      "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                                                                      "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
+                                                                      "backend\\src\\ERP.API.Tests\\Snapshots\\companies-openapi.json",
                                                                       "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
                                                                       "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
                                                                       "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                      "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                      "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                       "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                       "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                   ]
                                           },
                       "analyze-database":  {
-                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                               "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                "Scope":  [
                                                              "backend/src/ERP.Infrastructure"
                                                          ],
@@ -104,7 +124,7 @@
                                                                    ]
                                            },
                       "analyze-dependencies":  {
-                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                   "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Domain",
                                                                  "backend/src/ERP.Application"
@@ -112,7 +132,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  1956,
+                                                   "FilesAnalyzed":  1962,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -120,17 +140,21 @@
 
                                                                          ],
                                                    "ModifiedInScope":  [
-                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                           "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                            "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-features":  {
-                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                               "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                "Scope":  [
                                                              "backend/src/ERP.Application/Modules",
                                                              "backend/src/ERP.Domain/Modules"
@@ -138,7 +162,7 @@
                                                "Include":  [
                                                                "*"
                                                            ],
-                                               "FilesAnalyzed":  1643,
+                                               "FilesAnalyzed":  1649,
                                                "MissingTracked":  [
 
                                                                   ],
@@ -146,16 +170,21 @@
 
                                                                      ],
                                                "ModifiedInScope":  [
-                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                       "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                        "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs"
                                                                    ]
                                            },
                       "analyze-frontend":  {
-                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                               "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                "Scope":  [
                                                              "frontend/src"
                                                          ],
@@ -175,14 +204,14 @@
                                                                    ]
                                            },
                       "analyze-impact":  {
-                                             "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                             "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                              "Scope":  [
                                                            "backend/src/ERP.Application/Modules"
                                                        ],
                                              "Include":  [
                                                              "*.cs"
                                                          ],
-                                             "FilesAnalyzed":  1041,
+                                             "FilesAnalyzed":  1047,
                                              "MissingTracked":  [
 
                                                                 ],
@@ -190,14 +219,20 @@
 
                                                                    ],
                                              "ModifiedInScope":  [
-                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
-                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs"
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs"
                                                                  ]
                                          },
                       "analyze-migrations":  {
-                                                 "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                 "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                  "Scope":  [
                                                                "backend/src/ERP.Infrastructure/Migrations"
                                                            ],
@@ -216,7 +251,7 @@
                                                                      ]
                                              },
                       "analyze-module-graph":  {
-                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                   "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Application/Modules",
                                                                  "backend/src/ERP.Domain/Modules",
@@ -225,7 +260,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  2170,
+                                                   "FilesAnalyzed":  2176,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -233,24 +268,29 @@
 
                                                                          ],
                                                    "ModifiedInScope":  [
-                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                            "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                            "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                            "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-processes":  {
-                                                "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                 "Scope":  [
                                                               "backend/src/ERP.Application/Modules"
                                                           ],
                                                 "Include":  [
                                                                 "*.cs"
                                                             ],
-                                                "FilesAnalyzed":  1041,
+                                                "FilesAnalyzed":  1047,
                                                 "MissingTracked":  [
 
                                                                    ],
@@ -258,14 +298,20 @@
 
                                                                       ],
                                                 "ModifiedInScope":  [
-                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
-                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs"
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs"
                                                                     ]
                                             },
                       "analyze-security:backend":  {
-                                                       "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                       "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                        "Scope":  [
                                                                      "backend"
                                                                  ],
@@ -274,7 +320,7 @@
                                                                        "*.json",
                                                                        "*.config"
                                                                    ],
-                                                       "FilesAnalyzed":  3678,
+                                                       "FilesAnalyzed":  3686,
                                                        "MissingTracked":  [
 
                                                                           ],
@@ -283,21 +329,28 @@
                                                                              ],
                                                        "ModifiedInScope":  [
                                                                                "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                               "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                                                                               "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
+                                                                               "backend\\src\\ERP.API.Tests\\Snapshots\\companies-openapi.json",
                                                                                "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
                                                                                "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
                                                                                "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                                "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                                "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                                "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                               "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                               "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                                "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                                "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                            ]
                                                    },
                       "analyze-security:frontend":  {
-                                                        "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                        "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                         "Scope":  [
                                                                       "frontend"
                                                                   ],
@@ -319,14 +372,14 @@
                                                                             ]
                                                     },
                       "analyze-technical-debt:backend":  {
-                                                             "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                             "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                              "Scope":  [
                                                                            "backend"
                                                                        ],
                                                              "Include":  [
                                                                              "*.cs"
                                                                          ],
-                                                             "FilesAnalyzed":  3671,
+                                                             "FilesAnalyzed":  3679,
                                                              "MissingTracked":  [
 
                                                                                 ],
@@ -335,21 +388,27 @@
                                                                                    ],
                                                              "ModifiedInScope":  [
                                                                                      "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                                     "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                                                                                     "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
                                                                                      "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
                                                                                      "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
                                                                                      "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                                     "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                                     "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                                      "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                                      "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                                  ]
                                                          },
                       "analyze-technical-debt:frontend":  {
-                                                              "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                                              "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                                               "Scope":  [
                                                                             "frontend"
                                                                         ],
@@ -371,7 +430,7 @@
                                                                                   ]
                                                           },
                       "analyze-tests":  {
-                                            "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
+                                            "Commit":  "0ae1cce5eef46289c675cef1eb1e7cd9166aacd5",
                                             "Scope":  [
                                                           "backend/src",
                                                           "frontend"
@@ -381,7 +440,7 @@
                                                             "*.ts",
                                                             "*.tsx"
                                                         ],
-                                            "FilesAnalyzed":  1438,
+                                            "FilesAnalyzed":  1440,
                                             "MissingTracked":  [
 
                                                                ],
@@ -390,15 +449,21 @@
                                                                   ],
                                             "ModifiedInScope":  [
                                                                     "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                    "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApplicationApiTests.cs",
+                                                                    "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceOpeningBalanceApiTests.cs",
                                                                     "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
                                                                     "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
                                                                     "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
-                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\ReceivableApplicationPolicy.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ApplyCustomerAdvanceUseCases.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceApplicationChronology.cs",
                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceIntentRunner.cs",
                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceReceivableIntegrity.cs",
                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
-                                                                    "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
-                                                                    "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\ReverseCustomerAdvanceApplicationUseCases.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\Payments\\PaymentUseCases.cs",
                                                                     "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
                                                                     "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                 ]
