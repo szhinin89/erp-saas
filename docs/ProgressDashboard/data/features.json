@@ -1688,6 +1688,13 @@
                                           ]
                          },
                          {
+                             "name":  "Customer Advances",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances"
+                                          ]
+                         },
+                         {
                              "name":  "Payments",
                              "status":  "implemented",
                              "evidence":  [

@@ -270,7 +270,7 @@ Declarar `[ProducesResponseType]` por cada status que aplique.
 
 ## Idempotencia de comandos financieros creadores de dinero (ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01)
 
-Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, movimiento manual de caja, solicitud de efectivo, aplicación/reembolso de crédito de proveedor) sigue una sola convención. Una intención del usuario produce **como máximo un** efecto económico, aunque haya doble clic, Enter repetido, reintento, timeout o requests concurrentes. El estado `saving` de la UI no cuenta como garantía.
+Todo comando que **crea** un efecto económico (pago a proveedor, cobro de CxC, movimiento manual de caja, solicitud de efectivo, aplicación/reembolso de crédito de proveedor, registro de anticipo de cliente) sigue una sola convención. Una intención del usuario produce **como máximo un** efecto económico, aunque haya doble clic, Enter repetido, reintento, timeout o requests concurrentes. El estado `saving` de la UI no cuenta como garantía.
 
 | Pieza | Regla |
 |---|---|
@@ -301,6 +301,8 @@ Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, 
 3. `Payment` (reversa de cobro);
 4. `SalesReceivable` en orden ascendente de Id;
 5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento). Integración contable: [Accounting](./accounting.md).
+
+**Registro de anticipo de cliente** ([SSOT](customer-advances.md)): fila nueva (sin lock de saldo) → destino `FOR SHARE` (cuenta bancaria o caja) → su cuenta contable `FOR SHARE` → `CashSession FOR UPDATE` (solo efectivo) → locks contables. El turno se toma después de los destinos y nunca junto con una CxC. La clave de la intención vive en el libro de movimientos, única por `(tenant_id, client_request_id, line_number)`; usada por otra empresa del tenant responde 409 sin datos de ella.
 
 ### Revertir una venta: un solo camino por factura (ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01)
 

@@ -20,6 +20,7 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [purchases.md](./purchases.md) | SSOT funcional de Compras: recepción, conciliación de ítems, compra, anulación, devolución, NC y saldo a favor |
 | [expenses.md](./expenses.md) | SSOT funcional de Gastos: catálogo de tres niveles, borrador, confirmación, anulación, permisos y formulario |
 | [receivables.md](./receivables.md) | SSOT funcional de Cuentas por Cobrar: origen, cuotas, estado, cobro, reversa, devolución/anulación y contabilización |
+| [customer-advances.md](./customer-advances.md) | SSOT de Anticipos de clientes: registro, consultas, permisos, Caja, idempotencia y límites implementados |
 | [employees.md](./employees.md) | SSOT funcional de Empleados: ficha y catálogos, ciclo laboral, sucursales, usuarios, navegación e interfaz y contrato `IEmployeeDirectory` |
 | [backend.md](./backend.md) | .NET, CQRS, API envelope, multi-tenant backend, AI/Analytics prohibiciones, tarifas SRI |
 | [frontend.md](./frontend.md) | React, ZH Form, Design System, tabs, i18n, CSS, navegación UI |

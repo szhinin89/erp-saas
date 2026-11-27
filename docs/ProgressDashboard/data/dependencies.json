@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 22:23:00",
+    "generated":  "2026-11-27 06:11:05",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -579,12 +579,12 @@
                   },
                   {
                       "id":  "Finance",
-                      "filesScanned":  41,
+                      "filesScanned":  44,
                       "fanIn":  5,
                       "fanOut":  9,
                       "coupling":  14,
                       "instability":  0.643,
-                      "cohesionApprox":  0.35,
+                      "cohesionApprox":  0.34,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1273,13 +1273,13 @@
                   {
                       "from":  "Finance",
                       "to":  "Sales",
-                      "referenceCount":  5,
+                      "referenceCount":  8,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/PaymentMethodDestinationPolicy.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/SupplierCreditQueryUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
-                                       "backend/src/ERP.Domain/Modules/Finance/Entities/CustomerAdvance.cs"
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/RegisterCustomerAdvanceUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/RegisterCustomerAdvanceUseCases.cs"
                                    ]
                   },
                   {
@@ -1556,10 +1556,11 @@
                   {
                       "from":  "Finance",
                       "to":  "Accounting",
-                      "referenceCount":  2,
+                      "referenceCount":  3,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/CompanyBankAccountUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                                       "backend/src/ERP.Application/Modules/Finance/UseCases/CustomerAdvances/RegisterCustomerAdvanceUseCases.cs"
                                    ]
                   },
                   {
@@ -1820,7 +1821,7 @@
                   {
                       "from":  "Finance",
                       "to":  "Common",
-                      "referenceCount":  26,
+                      "referenceCount":  31,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs",
@@ -2482,7 +2483,7 @@
                   {
                       "from":  "Finance",
                       "to":  "Caja",
-                      "referenceCount":  7,
+                      "referenceCount":  11,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
@@ -3332,7 +3333,7 @@
                   {
                       "from":  "Finance",
                       "to":  "Company",
-                      "referenceCount":  5,
+                      "referenceCount":  7,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/ApplySupplierCreditUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",

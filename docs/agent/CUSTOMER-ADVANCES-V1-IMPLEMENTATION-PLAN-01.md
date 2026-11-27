@@ -1,11 +1,12 @@
-# Anticipos de Clientes V1 — Plan de implementación (CA-F1 cerrada; CA-F2 implementada y verificada)
+# Anticipos de Clientes V1 — Plan de implementación (CA-F1 y CA-F2 cerradas; CA-F3 aceptada localmente)
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) (**ACCEPTED**, 2026-11-26). Reglas y mecanismos:
 [diseño](../decisions/CUSTOMER-ADVANCES-V1-DESIGN-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
 [WORK_QUEUE](WORK_QUEUE.md).
 
-**Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-26): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
-SUCCESS); **CA-F2 autorizada, implementada y verificada en su gate final**; CA-F3 a CA-F6 **NO AUTORIZADAS**. Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
+**Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-27): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
+SUCCESS); **CA-F2 CLOSED** (CI #1250 SUCCESS); **CA-F3 implementada y aceptada localmente, pendiente de push y CI**; CA-F4 a
+CA-F6 **NO AUTORIZADAS**. Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
 rutas (incluidos los componentes protegidos), gate del propietario y staging y commit del propietario
 ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa; PostgreSQL real
 para locks, transacciones, scope e invariantes de persistencia.
@@ -136,7 +137,7 @@ modificada.
 
 ## CA-F2 — Hechos contables y completitud
 
-**Estado (2026-11-26): IMPLEMENTADO Y VERIFICADO.** Resultado y evidencia en
+**Estado: CLOSED** (commit `97b3eccdb`, CI #1250 SUCCESS). Resultado y evidencia en
 [STATUS](../../STATUS.md); contrato en [Accounting §28](../architecture/accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2).
 Traductores en un solo archivo (`CustomerAdvancePostingTranslators.cs`). `postingRuleView.ts` no cambió: sus textos solo
 aplican a lados dinámicos y estos hechos sustituyen una línea fija. La sustitución en el Haber quedó verificada. Pruebas
@@ -154,6 +155,11 @@ ajustadas fuera de la lista de rutas: `CustomerAdvancePersistencePostgreSqlTests
 - **Autorización necesaria:** fase y extensión de Contabilidad.
 
 ## CA-F3 — Registro, consultas, Caja y permisos
+
+**Estado (2026-11-27): IMPLEMENTADO Y ACEPTADO LOCALMENTE.** Resultado en [STATUS](../../STATUS.md); contrato en
+la [SSOT](../architecture/customer-advances.md). Resuelto en la fase: cliente activo = socio del tenant activo con rol Cliente
+activo; paginación `page`/`pageSize` (1–100). `GET /by-receivable/{id}` pasa a CA-F4. Rutas ajustadas fuera de la lista:
+repositorio del anticipo y su interfaz (consultas), inventario de `OpenApiContractTests.cs` y estado en `accounting.md`.
 
 - **Objetivo:** registrar un anticipo y consultar saldo e historial.
 - **Medios:** solo efectivo y transferencia bancaria (TA-02).
@@ -179,7 +185,7 @@ ajustadas fuera de la lista de rutas: `CustomerAdvancePersistencePostgreSqlTests
 ## CA-F4 — Aplicación a CxC y reversa
 
 - **Objetivo:** aplicar parcial o totalmente a una o varias CxC y revertir la operación completa.
-- **Rutas:** casos de uso y controller de F3; regla compartida nueva `A/Modules/Finance/ReceivableApplicationPolicy.cs`;
+- **Rutas:** casos de uso y controller de F3 (incluye `GET /by-receivable/{id}`); regla compartida nueva `A/Modules/Finance/ReceivableApplicationPolicy.cs`;
   `PaymentUseCases.cs`; `backend.md`, `docs/architecture/receivables.md`, SSOT de anticipos.
 - **Protegidos:** cobros, `backend.md`, CI. **Esquema:** ninguno. **Invariantes:** CA-INV-01, 03, 05, 06, 07, 10.
 - **Referencias que la base no garantiza:** CxC bloqueada, del mismo tenant, empresa (el agregado también lo exige) y
@@ -224,7 +230,7 @@ ajustadas fuera de la lista de rutas: `CustomerAdvancePersistencePostgreSqlTests
 - **Rutas existentes:** `FE/modules/finance/pages/AccountsReceivablePage.tsx`, `FE/routes/catalogRoutes.tsx`,
   `FE/i18n/locales/es.json`, `en.json`, `CustomersModule.cs`, `docs/navigation/MENU_MAP.md`, `FEATURES.md`, SSOT.
 - **Protegidos:** Kernel (`CustomersModule.cs`). **Esquema:** ninguno. **Invariantes:** CA-INV-05.
-- **Pruebas:** modales, confirmación, errores de servidor en campo, permisos, doble clic con un solo envío; `npm run lint`,
+- **Pruebas:** asignación de los cuatro permisos desde la administración de perfiles; modales, confirmación, errores de servidor en campo, permisos, doble clic con un solo envío; `npm run lint`,
   `npx tsc -b`, `npm run build`, `npm run architecture:check`.
 - **Aceptación:** verificación y aceptación visual y funcional del propietario; reglas contables configuradas en la empresa
   donde se pruebe.

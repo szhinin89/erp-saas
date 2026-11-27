@@ -20,4 +20,10 @@ public enum CashReferenceType
 
     /// <summary>ACCOUNTING-12C — cuenta bancaria destino de un depósito (<c>CompanyBankAccount.Id</c>).</summary>
     CompanyBankAccount = 5,
+
+    /// <summary>
+    /// Anticipo de cliente en efectivo (ADR-052 §9) — ReferenceId = operación original: el movimiento
+    /// <c>Received</c> del anticipo (ingreso y su reversa) o la transacción de devolución.
+    /// </summary>
+    CustomerAdvance = 6,
 }

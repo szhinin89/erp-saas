@@ -1,31 +1,31 @@
 ﻿{
     "Method":  "git-tracked-v1",
-    "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+    "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
     "TreeDirty":  true,
     "TreeModified":  [
-                         "backend\\src\\ERP.Application.Tests\\Accounting\\CustomerAdvancePostingTranslatorsTests.cs",
-                         "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                         "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                         "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                         "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
-                         "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                         "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                         "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\OpeningBalancePostingSetupTests.cs",
-                         "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                         "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
+                         "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                         "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                         "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
+                         "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                         "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                         "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                         "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                         "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                         "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs",
                          "docs\\agent\\CUSTOMER-ADVANCES-V1-IMPLEMENTATION-PLAN-01.md",
                          "docs\\agent\\WORK_QUEUE.md",
                          "docs\\architecture\\accounting.md",
-                         "frontend\\src\\i18n\\locales\\en.json",
-                         "frontend\\src\\i18n\\locales\\es.json",
-                         "frontend\\src\\modules\\accounting\\labels\\accountingLabels.ts",
-                         "frontend\\src\\modules\\accounting\\pages\\postingRules\\postingRulesI18n.test.ts",
-                         "STATUS.md",
-                         "tools\\ci\\backend-test-groups.json"
+                         "docs\\architecture\\backend.md",
+                         "docs\\architecture\\customer-advances.md",
+                         "docs\\architecture\\README.md",
+                         "STATUS.md"
                      ],
     "Analyzers":  {
                       "analyze-architecture":  {
-                                                   "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Domain",
                                                                  "backend/src/ERP.Application",
@@ -35,7 +35,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  2642,
+                                                   "FilesAnalyzed":  2646,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -43,22 +43,26 @@
 
                                                                          ],
                                                    "ModifiedInScope":  [
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                           "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                           "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                           "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                           "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-backend":  {
-                                              "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                              "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                               "Scope":  [
                                                             "backend/src"
                                                         ],
                                               "Include":  [
                                                               "*"
                                                           ],
-                                              "FilesAnalyzed":  3745,
+                                              "FilesAnalyzed":  3750,
                                               "MissingTracked":  [
 
                                                                  ],
@@ -66,20 +70,22 @@
 
                                                                     ],
                                               "ModifiedInScope":  [
-                                                                      "backend\\src\\ERP.Application.Tests\\Accounting\\CustomerAdvancePostingTranslatorsTests.cs",
-                                                                      "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                      "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                      "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                      "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
-                                                                      "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                                                                      "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                                                                      "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\OpeningBalancePostingSetupTests.cs",
-                                                                      "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                      "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                      "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                      "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                                                      "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
+                                                                      "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                      "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                      "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                      "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                      "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                      "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                   ]
                                           },
                       "analyze-database":  {
-                                               "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                "Scope":  [
                                                              "backend/src/ERP.Infrastructure"
                                                          ],
@@ -94,12 +100,11 @@
 
                                                                      ],
                                                "ModifiedInScope":  [
-                                                                       "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                       "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                       "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                    ]
                                            },
                       "analyze-dependencies":  {
-                                                   "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Domain",
                                                                  "backend/src/ERP.Application"
@@ -107,7 +112,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  1953,
+                                                   "FilesAnalyzed":  1956,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -115,13 +120,17 @@
 
                                                                          ],
                                                    "ModifiedInScope":  [
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs"
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-features":  {
-                                               "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                "Scope":  [
                                                              "backend/src/ERP.Application/Modules",
                                                              "backend/src/ERP.Domain/Modules"
@@ -129,7 +138,7 @@
                                                "Include":  [
                                                                "*"
                                                            ],
-                                               "FilesAnalyzed":  1640,
+                                               "FilesAnalyzed":  1643,
                                                "MissingTracked":  [
 
                                                                   ],
@@ -137,13 +146,16 @@
 
                                                                      ],
                                                "ModifiedInScope":  [
-                                                                       "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                       "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                       "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs"
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                       "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                       "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                       "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs"
                                                                    ]
                                            },
                       "analyze-frontend":  {
-                                               "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                               "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                "Scope":  [
                                                              "frontend/src"
                                                          ],
@@ -159,19 +171,18 @@
 
                                                                      ],
                                                "ModifiedInScope":  [
-                                                                       "frontend\\src\\modules\\accounting\\labels\\accountingLabels.ts",
-                                                                       "frontend\\src\\modules\\accounting\\pages\\postingRules\\postingRulesI18n.test.ts"
+
                                                                    ]
                                            },
                       "analyze-impact":  {
-                                             "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                             "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                              "Scope":  [
                                                            "backend/src/ERP.Application/Modules"
                                                        ],
                                              "Include":  [
                                                              "*.cs"
                                                          ],
-                                             "FilesAnalyzed":  1038,
+                                             "FilesAnalyzed":  1041,
                                              "MissingTracked":  [
 
                                                                 ],
@@ -179,13 +190,14 @@
 
                                                                    ],
                                              "ModifiedInScope":  [
-                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs"
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs"
                                                                  ]
                                          },
                       "analyze-migrations":  {
-                                                 "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                 "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                  "Scope":  [
                                                                "backend/src/ERP.Infrastructure/Migrations"
                                                            ],
@@ -204,7 +216,7 @@
                                                                      ]
                                              },
                       "analyze-module-graph":  {
-                                                   "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                   "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                    "Scope":  [
                                                                  "backend/src/ERP.Application/Modules",
                                                                  "backend/src/ERP.Domain/Modules",
@@ -213,7 +225,7 @@
                                                    "Include":  [
                                                                    "*.cs"
                                                                ],
-                                                   "FilesAnalyzed":  2167,
+                                                   "FilesAnalyzed":  2170,
                                                    "MissingTracked":  [
 
                                                                       ],
@@ -221,22 +233,24 @@
 
                                                                          ],
                                                    "ModifiedInScope":  [
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                           "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                           "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                           "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                           "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                           "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                           "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                        ]
                                                },
                       "analyze-processes":  {
-                                                "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                 "Scope":  [
                                                               "backend/src/ERP.Application/Modules"
                                                           ],
                                                 "Include":  [
                                                                 "*.cs"
                                                             ],
-                                                "FilesAnalyzed":  1038,
+                                                "FilesAnalyzed":  1041,
                                                 "MissingTracked":  [
 
                                                                    ],
@@ -244,13 +258,14 @@
 
                                                                       ],
                                                 "ModifiedInScope":  [
-                                                                        "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                        "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                        "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs"
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                        "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs"
                                                                     ]
                                             },
                       "analyze-security:backend":  {
-                                                       "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                       "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                        "Scope":  [
                                                                      "backend"
                                                                  ],
@@ -259,7 +274,7 @@
                                                                        "*.json",
                                                                        "*.config"
                                                                    ],
-                                                       "FilesAnalyzed":  3673,
+                                                       "FilesAnalyzed":  3678,
                                                        "MissingTracked":  [
 
                                                                           ],
@@ -267,20 +282,22 @@
 
                                                                              ],
                                                        "ModifiedInScope":  [
-                                                                               "backend\\src\\ERP.Application.Tests\\Accounting\\CustomerAdvancePostingTranslatorsTests.cs",
-                                                                               "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                               "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                               "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                               "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
-                                                                               "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                                                                               "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                                                                               "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\OpeningBalancePostingSetupTests.cs",
-                                                                               "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                               "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                               "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                               "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                                                               "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
+                                                                               "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                               "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                               "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                               "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                               "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                               "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                            ]
                                                    },
                       "analyze-security:frontend":  {
-                                                        "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                        "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                         "Scope":  [
                                                                       "frontend"
                                                                   ],
@@ -298,19 +315,18 @@
 
                                                                               ],
                                                         "ModifiedInScope":  [
-                                                                                "frontend\\src\\modules\\accounting\\labels\\accountingLabels.ts",
-                                                                                "frontend\\src\\modules\\accounting\\pages\\postingRules\\postingRulesI18n.test.ts"
+
                                                                             ]
                                                     },
                       "analyze-technical-debt:backend":  {
-                                                             "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                             "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                              "Scope":  [
                                                                            "backend"
                                                                        ],
                                                              "Include":  [
                                                                              "*.cs"
                                                                          ],
-                                                             "FilesAnalyzed":  3666,
+                                                             "FilesAnalyzed":  3671,
                                                              "MissingTracked":  [
 
                                                                                 ],
@@ -318,20 +334,22 @@
 
                                                                                    ],
                                                              "ModifiedInScope":  [
-                                                                                     "backend\\src\\ERP.Application.Tests\\Accounting\\CustomerAdvancePostingTranslatorsTests.cs",
-                                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                                     "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\OpeningBalancePostingSetupTests.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                                     "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs"
+                                                                                     "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                                     "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                                                                     "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
+                                                                                     "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                                     "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                                     "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                                     "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                                     "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                                     "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                                  ]
                                                          },
                       "analyze-technical-debt:frontend":  {
-                                                              "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                                              "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                                               "Scope":  [
                                                                             "frontend"
                                                                         ],
@@ -349,12 +367,11 @@
 
                                                                                     ],
                                                               "ModifiedInScope":  [
-                                                                                      "frontend\\src\\modules\\accounting\\labels\\accountingLabels.ts",
-                                                                                      "frontend\\src\\modules\\accounting\\pages\\postingRules\\postingRulesI18n.test.ts"
+
                                                                                   ]
                                                           },
                       "analyze-tests":  {
-                                            "Commit":  "1b37c5d72616b3272b2ae2d6a8abff2c00984d4e",
+                                            "Commit":  "97b3eccdbbd3a472e51e094279cd7befa5975964",
                                             "Scope":  [
                                                           "backend/src",
                                                           "frontend"
@@ -364,7 +381,7 @@
                                                             "*.ts",
                                                             "*.tsx"
                                                         ],
-                                            "FilesAnalyzed":  1437,
+                                            "FilesAnalyzed":  1438,
                                             "MissingTracked":  [
 
                                                                ],
@@ -372,18 +389,18 @@
 
                                                                   ],
                                             "ModifiedInScope":  [
-                                                                    "backend\\src\\ERP.Application.Tests\\Accounting\\CustomerAdvancePostingTranslatorsTests.cs",
-                                                                    "backend\\src\\ERP.Application\\Modules\\Accounting\\Continuity\\IAccountingRelevantFactsReader.cs",
-                                                                    "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\PostingFactCatalog.cs",
-                                                                    "backend\\src\\ERP.Application\\Modules\\Accounting\\Posting\\Translators\\CustomerAdvancePostingTranslators.cs",
-                                                                    "backend\\src\\ERP.Infrastructure.Tests\\Accounting\\CustomerAdvancePostingPostgreSqlTests.cs",
-                                                                    "backend\\src\\ERP.Infrastructure.Tests\\Finance\\CustomerAdvancePersistencePostgreSqlTests.cs",
-                                                                    "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                                                                    "backend\\src\\ERP.Infrastructure.Tests\\Seeding\\OpeningBalancePostingSetupTests.cs",
-                                                                    "backend\\src\\ERP.Infrastructure\\Accounting\\Repositories\\AccountingRelevantFactsReader.cs",
-                                                                    "backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
-                                                                    "frontend\\src\\modules\\accounting\\labels\\accountingLabels.ts",
-                                                                    "frontend\\src\\modules\\accounting\\pages\\postingRules\\postingRulesI18n.test.ts"
+                                                                    "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                                    "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
+                                                                    "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.Phase2D.cs",
+                                                                    "backend\\src\\ERP.API\\Controllers\\CustomerAdvanceController.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\PaymentMethodDestinationPolicy.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceDtos.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\CustomerAdvanceQueryUseCases.cs",
+                                                                    "backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\CustomerAdvances\\RegisterCustomerAdvanceUseCases.cs",
+                                                                    "backend\\src\\ERP.Domain\\Kernel\\Permissions\\FinancePermissions.cs",
+                                                                    "backend\\src\\ERP.Domain\\Modules\\Caja\\Enums\\CashReferenceType.cs",
+                                                                    "backend\\src\\ERP.Domain\\Modules\\Finance\\Interfaces\\ICustomerAdvanceRepository.cs",
+                                                                    "backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Finance\\CustomerAdvanceRepository.cs"
                                                                 ]
                                         }
                   }

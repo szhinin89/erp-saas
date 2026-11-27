@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-11-26 22:22:09",
+    "Generated":  "2026-11-27 06:10:05",
     "EngineeringScore":  {
-                             "Generated":  "2026-11-26 22:22:02",
+                             "Generated":  "2026-11-27 06:09:58",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  46,
+                             "Quality":  45.95,
                              "Security":  26,
                              "Dependencies":  100,
-                             "Overall":  68.35
+                             "Overall":  68.34
                          },
     "QualityGate":  {
-                        "Generated":  "2026-11-26 22:22:07",
+                        "Generated":  "2026-11-27 06:10:03",
                         "Status":  "RED",
-                        "EngineeringScore":  68.35,
+                        "EngineeringScore":  68.34,
                         "Warnings":  [
                                          "Engineering score needs improvement",
                                          "High number of possible secrets detected",
@@ -24,8 +24,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-11-26 22:22:05",
-                  "Snapshots":  53,
+                  "Generated":  "2026-11-27 06:10:01",
+                  "Snapshots":  54,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -343,6 +343,12 @@
                                       "Date":  "2026-11-26 22:22:04",
                                       "File":  "dashboard-2026-11-26-2222-v2.json",
                                       "Score":  68.35,
+                                      "Method":  "git-tracked-v1"
+                                  },
+                                  {
+                                      "Date":  "2026-11-27 06:10:00",
+                                      "File":  "dashboard-2026-11-27-0610-v2.json",
+                                      "Score":  68.34,
                                       "Method":  "git-tracked-v1"
                                   }
                               ],
@@ -703,8 +709,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-11-26 22:21:56",
-                     "FilesAnalyzed":  5057,
+                     "Generated":  "2026-11-27 06:09:51",
+                     "FilesAnalyzed":  5062,
                      "SecretsFound":  80,
                      "SecretFiles":  [
                                          "backend\\src\\ERP.API\\Program.cs",
@@ -826,8 +832,8 @@
                      "Warnings":  109
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-11-26 22:21:42",
-                          "FilesAnalyzed":  5050,
+                          "Generated":  "2026-11-27 06:09:37",
+                          "FilesAnalyzed":  5055,
                           "TODO":  52,
                           "FIXME":  0,
                           "HACK":  0,
@@ -878,6 +884,10 @@
                                                  "Lines":  664
                                              },
                                              {
+                                                 "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                                                 "Lines":  1282
+                                             },
+                                             {
                                                  "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
                                                  "Lines":  690
                                              },
@@ -923,7 +933,7 @@
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
-                                                 "Lines":  870
+                                                 "Lines":  875
                                              },
                                              {
                                                  "File":  "backend\\src\\ERP.API.Tests\\Unit\\RefreshTokenServiceTests.cs",
@@ -1957,16 +1967,16 @@
                           "CriticalFindings":  8
                       },
     "Architecture":  {
-                         "Generated":  "2026-11-26 22:21:09",
+                         "Generated":  "2026-11-27 06:09:02",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  742
                                                    },
                                         "Application":  {
-                                                            "Commands":  2276,
-                                                            "Validators":  958,
-                                                            "Queries":  1299,
-                                                            "Files":  1211
+                                                            "Commands":  2286,
+                                                            "Validators":  967,
+                                                            "Queries":  1314,
+                                                            "Files":  1214
                                                         },
                                         "Infrastructure":  {
                                                                "DbContext":  425,
@@ -1974,8 +1984,8 @@
                                                                "Repository":  614
                                                            },
                                         "API":  {
-                                                    "Controllers":  540,
-                                                    "Files":  161
+                                                    "Controllers":  545,
+                                                    "Files":  162
                                                 }
                                     },
                          "Violations":  [
@@ -1983,7 +1993,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-11-26 22:21:18",
+                         "Generated":  "2026-11-27 06:09:12",
                          "Violations":  [
 
                                         ],

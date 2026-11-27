@@ -16,7 +16,7 @@ internal static class PaymentMethodDestinationPolicy
     public static string? Validate(PaymentMethod method, bool hasBankAccount, bool hasCashRegister)
     {
         if (method.IsCreditAllowed)
-            return $"El medio de pago {method.Name} es de crédito y no puede usarse para pagar a un proveedor.";
+            return $"El medio de pago {method.Name} es de crédito y no puede usarse para mover dinero.";
 
         if (method.AffectsPhysicalCash)
             return hasBankAccount || !hasCashRegister

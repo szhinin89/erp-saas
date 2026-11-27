@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Finance.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -62,6 +63,43 @@ public sealed class CustomerAdvanceRepository : ICustomerAdvanceRepository
             .FirstOrDefaultAsync(ct);
         return advanceId is { } id ? await GetByIdAsync(tenantId, id, ct) : null;
     }
+
+    public async Task<(IReadOnlyList<CustomerAdvance> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        CustomerAdvanceSearchCriteria criteria,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    )
+    {
+        var query = _db.CustomerAdvances.ForOperationalScope(tenantId, _company).AsNoTracking();
+        if (criteria.CustomerId is { } customerId)
+            query = query.Where(x => x.CustomerId == customerId);
+        if (criteria.Status is { } status)
+            query = query.Where(x => x.Status == status);
+        if (criteria.BranchId is { } branchId)
+            query = query.Where(x => x.BranchId == branchId);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(x => x.AdvanceDate)
+            .ThenByDescending(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+        return (items, total);
+    }
+
+    public Task<decimal> GetAvailableBalanceAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken ct = default
+    ) =>
+        _db
+            .CustomerAdvances.ForOperationalScope(tenantId, _company)
+            .Where(x => x.CustomerId == customerId && x.Status == CustomerAdvanceStatus.Confirmed)
+            .SumAsync(x => x.AvailableAmount, ct);
 
     public Task AddAsync(CustomerAdvance advance, CancellationToken ct = default) =>
         _db.CustomerAdvances.AddAsync(advance, ct).AsTask();

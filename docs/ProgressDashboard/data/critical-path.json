@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-26 22:23:03",
+    "generated":  "2026-11-27 06:11:07",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -71,8 +71,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  16,
-                             "impactedFeaturePoints":  324,
-                             "percentOfErp":  104.18,
+                             "impactedFeaturePoints":  325,
+                             "percentOfErp":  104.17,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (572 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs"
@@ -153,7 +153,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  6,
-                             "impactedFeaturePoints":  314,
+                             "impactedFeaturePoints":  315,
                              "percentOfErp":  100.96,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -215,7 +215,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  0,
-                             "impactedFeaturePoints":  308,
+                             "impactedFeaturePoints":  309,
                              "percentOfErp":  99.04,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -278,8 +278,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  18,
-                             "impactedFeaturePoints":  326,
-                             "percentOfErp":  104.82,
+                             "impactedFeaturePoints":  327,
+                             "percentOfErp":  104.81,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
@@ -357,8 +357,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  15,
-                             "impactedFeaturePoints":  323,
-                             "percentOfErp":  103.86,
+                             "impactedFeaturePoints":  324,
+                             "percentOfErp":  103.85,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (990 lines): backend/src/ERP.Application.Tests/Auth/LoginHandlerTests.cs",
@@ -405,7 +405,7 @@
                                                     ],
                              "ownFeatures":  4,
                              "impactedFeaturePoints":  4,
-                             "percentOfErp":  1.29,
+                             "percentOfErp":  1.28,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (543 lines): backend/src/ERP.Application.Tests/OrgConfig/CompanySalesPreferencesIntegrityTests.cs"
@@ -434,13 +434,14 @@
                                                   "Refactor large file (1765 lines): backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
                                                   "Refactor large file (1642 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentsEndToEndTests.cs",
                                                   "Refactor large file (1566 lines): backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs",
+                                                  "Refactor large file (1282 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
                                                   "Refactor large file (1079 lines): backend/src/ERP.API.Tests/Integration/IamIdentityIsolationHttpTests.cs",
                                                   "Refactor large file (1035 lines): backend/src/ERP.API.Tests/Integration/CajaVentasEndToEndTests.cs",
                                                   "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                   "Refactor large file (701 lines): backend/src/ERP.API.Tests/Integration/SalesCancelCollectionConcurrencyTests.cs",
                                                   "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
-                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
+                                                  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                   "Refactor large file (622 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                   "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
@@ -510,8 +511,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  26,
-                             "impactedFeaturePoints":  334,
-                             "percentOfErp":  107.4,
+                             "impactedFeaturePoints":  335,
+                             "percentOfErp":  107.37,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (1612 lines): backend/src/ERP.Application.Tests/Access/UpsertCompanyUserMembershipTests.cs",
@@ -575,8 +576,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  19,
-                             "impactedFeaturePoints":  327,
-                             "percentOfErp":  105.14,
+                             "impactedFeaturePoints":  328,
+                             "percentOfErp":  105.13,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (3296 lines): backend/src/ERP.Application.Tests/Sales/AuthorizeSalesInvoiceHandlerTests.cs",
@@ -660,8 +661,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  25,
-                             "impactedFeaturePoints":  333,
-                             "percentOfErp":  107.07,
+                             "impactedFeaturePoints":  334,
+                             "percentOfErp":  107.05,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (826 lines): frontend/src/modules/items/detail/components/CollectionSection.tsx",
@@ -725,8 +726,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  34,
-                             "impactedFeaturePoints":  342,
-                             "percentOfErp":  109.97,
+                             "impactedFeaturePoints":  343,
+                             "percentOfErp":  109.94,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (2433 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
@@ -796,7 +797,7 @@
                                                     ],
                              "ownFeatures":  6,
                              "impactedFeaturePoints":  6,
-                             "percentOfErp":  1.93,
+                             "percentOfErp":  1.92,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (1306 lines): backend/src/ERP.Infrastructure.Tests/Modules/Employees/EmployeeManagementPostgreSqlTests.cs",
@@ -858,7 +859,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  0,
-                             "impactedFeaturePoints":  308,
+                             "impactedFeaturePoints":  309,
                              "percentOfErp":  99.04,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -937,8 +938,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  8,
-                             "impactedFeaturePoints":  316,
-                             "percentOfErp":  101.61,
+                             "impactedFeaturePoints":  317,
+                             "percentOfErp":  101.6,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (1013 lines): backend/src/ERP.Application.Tests/Retentions/RetentionIssuerTests.cs",
@@ -1032,7 +1033,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  0,
-                             "impactedFeaturePoints":  311,
+                             "impactedFeaturePoints":  312,
                              "percentOfErp":  100,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1092,12 +1093,12 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  36,
-                             "impactedFeaturePoints":  344,
-                             "percentOfErp":  110.61,
+                             "impactedFeaturePoints":  345,
+                             "percentOfErp":  110.58,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
                                                   "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                                                  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
                                                   "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                   "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                   "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
@@ -1154,9 +1155,9 @@
                                                         "Compra",
                                                         "Venta"
                                                     ],
-                             "ownFeatures":  10,
-                             "impactedFeaturePoints":  318,
-                             "percentOfErp":  102.25,
+                             "ownFeatures":  11,
+                             "impactedFeaturePoints":  320,
+                             "percentOfErp":  102.56,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (1664 lines): backend/src/ERP.Infrastructure.Tests/Finance/CustomerAdvancePersistencePostgreSqlTests.cs",
@@ -1226,8 +1227,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  10,
-                             "impactedFeaturePoints":  318,
-                             "percentOfErp":  102.25,
+                             "impactedFeaturePoints":  319,
+                             "percentOfErp":  102.24,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (573 lines): frontend/src/modules/branches/components/BranchGeneralSection.tsx"
@@ -1280,7 +1281,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  1,
-                             "impactedFeaturePoints":  309,
+                             "impactedFeaturePoints":  310,
                              "percentOfErp":  99.36,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1336,7 +1337,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  6,
-                             "impactedFeaturePoints":  314,
+                             "impactedFeaturePoints":  315,
                              "percentOfErp":  100.96,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1393,8 +1394,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  13,
-                             "impactedFeaturePoints":  321,
-                             "percentOfErp":  103.22,
+                             "impactedFeaturePoints":  322,
+                             "percentOfErp":  103.21,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (1428 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
@@ -1459,7 +1460,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  2,
-                             "impactedFeaturePoints":  310,
+                             "impactedFeaturePoints":  311,
                              "percentOfErp":  99.68,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1525,8 +1526,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  9,
-                             "impactedFeaturePoints":  317,
-                             "percentOfErp":  101.93,
+                             "impactedFeaturePoints":  318,
+                             "percentOfErp":  101.92,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
 
@@ -1591,7 +1592,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  1,
-                             "impactedFeaturePoints":  309,
+                             "impactedFeaturePoints":  310,
                              "percentOfErp":  99.36,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
@@ -1644,7 +1645,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  2,
-                             "impactedFeaturePoints":  310,
+                             "impactedFeaturePoints":  311,
                              "percentOfErp":  99.68,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1699,12 +1700,12 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  11,
-                             "impactedFeaturePoints":  319,
-                             "percentOfErp":  102.57,
+                             "impactedFeaturePoints":  320,
+                             "percentOfErp":  102.56,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                                                   "Refactor large file (719 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/PublishOpeningJournalEntryPostgreSqlTests.cs",
+                                                  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                                                   "Refactor large file (695 lines): backend/src/ERP.Infrastructure.Tests/InitialLoad/OpeningBalanceReconciliationTests.cs",
                                                   "Refactor large file (685 lines): backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
                                                   "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
@@ -1790,8 +1791,8 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  11,
-                             "impactedFeaturePoints":  319,
-                             "percentOfErp":  102.57,
+                             "impactedFeaturePoints":  320,
+                             "percentOfErp":  102.56,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
                                                   "Refactor large file (1485 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
@@ -1875,7 +1876,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  3,
-                             "impactedFeaturePoints":  311,
+                             "impactedFeaturePoints":  312,
                              "percentOfErp":  100,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -1940,7 +1941,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  6,
-                             "impactedFeaturePoints":  314,
+                             "impactedFeaturePoints":  315,
                              "percentOfErp":  100.96,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -2036,7 +2037,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  0,
-                             "impactedFeaturePoints":  308,
+                             "impactedFeaturePoints":  309,
                              "percentOfErp":  99.04,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -2104,7 +2105,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  2,
-                             "impactedFeaturePoints":  310,
+                             "impactedFeaturePoints":  311,
                              "percentOfErp":  99.68,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
@@ -2157,7 +2158,7 @@
                                                         "Venta"
                                                     ],
                              "ownFeatures":  1,
-                             "impactedFeaturePoints":  309,
+                             "impactedFeaturePoints":  310,
                              "percentOfErp":  99.36,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [

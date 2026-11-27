@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-11-26 22:22:39",
+    "generated":  "2026-11-27 06:10:38",
     "coverage":  {
                      "mappedFeaturePoints":  53,
-                     "totalFeaturePoints":  311,
-                     "percentage":  17.04
+                     "totalFeaturePoints":  312,
+                     "percentage":  16.99
                  },
     "domains":  [
                     {
@@ -244,7 +244,7 @@
                                         {
                                             "name":  "Finance",
                                             "score":  81.5,
-                                            "features":  10,
+                                            "features":  11,
                                             "processes":  [
 
                                                           ],

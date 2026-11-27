@@ -1,6 +1,14 @@
 using ERP.Domain.Modules.Finance.Entities;
+using ERP.Domain.Modules.Finance.Enums;
 
 namespace ERP.Domain.Modules.Finance.Interfaces;
+
+/// <summary>Filtros opcionales del listado de anticipos.</summary>
+public sealed record CustomerAdvanceSearchCriteria(
+    Guid? CustomerId,
+    CustomerAdvanceStatus? Status,
+    Guid? BranchId
+);
 
 /// <summary>
 /// ADR-052 — persistencia de <see cref="CustomerAdvance"/>. Toda lectura devuelve el agregado con su
@@ -25,6 +33,22 @@ public interface ICustomerAdvanceRepository
     Task<CustomerAdvance?> GetByClientRequestIdAsync(
         Guid tenantId,
         Guid clientRequestId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>Página de la empresa, sin movimientos, del anticipo más reciente al más antiguo.</summary>
+    Task<(IReadOnlyList<CustomerAdvance> Items, int Total)> SearchAsync(
+        Guid tenantId,
+        CustomerAdvanceSearchCriteria criteria,
+        int page,
+        int pageSize,
+        CancellationToken ct = default
+    );
+
+    /// <summary>Σ disponible de los anticipos <c>Confirmed</c> del cliente en la empresa.</summary>
+    Task<decimal> GetAvailableBalanceAsync(
+        Guid tenantId,
+        Guid customerId,
         CancellationToken ct = default
     );
 

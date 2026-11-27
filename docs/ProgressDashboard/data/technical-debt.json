@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-26 22:21:42",
-    "FilesAnalyzed":  5050,
+    "Generated":  "2026-11-27 06:09:37",
+    "FilesAnalyzed":  5055,
     "TODO":  52,
     "FIXME":  0,
     "HACK":  0,
@@ -51,6 +51,10 @@
                            "Lines":  664
                        },
                        {
+                           "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
+                           "Lines":  1282
+                       },
+                       {
                            "File":  "backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
                            "Lines":  690
                        },
@@ -96,7 +100,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Swagger\\OpenApiContractTests.cs",
-                           "Lines":  870
+                           "Lines":  875
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Unit\\RefreshTokenServiceTests.cs",

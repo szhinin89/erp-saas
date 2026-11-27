@@ -1,10 +1,35 @@
 # Project Status
 
-## CUSTOMER-ADVANCES-V1 CA-F2 — Hechos contables y completitud — IMPLEMENTADO Y VERIFICADO (2026-11-26)
+## CUSTOMER-ADVANCES-V1 CA-F3 — Registro, consultas, Caja y permisos — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
 
-Autorizada y aprobada técnicamente por el propietario el 2026-11-26, con commit local condicionado a su gate final de
-comprobaciones; **sin push ni CI de estos cambios**. **CA-F3 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está CLOSED ni
-implementado como funcionalidad:** sin casos de uso, API, permisos, Caja ni frontend operativo; no cuenta en el control V1.
+Autorizada por el propietario el 2026-11-26 y aprobada técnicamente el 2026-11-27, con commit local condicionado a su gate
+final de comprobaciones; **sin push ni CI de estos cambios**. **CA-F4 a CA-F6 NO AUTORIZADAS. CUSTOMER-ADVANCES-V1 no está
+CLOSED ni implementado como funcionalidad:** sin aplicación, devolución, reversas, anulación, pantallas ni menú; no cuenta
+en el control V1. Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+
+- **Entregado:** registro idempotente y atómico (efectivo con ingreso en el turno; transferencia contra banco), listado,
+  detalle con historial, saldo por cliente y empresa, cuatro permisos en el catálogo y `CashReferenceType.CustomerAdvance = 6`.
+  Sin cambio de esquema.
+- **Decisiones aprobadas por el propietario (2026-11-27):** el socio de negocio es del tenant (compartido por sus empresas)
+  y se exige activo con rol Cliente, con anticipo, movimientos y saldo aislados por empresa; la pertenencia de la cuenta
+  contable se valida y su vigencia o imputabilidad queda en Contabilidad (obligación `Failed` reprocesable, Accounting §19);
+  `GET /by-receivable/{id}` se implementa en CA-F4; la moneda es la de la empresa; sin restricciones de fecha propias: rigen
+  el modo operativo y el período contable vigentes (Accounting §21).
+- **Permisos:** su asignación a perfiles y la navegación son de CA-F6. Las pruebas conceden el permiso directamente en una
+  base desechable: acreditan la autorización, no el flujo de administración de perfiles.
+- **Base de desarrollo:** el diagnóstico del 2026-11-26 acreditó que `erp_zh_dev` usa la baseline vigente, con las cuatro
+  tablas, las tres reglas y sus cuentas: es compatible y **no requiere recreación**. Su modo operativo contable está sin
+  elegir (se resuelve por el flujo oficial). Ninguna base de trabajo se modificó.
+- **Verificación local (agente), sin omitidas:** HTTP con PostgreSQL 16 desechable de anticipos 53/53, dentro de la
+  selección financiera de API 184/184; contrato OpenAPI 122/122 (inventario 538 → 542); Domain Kernel, anticipos y Caja
+  138/138; Application Finance, Payables, Caja, Accounting y Access 834/834; Infrastructure anticipos, Caja, reembolsos,
+  pagos a proveedor y aislamiento 209/209; Architecture 158/158; guardrail PowerShell, Stack Audit, documentación y ratchet
+  (0 violaciones nuevas).
+
+## CUSTOMER-ADVANCES-V1 CA-F2 — Hechos contables y completitud — CLOSED (CI #1250 SUCCESS, 2026-11-27)
+
+Autorizada y aprobada técnicamente por el propietario el 2026-11-26. Commit `97b3eccdbbd3a472e51e094279cd7befa5975964`; CI
+#1250 SUCCESS confirmado por el propietario. Entregó la traducción contable sin casos de uso ni operación expuesta.
 Contrato vigente: [Accounting §28](docs/architecture/accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2).
 
 - **Entregado:** hechos `Finance/CustomerAdvanceReceived|Applied|Refunded`, tres reglas en el bootstrap, traductores y
@@ -23,7 +48,8 @@ Contrato vigente: [Accounting §28](docs/architecture/accounting.md#28-anticipos
   `customer_advance_movements`; la completitud la consulta cuando el rango intersecta una ventana Enabled (reportes
   contables, pre-cierre y cierre) y al validar una vigencia Enabled pasada, y esas operaciones fallan. Se mantiene TA-11
   (baseline única, sin migraciones incrementales ni compatibilidad temporal). Ninguna base de trabajo se modificó; recrearla
-  usa el procedimiento oficial y requiere autorización expresa posterior. No reproducido contra una base de trabajo.
+  usa el procedimiento oficial y requiere autorización expresa posterior. No reproducido contra una base de trabajo. La base
+  activa `erp_zh_dev` no está en este caso (ver CA-F3).
 - **Límites:** CA-F3 a F5 deben persistir la transacción de devolución en la misma operación que su movimiento y exigir la
   fecha efectiva de la reversa igual al día del acto (TA-07). La pantalla de reglas muestra la cuenta fija de la línea que la
   caja o el banco del movimiento sustituyen, igual que en el cobro. El asiento no resuelve documento de origen.
