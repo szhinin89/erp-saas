@@ -13,6 +13,8 @@ import { applyServerErrors } from "../../lib/validationErrors";
 import { formatApiRequestError } from "../../lib/apiError";
 import { paymentService, type PaymentDto } from "../api/paymentService";
 import type { SalesReceivableDto } from "../api/receivableService";
+import { useI18n } from "../../../i18n/i18n";
+import "../styles/receivables-list.css";
 
 const schema = z.object({ reason: z.string().trim().min(1, "El motivo es obligatorio.").max(500) });
 type Values = z.infer<typeof schema>;
@@ -22,6 +24,7 @@ export function ReverseCollectionModal({ receivable, onClose, onReversed }: {
   onClose: () => void;
   onReversed: () => void;
 }) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<PaymentDto[]>([]);
   const [selected, setSelected] = useState<PaymentDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,21 +64,21 @@ export function ReverseCollectionModal({ receivable, onClose, onReversed }: {
     }
   });
 
-  return <ZHModal open title="Anular cobro" size="lg" onClose={() => { if (!saving) onClose(); }}
+  return <ZHModal open title="Anular cobro" size="xl" onClose={() => { if (!saving) onClose(); }}
     subtitle={`Factura ${receivable.invoiceNumber} — ${receivable.customerName}`}>
     <p>Corrección de un cobro registrado por error. No devuelve dinero ni genera salidas de caja o transferencias.</p>
     {error && <p role="alert">{error}</p>}
-    {!selected ? <ZHDataTable rows={rows} rowKey={r => r.id} loading={loading} emptyMessage="Sin cobros registrados."
+    {!selected ? <div className="fin-collections"><ZHDataTable rows={rows} rowKey={r => r.id} loading={loading} emptyMessage="Sin cobros registrados."
       columns={[
         { key: "date", header: "Fecha", render: r => formatDate(r.paymentDate) },
         { key: "reference", header: "Referencia", render: r => r.reference || "Sin referencia" },
-        { key: "amount", header: "Importe total", render: r => <ZHMoneyValue precision="money" value={r.amount} /> },
-        { key: "status", header: "Estado", render: r => r.status === "Reversed" ? "Anulado" : r.status },
+        { key: "amount", header: "Monto total", render: r => <ZHMoneyValue precision="money" value={r.amount} /> },
+        { key: "status", header: "Estado", render: r => t(`finance.collections.status.${r.status}`, r.status) },
         { key: "reason", header: "Motivo de anulación", render: r => r.reverseReason || "—" },
         { key: "reversedAt", header: "Anulado el", render: r => r.reversedAtUtc ? formatDateTime(r.reversedAtUtc) : "—" },
         { key: "actions", header: "Acciones", render: r => r.status === "Applied"
           ? <ZHBtn onClick={() => setSelected(r)}>Anular cobro</ZHBtn> : null },
-      ]} /> : <>
+      ]} /></div> : <>
       <p>Confirme la anulación del cobro de <ZHMoneyValue precision="money" value={selected.amount} /> del {formatDate(selected.paymentDate)}.
         Se restaurarán todas sus aplicaciones a CxC, incluso si incluye otras facturas.</p>
       <ZHField label="Motivo" required error={errors.reason?.message}>

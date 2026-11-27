@@ -40,7 +40,7 @@ export function ManualJournalActions({ entry, onChanged, children }: { entry: Jo
   const yearEnd = entry.sourceEventType === FISCAL_YEAR_CLOSING_FACT;
 
   async function post() {
-    if (!await message.confirm({ title: "Publicar asiento", message: "El asiento recibirá número definitivo y sus importes serán inmutables.", confirmLabel: "Publicar" })) return;
+    if (!await message.confirm({ title: "Publicar asiento", message: "El asiento recibirá número definitivo y sus montos serán inmutables.", confirmLabel: "Publicar" })) return;
     setBusy(true);
     setError(null);
     try {

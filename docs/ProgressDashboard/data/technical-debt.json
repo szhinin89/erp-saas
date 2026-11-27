@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-11-27 11:13:15",
-    "FilesAnalyzed":  5069,
+    "Generated":  "2026-11-27 16:36:07",
+    "FilesAnalyzed":  5097,
     "TODO":  52,
     "FIXME":  0,
     "HACK":  0,
@@ -52,7 +52,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.Compensations.cs",
-                           "Lines":  1745
+                           "Lines":  1782
                        },
                        {
                            "File":  "backend\\src\\ERP.API.Tests\\Integration\\CustomerAdvanceApiTests.cs",
@@ -592,7 +592,7 @@
                        },
                        {
                            "File":  "backend\\src\\ERP.Domain.Tests\\Kernel\\KernelRegistryTests.cs",
-                           "Lines":  1193
+                           "Lines":  1195
                        },
                        {
                            "File":  "backend\\src\\ERP.Domain.Tests\\Payables\\SupplierPaymentTests.cs",
@@ -1015,6 +1015,10 @@
                            "Lines":  707
                        },
                        {
+                           "File":  "frontend\\src\\modules\\finance\\pages\\CustomerAdvancePages.test.tsx",
+                           "Lines":  534
+                       },
+                       {
                            "File":  "frontend\\src\\modules\\initialLoad\\components\\OpeningReconciliationCard.test.tsx",
                            "Lines":  621
                        },
@@ -1140,7 +1144,7 @@
                        },
                        {
                            "File":  "frontend\\src\\routes\\catalogRoutes.tsx",
-                           "Lines":  610
+                           "Lines":  612
                        }
                    ],
     "CriticalFindings":  8

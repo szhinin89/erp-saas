@@ -1,11 +1,11 @@
 ﻿{
-    "Generated":  "2026-11-27 11:12:42",
+    "Generated":  "2026-11-27 16:35:24",
     "FrontendRoot":  "frontend\\src",
     "Statistics":  {
-                       "SourceFiles":  1356,
+                       "SourceFiles":  1382,
                        "Pages":  0,
                        "Components":  157,
-                       "Hooks":  9,
+                       "Hooks":  10,
                        "Services":  0,
                        "Stores":  0,
                        "Routes":  2

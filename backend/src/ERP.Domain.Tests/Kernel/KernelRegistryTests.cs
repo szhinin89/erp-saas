@@ -512,6 +512,8 @@ public sealed class KernelRegistryTests
                     "/customers",
                     "/finance/receivables/group",
                     "/finance/receivables",
+                    // CUSTOMER-ADVANCES-V1 CA-F6: dentro de la categoría Cuentas por cobrar.
+                    "/finance/customer-advances",
                 }
             );
     }

@@ -1164,6 +1164,18 @@
       "missing": "Aprobada por el propietario al cerrar Empleados V1 (2026-11-26); evidencia y límites en STATUS, sección EMPLOYEES-V1."
     },
     {
+      "id": "Finance-V11-01",
+      "module": "Finance",
+      "name": "Anticipos de clientes (ERP V1.1)",
+      "scope": "future",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Anticipos de clientes (ERP V1.1"
+      },
+      "approval": null,
+      "missing": "Ampliación ERP V1.1 (ADR-052), fuera de la matriz V1. CA-F6 aceptada por el propietario el 2026-11-27; pendiente de CI y cierre formal según STATUS."
+    },
+    {
       "id": "Future-01",
       "module": "Future",
       "name": "CRM, BI/Data Warehouse, IA y aplicación móvil",
@@ -1298,6 +1310,10 @@
     },
     {
       "label": "Pagos a proveedor — anticipo por remanente (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035)",
+      "module": "Finance"
+    },
+    {
+      "label": "Anticipos de clientes (ERP V1.1, ADR-052)",
       "module": "Finance"
     },
     {

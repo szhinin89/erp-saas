@@ -6,7 +6,7 @@ import { ZHLineActionItem } from "../../../components/zh/ZHLineActionItem";
 import { useI18n } from "../../../i18n/i18n";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 import { bpDetailPath } from "./bpDetailTabs";
-import { useReturnFocusAfterDialog } from "./useReturnFocusAfterDialog";
+import { useReturnFocusAfterDialog } from "../../../hooks/useReturnFocusAfterDialog";
 
 type Props = {
   partner: BusinessPartnerSummaryDto;

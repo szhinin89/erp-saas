@@ -277,7 +277,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
                 || l.Credit > 9999999999999999.99m
                 || Math.Round(l.Debit, decimals, MidpointRounding.AwayFromZero) != l.Debit
                 || Math.Round(l.Credit, decimals, MidpointRounding.AwayFromZero) != l.Credit)
-                throw new ArgumentException("Importe o descripción fuera de la precisión/capacidad contable.");
+                throw new ArgumentException("Monto o descripción fuera de la precisión/capacidad contable.");
             return JournalEntryLine.Create(Id, TenantId, l.AccountId, l.Description, l.Debit, l.Credit, (short)index);
         }).ToList();
         EnsureAccountSides(replacement);

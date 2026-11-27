@@ -1,4 +1,4 @@
-# Anticipos de Clientes V1 — Plan de implementación (CA-F1 a CA-F4 cerradas; CA-F5 aceptada localmente)
+# Anticipos de Clientes V1 — Plan de implementación (CA-F1 a CA-F5 cerradas; CA-F6 aceptada, pendiente de CI)
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md) (**ACCEPTED**, 2026-11-26). Reglas y mecanismos:
 [diseño](../decisions/CUSTOMER-ADVANCES-V1-DESIGN-01.md). Estado de entrega: [STATUS](../../STATUS.md); cola:
@@ -6,7 +6,7 @@ Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md)
 
 **Este plan no autoriza ninguna fase por sí mismo.** Estado (2026-11-27): CA-F0 aprobada; **CA-F1 CLOSED** (CI #1249
 SUCCESS); **CA-F2 CLOSED** (CI #1250 SUCCESS); **CA-F3 CLOSED** (CI #1252 SUCCESS);
-**CA-F4 CLOSED** (CI #1253 SUCCESS); **CA-F5 aceptada localmente, pendiente de push y CI**; CA-F6 **NO AUTORIZADA**.
+**CA-F4 CLOSED** (CI #1253 SUCCESS); **CA-F5 CLOSED** (CI #1254 SUCCESS); **CA-F6 aceptada por el propietario (2026-11-27), pendiente de push, CI y cierre formal**.
 Cada fase requiere el ADR aprobado, autorización expresa del propietario con su lista de
 rutas (incluidos los componentes protegidos), gate del propietario y staging y commit del propietario
 ([flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)). Sin suite completa; PostgreSQL real
@@ -219,7 +219,7 @@ la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lis
 
 ## CA-F5 — Devolución, reversa de devolución, reversa del ingreso y anulación
 
-**Estado (2026-11-27): IMPLEMENTADO Y ACEPTADO LOCALMENTE, pendiente de push y CI.** Resultado en
+**Estado (2026-11-27): CLOSED, commit `21ad867f6`, CI #1254 SUCCESS.** Resultado en
 [STATUS](../../STATUS.md); contrato en la [SSOT](../architecture/customer-advances.md). Rutas ajustadas fuera de la lista: casos de uso existentes (reglas
 comunes de dinero y detalle con transacciones), repositorio de transacciones de devolución y su interfaz, inventario y
 snapshot de OpenAPI. Sin clases de prueba nuevas (la de API de CA-F3 pasa a parcial).
@@ -238,6 +238,14 @@ snapshot de OpenAPI. Sin clases de prueba nuevas (la de API de CA-F3 pasa a parc
 - **Autorización necesaria:** fase y `backend.md`.
 
 ## CA-F6 — Frontend, menú y cierre
+
+**Estado (2026-11-27): ACEPTADO por el propietario en el gate definitivo, pendiente de push, CI SUCCESS y cierre
+formal.** Resultado y prueba operativa en [STATUS](../../STATUS.md); contrato en la
+[SSOT](../architecture/customer-advances.md#11-pantallas). Rutas ajustadas fuera de la lista: rutas en
+`customerAdvanceRoutes.tsx`, facade de sucursales de sesión, etiquetas de dos permisos en el catálogo de asignación y la
+expectativa de navegación del Kernel. Ajustes autorizados: filtro opcional `customerId` en la consulta de CxC (query,
+handler, repositorio, controller y SSOT), consolidación visual de CxC, terminología «Monto» en los textos visibles de
+todo el ERP y traslado a `FE/hooks/` del hook de retorno de foco. Registro funcional y Dashboard autorizados en el gate.
 
 - **Objetivo:** ADR-052 §13. **Auditoría de reutilización de UI** declarada antes de escribir.
 - **Rutas nuevas:** `FE/modules/finance/pages/CustomerAdvance*Page.tsx`, `components/*CustomerAdvance*Modal.tsx`,

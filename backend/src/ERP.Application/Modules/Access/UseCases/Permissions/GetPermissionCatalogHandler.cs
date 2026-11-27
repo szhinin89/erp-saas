@@ -88,6 +88,14 @@ public sealed class GetPermissionCatalogHandler
             "Administrar asignaciones a sucursales",
             "Permite crear y cerrar las asignaciones de un empleado a sucursales."
         ),
+        [FinancePermissions.CustomerAdvancesApply] = (
+            "Aplicar anticipos",
+            "Permite aplicar anticipos de clientes a cuentas por cobrar."
+        ),
+        [FinancePermissions.CustomerAdvancesRefund] = (
+            "Devolver y revertir dinero",
+            "Permite devolver dinero de anticipos, revertir devoluciones y revertir el ingreso."
+        ),
     };
 
     public Task<Result<PermissionCatalogDto>> HandleAsync(

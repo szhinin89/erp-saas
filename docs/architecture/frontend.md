@@ -540,6 +540,10 @@ Clases frecuentes (no recrear): `.pg-page`, `.table`, `.badge`, `.zh-status`, `.
 - El Dashboard operativo traduce sus KPIs, conteos, avisos, antigüedad y resumen anual mediante las claves `dashboard.*` del mismo proveedor; cambiar el idioma actualiza los textos conservando la política de precisión de los importes.
 - La pantalla Empresa (General, Marca, Fiscal, Operación, Documentos, Precisión, Ventas y Preparación operativa) usa el mismo proveedor para etiquetas, opciones, ayudas, placeholders, acciones y validación local. Los mensajes locales de los schemas se presentan con sus claves `settings.company.validation.*`; cambiar idioma conserva la edición y traduce los errores visibles. Nombres y datos ingresados por el usuario o devueltos por catálogos no se traducen.
 - Prohibido texto duro visible al usuario.
+- **Terminología monetaria:** en todo texto en español visible para el usuario (pantallas, ayudas, validaciones,
+  confirmaciones y mensajes del backend) se usa «Monto», no «Importe»; en inglés, «Amount». No renombra identificadores,
+  propiedades, contratos, campos JSON ni etiquetas fiscales externas (p. ej. `importeTotal` del SRI). «Importe» como
+  forma del verbo *importar* no es un monto.
 
 ---
 
@@ -784,6 +788,24 @@ presentan en líneas separadas. En filas inactivas la lista anula la opacidad co
 «Inactivo»), de modo que las acciones mantienen el contraste de las filas activas. Con puntero táctil, «Administrar cliente» usa
 `--density-control-height`. Sin scroll horizontal de 320 a 1440 px. El valor por defecto de
 `portal` y los menús de Proveedores y Compras no cambian.
+
+### Listado de Cuentas por cobrar
+
+`/finance/receivables` agrupa en siete columnas: N°, Factura (número y emisión), Cliente (nombre e identificación),
+Sucursal (y usuario emisor), Vencimiento (y estado), Valores (original, cobrado y saldo pendiente, este destacado) y
+Acciones. La columna «Valores» es una **excepción acotada a este listado**, aprobada por el propietario, a la regla de
+[ZH-DS-TABLE-DENSITY-01](#agrupación-semántica-y-densidad-controlada-de-tablas-zh-ds-table-density-01): las tablas
+financieras y contables conservan una columna por dato monetario. No autoriza agrupar montos en otros listados.
+
+Las acciones van en un menú `ZHLineAction kind="menu"` (`portal`, `menuAlign="end"`, `closeOnSelect`) con nombre
+accesible por factura: Registrar cobro (saldo mayor que cero y no anulada), Consultar / anular cobro
+(`finance.collections.reverse`) y Anticipos (`finance.view`). Sin ítems no se renderiza el menú. Al cerrar el modal
+abierto desde el menú, el foco vuelve al disparador de la fila (`hooks/useReturnFocusAfterDialog`); tras una operación
+que recarga el listado no hay retorno de foco.
+
+Hasta 900 px se ocultan N°, Factura, Sucursal y Vencimiento y sus datos pasan, con el estado, a la celda del cliente;
+quedan Cliente, Valores y Acciones. Hasta 640 px cada monto se muestra bajo su etiqueta y el título «Acciones» se
+oculta visualmente. Los estilos son del módulo (`modules/finance/styles/receivables-list.css`).
 
 ### Ficha de Business Partner por contexto (Proveedor / Cliente)
 

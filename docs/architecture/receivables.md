@@ -27,6 +27,14 @@ La CxC pertenece a la empresa (`company_id`) y al tenant del documento de origen
   `Vencida` (la primera cuota no saldada venció según la fecha de la empresa) → `Parcial` (hay
   cobros) → `Pendiente`. «Vence» y los días de mora salen de esa primera cuota no saldada.
 
+## Consulta de CxC
+
+`GET /api/v1/sales-receivables` (permiso `sales.view` y sucursal activa) devuelve las CxC de la empresa activa dentro del
+tenant, paginadas en el servidor (`pageNumber`, `pageSize`). Filtros opcionales y combinables: `status` (`pending`,
+`paid`, `cancelled`) y `customerId`. Ambos se aplican antes de paginar, por lo que `total` cuenta solo lo filtrado.
+Sin `customerId` se listan todos los clientes; un cliente sin CxC, o de otro tenant o empresa, devuelve una página
+vacía. Evidencia: `ERP.API.Tests/Integration/ReceivableCustomerFilterApiTests`.
+
 ## Registrar un cobro
 
 `POST /api/v1/finance/collections` (`RegisterCollectionCommand`, permiso `finance.create`). La UI

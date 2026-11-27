@@ -56,11 +56,12 @@ const BASE = "/api/v1/sales-receivables";
 
 /** P0-03 — consulta de CxC pendientes para seleccionar qué cobrar (ver FinancePaymentsController para el registro del cobro). */
 export const receivableService = {
-  list: (status?: string, pageNumber = 1, pageSize = 25) => {
+  list: (status?: string, pageNumber = 1, pageSize = 25, customerId?: string) => {
     const params = new URLSearchParams();
     if (status) params.set("status", status);
     params.set("pageNumber", String(pageNumber));
     params.set("pageSize", String(pageSize));
+    if (customerId) params.set("customerId", customerId);
     return apiGet<ReceivablesListResponse>(`${BASE}?${params.toString()}`);
   },
 };

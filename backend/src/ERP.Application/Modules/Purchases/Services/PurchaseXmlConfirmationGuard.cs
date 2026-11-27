@@ -65,7 +65,7 @@ public sealed class PurchaseXmlConfirmationGuard(
         if (!SnapshotMatchesXml(source, xml))
             return "El detalle persistido de la recepción difiere del XML autorizado.";
         if (!EveryXmlLineLinkedOnce(source, invoice, linked))
-            return "Hay líneas XML omitidas, duplicadas o sin vínculo. Concilie cada línea antes de confirmar; redistribuir un importe no sustituye su trazabilidad.";
+            return "Hay líneas XML omitidas, duplicadas o sin vínculo. Concilie cada línea antes de confirmar; redistribuir un monto no sustituye su trazabilidad.";
 
         var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(invoice, invoice.Lines, receptions, ct);
         if (breakdownError is not null)

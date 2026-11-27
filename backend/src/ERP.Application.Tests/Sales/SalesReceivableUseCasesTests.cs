@@ -224,6 +224,7 @@ public sealed class SalesReceivableUseCasesTests
                     TenantId,
                     It.IsAny<string?>(),
                     It.IsAny<string?>(),
+                    It.IsAny<Guid?>(),
                     It.IsAny<int>(),
                     It.IsAny<int>(),
                     It.IsAny<CancellationToken>()

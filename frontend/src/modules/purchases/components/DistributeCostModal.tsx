@@ -103,7 +103,7 @@ export function DistributeCostModal({ open, error, busy, invoice, formLines, onC
       size="2xl"
       title={t("purchases.distributeCost.title", "Distribuir flete/gasto")}
       subtitle={t("purchases.distributeCost.subtitle",
-        "Cada distribución reemplaza a la anterior; los importes por línea los calcula el sistema.")}
+        "Cada distribución reemplaza a la anterior; los montos por línea los calcula el sistema.")}
       footer={<ZHBtn variant="ghost" size="md" onClick={onCancel} disabled={busy}>{t("common.close", "Cerrar")}</ZHBtn>}
     >
       {error && <ZHPageNotice variant="error" message={error} />}

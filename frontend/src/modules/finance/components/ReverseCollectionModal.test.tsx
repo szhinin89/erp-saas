@@ -52,6 +52,12 @@ describe("Anulación documental de cobros", () => {
     expect(callbacks.onClose).toHaveBeenCalledOnce();
   });
 
+  it("muestra el estado aplicado traducido", async () => {
+    renderModal();
+    expect(await screen.findByText("Aplicado")).toBeTruthy();
+    expect(screen.queryByText("Applied")).toBeNull();
+  });
+
   it("conserva visibles los cobros anulados sin ofrecer segunda anulación", async () => {
     vi.mocked(paymentService.collectionsByReceivable).mockResolvedValue([{ ...payment,
       status: "Reversed", reverseReason: "Registro duplicado", reversedAtUtc: "2026-10-28T15:00:00Z" }]);

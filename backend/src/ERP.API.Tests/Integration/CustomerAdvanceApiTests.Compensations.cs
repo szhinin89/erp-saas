@@ -1291,6 +1291,43 @@ public sealed partial class CustomerAdvanceApiTests
         return (advance.Id, transaction.Id);
     }
 
+    [Fact]
+    public async Task Las_operaciones_bancarias_no_exigen_permisos_de_caja_ni_de_tesoreria()
+    {
+        var c = await StartAsync();
+        var limited = c with
+        {
+            Client = _f.CreateClient(
+                await _f.CreateUserWithPermissionsAsync(
+                    FinancePermissions.View,
+                    FinancePermissions.CustomerAdvancesCreate,
+                    FinancePermissions.CustomerAdvancesRefund
+                ),
+                "User"
+            ),
+        };
+
+        var registered = await PostAsync(limited.Client, Transfer(c.S, 40m));
+        registered.Status.Should().Be(HttpStatusCode.Created, registered.Body);
+        var refunded = await RefundAsync(limited, registered.Id, Refund(c, 10m, cash: false));
+        refunded.Status.Should().Be(HttpStatusCode.OK, refunded.Body);
+        var transaction = (await TransactionsAsync(registered.Id)).Single().Id;
+        var reversed = await ReverseRefundAsync(
+            limited,
+            registered.Id,
+            transaction,
+            Evidence(Today)
+        );
+        reversed.Status.Should().Be(HttpStatusCode.OK, reversed.Body);
+        var income = await ReverseIncomeAsync(limited, registered.Id, Evidence(Today));
+        income.Status.Should().Be(HttpStatusCode.OK, income.Body);
+
+        foreach (var selector in new[] { "cash-registers", "treasury/bank-accounts" })
+            (await limited.Client.GetAsync($"/api/v1/{selector}"))
+                .StatusCode.Should()
+                .Be(HttpStatusCode.Forbidden);
+    }
+
     // ── Operaciones ──────────────────────────────────────────────────────
 
     private sealed record RefundBody(

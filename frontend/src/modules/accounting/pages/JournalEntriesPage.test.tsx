@@ -91,7 +91,7 @@ it("tabla con 7 columnas compuestas y datos de asiento, operación, documento, t
   show();
   const table = await screen.findByRole("table");
   const headers = within(table).getAllByRole("columnheader").map((h) => h.textContent);
-  expect(headers).toEqual(["Asiento", "Operación", "Documento origen", "Cliente / Proveedor", "Importe", "Estado", "Acciones"]);
+  expect(headers).toEqual(["Asiento", "Operación", "Documento origen", "Cliente / Proveedor", "Monto", "Estado", "Acciones"]);
 
   const row = within(table).getAllByRole("row")[1]!;
   const cells = within(row).getAllByRole("cell").map((c) => c.textContent?.replace(/\s+/g, " ").trim());

@@ -190,7 +190,7 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     i18nPrefix: "help.accountingReports.generalJournal",
     title: "Libro Diario: qué es y cómo se lee",
     short: "¿Qué es? El registro cronológico de todos los asientos contabilizados: cada operación del ERP con las cuentas que afecta.",
-    long: "¿Cómo se lee? Cada bloque es un asiento: su encabezado indica número, fecha, operación y documento de origen; debajo, el código y la cuenta de cada línea con su importe en Debe o en Haber, y el total del asiento, donde Debe y Haber son iguales. El pie suma los asientos de la página indicada.",
+    long: "¿Cómo se lee? Cada bloque es un asiento: su encabezado indica número, fecha, operación y documento de origen; debajo, el código y la cuenta de cada línea con su monto en Debe o en Haber, y el total del asiento, donde Debe y Haber son iguales. El pie suma los asientos de la página indicada.",
   },
   [HELP_KEYS.ACCOUNTING_REPORTS_GENERAL_LEDGER]: {
     i18nPrefix: "help.accountingReports.generalLedger",
@@ -214,7 +214,7 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     i18nPrefix: "help.accountingReports.balanceSheet",
     title: "Balance General: qué es y cómo se lee",
     short: "¿Qué es? La situación financiera de la empresa a la fecha de corte: lo que tiene (Activo), lo que debe (Pasivo) y lo que pertenece a sus propietarios (Patrimonio).",
-    long: "¿Cómo se lee? Saldos acumulados hasta la fecha de corte. Las cuentas aparecen bajo su grupo del Plan de Cuentas, con su importe en Detalle y el total de cada sección en Total. Debe cumplirse Activo = Pasivo + Patrimonio: la fila Comprobación muestra el resultado y la diferencia. Patrimonio incluye los resultados aún no cerrados, calculados por el sistema contable.",
+    long: "¿Cómo se lee? Saldos acumulados hasta la fecha de corte. Las cuentas aparecen bajo su grupo del Plan de Cuentas, con su monto en Detalle y el total de cada sección en Total. Debe cumplirse Activo = Pasivo + Patrimonio: la fila Comprobación muestra el resultado y la diferencia. Patrimonio incluye los resultados aún no cerrados, calculados por el sistema contable.",
   },
   [HELP_KEYS.ACCOUNTING_POSTING_RULES_OVERVIEW]: {
     i18nPrefix: "help.accountingPostingRules.overview",
@@ -226,7 +226,7 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     i18nPrefix: "help.accountingPostingRules.entry",
     title: "Asiento que genera: cómo se lee",
     short: "Cada fila es una línea del asiento, en el Debe o en el Haber. «Cuenta fija» es la cuenta configurada en esta regla; «Aporta el origen» es una cuenta que el módulo origen determina en cada operación.",
-    long: "La base del importe indica qué valor del documento lleva cada línea fija, por ejemplo el subtotal o el IVA. Las cuentas del origen salen de la configuración de ese módulo (caja, banco, motivo, medio de pago o subcategoría), no de esta pantalla. «Editar líneas» cambia solo las líneas fijas y afecta únicamente contabilizaciones futuras.",
+    long: "La base del monto indica qué valor del documento lleva cada línea fija, por ejemplo el subtotal o el IVA. Las cuentas del origen salen de la configuración de ese módulo (caja, banco, motivo, medio de pago o subcategoría), no de esta pantalla. «Editar líneas» cambia solo las líneas fijas y afecta únicamente contabilizaciones futuras.",
   },
   [HELP_KEYS.ACCOUNTING_POSTING_RULES_STATUS]: {
     i18nPrefix: "help.accountingPostingRules.status",

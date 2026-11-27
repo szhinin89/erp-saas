@@ -28,7 +28,8 @@ Clientes                                    [Module("customers")]
 ├─ Gestión de clientes
 │  └─ Clientes                              /customers
 └─ Cuentas por cobrar
-   └─ Cuentas por cobrar                    /finance/receivables
+   ├─ Cuentas por cobrar                    /finance/receivables
+   └─ Anticipos de clientes                 /finance/customer-advances
 
 Proveedores                                 [Module("suppliers")]
 ├─ Gestión de proveedores
@@ -234,6 +235,10 @@ Compras/Inventario/Contabilidad.
 
 - Rutas nuevas en EMP-E7 (sin URL anterior; no aplican redirects): `/employees`, `/employees/catalogs` y la ficha
   `/employees/:id`, que no es un `[NavItem]` y hereda el acceso de `/employees`.
+
+- Rutas nuevas en CUSTOMER-ADVANCES-V1 CA-F6 (sin URL anterior; no aplican redirects):
+  `/finance/customer-advances` y el detalle `/finance/customer-advances/:id`, que no es un `[NavItem]` y hereda el
+  acceso de la lista. La categoría «Cuentas por cobrar» es visible con `sales.view` o `finance.view`.
 
 - Ruta nueva en BANK-CATALOG-01 (pantalla nueva, sin URL anterior — no aplica redirect legacy):
   `/settings/catalogs/banks`.

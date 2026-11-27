@@ -70,7 +70,8 @@ public sealed record GetReceivablesListQuery(
     string? Search = null,
     string? Status = null,
     int PageNumber = 1,
-    int PageSize = 25
+    int PageSize = 25,
+    Guid? CustomerId = null
 ) : IRequest<Result<ReceivablesListResponse>>, IBranchScopedRequest;
 
 
@@ -344,6 +345,7 @@ public sealed class GetReceivablesListHandler
             tid,
             q.Search,
             q.Status,
+            q.CustomerId,
             q.PageNumber,
             q.PageSize,
             ct

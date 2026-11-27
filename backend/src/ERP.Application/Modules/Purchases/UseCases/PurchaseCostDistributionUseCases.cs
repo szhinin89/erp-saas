@@ -48,7 +48,7 @@ public sealed class ReplacePurchaseCostDistributionValidator
         RuleFor(x => x.Amount)
             .Null()
             .When(x => x.SourceLineId is not null)
-            .WithMessage("El importe del transporte XML se toma de su línea fiscal.");
+            .WithMessage("El monto del transporte XML se toma de su línea fiscal.");
     }
 }
 

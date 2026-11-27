@@ -1,5 +1,6 @@
 import { Route, Navigate } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
+import { customerAdvanceRoutes } from "./customerAdvanceRoutes";
 import { SupplierCreditDetailLegacyRedirect } from "./legacyRedirects";
 
 const GeographyPage = lazyNamedPage(
@@ -478,6 +479,7 @@ export const catalogRoutes = [
     path="/finance/receivables"
     element={<AccountsReceivablePage />}
   />,
+  ...customerAdvanceRoutes,
   <Route
     key="suppliers-credits"
     path="/suppliers/credits"

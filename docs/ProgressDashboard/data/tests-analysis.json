@@ -1,13 +1,13 @@
 ﻿{
-    "Generated":  "2026-11-27 11:12:49",
+    "Generated":  "2026-11-27 16:35:32",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  989,
+                    "TestFiles":  991,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
                                          "Path":  "backend\\src\\ERP.API.Tests",
-                                         "TestFiles":  141
+                                         "TestFiles":  143
                                      },
                                      {
                                          "Project":  "ERP.Application.Tests",
@@ -32,6 +32,6 @@
                                  ]
                 },
     "Frontend":  {
-                     "TestFiles":  452
+                     "TestFiles":  456
                  }
 }

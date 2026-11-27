@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-27 11:14:20",
+    "generated":  "2026-11-27 16:37:24",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -432,8 +432,8 @@
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
                                                   "Refactor large file (1977 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApplicationApiTests.cs",
+                                                  "Refactor large file (1782 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.Compensations.cs",
                                                   "Refactor large file (1765 lines): backend/src/ERP.API.Tests/Integration/SalesReturnEndToEndTests.cs",
-                                                  "Refactor large file (1745 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.Compensations.cs",
                                                   "Refactor large file (1642 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentsEndToEndTests.cs",
                                                   "Refactor large file (1566 lines): backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs",
                                                   "Refactor large file (1314 lines): backend/src/ERP.API.Tests/Integration/CustomerAdvanceApiTests.cs",
@@ -1170,6 +1170,7 @@
                                                   "Refactor large file (636 lines): backend/src/ERP.Application.Tests/Finance/ReverseSupplierCreditRefundUseCasesTests.cs",
                                                   "Refactor large file (615 lines): backend/src/ERP.Domain/Modules/Finance/Entities/CustomerAdvance.cs",
                                                   "Refactor large file (598 lines): backend/src/ERP.Domain.Tests/Finance/CustomerAdvanceTests.cs",
+                                                  "Refactor large file (534 lines): frontend/src/modules/finance/pages/CustomerAdvancePages.test.tsx",
                                                   "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
                                                   "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                                   "Refactor large file (506 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs"

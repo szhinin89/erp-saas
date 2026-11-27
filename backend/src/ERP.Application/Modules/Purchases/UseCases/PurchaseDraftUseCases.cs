@@ -1579,7 +1579,7 @@ internal static class PurchaseTaxHelper
             iceCalculationType = iceEntry.CalculationType;
             if (iceEntry.CalculationType != SriTaxCalculationType.Percentage)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    $"Línea '{line.Description}': ICE {line.IceCode} requiere tarifa y base física verificadas. Conserve el importe declarado en el XML SRI.",
+                    $"Línea '{line.Description}': ICE {line.IceCode} requiere tarifa y base física verificadas. Conserve el monto declarado en el XML SRI.",
                     "PURCHASE_ICE_DATA_REQUIRED");
             if (!iceEntry.Percentage.HasValue)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(

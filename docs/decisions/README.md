@@ -54,7 +54,7 @@ Gates/cierres: [STATUS](../../STATUS.md). Futuro: [ROADMAP](../ROADMAP.md).
 | [ADR-049](ADR-049-sales-order-v1-architecture.md) | ADR-049 — Orden de Pedido de Venta V1 (Gestión de Ventas): diseño aprobado, no implementado |
 | [ADR-050](ADR-050-employees-v1-architecture.md) | ADR-050 — Empleados V1 (módulo técnico independiente): arquitectura aprobada; implementada (Empleados V1 CLOSED, ver [STATUS](../../STATUS.md)) |
 | [ADR-051](ADR-051-spa-v1.1-architecture.md) | ADR-051 — SPA V1.1: ACCEPTED / APROBADO; Spa planificado, no implementado, sin fases autorizadas |
-| [ADR-052](ADR-052-customer-advances-v1-architecture.md) | ADR-052 — Anticipos de Clientes V1: ACCEPTED / APROBADO (2026-11-26); solo CA-F1 autorizada, sin funcionalidad operativa |
+| [ADR-052](ADR-052-customer-advances-v1-architecture.md) | ADR-052 — Anticipos de Clientes V1: ACCEPTED / APROBADO (2026-11-26); implementación por fases, estado en [STATUS](../../STATUS.md) |
 | [ADR-ERP](ADR-ERP-001-core-independence.md) | ADR-ERP-001 — ERP Core Independence |
 | [ADR-ERP](ADR-ERP-002-platform-separation.md) | ADR-ERP-002 — Platform Separation (frontera de integración) |
 

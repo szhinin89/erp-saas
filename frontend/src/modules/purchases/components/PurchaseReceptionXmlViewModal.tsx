@@ -87,7 +87,7 @@ export function PurchaseReceptionXmlViewModal({
           key: "xmlTotal",
           label: t(
             "purchases.reception.xmlView.field.totalAmount",
-            "Importe total XML",
+            "Monto total XML",
           ),
           value: data.totalAmount,
           emphasize: true,

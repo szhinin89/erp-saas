@@ -51,7 +51,7 @@ public sealed class PurchaseCostDistribution : IMustHaveTenant
             || allocations.Count == 0 || allocations.Sum(a => a.Amount) != amount
             || allocations.Any(a => a.Amount < 0 || a.Amount != Math.Round(a.Amount, FiscalPrecision.UnitCost))
             || allocations.Select(a => a.LineId).Distinct().Count() != allocations.Count)
-            throw new DomainRuleViolationException("Las asignaciones deben conservar exactamente el importe distribuido.");
+            throw new DomainRuleViolationException("Las asignaciones deben conservar exactamente el monto distribuido.");
         if (Matches(amount, allocations)) return false;
         Amount = amount;
         Revision++;

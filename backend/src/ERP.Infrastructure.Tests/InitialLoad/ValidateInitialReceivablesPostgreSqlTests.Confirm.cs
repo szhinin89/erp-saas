@@ -217,8 +217,9 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
             inner.GetByInvoiceIdAsync(tenantId, invoiceId, ct);
 
         public Task<(IReadOnlyList<SalesReceivable> Items, int Total)> GetPagedAsync(
-            Guid tenantId, string? search, string? status, int page, int pageSize, CancellationToken ct = default) =>
-            inner.GetPagedAsync(tenantId, search, status, page, pageSize, ct);
+            Guid tenantId, string? search, string? status, Guid? customerId, int page, int pageSize,
+            CancellationToken ct = default) =>
+            inner.GetPagedAsync(tenantId, search, status, customerId, page, pageSize, ct);
 
         public Task SaveChangesAsync(CancellationToken ct = default) => inner.SaveChangesAsync(ct);
     }

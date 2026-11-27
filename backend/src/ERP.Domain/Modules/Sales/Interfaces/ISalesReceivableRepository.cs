@@ -35,6 +35,7 @@ public interface ISalesReceivableRepository
         Guid tenantId,
         string? search,
         string? status,
+        Guid? customerId,
         int page,
         int pageSize,
         CancellationToken ct = default

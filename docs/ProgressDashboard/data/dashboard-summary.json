@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-27 11:14:28",
+    "generated":  "2026-11-27 16:37:33",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,10 +11,10 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "GREEN",
-    "productionReadinessScore":  70.32,
+    "productionReadinessScore":  70.31,
     "productionStatus":  "NOT READY",
     "maturity":  "Controlled",
-    "confidenceScore":  66.62,
+    "confidenceScore":  66.61,
     "risk":  {
                  "architectureRisk":  "LOW",
                  "securityRisk":  "CRITICAL",
@@ -25,11 +25,11 @@
     "productionDecision":  "NOT READY",
     "decisionBlockers":  [
                              "Security blockers - Security score 26%",
-                             "Quality blockers - Quality score 45.8%"
+                             "Quality blockers - Quality score 45.75%"
                          ],
     "quickRecommendations":  [
                                  "Remove detected secrets (80 found)",
-                                 "Improve automated tests and code quality (current: 45.8%)",
+                                 "Improve automated tests and code quality (current: 45.75%)",
                                  "Review security configuration (13 anonymous access points detected)"
                              ],
     "qualityGateDetail":  {
@@ -65,7 +65,7 @@
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 45.8%",
+                        "detail":  "Score: 45.75%",
                         "priority":  "HIGH"
                     },
                     {
@@ -84,12 +84,12 @@
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 45.8%"
+                               "detail":  "Score 45.75%"
                            }
                        ],
     "trend":  {
-                  "current":  68.31,
-                  "previous":  68.32,
+                  "current":  68.3,
+                  "previous":  68.31,
                   "change":  -0.01,
                   "status":  "Declining",
                   "comparable":  true

@@ -39,7 +39,7 @@ describe("PurchaseLineBreakdownModal", () => {
   it("titles the split with the XML code, a short subtitle and keeps the original description in the summary", () => {
     renderModal();
     expect(screen.getByRole("heading", { name: "Desglosar productos · 13563" })).toBeTruthy();
-    expect(screen.getByText("Reemplace esta línea XML por los productos reales recibidos. Los importes deben cuadrar.")).toBeTruthy();
+    expect(screen.getByText("Reemplace esta línea XML por los productos reales recibidos. Los montos deben cuadrar.")).toBeTruthy();
     const summary = screen.getByLabelText("Original");
     expect(summary.textContent).toMatch(/COMBO PROMO.*Subtotal bruto.*Descuento.*Impuestos.*Total/);
     expect(document.body.textContent).not.toMatch(/IVA 4(?!\d)|ICE 3011/);
@@ -51,12 +51,12 @@ describe("PurchaseLineBreakdownModal", () => {
     expect(screen.getByLabelText("Presentación · item-a")).toBeTruthy();
     expect(screen.getByLabelText("Cantidad · item-a")).toBeTruthy();
     expect(screen.getByLabelText("Costo · item-a")).toBeTruthy();
-    expect(screen.queryByLabelText("IVA 15% · Importe · item-a")).toBeNull();
+    expect(screen.queryByLabelText("IVA 15% · Monto · item-a")).toBeNull();
     const toggle = screen.getByRole("button", { name: "Impuestos y bases · item-a" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByLabelText("IVA 15% · Importe · item-a")).toBeTruthy();
+    expect(screen.getByLabelText("IVA 15% · Monto · item-a")).toBeTruthy();
     expect(screen.getByLabelText("Descuento · item-a")).toBeTruthy();
   });
 
@@ -74,7 +74,7 @@ describe("PurchaseLineBreakdownModal", () => {
   it("blocks applying on a tax difference and shows the reconciliation detail on demand", () => {
     renderModal();
     fireEvent.click(screen.getByRole("button", { name: "Impuestos y bases · item-b" }));
-    const vat = screen.getByLabelText("IVA 15% · Importe · item-b") as HTMLInputElement;
+    const vat = screen.getByLabelText("IVA 15% · Monto · item-b") as HTMLInputElement;
     fireEvent.focus(vat);
     fireEvent.change(vat, { target: { value: "0.51" } });
     fireEvent.blur(vat);
@@ -93,7 +93,7 @@ describe("PurchaseLineBreakdownModal", () => {
     footerButtons.forEach(b => expect(b.className).not.toMatch(/zh-btn--(sm|xs|md)\b/));
     fireEvent.click(detail);
     expect(detail.getAttribute("aria-expanded")).toBe("true");
-    expect(document.getElementById("pbd-reconciliation")!.textContent).toContain("IVA 15% · Importe");
+    expect(document.getElementById("pbd-reconciliation")!.textContent).toContain("IVA 15% · Monto");
   });
 
   it("keeps the product search on top and adds products with their purchase packaging", async () => {

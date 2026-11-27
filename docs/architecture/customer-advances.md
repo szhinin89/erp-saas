@@ -1,9 +1,9 @@
 # Anticipos de clientes — SSOT (Finance)
 
 Fuente vigente del comportamiento **implementado y probado** de Anticipos de Clientes: registro y consultas (CA-F3),
-aplicación a CxC con su reversa (CA-F4) y devolución, reversa de devolución, reversa del ingreso y anulación
-administrativa (CA-F5), sobre el dominio de CA-F1 y la contabilidad de CA-F2. **No existen** pantallas, menú ni
-asignación de permisos a perfiles.
+aplicación a CxC con su reversa (CA-F4), devolución, reversa de devolución, reversa del ingreso y anulación
+administrativa (CA-F5) y pantallas, navegación y permisos de perfiles (CA-F6), sobre el dominio de CA-F1 y la
+contabilidad de CA-F2.
 
 Decisiones: [ADR-052](../decisions/ADR-052-customer-advances-v1-architecture.md). Contrato contable:
 [Accounting §28](accounting.md#28-anticipos-de-clientes-customer-advances-v1-ca-f2). Idempotencia y locks:
@@ -40,9 +40,9 @@ revertida); `{transactionId}` es el `id` de una devolución de esa lista.
 
 La sucursal identifica el origen y es un filtro opcional del listado: nunca limita el detalle ni el saldo.
 
-**Permisos.** Toda operación que mueve dinero real exige `.refund`. Ninguno de los cuatro permisos
-`finance.customer-advances.*` está relacionado todavía con un ítem de navegación, por lo que **no son asignables a
-perfiles**: hoy opera solo quien tiene acceso de administrador.
+**Permisos.** La pantalla y las consultas usan `finance.view`; `.create`, `.apply`, `.reverse` y `.refund` se asignan
+desde la administración oficial de perfiles como acciones de «Anticipos de clientes» (grupo Clientes → Cuentas por
+cobrar). Toda operación que mueve dinero real exige `.refund`. Ningún perfil existente los recibe automáticamente.
 
 ## 3. Registro
 
@@ -165,8 +165,52 @@ del tenant → 409 sin datos de ella. Un rechazo no consume la clave. Barrera de
 Entre operaciones que compiten por un anticipo gana la primera que lo bloquea y las demás se reevalúan. Orden de locks:
 [backend.md](backend.md#saldos-compartidos-lock-pesimista-antes-de-decidir-zh-collections-receivable-concurrency-01).
 
-## 11. Evidencia
+## 11. Pantallas
+
+`/finance/customer-advances` (listado paginado y filtrado en el servidor por cliente, estado y sucursal autorizada;
+registro) y `/finance/customer-advances/:id` (datos del ingreso, saldo del servidor, movimientos, devoluciones y las
+acciones que permiten estado y permisos). En `/finance/receivables`, «Anticipos» (con `finance.view`) muestra el saldo
+del cliente y las aplicaciones recibidas y permite aplicar; la reversa se hace en el detalle, sobre la operación
+completa. Un cobro y una aplicación se muestran por separado. Toda operación se confirma antes de enviarse y reutiliza
+su `clientRequestId` mientras los datos no cambien. El servidor decide saldos, cuotas, fechas y elegibilidad.
+
+El listado presenta primero cliente (con medio, referencia y acceso al detalle), saldo y estado. El detalle destaca
+monto original, saldo disponible y estado. El historial muestra el efecto de cada movimiento sobre el saldo del
+anticipo (no sobre el dinero): suman `Received`, `ReversalOfApplication` y `ReversalOfRefund`; restan los demás. No se
+calculan saldos históricos. La confirmación de aplicar y de devolver incluye el saldo disponible y el resultante estimado.
+
+Para aplicar y para nombrar documentos, la pantalla pide las CxC del cliente con el
+[filtro `customerId`](./receivables.md#consulta-de-cxc), una página de 50 cada vez; las siguientes solo cuando el
+usuario las solicita.
+
+### Permisos por operación
+
+El permiso de la operación lo exige el endpoint de Anticipos. Los selectores exigen el permiso de la API de su recurso y
+la pantalla solo los consulta cuando se usan: sin permiso muestra la causa, nunca una lista que parezca sin datos. Nada
+se concede automáticamente.
+
+| Operación | Permiso de la operación | Permisos adicionales para usar la pantalla |
+|---|---|---|
+| Consulta (listado, detalle, historial) | `finance.view` | Ninguno. Opcionales para filtrar y nombrar: `masterdata.businesspartners.view`, `treasury.banks.accounts.view`, `caja.view`, `sales.view` |
+| Registro por transferencia | `finance.customer-advances.create` | `finance.view`, `masterdata.businesspartners.view`, `treasury.banks.accounts.view` |
+| Registro en efectivo | `finance.customer-advances.create` | `finance.view`, `masterdata.businesspartners.view`, `caja.view` y turno propio abierto en esa caja |
+| Aplicación a CxC | `finance.customer-advances.apply` | `finance.view`, `sales.view` |
+| Devolución por transferencia | `finance.customer-advances.refund` | `finance.view`, `treasury.banks.accounts.view` |
+| Devolución en efectivo | `finance.customer-advances.refund` | `finance.view`, `caja.view` y turno propio abierto en esa caja |
+| Reversa de una aplicación | `finance.customer-advances.reverse` | `finance.view`; `sales.view` solo muestra el número de documento |
+| Reversa de una devolución | `finance.customer-advances.refund` | `finance.view`; hereda el destino (en efectivo exige turno propio abierto) |
+| Reversa del ingreso | `finance.customer-advances.refund` | `finance.view`; hereda el destino (en efectivo exige turno propio abierto) |
+| Anulación administrativa | `finance.customer-advances.reverse` | `finance.view` |
+
+Medios de pago y sucursales autorizadas solo exigen sesión. Las sucursales son las activas de la empresa actual
+autorizadas para la membresía (el operador global recibe todas las activas de esa empresa). Abrir el turno de caja es una
+operación de Caja con `caja.open`.
+
+## 12. Evidencia
 
 `ERP.API.Tests/Integration/CustomerAdvanceApiTests`, `CustomerAdvanceApplicationApiTests` y
 `CustomerAdvanceOpeningBalanceApiTests` (HTTP + PostgreSQL),
-`CustomerAdvance*` en Domain, Application e Infrastructure.
+`CustomerAdvanceProfileAccessHttpTests` (perfiles, selectores y sucursales de sesión), `ReceivableCustomerFilterApiTests`,
+`CustomerAdvance*` en Domain, Application e Infrastructure y `CustomerAdvance*.test.tsx` en el frontend (API simulada).
+La prueba operativa del propietario (ciclo bancario, 2026-11-27) y lo no ejecutado manualmente están en
+[STATUS](../../STATUS.md).

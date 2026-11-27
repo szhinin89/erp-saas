@@ -81,7 +81,7 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
   };
   const conceptLabel = (r: BreakdownBalanceRow) => {
     if (r.concept === "base") return `${taxLabel(r.taxCode, r.taxRateCode)} · ${t("purchases.breakdown.base", "Base")}`;
-    if (r.concept === "tax") return `${taxLabel(r.taxCode, r.taxRateCode)} · ${t("purchases.breakdown.amount", "Importe")}`;
+    if (r.concept === "tax") return `${taxLabel(r.taxCode, r.taxRateCode)} · ${t("purchases.breakdown.amount", "Monto")}`;
     if (r.concept === "subtotal") return t("purchases.breakdown.subtotal", "Subtotal bruto");
     if (r.concept === "discount") return t("purchases.breakdown.discount", "Descuento");
     return t("purchases.breakdown.total", "Total");
@@ -103,7 +103,7 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
   const fieldIssues = [...purchaseFieldErrors(errors), ...validationIssues];
   const errorFor = (index: number, path: string) => {
     const issue = fieldIssues.find(issue => issue.path === `components.${index}.${path}`);
-    if (issue && path.startsWith("xmlAllocation.")) return t("purchases.validation.amountNonNegative", "El importe no puede ser negativo.");
+    if (issue && path.startsWith("xmlAllocation.")) return t("purchases.validation.amountNonNegative", "El monto no puede ser negativo.");
     return issue?.message;
   };
 
@@ -190,7 +190,7 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
     <span className="pbd-summary__item"><span className="pbd-summary__label">{label}</span> {money(value)}</span>;
 
   return <ZHModal open onClose={onCancel} size="2xl" title={`${t("purchases.breakdown.heading", "Desglosar productos")} · ${xml.supplierCode ?? ""}`}
-    subtitle={t("purchases.breakdown.subtitle", "Reemplace esta línea XML por los productos reales recibidos. Los importes deben cuadrar.")}
+    subtitle={t("purchases.breakdown.subtitle", "Reemplace esta línea XML por los productos reales recibidos. Los montos deben cuadrar.")}
     footer={<>
       <span className="pbd-summary pbd-footer-status" aria-live="polite">
         {summaryItem(t("purchases.breakdown.distributed", "Distribuido"), totalRow?.assigned ?? 0)}
@@ -233,7 +233,7 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
     {!error && !loading && historyPage > 0 && history.length === 0 && <p className="zh-inline-empty">{t("purchases.breakdown.noHistory", "No se encontraron composiciones en esta página del historial.")}</p>}
     {history.map(h => <div key={`${h.invoice}:${h.rows[0].purchaseReceptionLineId}`} className="zh-flex-between pbd-history">
       <span>{h.invoice}: {h.rows.map(l => l.description).join(", ")}</span>
-      <ZHBtn type="button" variant="ghost" size="sm" disabled={loading} onClick={() => void applySuggestion(h.rows)}>{t("purchases.breakdown.suggest", "Usar productos como sugerencia; asignar importes nuevamente")}</ZHBtn></div>)}
+      <ZHBtn type="button" variant="ghost" size="sm" disabled={loading} onClick={() => void applySuggestion(h.rows)}>{t("purchases.breakdown.suggest", "Usar productos como sugerencia; asignar montos nuevamente")}</ZHBtn></div>)}
 
     {components.length > 0 && <div className="pbd-rows" role="table" aria-label={t("purchases.breakdown.title", "Desglose de línea XML")}>
       <div className="pbd-row pbd-row--head" role="row">
@@ -279,7 +279,7 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
               const taxPatch = (values: Partial<typeof tx>) => patch(index, { xmlAllocation: { ...allocation,
                 taxes: allocation.taxes.map((x, i) => i === taxIndex ? { ...x, ...values } : x) } });
               const base = `${label} · ${t("purchases.breakdown.base", "Base")}`;
-              const amount = `${label} · ${t("purchases.breakdown.amount", "Importe")}`;
+              const amount = `${label} · ${t("purchases.breakdown.amount", "Monto")}`;
               return [
                 <ZHField key={`${tx.purchaseReceptionLineTaxId}:base`} density="compact" label={base}>{decimal(base, product, tx.taxableBase, taxableBase => taxPatch({ taxableBase }), "money", index, `xmlAllocation.taxes.${taxIndex}.taxableBase`)}</ZHField>,
                 <ZHField key={`${tx.purchaseReceptionLineTaxId}:tax`} density="compact" label={amount}>{decimal(amount, product, tx.taxAmount, taxAmount => taxPatch({ taxAmount }), "money", index, `xmlAllocation.taxes.${taxIndex}.taxAmount`)}</ZHField>,

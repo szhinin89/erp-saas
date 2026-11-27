@@ -59,7 +59,7 @@ public static class CustomersModule
         LabelKey = "app.nav.item.customers.receivablesGroup",
         SortOrder = 10,
         Id = "aea32545-8fbc-4c99-9495-6d2873282dd9",
-        PermissionsAnyCsv = SalesPermissions.View
+        PermissionsAnyCsv = SalesPermissions.View + "," + FinancePermissions.View
     )]
     public const string ReceivablesGroup = "/finance/receivables/group";
 
@@ -70,9 +70,30 @@ public static class CustomersModule
         SortOrder = 10,
         Id = "f6000000-0000-4000-9000-000000000001",
         ParentId = "aea32545-8fbc-4c99-9495-6d2873282dd9",
-        RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.ReverseCollection
+        RelatedActionPermissionsCsv = FinancePermissions.Create
+            + ","
+            + FinancePermissions.ReverseCollection
     )]
     public const string Receivables = "/finance/receivables";
+
+    // CUSTOMER-ADVANCES-V1 CA-F6 (ADR-052 §13): la pantalla se ve con finance.view; sus cuatro
+    // acciones son asignables desde perfiles y la API sigue siendo la autoridad.
+    [NavItem(
+        "Anticipos de clientes",
+        Permission = FinancePermissions.View,
+        LabelKey = "app.nav.item.finance.customerAdvances",
+        SortOrder = 20,
+        Id = "c5a0f6e1-7b2d-4d94-9a83-1f6c2b8e4a10",
+        ParentId = "aea32545-8fbc-4c99-9495-6d2873282dd9",
+        RelatedActionPermissionsCsv = FinancePermissions.CustomerAdvancesCreate
+            + ","
+            + FinancePermissions.CustomerAdvancesApply
+            + ","
+            + FinancePermissions.CustomerAdvancesReverse
+            + ","
+            + FinancePermissions.CustomerAdvancesRefund
+    )]
+    public const string CustomerAdvances = "/finance/customer-advances";
 
     // NOTA (MAPA-MENU-ERP-SSOT-01): no se agrega grupo "Reportes" — no existe una pantalla de
     // reporte de clientes todavía. Regla del ticket: no crear pantallas nuevas.

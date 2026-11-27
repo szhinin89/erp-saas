@@ -1,11 +1,74 @@
 # Project Status
 
-## CUSTOMER-ADVANCES-V1 CA-F5 — Devolución, reversas y anulación — IMPLEMENTADO Y ACEPTADO LOCALMENTE (2026-11-27)
+## CUSTOMER-ADVANCES-V1 CA-F6 — Pantallas, navegación y permisos — ACEPTADO por el propietario, pendiente de CI (2026-11-27)
 
-Autorizada y aprobada técnicamente por el propietario el 2026-11-27, con commit local autorizado tras sus comprobaciones
-finales; **sin push ni CI de estos cambios: CA-F5 no está CLOSED**. **CA-F6 NO AUTORIZADA. CUSTOMER-ADVANCES-V1 no está
-CLOSED ni implementado como funcionalidad:** sin pantallas, menú ni permisos asignables; no cuenta en el control V1.
-Contrato vigente: [customer-advances.md](docs/architecture/customer-advances.md).
+Alcance ERP V1.1 ([ADR-052](docs/decisions/ADR-052-customer-advances-v1-architecture.md) ACCEPTED). Autorizada por el
+propietario el 2026-11-27, con sus ajustes tras CI #1254 SUCCESS, sobre
+`21ad867f63e632f0d437af84f9078b7f3ca1cc4e`. **Implementación aceptada técnicamente por el propietario en el gate
+definitivo del 2026-11-27**, con commit local de ese gate. **CA-F6 y CUSTOMER-ADVANCES-V1 no están CLOSED:** faltan push,
+CI SUCCESS y cierre formal. No cuenta en la matriz funcional V1. Contrato vigente:
+[customer-advances.md](docs/architecture/customer-advances.md#11-pantallas).
+
+- **Entregado:** listado, registro, detalle e historial, aplicación (desde el anticipo y desde CxC), devolución, reversas,
+  anulación, menú y permisos asignables desde perfiles; textos es/en. Sin cambio de esquema.
+- **Consulta de CxC:** filtro opcional `customerId` ([contrato](docs/architecture/receivables.md#consulta-de-cxc)), única
+  ampliación de contrato; CxC paginadas bajo demanda y aviso explícito cuando falta el permiso de un selector
+  ([matriz](docs/architecture/customer-advances.md#permisos-por-operación)).
+- **Navegación:** la categoría «Cuentas por cobrar» se ve también con `finance.view`; pantalla de Anticipos con cuatro
+  acciones asignables y dos etiquetas en el catálogo de permisos. Sin concesiones automáticas ni cambios en la
+  autorización de las API.
+- **Presentación:** ajustes de formularios, detalle, listado e historial; listado de CxC en 7 columnas con menú de
+  acciones y disposición para pantallas reducidas
+  ([contrato](docs/architecture/frontend.md#listado-de-cuentas-por-cobrar)); textos del listado y estado de cobros por
+  i18n; retorno de foco con el hook compartido `hooks/useReturnFocusAfterDialog` (trasladado desde MasterData sin cambios).
+- **Terminología monetaria (todo el ERP):** «Importe» pasa a «Monto» en los textos visibles de frontend y backend, con
+  etiquetas según el contexto en Anticipos ([regla](docs/architecture/frontend.md#i18n)). Solo texto: sin cambios de
+  identificadores, contratos, códigos de error, reglas ni formatos del SRI.
+- **Prueba operativa del propietario (2026-11-27)**, mediante las pantallas del ERP y la API real de desarrollo, ciclo
+  bancario con evidencia declarativa de prueba (no hubo transferencias bancarias reales):
+
+  | Operación | Monto | Saldo del anticipo |
+  |---|---:|---:|
+  | Recepción | $100.00 | $100.00 |
+  | Aplicación a cuota de CxC | $8.63 | $91.37 |
+  | Devolución | $20.00 | $71.37 |
+  | Reversión de la devolución | $20.00 | $91.37 |
+  | Reversión de la aplicación | $8.63 | $100.00 |
+  | Reversión del ingreso | $100.00 | $0.00 |
+
+  Resultado: anticipo anulado; saldo disponible, pasivo por anticipos y saldo bancario contable $0.00; CxC restaurada
+  $17.25; ingresos por ventas $15.00; IVA $2.25; Debe y Haber $274.51 cada uno; Balance General $17.25; diferencia
+  contable $0.00. Siete asientos contabilizados verificados, incluidos el de la venta y las tres compensaciones.
+- **No ejecutado manualmente:** efectivo, anulación administrativa y perfiles restringidos; cuentan solo con pruebas
+  automatizadas o de integración.
+- **Verificación local (agente), sin omitidas:** frontend de Finance, rutas, accesos e i18n 338/338 (API simulada); lint
+  (0 errores), `tsc -b`, build y `architecture:check`; API de anticipos, CxC, permisos, navegación y snapshots 384/384
+  (HTTP y PostgreSQL); contrato OpenAPI 122/122 en la repetición completa; carga inicial de CxC 28/28; Application
+  accesos y CxC 305/305; Domain Kernel 54/54; Architecture 158/158; guardrail PowerShell, Stack Audit, ratchet y
+  documentación.
+- **Verificación posterior (agente), focalizada:** tras la terminología, frontend de los módulos afectados 2079/2079,
+  Domain 417/417 y Application 732/732 (filtro Compras y Contabilidad) y Architecture 158/158; tras la alineación final,
+  Finance, rutas, i18n y listado de Clientes 191/191, `tsc -b`, lint, build y guardrails. La validación integral
+  corresponde al CI.
+- **Fallos sin causa determinada:** la primera ejecución completa de OpenAPI dio 121/122 (un caso de
+  `expenses/documents/{id}/cancel`, sin mensaje capturado; su grupo 57/57 y la repetición completa 122/122). En una
+  ejecución de la selección de CxC falló 1 de 338 sin quedar identificado; 11 repeticiones y la final pasaron completas.
+  Sin cambios para corregirlos.
+- **Dashboard:** regenerado en el gate con la metodología `git-tracked-v1`; la matriz V1 se mantiene en Global 75/75,
+  Core 43/43 y Employees 5/5. Anticipos figura en el
+  [registro funcional](docs/ProgressDashboard/data/functional-v1-source.json) como ampliación fuera de V1 (`future`).
+- **Límites:** los selectores exigen los permisos de sus propias API (cliente, bancos, cajas y CxC); el contrato no entrega
+  nombres de usuario ni de documento en los movimientos (el número se resuelve con las CxC cargadas); el parámetro
+  `search` de la consulta de CxC no filtra (preexistente); tras una operación que recarga el listado de CxC el foco no
+  vuelve a la fila; el resto del modal de anulación de cobros sigue en español fijo y las insignias de estado del listado
+  llegan en español desde el backend; las capturas de la revisión visual usan API simulada.
+
+## CUSTOMER-ADVANCES-V1 CA-F5 — Devolución, reversas y anulación — CLOSED (CI #1254 SUCCESS, 2026-11-27)
+
+Autorizada y aprobada técnicamente por el propietario el 2026-11-27. Publicada en
+`21ad867f63e632f0d437af84f9078b7f3ca1cc4e`; CI #1254 SUCCESS confirmado por el propietario. Entregó las
+operaciones sin pantallas ni permisos asignables (CA-F6). Contrato vigente:
+[customer-advances.md](docs/architecture/customer-advances.md).
 
 - **Entregado:** devolución parcial o total (efectivo o transferencia), reversa de una devolución no ejecutada, reversa
   íntegra del ingreso y anulación administrativa; el detalle expone `refundTransactions`. Sin cambio de esquema, Caja,

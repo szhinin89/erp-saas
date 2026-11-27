@@ -65,10 +65,10 @@ public sealed partial class PurchaseInvoice
         if (change.SourceLineId is not { } sourceId)
         {
             EnsureExternalTargets(targets, itemNatures);
-            return change.Amount ?? throw new DomainRuleViolationException("Indique el importe a distribuir.");
+            return change.Amount ?? throw new DomainRuleViolationException("Indique el monto a distribuir.");
         }
         if (change.Amount is not null)
-            throw new DomainRuleViolationException("El importe del transporte XML se toma de su línea fiscal.");
+            throw new DomainRuleViolationException("El monto del transporte XML se toma de su línea fiscal.");
         var source = ResolveXmlTransportSource(sourceId, targets, itemNatures);
         if (_costDistributions.Any(d => d.SourceInvoiceDetailId == sourceId && d.Id != change.Id))
             throw new DomainRuleViolationException("La línea fiscal ya tiene una distribución. Edite la existente.");

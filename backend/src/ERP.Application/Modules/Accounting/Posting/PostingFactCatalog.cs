@@ -299,7 +299,7 @@ public static class PostingFactCatalog
             return $"El tipo de monto '{notAllowed[0].AmountKind}' no está disponible para {fact.SourceModule}/{fact.FactType}.";
 
         if (lines.GroupBy(l => l).Any(g => g.Count() > 1))
-            return "Hay líneas repetidas con la misma dirección y tipo de monto: contabilizarían el importe dos veces.";
+            return "Hay líneas repetidas con la misma dirección y tipo de monto: contabilizarían el monto dos veces.";
 
         var hasDynamic = fact.DynamicSides != PostingDynamicSides.None;
         if (!hasDynamic && lines.Count < 2)

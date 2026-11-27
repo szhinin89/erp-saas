@@ -1,0 +1,76 @@
+/* Listado de Cuentas por cobrar: celdas agrupadas y prioridad en pantallas
+   reducidas (cliente, saldo, estado y acciones). */
+/* Modal de cobros: las palabras no se parten; la tabla se desplaza si no cabe. */
+.fin-collections {
+  overflow-wrap: normal;
+}
+.fin-receivables__stack,
+.fin-receivables__compact {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+/* Números, identificaciones y fechas no se parten. */
+.fin-receivables__nowrap {
+  white-space: nowrap;
+}
+.fin-receivables__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-2);
+}
+.fin-receivables__values {
+  min-width: 13rem;
+  margin-left: auto;
+}
+.fin-receivables__compact {
+  display: none;
+}
+.fin-receivables__menu .zh-line-action-menu__trigger-chevron {
+  display: none;
+}
+
+/* Hasta 900 px, N°, Factura, Sucursal y Vencimiento pasan a la celda del cliente. */
+@media (max-width: 900px) {
+  .fin-receivables
+    table
+    :is(.zh-datatable-row-number-col, .fin-receivables__col-wide) {
+    display: none;
+  }
+  .fin-receivables table {
+    min-width: 0;
+  }
+  .fin-receivables__compact {
+    display: flex;
+  }
+}
+
+/* Móvil: cada importe bajo su etiqueta; el título «Acciones» deja su ancho al cliente. */
+@media (max-width: 640px) {
+  .fin-receivables table :is(th, td) {
+    padding-inline: var(--space-2);
+  }
+  .fin-receivables th.zh-table-cell--actions {
+    font-size: 0;
+  }
+  .fin-receivables__values {
+    min-width: 0;
+  }
+  .fin-receivables__values .zh-info-row {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+}
+
+/* Pantallas muy angostas: se permite el salto antes que desplazar la tabla. */
+@media (max-width: 360px) {
+  .fin-receivables table :is(th, td) {
+    padding-inline: var(--space-1);
+  }
+  .fin-receivables__compact .fin-receivables__nowrap {
+    white-space: normal;
+  }
+}

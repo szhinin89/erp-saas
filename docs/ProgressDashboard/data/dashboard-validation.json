@@ -1,12 +1,12 @@
 ﻿{
-    "timestamp":  "2026-11-27 11:15:02",
+    "timestamp":  "2026-11-27 16:38:11",
     "totalChecks":  109,
     "passed":  107,
     "failed":  2,
     "criticalErrors":  0,
     "warnings":  2,
     "score":  98.2,
-    "tiempoMs":  4076,
+    "tiempoMs":  5137,
     "metodo":  "Checks 1/2/12 (existencia/JSON valido/no vacio) aplicados a las 25 fuentes que consume render-dashboard.ps1. Checks 3-11 (claves obligatorias, duplicados, referencias rotas, modulos vs codigo fuente, rangos 0-100, estados conocidos, fechas, nulls) aplicados solo a los 6 datasets con esquema de modulo verificado (modules-status.json/architecture-governance.json/roadmap.json/blockers.json/architecture-dependencies.json/module-coverage-audit.json) mas explorer-index.json como referencia de codigo fuente real. Score = 100 * passed / totalChecks.",
     "errores":  [
 
@@ -34,7 +34,7 @@
                                 "check":  "12. No vacio: dashboard-model-v12.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (143188 bytes)"
+                                "detail":  "OK (143835 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: dashboard-model-v12.json",
@@ -58,7 +58,7 @@
                                 "check":  "12. No vacio: dashboard-summary.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (5117 bytes)"
+                                "detail":  "OK (5120 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: dashboard-summary.json",
@@ -226,7 +226,7 @@
                                 "check":  "12. No vacio: tasks.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (121720 bytes)"
+                                "detail":  "OK (122115 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: tasks.json",
@@ -346,7 +346,7 @@
                                 "check":  "12. No vacio: navigation-map.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (29091 bytes)"
+                                "detail":  "OK (29092 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: navigation-map.json",
@@ -370,7 +370,7 @@
                                 "check":  "12. No vacio: explorer-index.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (2484387 bytes)"
+                                "detail":  "OK (2486346 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: explorer-index.json",
@@ -442,7 +442,7 @@
                                 "check":  "12. No vacio: critical-path.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (183947 bytes)"
+                                "detail":  "OK (184099 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: critical-path.json",
@@ -466,7 +466,7 @@
                                 "check":  "12. No vacio: release-simulation.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (10244 bytes)"
+                                "detail":  "OK (10245 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: release-simulation.json",
@@ -490,7 +490,7 @@
                                 "check":  "12. No vacio: recommendations.json",
                                 "ok":  true,
                                 "severity":  "Critica",
-                                "detail":  "OK (23312 bytes)"
+                                "detail":  "OK (23314 bytes)"
                             },
                             {
                                 "check":  "2. JSON valido: recommendations.json",

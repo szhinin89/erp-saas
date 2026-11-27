@@ -55,6 +55,10 @@ public sealed class SalesReceivablesController : ControllerBase
     /// <param name="status">Filtro de estado opcional (<c>pending</c>, <c>paid</c>, <c>cancelled</c>).</param>
     /// <param name="pageNumber">Página (base 1; por defecto 1).</param>
     /// <param name="pageSize">Tamaño de página (1–100; por defecto 25).</param>
+    /// <param name="customerId">
+    /// Filtro opcional por cliente: solo sus cuentas en la empresa activa, aplicado antes de paginar
+    /// y de contar el total.
+    /// </param>
     /// <response code="200">Página de cuentas por cobrar con el total.</response>
     /// <response code="422">Paginación fuera de rango.</response>
     [HttpGet]
@@ -66,11 +70,12 @@ public sealed class SalesReceivablesController : ControllerBase
         [FromQuery] string? status = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 25,
+        [FromQuery] Guid? customerId = null,
         CancellationToken ct = default
     ) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(
-                new GetReceivablesListQuery(search, status, pageNumber, pageSize),
+                new GetReceivablesListQuery(search, status, pageNumber, pageSize, customerId),
                 ct
             ),
             "OK"

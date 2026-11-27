@@ -4,19 +4,31 @@ import { Badge, type BadgeVariant } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZhSelect } from "../../../components/zh/inputs";
+import { ZHDataValue } from "../../../components/zh/ZHDataValue";
+import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import {
+  ZHDataTable,
+  type ZHDataTableColumn,
+} from "../../../components/zh/ZHDataTable";
 import {
   formatDate,
   formatDateTime,
 } from "../../../lib/formatters/dateFormatters";
-import { receivableService, type SalesReceivableDto } from "../api/receivableService";
+import {
+  receivableService,
+  type SalesReceivableDto,
+} from "../api/receivableService";
 import { RegisterCollectionModal } from "../components/RegisterCollectionModal";
 import { ReverseCollectionModal } from "../components/ReverseCollectionModal";
+import { ReceivableCustomerAdvanceModal } from "../components/ReceivableCustomerAdvanceModal";
+import { ReceivableRowActions } from "../components/ReceivableRowActions";
+import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useSessionStore } from "../../../store/sessionStore";
 
 import "../../../styles/shared/items-catalog.css";
+import "../styles/receivables-list.css";
 
 /**
  * FINANCE-RECEIVABLES-LIST-ENTERPRISE-01 — deriva el label/color del badge a partir de
@@ -48,10 +60,21 @@ function getReceivableStatusBadge(r: SalesReceivableDto): {
  * No implementa devoluciones, notas de crédito ni reportes — fuera de este alcance.
  */
 export function AccountsReceivablePage() {
-  const { isAdminRole } = usePermissionsUi();
-  const permissions = useSessionStore(s => s.authorization?.permissions);
-  const canReverse = isAdminRole || !!permissions?.some(p => p === "*" || p === "finance.collections.reverse");
-  const [reverseTarget, setReverseTarget] = useState<SalesReceivableDto | null>(null);
+  const { isAdminRole, canShow } = usePermissionsUi();
+  const { t } = useI18n();
+  const canSeeAdvances = canShow("finance.view");
+  const [advanceTarget, setAdvanceTarget] = useState<SalesReceivableDto | null>(
+    null,
+  );
+  const permissions = useSessionStore((s) => s.authorization?.permissions);
+  const canReverse =
+    isAdminRole ||
+    !!permissions?.some(
+      (p) => p === "*" || p === "finance.collections.reverse",
+    );
+  const [reverseTarget, setReverseTarget] = useState<SalesReceivableDto | null>(
+    null,
+  );
   const [items, setItems] = useState<SalesReceivableDto[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -74,67 +97,158 @@ export function AccountsReceivablePage() {
     fetchItems();
   }, [fetchItems]);
 
+  const text = (key: string, params?: Record<string, string>) =>
+    t(`finance.receivables.list.${key}`, params);
+  // Saldo inicial (sin factura): emisión propia del documento, no la fecha de carga.
+  const issuedAt = (r: SalesReceivableDto) =>
+    r.invoiceId
+      ? formatDateTime(r.invoiceCreatedAt)
+      : formatDate(r.invoiceIssueDate);
+  const dueDate = (r: SalesReceivableDto) =>
+    r.dueDate ? formatDate(r.dueDate) : "—";
+  const branchName = (r: SalesReceivableDto) =>
+    r.branchName || text("branchUnavailable");
+  const issuedBy = (r: SalesReceivableDto) =>
+    text("issuedBy", { user: r.createdByName || text("userUnavailable") });
+  const statusBadge = (r: SalesReceivableDto) => (
+    <Badge {...getReceivableStatusBadge(r)} />
+  );
+  const amountRow = (
+    key: string,
+    value: number,
+    emphasis: "muted" | "total",
+  ) => (
+    <ZHInfoRow
+      label={<ZHDataValue variant="muted">{text(key)}</ZHDataValue>}
+      value={
+        <ZHMoneyValue precision="money" value={value} emphasis={emphasis} />
+      }
+    />
+  );
+
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Factura" sigue siendo el
-  // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
-  // columna), ambos coexisten en el listado principal.
+  // identificador funcional del documento; "N°" es solo el índice visual de fila.
+  // Importes agrupados en "Valores" por decisión del propietario (excepción a la regla de una
+  // columna por importe): se leen juntos dentro de cada documento.
   const receivableColumns: ZHDataTableColumn<SalesReceivableDto>[] = [
-    { key: "invoice", header: "Factura", render: (r) => <span className="mono">{r.invoiceNumber}</span> },
-    { key: "customer", header: "Cliente", render: (r) => r.customerName },
-    { key: "identification", header: "Identificación", render: (r) => <span className="mono">{r.customerIdentification}</span> },
-    { key: "branch", header: "Sucursal", render: (r) => r.branchName || "Sucursal no disponible" },
-    { key: "createdBy", header: "Emitido por", render: (r) => r.createdByName || "Usuario no disponible" },
     {
-      key: "invoiceDate",
-      header: "Fecha factura",
-      // Saldo inicial (sin factura): emisión propia del documento, no la fecha de carga.
-      render: (r) => (r.invoiceId ? formatDateTime(r.invoiceCreatedAt) : formatDate(r.invoiceIssueDate)),
+      key: "invoice",
+      header: text("col.invoice"),
+      cellClassName: "fin-receivables__col-wide",
+      render: (r) => (
+        <div className="fin-receivables__stack">
+          <ZHDataValue variant="code" className="fin-receivables__nowrap">
+            {r.invoiceNumber}
+          </ZHDataValue>
+          <ZHDataValue variant="muted" className="fin-receivables__nowrap">
+            {issuedAt(r)}
+          </ZHDataValue>
+        </div>
+      ),
     },
-    { key: "dueDate", header: "Vence", render: (r) => (r.dueDate ? formatDate(r.dueDate) : "—") },
-    { key: "originalAmount", header: "Monto original", render: (r) => <ZHMoneyValue precision="money" value={r.originalAmount} /> },
-    { key: "paidAmount", header: "Cobrado", render: (r) => <ZHMoneyValue precision="money" value={r.paidAmount} /> },
-    { key: "balanceDue", header: "Saldo pendiente", render: (r) => <ZHMoneyValue precision="money" value={r.balanceDue} emphasis="strong" /> },
     {
-      key: "status",
-      header: "Estado",
-      render: (r) => {
-        const statusBadge = getReceivableStatusBadge(r);
-        return <Badge label={statusBadge.label} variant={statusBadge.variant} />;
-      },
+      key: "customer",
+      header: text("col.customer"),
+      render: (r) => (
+        <div className="fin-receivables__stack">
+          <ZHDataValue>{r.customerName}</ZHDataValue>
+          <ZHDataValue variant="code" className="fin-receivables__nowrap">
+            {r.customerIdentification}
+          </ZHDataValue>
+          <div className="fin-receivables__compact">
+            <div className="fin-receivables__line">
+              {statusBadge(r)}
+              <ZHDataValue variant="muted" className="fin-receivables__nowrap">
+                {text("due", { date: dueDate(r) })}
+              </ZHDataValue>
+            </div>
+            <div className="fin-receivables__line">
+              <ZHDataValue variant="muted" className="fin-receivables__nowrap">
+                {text("invoice", { number: r.invoiceNumber })}
+              </ZHDataValue>
+              <ZHDataValue variant="muted" className="fin-receivables__nowrap">
+                {issuedAt(r)}
+              </ZHDataValue>
+            </div>
+            <div className="fin-receivables__line">
+              <ZHDataValue variant="muted">{branchName(r)}</ZHDataValue>
+              <ZHDataValue variant="muted">{issuedBy(r)}</ZHDataValue>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "branch",
+      header: text("col.branch"),
+      cellClassName: "fin-receivables__col-wide",
+      render: (r) => (
+        <div className="fin-receivables__stack">
+          <ZHDataValue>{branchName(r)}</ZHDataValue>
+          <ZHDataValue variant="muted">{issuedBy(r)}</ZHDataValue>
+        </div>
+      ),
+    },
+    {
+      key: "due",
+      header: text("col.due"),
+      cellClassName: "fin-receivables__col-wide",
+      render: (r) => (
+        <div className="fin-receivables__stack">
+          <ZHDataValue className="fin-receivables__nowrap">
+            {dueDate(r)}
+          </ZHDataValue>
+          {statusBadge(r)}
+        </div>
+      ),
+    },
+    {
+      key: "values",
+      header: text("col.values"),
+      align: "right",
+      render: (r) => (
+        <div className="fin-receivables__values">
+          {amountRow("original", r.originalAmount, "muted")}
+          {amountRow("paid", r.paidAmount, "muted")}
+          {amountRow("balance", r.balanceDue, "total")}
+        </div>
+      ),
     },
     {
       key: "actions",
-      header: "Acciones",
-      render: (r) => <>
-        {r.balanceDue > 0 && r.status !== "cancelled" ? (
-          <ZHBtn onClick={() => setSelected(r)} aria-label={`Registrar cobro de factura ${r.invoiceNumber}`}>
-            <span className="material-symbols-outlined zh-icon-md">payments</span>
-            Registrar cobro
-          </ZHBtn>
-        ) : null}
-        {canReverse && <ZHBtn onClick={() => setReverseTarget(r)}>Consultar / anular cobro</ZHBtn>}
-      </>,
+      header: text("col.actions"),
+      cellClassName: "zh-table-cell--actions",
+      render: (r) => (
+        <ReceivableRowActions
+          receivable={r}
+          canReverse={canReverse}
+          canSeeAdvances={canSeeAdvances}
+          onCollect={setSelected}
+          onReverse={setReverseTarget}
+          onAdvances={setAdvanceTarget}
+        />
+      ),
     },
   ];
 
   return (
-    <ErpPageTemplate
-      title="Cuentas por cobrar"
-      subtitle="Consulta las facturas de venta a crédito pendientes y registra cobros."
-    >
-      <div className="prd-section">
+    <ErpPageTemplate title={text("title")} subtitle={text("subtitle")}>
+      <div className="prd-section fin-receivables">
         <div className="prd-crud-toolbar">
           <ZhSelect
             className="zh-input prd-status-filter"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="pending">Pendientes</option>
-            <option value="paid">Pagadas</option>
-            <option value="cancelled">Anuladas</option>
-            <option value="">Todas</option>
+            <option value="pending">{text("filter.pending")}</option>
+            <option value="paid">{text("filter.paid")}</option>
+            <option value="cancelled">{text("filter.cancelled")}</option>
+            <option value="">{text("filter.all")}</option>
           </ZhSelect>
           <ZHBtn onClick={fetchItems} disabled={loading}>
-            <span className="material-symbols-outlined zh-icon-lg">refresh</span>
+            <span className="material-symbols-outlined zh-icon-lg">
+              refresh
+            </span>
           </ZHBtn>
         </div>
 
@@ -144,11 +258,15 @@ export function AccountsReceivablePage() {
           rowKey={(r) => r.id}
           loading={loading}
           showRowNumber
-          emptyMessage="Sin cuentas por cobrar."
+          tableClassName="table--compact table--align-top"
+          emptyMessage={text("empty")}
         />
         {!loading && total > items.length && (
           <p className="zh-text-muted">
-            Mostrando {items.length} de {total} — refina el filtro de estado para ver más.
+            {text("truncated", {
+              shown: String(items.length),
+              total: String(total),
+            })}
           </p>
         )}
       </div>
@@ -159,8 +277,20 @@ export function AccountsReceivablePage() {
         onClose={() => setSelected(null)}
         onRegistered={fetchItems}
       />
-      {reverseTarget && <ReverseCollectionModal receivable={reverseTarget}
-        onClose={() => setReverseTarget(null)} onReversed={fetchItems} />}
+      {reverseTarget && (
+        <ReverseCollectionModal
+          receivable={reverseTarget}
+          onClose={() => setReverseTarget(null)}
+          onReversed={fetchItems}
+        />
+      )}
+      {advanceTarget && (
+        <ReceivableCustomerAdvanceModal
+          receivable={advanceTarget}
+          onClose={() => setAdvanceTarget(null)}
+          onApplied={fetchItems}
+        />
+      )}
     </ErpPageTemplate>
   );
 }

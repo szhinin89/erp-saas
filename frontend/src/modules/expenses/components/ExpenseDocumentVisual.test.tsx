@@ -197,7 +197,7 @@ describe("ExpenseDocumentTotals — siempre disponible (EXPENSE-UI-02)", () => {
 
   it("muestra Subtotal, Descuento, IVA y Total, y refleja de inmediato un cambio de importes", () => {
     const { rerender } = render(<ExpenseDocumentTotals totals={totals} />, { wrapper: I18nProvider });
-    const summary = screen.getByRole("region", { name: "Resumen de importes" });
+    const summary = screen.getByRole("region", { name: "Resumen de montos" });
     for (const label of ["Subtotal", "Descuento", "IVA", "Total"]) {
       expect(summary.textContent).toContain(label);
     }

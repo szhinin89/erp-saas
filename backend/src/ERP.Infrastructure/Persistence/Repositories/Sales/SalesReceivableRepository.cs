@@ -89,12 +89,17 @@ public sealed class SalesReceivableRepository : ISalesReceivableRepository
         Guid tenantId,
         string? search,
         string? status,
+        Guid? customerId,
         int page,
         int pageSize,
         CancellationToken ct = default
     )
     {
         var q = Scoped(tenantId);
+
+        // Antes de contar y paginar: la página y el total son solo de ese cliente en la empresa.
+        if (customerId is { } customer)
+            q = q.Where(x => x.CustomerId == customer);
 
         // FINANCE-RECEIVABLES-LIST-ENTERPRISE-01: SalesReceivable.Status nunca transiciona a
         // "paid" (RegisterCollection solo acumula PaidAmount) — el saldo en cero es la única

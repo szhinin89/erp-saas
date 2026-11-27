@@ -381,12 +381,12 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             // ICE mixto sin snapshot XML no tiene cálculo operativo: nunca se degrada a porcentual.
             if (iceCalculationType == SriTaxCalculationType.Mixed && iceSource != PurchaseTaxSource.Xml)
                 throw new DomainRuleViolationException(
-                    "ICE mixto requiere el importe declarado en el XML SRI.");
+                    "ICE mixto requiere el monto declarado en el XML SRI.");
             // ICE "específico" (p. ej. código 3053) no se recalcula desde una tarifa porcentual — se
             // fija aquí al monto exacto del XML; RecalcTaxes lo preserva y solo recalcula VatAmount
             // sobre él.
             var initialIceAmount =
-                iceCalculationType == SriTaxCalculationType.Specific ? (iceExactAmount ?? throw new DomainRuleViolationException("Falta el importe ICE específico explícito.")) : 0m;
+                iceCalculationType == SriTaxCalculationType.Specific ? (iceExactAmount ?? throw new DomainRuleViolationException("Falta el monto ICE específico explícito.")) : 0m;
             UpsertTaxRow(
                 IceSriTaxCode,
                 normalizedIceCode,

@@ -28,7 +28,7 @@ public static class PurchaseXmlBreakdown
         {
             var source = original.Taxes.SingleOrDefault(t => t.Id == input.PurchaseReceptionLineTaxId);
             if (source is null || input.TaxableBase < 0 || input.TaxAmount < 0)
-                return "El impuesto asignado no pertenece a la línea fiscal o tiene importes inválidos.";
+                return "El impuesto asignado no pertenece a la línea fiscal o tiene montos inválidos.";
             var entry = source.TaxCode switch
             {
                 SriTaxCategoryCodes.Vat => await resolver.GetVatCatalogEntryAsync(source.TaxRateCode, ct),
